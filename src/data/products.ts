@@ -1,116 +1,6 @@
-import { Product } from '../types/product';
+import { Developer, Product } from '../types/product';
 
-export const products: Product[] = [
-  {
-    id: '1',
-    name: 'Premium Wireless Headphones',
-    price: 299.99,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1600&auto=format&fit=crop',
-    category: 'electronics',
-    description: 'Experience music like never before with these premium wireless headphones featuring active noise cancellation and an immersive sound profile.',
-    rating: 4.8,
-    featured: true,
-    hourlyRate: 0,
-    skills: [],
-    experience: '',
-    availability: false
-  },
-  {
-    id: '2',
-    name: 'Minimalist Analog Watch',
-    price: 189.99,
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1600&auto=format&fit=crop',
-    category: 'accessories',
-    description: 'A timeless analog watch with a clean minimalist design. Features a premium leather strap and precision Japanese movement.',
-    rating: 4.7,
-    featured: true,
-    hourlyRate: 0,
-    skills: [],
-    experience: '',
-    availability: false
-  },
-  {
-    id: '3',
-    name: 'Smart Home Assistant',
-    price: 129.99,
-    image: 'https://images.unsplash.com/photo-1558089687-f282ffcbc054?q=80&w=1600&auto=format&fit=crop',
-    category: 'electronics',
-    description: 'Control your entire home with simple voice commands. Features seamless integration with all popular smart home devices.',
-    rating: 4.5,
-    featured: true,
-    hourlyRate: 0,
-    skills: [],
-    experience: '',
-    availability: false
-  },
-  {
-    id: '4',
-    name: 'Leather Laptop Sleeve',
-    price: 79.99,
-    image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=1600&auto=format&fit=crop',
-    category: 'accessories',
-    description: 'Protect your laptop in style with this premium genuine leather laptop sleeve with soft microfiber interior.',
-    rating: 4.6,
-    hourlyRate: 0,
-    skills: [],
-    experience: '',
-    availability: false
-  },
-  {
-    id: '5',
-    name: 'Fitness Smart Watch',
-    price: 199.99,
-    image: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?q=80&w=1600&auto=format&fit=crop',
-    category: 'wearables',
-    description: 'Track your health and fitness goals with precision. Features heart rate monitoring, GPS, and 7-day battery life.',
-    rating: 4.4,
-    hourlyRate: 0,
-    skills: [],
-    experience: '',
-    availability: false
-  },
-  {
-    id: '6',
-    name: 'Bluetooth Portable Speaker',
-    price: 149.99,
-    image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?q=80&w=1600&auto=format&fit=crop',
-    category: 'electronics',
-    description: 'A portable Bluetooth speaker with rich, room-filling sound and 20 hours of playback on a single charge.',
-    rating: 4.3,
-    hourlyRate: 0,
-    skills: [],
-    experience: '',
-    availability: false
-  },
-  {
-    id: '7',
-    name: 'Ultra-thin Smartphone Case',
-    price: 29.99,
-    image: 'https://images.unsplash.com/photo-1541357220468-f8706faa9375?q=80&w=1600&auto=format&fit=crop',
-    category: 'accessories',
-    description: 'Protect your smartphone without adding bulk. This ultra-thin case provides drop protection while maintaining the sleek design of your device.',
-    rating: 4.5,
-    hourlyRate: 0,
-    skills: [],
-    experience: '',
-    availability: false
-  },
-  {
-    id: '8',
-    name: 'Noise-Cancelling Earbuds',
-    price: 149.99,
-    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=1600&auto=format&fit=crop',
-    category: 'electronics',
-    description: 'True wireless earbuds with advanced noise cancellation technology and exceptional audio quality for immersive listening.',
-    rating: 4.7,
-    hourlyRate: 0,
-    skills: [],
-    experience: '',
-    availability: false
-  }
-];
-
-export const developers = [
+export const developers: Developer[] = [
   {
     id: 'dev1',
     name: 'Alex Johnson',
@@ -149,8 +39,75 @@ export const developers = [
     rating: 4.9,
     availability: true,
     featured: true
+  },
+  {
+    id: 'dev4',
+    name: 'Elena Rivera',
+    hourlyRate: 90,
+    image: 'https://images.unsplash.com/photo-1534751516642-a1af1ef26a56?q=80&w=1600&auto=format&fit=crop',
+    category: 'mobile',
+    skills: ['React Native', 'Swift', 'Kotlin', 'Firebase'],
+    experience: '6+ years in mobile app development',
+    description: 'Mobile developer specialized in cross-platform and native app development.',
+    rating: 4.7,
+    availability: true,
+    featured: false
+  },
+  {
+    id: 'dev5',
+    name: 'David Kim',
+    hourlyRate: 100,
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1600&auto=format&fit=crop',
+    category: 'devops',
+    skills: ['Kubernetes', 'Docker', 'AWS', 'CI/CD', 'Terraform'],
+    experience: '8+ years in DevOps and cloud infrastructure',
+    description: 'DevOps engineer with extensive experience in cloud infrastructure and automation.',
+    rating: 4.8,
+    availability: true,
+    featured: false
+  },
+  {
+    id: 'dev6',
+    name: 'Olivia Torres',
+    hourlyRate: 120,
+    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1600&auto=format&fit=crop',
+    category: 'security',
+    skills: ['Penetration Testing', 'Security Audits', 'OWASP', 'Encryption'],
+    experience: '10+ years in cybersecurity',
+    description: 'Security specialist focused on web application security and compliance.',
+    rating: 4.9,
+    availability: false,
+    featured: false
+  },
+  {
+    id: 'dev7',
+    name: 'Michael Zhang',
+    hourlyRate: 85,
+    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1600&auto=format&fit=crop',
+    category: 'database',
+    skills: ['SQL', 'MongoDB', 'Firebase', 'Redis', 'Data Modeling'],
+    experience: '7+ years in database design and optimization',
+    description: 'Database specialist with expertise in both SQL and NoSQL databases.',
+    rating: 4.6,
+    availability: true,
+    featured: false
+  },
+  {
+    id: 'dev8',
+    name: 'Sophie Anderson',
+    hourlyRate: 95,
+    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1600&auto=format&fit=crop',
+    category: 'ai',
+    skills: ['Machine Learning', 'Python', 'TensorFlow', 'NLP'],
+    experience: '5+ years in AI and machine learning',
+    description: 'AI developer with experience in natural language processing and predictive modeling.',
+    rating: 4.7,
+    availability: true,
+    featured: false
   }
 ];
+
+export const products: Product[] = developers;
 
 export const getDevelopers = () => {
   return developers;
@@ -165,28 +122,22 @@ export const getDeveloperById = (id: string) => {
 };
 
 export const getFeaturedProducts = (): Product[] => {
-  return products.filter(product => product.featured);
+  return developers.filter(dev => dev.featured);
 };
 
 export const getProductById = (id: string): Product | undefined => {
-  return products.find(product => product.id === id);
+  return developers.find(dev => dev.id === id);
 };
 
 export const getProductsByCategory = (category: string): Product[] => {
-  return products.filter(product => product.category === category);
+  return developers.filter(dev => dev.category === category);
 };
 
 export const searchProducts = (query: string): Product[] => {
-  const lowercaseQuery = query.toLowerCase();
-  return products.filter(
-    product => 
-      product.name.toLowerCase().includes(lowercaseQuery) || 
-      product.description.toLowerCase().includes(lowercaseQuery) ||
-      product.category.toLowerCase().includes(lowercaseQuery)
-  );
+  return searchDevelopers(query);
 };
 
-export const searchDevelopers = (query: string) => {
+export const searchDevelopers = (query: string): Developer[] => {
   const lowercaseQuery = query.toLowerCase();
   return developers.filter(
     dev =>

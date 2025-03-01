@@ -4,10 +4,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import SearchBar from '../components/SearchBar';
 import ProductGrid from '../components/ProductGrid';
-import { searchProducts, getProductsByCategory, products } from '../data/products';
+import { searchDevelopers, getProductsByCategory, developers } from '../data/products';
 import { categories } from '../data/categories';
 import { Filter, X, Star } from 'lucide-react';
-import { Product } from '../types/product';
+import { Developer, Product } from '../types/product';
 
 const Search: React.FC = () => {
   const location = useLocation();
@@ -16,13 +16,14 @@ const Search: React.FC = () => {
   const searchQuery = queryParams.get('q') || '';
   const categoryFilter = queryParams.get('category') || '';
   
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [filteredDevelopers, setFilteredDevelopers] = useState<Developer[]>([]);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [hourlyRateRange, setHourlyRateRange] = useState<[number, number]>([0, 200]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     categoryFilter ? [categoryFilter] : []
   );
   const [minRating, setMinRating] = useState(0);
+  const [availableOnly, setAvailableOnly] = useState(false);
   
   useEffect(() => {
     // Reset mobile filter state on location change
@@ -33,28 +34,33 @@ const Search: React.FC = () => {
       setSelectedCategories([...selectedCategories, categoryFilter]);
     }
     
-    // Filter products based on search query and filters
+    // Filter developers based on search query and filters
     let results = searchQuery 
-      ? searchProducts(searchQuery) 
-      : [...products];
+      ? searchDevelopers(searchQuery) 
+      : [...developers];
     
     // Apply category filter
     if (selectedCategories.length > 0) {
-      results = results.filter(product => selectedCategories.includes(product.category));
+      results = results.filter(dev => selectedCategories.includes(dev.category));
     }
     
-    // Apply price range filter
+    // Apply hourly rate range filter
     results = results.filter(
-      product => product.price >= priceRange[0] && product.price <= priceRange[1]
+      dev => dev.hourlyRate >= hourlyRateRange[0] && dev.hourlyRate <= hourlyRateRange[1]
     );
     
     // Apply rating filter
     if (minRating > 0) {
-      results = results.filter(product => product.rating >= minRating);
+      results = results.filter(dev => dev.rating >= minRating);
     }
     
-    setFilteredProducts(results);
-  }, [location.search, selectedCategories, priceRange, minRating]);
+    // Apply availability filter
+    if (availableOnly) {
+      results = results.filter(dev => dev.availability);
+    }
+    
+    setFilteredDevelopers(results);
+  }, [location.search, selectedCategories, hourlyRateRange, minRating, availableOnly]);
   
   const handleCategoryChange = (categoryId: string) => {
     if (selectedCategories.includes(categoryId)) {
@@ -64,11 +70,11 @@ const Search: React.FC = () => {
     }
   };
   
-  const handlePriceChange = (event: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleHourlyRateChange = (event: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const value = parseInt(event.target.value);
-    const newRange = [...priceRange] as [number, number];
+    const newRange = [...hourlyRateRange] as [number, number];
     newRange[index] = value;
-    setPriceRange(newRange);
+    setHourlyRateRange(newRange);
   };
   
   const handleRatingChange = (rating: number) => {
@@ -77,8 +83,9 @@ const Search: React.FC = () => {
   
   const clearAllFilters = () => {
     setSelectedCategories([]);
-    setPriceRange([0, 1000]);
+    setHourlyRateRange([0, 200]);
     setMinRating(0);
+    setAvailableOnly(false);
     
     // If there was a category in the URL, remove it
     if (categoryFilter) {
@@ -88,14 +95,14 @@ const Search: React.FC = () => {
     }
   };
   
-  const hasActiveFilters = selectedCategories.length > 0 || priceRange[0] > 0 || priceRange[1] < 1000 || minRating > 0;
+  const hasActiveFilters = selectedCategories.length > 0 || hourlyRateRange[0] > 0 || hourlyRateRange[1] < 200 || minRating > 0 || availableOnly;
   
   return (
     <Layout>
       <div className="bg-secondary/50 py-10">
         <div className="container mx-auto px-4">
           <h1 className="heading-2 mb-6 text-center">
-            {searchQuery ? `Search results for "${searchQuery}"` : 'All Products'}
+            {searchQuery ? `Search results for "${searchQuery}"` : 'All Developers'}
           </h1>
           <div className="max-w-2xl mx-auto">
             <SearchBar initialValue={searchQuery} />
@@ -108,7 +115,7 @@ const Search: React.FC = () => {
           {/* Mobile Filter Button */}
           <div className="lg:hidden flex justify-between items-center mb-4">
             <p className="text-sm text-muted-foreground">
-              Showing {filteredProducts.length} results
+              Showing {filteredDevelopers.length} results
             </p>
             <button
               onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
@@ -157,9 +164,22 @@ const Search: React.FC = () => {
                   </div>
                 )}
                 
+                {/* Availability Filter */}
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={availableOnly}
+                      onChange={() => setAvailableOnly(!availableOnly)}
+                      className="rounded border-border/70 text-primary focus:ring-primary/20"
+                    />
+                    <span className="text-sm font-medium">Available now</span>
+                  </label>
+                </div>
+                
                 {/* Categories */}
                 <div>
-                  <h3 className="text-sm font-semibold mb-3">Categories</h3>
+                  <h3 className="text-sm font-semibold mb-3">Specialization</h3>
                   <div className="space-y-2">
                     {categories.map(category => (
                       <label 
@@ -178,19 +198,19 @@ const Search: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Price Range */}
+                {/* Hourly Rate Range */}
                 <div>
-                  <h3 className="text-sm font-semibold mb-3">Price Range</h3>
+                  <h3 className="text-sm font-semibold mb-3">Hourly Rate Range</h3>
                   <div className="space-y-4">
                     <div className="flex justify-between">
                       <div className="flex items-center border rounded-md overflow-hidden">
                         <span className="px-2 bg-muted text-muted-foreground text-sm">$</span>
                         <input
                           type="number"
-                          value={priceRange[0]}
-                          onChange={(e) => handlePriceChange(e, 0)}
+                          value={hourlyRateRange[0]}
+                          onChange={(e) => handleHourlyRateChange(e, 0)}
                           min={0}
-                          max={priceRange[1]}
+                          max={hourlyRateRange[1]}
                           className="w-16 h-8 text-sm border-0 focus:ring-0"
                         />
                       </div>
@@ -199,9 +219,9 @@ const Search: React.FC = () => {
                         <span className="px-2 bg-muted text-muted-foreground text-sm">$</span>
                         <input
                           type="number"
-                          value={priceRange[1]}
-                          onChange={(e) => handlePriceChange(e, 1)}
-                          min={priceRange[0]}
+                          value={hourlyRateRange[1]}
+                          onChange={(e) => handleHourlyRateChange(e, 1)}
+                          min={hourlyRateRange[0]}
                           className="w-16 h-8 text-sm border-0 focus:ring-0"
                         />
                       </div>
@@ -211,9 +231,9 @@ const Search: React.FC = () => {
                       <input
                         type="range"
                         min={0}
-                        max={1000}
-                        value={priceRange[1]}
-                        onChange={(e) => handlePriceChange(e, 1)}
+                        max={200}
+                        value={hourlyRateRange[1]}
+                        onChange={(e) => handleHourlyRateChange(e, 1)}
                         className="w-full"
                       />
                     </div>
@@ -249,11 +269,11 @@ const Search: React.FC = () => {
             </div>
           </div>
           
-          {/* Product Grid */}
+          {/* Developer Grid */}
           <div>
             <div className="hidden lg:flex justify-between items-center mb-6">
               <p className="text-sm text-muted-foreground">
-                Showing {filteredProducts.length} results
+                Showing {filteredDevelopers.length} results
               </p>
               {hasActiveFilters && (
                 <button
@@ -265,11 +285,11 @@ const Search: React.FC = () => {
               )}
             </div>
             
-            {filteredProducts.length > 0 ? (
-              <ProductGrid products={filteredProducts} />
+            {filteredDevelopers.length > 0 ? (
+              <ProductGrid products={filteredDevelopers as Product[]} />
             ) : (
               <div className="py-20 text-center">
-                <h3 className="heading-3 mb-2">No products found</h3>
+                <h3 className="heading-3 mb-2">No developers found</h3>
                 <p className="text-muted-foreground mb-6">
                   Try adjusting your search or filter criteria
                 </p>
