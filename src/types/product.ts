@@ -19,6 +19,19 @@ export interface Category {
   image?: string;
 }
 
-export interface Product extends Developer {
-  price: number; // Keep for backward compatibility
+// Changed to make Product and Developer separate types that share common properties
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  description: string;
+  rating: number;
+  featured?: boolean;
+  // These fields are only for developers and are optional for backward compatibility
+  hourlyRate?: number;
+  skills?: string[];
+  experience?: string;
+  availability?: boolean;
 }
