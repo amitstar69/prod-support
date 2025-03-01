@@ -1,7 +1,7 @@
 
 import React from 'react';
 import Layout from '../components/Layout';
-import { User, Package, Heart, CreditCard, LogOut, Settings } from 'lucide-react';
+import { User, Package, Heart, CreditCard, LogOut, Settings, Video, MessageSquare } from 'lucide-react';
 
 const Profile: React.FC = () => {
   return (
@@ -9,7 +9,7 @@ const Profile: React.FC = () => {
       <div className="bg-secondary/50 py-10">
         <div className="container mx-auto px-4">
           <h1 className="heading-2 mb-2 text-center">My Account</h1>
-          <p className="text-center text-muted-foreground">Manage your account settings and preferences</p>
+          <p className="text-center text-muted-foreground">Manage your profile, availability and preferences</p>
         </div>
       </div>
       
@@ -24,18 +24,18 @@ const Profile: React.FC = () => {
               </button>
               
               <button className="flex items-center gap-3 px-4 py-2 rounded-md text-foreground/70 hover:bg-muted transition-colors">
-                <Package className="h-5 w-5" />
-                <span>Orders</span>
+                <Video className="h-5 w-5" />
+                <span>Sessions</span>
               </button>
               
               <button className="flex items-center gap-3 px-4 py-2 rounded-md text-foreground/70 hover:bg-muted transition-colors">
-                <Heart className="h-5 w-5" />
-                <span>Wishlist</span>
+                <MessageSquare className="h-5 w-5" />
+                <span>Messages</span>
               </button>
               
               <button className="flex items-center gap-3 px-4 py-2 rounded-md text-foreground/70 hover:bg-muted transition-colors">
                 <CreditCard className="h-5 w-5" />
-                <span>Payment Methods</span>
+                <span>Payments</span>
               </button>
               
               <button className="flex items-center gap-3 px-4 py-2 rounded-md text-foreground/70 hover:bg-muted transition-colors">
@@ -54,7 +54,7 @@ const Profile: React.FC = () => {
           <div>
             <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden">
               <div className="p-6 md:p-8">
-                <h2 className="text-xl font-semibold mb-6">Profile Information</h2>
+                <h2 className="text-xl font-semibold mb-6">Developer Profile</h2>
                 
                 <div className="flex flex-col md:flex-row gap-8">
                   {/* Profile Image */}
@@ -124,6 +124,58 @@ const Profile: React.FC = () => {
                         className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                       />
                     </div>
+
+                    <div>
+                      <label htmlFor="skills" className="block text-sm font-medium mb-1">
+                        Skills (comma separated)
+                      </label>
+                      <input
+                        id="skills"
+                        type="text"
+                        defaultValue="React, TypeScript, Node.js, Supabase"
+                        className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="experience" className="block text-sm font-medium mb-1">
+                        Years of Experience
+                      </label>
+                      <input
+                        id="experience"
+                        type="number"
+                        defaultValue="5"
+                        min="0"
+                        max="50"
+                        className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="hourlyRate" className="block text-sm font-medium mb-1">
+                        Hourly Rate ($)
+                      </label>
+                      <input
+                        id="hourlyRate"
+                        type="number"
+                        defaultValue="75"
+                        min="1"
+                        step="1"
+                        className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="availability" className="text-sm font-medium">
+                        Available for hire
+                      </label>
+                      <input
+                        id="availability"
+                        type="checkbox"
+                        defaultChecked={true}
+                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary/25"
+                      />
+                    </div>
                     
                     <div className="pt-2">
                       <button className="button-primary">
@@ -135,60 +187,54 @@ const Profile: React.FC = () => {
               </div>
               
               <div className="border-t border-border/40 p-6 md:p-8">
-                <h2 className="text-xl font-semibold mb-6">Address Information</h2>
+                <h2 className="text-xl font-semibold mb-6">Call Preferences</h2>
                 
                 <div className="space-y-6">
                   <div>
-                    <label htmlFor="address" className="block text-sm font-medium mb-1">
-                      Street Address
+                    <label htmlFor="description" className="block text-sm font-medium mb-1">
+                      Professional Summary (shown to potential clients)
                     </label>
-                    <input
-                      id="address"
-                      type="text"
-                      defaultValue="123 Main Street"
+                    <textarea
+                      id="description"
+                      rows={4}
+                      defaultValue="Full-stack developer with 5+ years of experience in React, TypeScript, and Node.js. Specialized in helping startups and indie developers with technical challenges, debugging, and architecture decisions."
                       className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label htmlFor="city" className="block text-sm font-medium mb-1">
-                        City
+                  <div>
+                    <h3 className="text-base font-medium mb-3">Preferred Communication Tools</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <label className="flex items-center gap-2 p-3 border border-border rounded-md hover:bg-secondary/30 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          defaultChecked={true}
+                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary/25"
+                        />
+                        <span>In-app Video Call</span>
                       </label>
-                      <input
-                        id="city"
-                        type="text"
-                        defaultValue="San Francisco"
-                        className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="state" className="block text-sm font-medium mb-1">
-                        State
+                      <label className="flex items-center gap-2 p-3 border border-border rounded-md hover:bg-secondary/30 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          defaultChecked={true}
+                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary/25"
+                        />
+                        <span>Microsoft Teams</span>
                       </label>
-                      <input
-                        id="state"
-                        type="text"
-                        defaultValue="California"
-                        className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="zipCode" className="block text-sm font-medium mb-1">
-                        Zip Code
+                      <label className="flex items-center gap-2 p-3 border border-border rounded-md hover:bg-secondary/30 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          defaultChecked={true}
+                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary/25"
+                        />
+                        <span>Zoom</span>
                       </label>
-                      <input
-                        id="zipCode"
-                        type="text"
-                        defaultValue="94105"
-                        className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-                      />
                     </div>
                   </div>
                   
                   <div className="pt-2">
                     <button className="button-primary">
-                      Update Address
+                      Update Preferences
                     </button>
                   </div>
                 </div>
