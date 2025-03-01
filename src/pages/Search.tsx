@@ -6,7 +6,7 @@ import SearchBar from '../components/SearchBar';
 import ProductGrid from '../components/ProductGrid';
 import { searchProducts, getProductsByCategory, products } from '../data/products';
 import { categories } from '../data/categories';
-import { Filter, X } from 'lucide-react';
+import { Filter, X, Star } from 'lucide-react';
 import { Product } from '../types/product';
 
 const Search: React.FC = () => {
