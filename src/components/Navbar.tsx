@@ -1,155 +1,216 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, ShoppingBag, User, Menu, X, MessageSquare } from 'lucide-react';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, Search, ChevronDown, LogIn, User, LogOut } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Navbar: React.FC = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const [isOpen, setIsOpen] = useState(false);
+  const { isAuthenticated, userType, logout } = useAuth();
+  const navigate = useNavigate();
+  
+  const toggleMenu = () => {
+    setIsOpen(!isOpen);
+  };
+  
+  const handleLoginClick = () => {
+    navigate('/login');
+    setIsOpen(false);
+  };
+  
+  const handleRegisterClick = () => {
+    navigate('/register');
+    setIsOpen(false);
+  };
+  
+  const handleProfileClick = () => {
+    navigate(userType === 'developer' ? '/profile' : '/client-profile');
+    setIsOpen(false);
+  };
+  
+  const handleLogoutClick = () => {
+    logout();
+    navigate('/');
+    setIsOpen(false);
+  };
 
   return (
-    <header 
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'py-3 bg-background/80 backdrop-blur-md shadow-sm' 
-          : 'py-5 bg-transparent'
-      }`}
-    >
+    <header className="bg-background border-b border-border/40 sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between">
-          <Link 
-            to="/" 
-            className="text-xl md:text-2xl font-bold transition-transform hover:scale-105"
-          >
-            devconnect
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <nav className="flex items-center space-x-6">
-              <Link 
-                to="/" 
-                className="text-foreground/80 hover:text-foreground font-medium"
-              >
-                Home
-              </Link>
-              <Link 
-                to="/search" 
-                className="text-foreground/80 hover:text-foreground font-medium"
-              >
-                Find Developers
-              </Link>
-              <Link 
-                to="/register" 
-                className="text-foreground/80 hover:text-foreground font-medium"
-              >
-                Join as Developer
-              </Link>
-            </nav>
-
-            <div className="flex items-center space-x-4">
-              <Link 
-                to="/search" 
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-                aria-label="Search"
-              >
-                <Search className="h-5 w-5" />
-              </Link>
-              <Link 
-                to="/messages" 
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-                aria-label="Messages"
-              >
-                <MessageSquare className="h-5 w-5" />
-              </Link>
-              <Link 
-                to="/profile" 
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-                aria-label="User profile"
-              >
-                <User className="h-5 w-5" />
-              </Link>
-            </div>
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <Link to="/" className="text-xl font-bold">
+              DevConnect
+            </Link>
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex items-center space-x-3 md:hidden">
-            <Link 
-              to="/search" 
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="Search"
-            >
-              <Search className="h-5 w-5" />
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-4">
+            <Link to="/" className="px-3 py-2 rounded-md hover:bg-secondary transition-colors">
+              Home
             </Link>
+            <Link to="/search" className="px-3 py-2 rounded-md hover:bg-secondary transition-colors">
+              Find Developers
+            </Link>
+            <div className="relative group">
+              <button className="px-3 py-2 rounded-md hover:bg-secondary transition-colors flex items-center">
+                Services
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </button>
+              <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-background border border-border/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                <div className="py-1">
+                  <Link
+                    to="/search?category=frontend"
+                    className="block px-4 py-2 hover:bg-secondary transition-colors"
+                  >
+                    Frontend Development
+                  </Link>
+                  <Link
+                    to="/search?category=backend"
+                    className="block px-4 py-2 hover:bg-secondary transition-colors"
+                  >
+                    Backend Development
+                  </Link>
+                  <Link
+                    to="/search?category=fullstack"
+                    className="block px-4 py-2 hover:bg-secondary transition-colors"
+                  >
+                    Full Stack Development
+                  </Link>
+                  <Link
+                    to="/search?category=mobile"
+                    className="block px-4 py-2 hover:bg-secondary transition-colors"
+                  >
+                    Mobile Development
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <Link to="#" className="px-3 py-2 rounded-md hover:bg-secondary transition-colors">
+              How It Works
+            </Link>
+          </nav>
+
+          {/* Right Side - Auth / Search */}
+          <div className="hidden md:flex items-center space-x-4">
+            {isAuthenticated ? (
+              <div className="relative group">
+                <button className="button-secondary flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>My Account</span>
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-background border border-border/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={handleProfileClick}
+                      className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors"
+                    >
+                      {userType === 'developer' ? 'Developer Profile' : 'Client Profile'}
+                    </button>
+                    <button
+                      onClick={handleLogoutClick}
+                      className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors"
+                    >
+                      <span className="flex items-center">
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <button className="button-ghost" onClick={handleLoginClick}>
+                  Log In
+                </button>
+                <button className="button-primary" onClick={handleRegisterClick}>
+                  Sign Up
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden flex items-center">
             <button
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              className="inline-flex items-center justify-center p-2 rounded-md hover:bg-secondary transition-colors"
+              onClick={toggleMenu}
             >
-              {isMobileMenuOpen ? (
-                <X className="h-5 w-5" />
+              {isOpen ? (
+                <X className="h-6 w-6" />
               ) : (
-                <Menu className="h-5 w-5" />
+                <Menu className="h-6 w-6" />
               )}
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="absolute top-full left-0 right-0 bg-background/95 backdrop-blur-md shadow-md mt-1 py-4 px-6 md:hidden animate-slide-down">
-            <nav className="flex flex-col space-y-4">
-              <Link 
-                to="/" 
-                className="text-foreground/80 hover:text-foreground font-medium py-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Home
-              </Link>
-              <Link 
-                to="/search" 
-                className="text-foreground/80 hover:text-foreground font-medium py-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Find Developers
-              </Link>
-              <Link 
-                to="/register" 
-                className="text-foreground/80 hover:text-foreground font-medium py-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Join as Developer
-              </Link>
-              <div className="border-t border-border/30 pt-3 mt-2 flex justify-between">
-                <Link 
-                  to="/profile" 
-                  className="flex items-center text-foreground/80 hover:text-foreground font-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
+      {/* Mobile menu */}
+      <div className={`md:hidden ${isOpen ? 'block' : 'hidden'}`}>
+        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+          <Link
+            to="/"
+            className="block px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            Home
+          </Link>
+          <Link
+            to="/search"
+            className="block px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            Find Developers
+          </Link>
+          <Link
+            to="#"
+            className="block px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            How It Works
+          </Link>
+          
+          <div className="pt-4 pb-3 border-t border-border/40">
+            {isAuthenticated ? (
+              <>
+                <button
+                  onClick={handleProfileClick}
+                  className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
                 >
                   <User className="h-5 w-5 mr-2" />
-                  Profile
-                </Link>
-                <Link 
-                  to="/messages" 
-                  className="flex items-center text-foreground/80 hover:text-foreground font-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  {userType === 'developer' ? 'Developer Profile' : 'Client Profile'}
+                </button>
+                <button
+                  onClick={handleLogoutClick}
+                  className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
                 >
-                  <MessageSquare className="h-5 w-5 mr-2" />
-                  Messages
-                </Link>
-              </div>
-            </nav>
+                  <LogOut className="h-5 w-5 mr-2" />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleLoginClick}
+                  className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+                >
+                  <LogIn className="h-5 w-5 mr-2" />
+                  Log In
+                </button>
+                <button
+                  onClick={handleRegisterClick}
+                  className="w-full mt-2 button-primary"
+                >
+                  Sign Up
+                </button>
+              </>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </header>
   );

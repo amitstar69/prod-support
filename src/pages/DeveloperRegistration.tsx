@@ -3,21 +3,60 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
 
 const DeveloperRegistration: React.FC = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    const formData = new FormData(e.currentTarget);
+    
+    // Extract form values
+    const firstName = formData.get('firstName') as string;
+    const lastName = formData.get('lastName') as string;
+    const email = formData.get('email') as string;
+    const phone = formData.get('phone') as string;
+    const category = formData.get('category') as string;
+    const skills = (formData.get('skills') as string).split(',').map(skill => skill.trim());
+    const experience = formData.get('experience') as string;
+    const description = formData.get('description') as string;
+    const hourlyRate = parseFloat(formData.get('hourlyRate') as string);
+    const minuteRate = parseFloat(formData.get('minuteRate') as string);
+    const availability = formData.has('availability');
+    
+    // Create developer object
+    const developerData = {
+      name: `${firstName} ${lastName}`,
+      email,
+      phone,
+      category,
+      skills,
+      experience,
+      description,
+      hourlyRate,
+      minuteRate,
+      availability
+    };
+    
+    try {
+      const success = await register(developerData, 'developer');
+      
+      if (success) {
+        navigate('/profile');
+      } else {
+        toast.error('Registration failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error('An unexpected error occurred.');
+    } finally {
       setIsSubmitting(false);
-      toast.success('Registration successful! Your profile is pending review.');
-      navigate('/profile');
-    }, 1500);
+    }
   };
   
   return (
@@ -46,6 +85,7 @@ const DeveloperRegistration: React.FC = () => {
                       </label>
                       <input
                         id="firstName"
+                        name="firstName"
                         type="text"
                         className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                         required
@@ -57,6 +97,7 @@ const DeveloperRegistration: React.FC = () => {
                       </label>
                       <input
                         id="lastName"
+                        name="lastName"
                         type="text"
                         className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                         required
@@ -68,6 +109,7 @@ const DeveloperRegistration: React.FC = () => {
                       </label>
                       <input
                         id="email"
+                        name="email"
                         type="email"
                         className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                         required
@@ -79,6 +121,7 @@ const DeveloperRegistration: React.FC = () => {
                       </label>
                       <input
                         id="phone"
+                        name="phone"
                         type="tel"
                         className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                         required
@@ -97,6 +140,7 @@ const DeveloperRegistration: React.FC = () => {
                       </label>
                       <select
                         id="category"
+                        name="category"
                         className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                         required
                       >

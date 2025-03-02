@@ -1,22 +1,100 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { User, CreditCard, LogOut, Settings, Video, MessageSquare, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth, getCurrentUserData, updateUserData } from '../contexts/AuthContext';
+import { Developer } from '../types/product';
+import { useNavigate } from 'react-router-dom';
 
 const Profile: React.FC = () => {
+  const { userId, logout } = useAuth();
+  const navigate = useNavigate();
+  const [developer, setDeveloper] = useState<Developer | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const handleSaveChanges = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchUser = () => {
+      setIsLoading(true);
+      const userData = getCurrentUserData() as Developer;
+      if (userData) {
+        setDeveloper(userData);
+      }
+      setIsLoading(false);
+    };
+    
+    fetchUser();
+  }, [userId]);
+  
+  const handleSaveChanges = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    
+    const updatedData: Partial<Developer> = {
+      name: formData.get('firstName') + ' ' + formData.get('lastName'),
+      email: formData.get('email') as string,
+      phone: formData.get('phone') as string,
+      category: formData.get('category') as string,
+      skills: (formData.get('skills') as string).split(',').map(skill => skill.trim()),
+      experience: formData.get('experience') as string,
+      hourlyRate: parseFloat(formData.get('hourlyRate') as string),
+      availability: formData.has('availability'),
+      description: formData.get('description') as string
+    };
+    
+    try {
+      const success = updateUserData(updatedData);
+      
+      if (success) {
+        // Refresh developer data
+        const userData = getCurrentUserData() as Developer;
+        setDeveloper(userData);
+        toast.success('Profile updated successfully');
+      } else {
+        toast.error('Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('An error occurred while updating your profile');
+    } finally {
       setIsSaving(false);
-      toast.success('Profile updated successfully');
-    }, 1000);
+    }
   };
+  
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+  
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12 text-center">
+          <div className="animate-pulse">Loading profile...</div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  if (!developer) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12 text-center">
+          <h2 className="heading-3 mb-4">Profile not found</h2>
+          <p className="text-muted-foreground mb-6">We couldn't find your profile information</p>
+        </div>
+      </Layout>
+    );
+  }
+  
+  // Split the name into first and last name
+  const nameParts = developer.name ? developer.name.split(' ') : ['', ''];
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || '';
   
   return (
     <Layout>
@@ -57,7 +135,10 @@ const Profile: React.FC = () => {
                 <span>Settings</span>
               </button>
               
-              <button className="flex items-center gap-3 px-4 py-2 rounded-md text-foreground/70 hover:bg-muted transition-colors">
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-4 py-2 rounded-md text-foreground/70 hover:bg-muted transition-colors"
+              >
                 <LogOut className="h-5 w-5" />
                 <span>Logout</span>
               </button>
@@ -98,8 +179,9 @@ const Profile: React.FC = () => {
                           </label>
                           <input
                             id="firstName"
+                            name="firstName"
                             type="text"
-                            defaultValue="John"
+                            defaultValue={firstName}
                             className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                             required
                           />
@@ -110,8 +192,9 @@ const Profile: React.FC = () => {
                           </label>
                           <input
                             id="lastName"
+                            name="lastName"
                             type="text"
-                            defaultValue="Doe"
+                            defaultValue={lastName}
                             className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                             required
                           />
@@ -124,8 +207,9 @@ const Profile: React.FC = () => {
                         </label>
                         <input
                           id="email"
+                          name="email"
                           type="email"
-                          defaultValue="john.doe@example.com"
+                          defaultValue={developer.email || ''}
                           className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                           required
                         />
@@ -137,8 +221,9 @@ const Profile: React.FC = () => {
                         </label>
                         <input
                           id="phone"
+                          name="phone"
                           type="tel"
-                          defaultValue="+1 (555) 123-4567"
+                          defaultValue={developer.phone || ''}
                           className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                         />
                       </div>
@@ -149,7 +234,8 @@ const Profile: React.FC = () => {
                         </label>
                         <select
                           id="category"
-                          defaultValue="frontend"
+                          name="category"
+                          defaultValue={developer.category || 'frontend'}
                           className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                         >
                           <option value="frontend">Frontend Development</option>
@@ -169,8 +255,9 @@ const Profile: React.FC = () => {
                         </label>
                         <input
                           id="skills"
+                          name="skills"
                           type="text"
-                          defaultValue="React, TypeScript, Node.js, Supabase"
+                          defaultValue={developer.skills ? developer.skills.join(', ') : ''}
                           className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                           required
                         />
@@ -182,8 +269,9 @@ const Profile: React.FC = () => {
                         </label>
                         <input
                           id="experience"
+                          name="experience"
                           type="text"
-                          defaultValue="5+ years in full-stack development"
+                          defaultValue={developer.experience || ''}
                           className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                           required
                         />
@@ -195,8 +283,9 @@ const Profile: React.FC = () => {
                         </label>
                         <input
                           id="hourlyRate"
+                          name="hourlyRate"
                           type="number"
-                          defaultValue="75"
+                          defaultValue={developer.hourlyRate || 75}
                           min="1"
                           step="1"
                           className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
@@ -207,8 +296,9 @@ const Profile: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <input
                           id="availability"
+                          name="availability"
                           type="checkbox"
-                          defaultChecked={true}
+                          defaultChecked={developer.availability}
                           className="h-4 w-4 rounded border-border text-primary focus:ring-primary/25"
                         />
                         <label htmlFor="availability" className="text-sm font-medium">
@@ -229,8 +319,9 @@ const Profile: React.FC = () => {
                       </label>
                       <textarea
                         id="description"
+                        name="description"
                         rows={4}
-                        defaultValue="Full-stack developer with 5+ years of experience in React, TypeScript, and Node.js. Specialized in helping startups and indie developers with technical challenges, debugging, and architecture decisions."
+                        defaultValue={developer.description || ''}
                         className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                         required
                       />

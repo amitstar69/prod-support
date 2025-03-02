@@ -1,35 +1,43 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import ProductDetail from "./pages/ProductDetail";
-import Search from "./pages/Search";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
-import DeveloperRegistration from "./pages/DeveloperRegistration";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import './App.css';
+import Index from './pages/Index';
+import ProductDetail from './pages/ProductDetail';
+import Search from './pages/Search';
+import Profile from './pages/Profile';
+import ClientProfile from './pages/ClientProfile';
+import NotFound from './pages/NotFound';
+import DeveloperRegistration from './pages/DeveloperRegistration';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/products/:id" element={<ProductDetail />} />
+          <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/search" element={<Search />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/register" element={<DeveloperRegistration />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/developer-registration" element={<DeveloperRegistration />} />
+          <Route 
+            path="/profile" 
+            element={<ProtectedRoute><Profile /></ProtectedRoute>} 
+          />
+          <Route 
+            path="/client-profile" 
+            element={<ProtectedRoute><ClientProfile /></ProtectedRoute>} 
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+      </Router>
+    </AuthProvider>
+  );
+}
 
 export default App;
