@@ -10,6 +10,9 @@ export interface Developer {
   rating: number;
   availability: boolean;
   featured?: boolean;
+  minuteRate?: number;  // New field for per-minute billing
+  online?: boolean;     // New field to show current online status
+  lastActive?: string;  // New field to show when the developer was last active
 }
 
 export interface Category {
@@ -18,7 +21,6 @@ export interface Category {
   image?: string;
 }
 
-// We'll keep Product type as a subset of Developer for backward compatibility
-export interface Product extends Developer {
-  price?: number; // Optional for backward compatibility
-}
+// We'll keep Product type as an alias to Developer for backward compatibility
+// This will help us avoid breaking changes in components that use Product
+export type Product = Developer;

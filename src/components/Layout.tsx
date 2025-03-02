@@ -15,9 +15,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex flex-col items-center md:items-start gap-2">
-              <h3 className="text-lg font-semibold">Marketplace</h3>
+              <h3 className="text-lg font-semibold">DevConnect</h3>
               <p className="text-sm text-muted-foreground text-center md:text-left">
-                Beautifully crafted products for a modern lifestyle.
+                On-demand support from expert developers when you need it most.
               </p>
             </div>
             <div className="flex gap-6">
@@ -25,10 +25,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 About
               </a>
               <a href="#" className="text-sm text-muted-foreground hover:text-foreground">
-                Terms
+                Developers
               </a>
               <a href="#" className="text-sm text-muted-foreground hover:text-foreground">
-                Privacy
+                Pricing
+              </a>
+              <a href="#" className="text-sm text-muted-foreground hover:text-foreground">
+                FAQ
               </a>
               <a href="#" className="text-sm text-muted-foreground hover:text-foreground">
                 Contact
@@ -36,7 +39,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </div>
           <div className="mt-6 text-center md:text-left text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Marketplace. All rights reserved.
+            © {new Date().getFullYear()} DevConnect. All rights reserved.
           </div>
         </div>
       </footer>

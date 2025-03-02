@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ShoppingBag, User, Menu, X } from 'lucide-react';
+import { Search, ShoppingBag, User, Menu, X, MessageSquare } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -30,7 +30,7 @@ const Navbar: React.FC = () => {
             to="/" 
             className="text-xl md:text-2xl font-bold transition-transform hover:scale-105"
           >
-            marketplace
+            devconnect
           </Link>
 
           {/* Desktop Navigation */}
@@ -46,13 +46,13 @@ const Navbar: React.FC = () => {
                 to="/search" 
                 className="text-foreground/80 hover:text-foreground font-medium"
               >
-                Shop
+                Find Developers
               </Link>
               <Link 
-                to="/categories" 
+                to="/register" 
                 className="text-foreground/80 hover:text-foreground font-medium"
               >
-                Categories
+                Join as Developer
               </Link>
             </nav>
 
@@ -65,18 +65,18 @@ const Navbar: React.FC = () => {
                 <Search className="h-5 w-5" />
               </Link>
               <Link 
+                to="/messages" 
+                className="p-2 rounded-full hover:bg-muted transition-colors"
+                aria-label="Messages"
+              >
+                <MessageSquare className="h-5 w-5" />
+              </Link>
+              <Link 
                 to="/profile" 
                 className="p-2 rounded-full hover:bg-muted transition-colors"
                 aria-label="User profile"
               >
                 <User className="h-5 w-5" />
-              </Link>
-              <Link 
-                to="/cart" 
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-                aria-label="Shopping cart"
-              >
-                <ShoppingBag className="h-5 w-5" />
               </Link>
             </div>
           </div>
@@ -120,14 +120,14 @@ const Navbar: React.FC = () => {
                 className="text-foreground/80 hover:text-foreground font-medium py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Shop
+                Find Developers
               </Link>
               <Link 
-                to="/categories" 
+                to="/register" 
                 className="text-foreground/80 hover:text-foreground font-medium py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Categories
+                Join as Developer
               </Link>
               <div className="border-t border-border/30 pt-3 mt-2 flex justify-between">
                 <Link 
@@ -139,12 +139,12 @@ const Navbar: React.FC = () => {
                   Profile
                 </Link>
                 <Link 
-                  to="/cart" 
+                  to="/messages" 
                   className="flex items-center text-foreground/80 hover:text-foreground font-medium"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <ShoppingBag className="h-5 w-5 mr-2" />
-                  Cart
+                  <MessageSquare className="h-5 w-5 mr-2" />
+                  Messages
                 </Link>
               </div>
             </nav>

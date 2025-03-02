@@ -5,6 +5,7 @@ export const developers: Developer[] = [
     id: 'dev1',
     name: 'Alex Johnson',
     hourlyRate: 85,
+    minuteRate: 1.5,
     image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=1600&auto=format&fit=crop',
     category: 'frontend',
     skills: ['React', 'TypeScript', 'Tailwind CSS', 'Next.js'],
@@ -12,12 +13,15 @@ export const developers: Developer[] = [
     description: 'Frontend specialist with expertise in building responsive and accessible web applications.',
     rating: 4.9,
     availability: true,
+    online: true,
+    lastActive: 'Now',
     featured: true
   },
   {
     id: 'dev2',
     name: 'Samantha Chen',
     hourlyRate: 95,
+    minuteRate: 1.7,
     image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1600&auto=format&fit=crop',
     category: 'backend',
     skills: ['Node.js', 'Python', 'AWS', 'PostgreSQL'],
@@ -25,12 +29,15 @@ export const developers: Developer[] = [
     description: 'Backend engineer experienced in building scalable APIs and cloud architecture.',
     rating: 4.8,
     availability: true,
+    online: true,
+    lastActive: 'Now',
     featured: true
   },
   {
     id: 'dev3',
     name: 'Marcus Williams',
     hourlyRate: 110,
+    minuteRate: 2.0,
     image: 'https://images.unsplash.com/photo-1531384441138-2736e62e0919?q=80&w=1600&auto=format&fit=crop',
     category: 'fullstack',
     skills: ['JavaScript', 'Python', 'React', 'Django', 'Docker'],
@@ -38,12 +45,15 @@ export const developers: Developer[] = [
     description: 'Versatile developer who can handle everything from database design to frontend implementation.',
     rating: 4.9,
     availability: true,
+    online: false,
+    lastActive: '2 hours ago',
     featured: true
   },
   {
     id: 'dev4',
     name: 'Elena Rivera',
     hourlyRate: 90,
+    minuteRate: 1.6,
     image: 'https://images.unsplash.com/photo-1534751516642-a1af1ef26a56?q=80&w=1600&auto=format&fit=crop',
     category: 'mobile',
     skills: ['React Native', 'Swift', 'Kotlin', 'Firebase'],
@@ -51,12 +61,15 @@ export const developers: Developer[] = [
     description: 'Mobile developer specialized in cross-platform and native app development.',
     rating: 4.7,
     availability: true,
+    online: true,
+    lastActive: 'Now',
     featured: false
   },
   {
     id: 'dev5',
     name: 'David Kim',
     hourlyRate: 100,
+    minuteRate: 1.8,
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1600&auto=format&fit=crop',
     category: 'devops',
     skills: ['Kubernetes', 'Docker', 'AWS', 'CI/CD', 'Terraform'],
@@ -64,12 +77,15 @@ export const developers: Developer[] = [
     description: 'DevOps engineer with extensive experience in cloud infrastructure and automation.',
     rating: 4.8,
     availability: true,
+    online: false,
+    lastActive: '45 minutes ago',
     featured: false
   },
   {
     id: 'dev6',
     name: 'Olivia Torres',
     hourlyRate: 120,
+    minuteRate: 2.2,
     image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1600&auto=format&fit=crop',
     category: 'security',
     skills: ['Penetration Testing', 'Security Audits', 'OWASP', 'Encryption'],
@@ -77,12 +93,15 @@ export const developers: Developer[] = [
     description: 'Security specialist focused on web application security and compliance.',
     rating: 4.9,
     availability: false,
+    online: false,
+    lastActive: '1 day ago',
     featured: false
   },
   {
     id: 'dev7',
     name: 'Michael Zhang',
     hourlyRate: 85,
+    minuteRate: 1.5,
     image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1600&auto=format&fit=crop',
     category: 'database',
     skills: ['SQL', 'MongoDB', 'Firebase', 'Redis', 'Data Modeling'],
@@ -90,12 +109,15 @@ export const developers: Developer[] = [
     description: 'Database specialist with expertise in both SQL and NoSQL databases.',
     rating: 4.6,
     availability: true,
+    online: true,
+    lastActive: 'Now',
     featured: false
   },
   {
     id: 'dev8',
     name: 'Sophie Anderson',
     hourlyRate: 95,
+    minuteRate: 1.7,
     image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1600&auto=format&fit=crop',
     category: 'ai',
     skills: ['Machine Learning', 'Python', 'TensorFlow', 'NLP'],
@@ -103,14 +125,21 @@ export const developers: Developer[] = [
     description: 'AI developer with experience in natural language processing and predictive modeling.',
     rating: 4.7,
     availability: true,
+    online: false,
+    lastActive: '3 hours ago',
     featured: false
   }
 ];
 
+// For backward compatibility, keep the products reference
 export const products: Product[] = developers;
 
 export const getDevelopers = () => {
   return developers;
+};
+
+export const getOnlineDevelopers = () => {
+  return developers.filter(dev => dev.online);
 };
 
 export const getFeaturedDevelopers = () => {
@@ -121,6 +150,7 @@ export const getDeveloperById = (id: string) => {
   return developers.find(dev => dev.id === id);
 };
 
+// The following functions are kept for backward compatibility
 export const getFeaturedProducts = (): Product[] => {
   return developers.filter(dev => dev.featured);
 };
@@ -146,4 +176,19 @@ export const searchDevelopers = (query: string): Developer[] => {
       dev.category.toLowerCase().includes(lowercaseQuery) ||
       dev.skills.some(skill => skill.toLowerCase().includes(lowercaseQuery))
   );
+};
+
+// New function to search developers by availability
+export const getAvailableDevelopers = (): Developer[] => {
+  return developers.filter(dev => dev.availability);
+};
+
+// New function to filter developers by hourly rate range
+export const getDevelopersByRateRange = (min: number, max: number): Developer[] => {
+  return developers.filter(dev => dev.hourlyRate >= min && dev.hourlyRate <= max);
+};
+
+// New function to filter developers by online status
+export const filterDevelopersByOnlineStatus = (developers: Developer[], onlineOnly: boolean): Developer[] => {
+  return onlineOnly ? developers.filter(dev => dev.online) : developers;
 };
