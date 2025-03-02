@@ -130,7 +130,7 @@ const ProductDetail: React.FC = () => {
             </div>
             
             <p className="text-2xl font-bold mb-6">
-              ${product.price.toFixed(2)}
+              ${product.hourlyRate.toFixed(2)}/hr
             </p>
             
             <div className="mb-8">

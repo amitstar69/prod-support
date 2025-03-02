@@ -48,7 +48,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </h3>
           
           <div className="flex items-center justify-between">
-            <p className="text-base font-semibold">${product.price.toFixed(2)}</p>
+            <p className="text-base font-semibold">${product.hourlyRate.toFixed(2)}</p>
             <button 
               className="text-xs font-medium text-primary py-1 px-3 rounded-full bg-primary/5 hover:bg-primary/10 transition-colors"
             >
