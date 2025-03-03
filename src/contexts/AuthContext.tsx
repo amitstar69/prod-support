@@ -3,10 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { AuthContextType, AuthState, Developer, Client } from '../types/product';
 import { toast } from 'sonner';
 
-// Mock database of users
-let mockDevelopers: Developer[] = [];
-let mockClients: Client[] = [];
-
+// Initialize mock databases with an empty array that will be populated from localStorage
 const defaultAuthState: AuthState = {
   isAuthenticated: false,
   userType: null,
@@ -23,6 +20,10 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Initialize mock data state within the component
+  const [mockDevelopers, setMockDevelopers] = useState<Developer[]>([]);
+  const [mockClients, setMockClients] = useState<Client[]>([]);
+  
   const [authState, setAuthState] = useState<AuthState>(() => {
     // Load auth state from localStorage on initialization
     const savedState = localStorage.getItem('authState');
@@ -39,8 +40,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const savedDevelopers = localStorage.getItem('mockDevelopers');
     const savedClients = localStorage.getItem('mockClients');
     
-    if (savedDevelopers) mockDevelopers = JSON.parse(savedDevelopers);
-    if (savedClients) mockClients = JSON.parse(savedClients);
+    if (savedDevelopers) setMockDevelopers(JSON.parse(savedDevelopers));
+    if (savedClients) setMockClients(JSON.parse(savedClients));
   }, []);
 
   const login = async (email: string, password: string, userType: 'developer' | 'client'): Promise<boolean> => {
@@ -96,8 +97,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...userData
         };
         
-        mockDevelopers.push(newDeveloper);
-        localStorage.setItem('mockDevelopers', JSON.stringify(mockDevelopers));
+        // Update mockDevelopers state and localStorage
+        const updatedDevelopers = [...mockDevelopers, newDeveloper];
+        setMockDevelopers(updatedDevelopers);
+        localStorage.setItem('mockDevelopers', JSON.stringify(updatedDevelopers));
         
       } else {
         const newClient: Client = {
@@ -109,8 +112,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...userData
         };
         
-        mockClients.push(newClient);
-        localStorage.setItem('mockClients', JSON.stringify(mockClients));
+        // Update mockClients state and localStorage
+        const updatedClients = [...mockClients, newClient];
+        setMockClients(updatedClients);
+        localStorage.setItem('mockClients', JSON.stringify(updatedClients));
       }
       
       // Auto-login after successful registration
