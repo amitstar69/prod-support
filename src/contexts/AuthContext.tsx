@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { AuthState, AuthContextType, Developer, Client } from '../types/product';
+import { toast } from 'sonner';
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -213,7 +214,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return false;
   };
   
-  // Register function
+  // Register function - updated to work with the new database schema
   const register = async (userData: Partial<Developer | Client>, userType: 'developer' | 'client'): Promise<boolean> => {
     // Try Supabase registration first
     if (supabase) {
@@ -226,21 +227,84 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         if (error) {
           console.error('Supabase registration error:', error);
+          toast.error('Registration failed: ' + error.message);
           // Fallback to localStorage registration
           return registerWithLocalStorage(userData, userType);
         }
         
         if (data.user) {
-          // Now create the profile
-          const { error: profileError } = await supabase.from('profiles').insert({
+          // Now create the profile record
+          const profileData = {
             id: data.user.id,
             user_type: userType,
-            ...userData,
-          });
+            name: userData.name || '',
+            email: userData.email || '',
+            image: userData.image || '/placeholder.svg',
+            description: userData.description || '',
+            location: userData.location || '',
+            joined_date: new Date().toISOString(),
+            languages: userData.languages || [],
+            preferred_working_hours: userData.preferredWorkingHours || '',
+            profile_completed: false,
+            username: (userData as Client).username || null,
+          };
+          
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([profileData]);
           
           if (profileError) {
             console.error('Error creating profile:', profileError);
+            toast.error('Error creating profile: ' + profileError.message);
             return false;
+          }
+          
+          // Create type-specific profile record
+          if (userType === 'developer') {
+            const devData = userData as Partial<Developer>;
+            const developerProfileData = {
+              id: data.user.id,
+              hourly_rate: devData.hourlyRate || 75,
+              minute_rate: devData.minuteRate || null,
+              category: devData.category || 'frontend',
+              skills: devData.skills || ['JavaScript', 'React'],
+              experience: devData.experience || '3 years',
+              rating: devData.rating || 4.5,
+              availability: devData.availability !== undefined ? devData.availability : true,
+              featured: devData.featured || false,
+              online: devData.online || false,
+              last_active: new Date().toISOString(),
+              phone: devData.phone || null,
+              communication_preferences: devData.communicationPreferences || null,
+            };
+            
+            const { error: devProfileError } = await supabase
+              .from('developer_profiles')
+              .insert([developerProfileData]);
+            
+            if (devProfileError) {
+              console.error('Error creating developer profile:', devProfileError);
+              toast.error('Error creating developer profile: ' + devProfileError.message);
+              return false;
+            }
+          } else {
+            const clientData = userData as Partial<Client>;
+            const clientProfileData = {
+              id: data.user.id,
+              looking_for: clientData.lookingFor || [],
+              completed_projects: clientData.completedProjects || 0,
+              profile_completion_percentage: clientData.profileCompletionPercentage || 0,
+            };
+            
+            const { error: clientProfileError } = await supabase
+              .from('client_profiles')
+              .insert([clientProfileData]);
+            
+            if (clientProfileError) {
+              console.error('Error creating client profile:', clientProfileError);
+              toast.error('Error creating client profile: ' + clientProfileError.message);
+              return false;
+            }
           }
           
           setAuthState({
@@ -377,7 +441,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-// Function to get the current user's data
+// Function to get the current user's data - updated to work with the new schema
 export const getCurrentUserData = async (): Promise<Developer | Client | null> => {
   const { isAuthenticated, userType, userId } = JSON.parse(localStorage.getItem('authState') || '{}');
   
@@ -385,19 +449,68 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
   
   if (supabase && supabaseUrl && supabaseKey) {
     try {
-      const { data, error } = await supabase
+      // First get the base profile data
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
         
-      if (error) {
-        console.error('Error fetching user data from Supabase:', error);
+      if (profileError) {
+        console.error('Error fetching profile data from Supabase:', profileError);
         // Fall back to localStorage if Supabase fails
         return getUserDataFromLocalStorage(userType, userId);
       }
       
-      return data as (Developer | Client);
+      // Get the type-specific profile data
+      if (userType === 'developer') {
+        const { data: devProfileData, error: devProfileError } = await supabase
+          .from('developer_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+          
+        if (devProfileError) {
+          console.error('Error fetching developer profile data:', devProfileError);
+          return getUserDataFromLocalStorage(userType, userId);
+        }
+        
+        // Combine the data for a Developer
+        return {
+          ...profileData,
+          ...devProfileData,
+          // Handle naming differences between DB and TypeScript interfaces
+          hourlyRate: devProfileData.hourly_rate,
+          minuteRate: devProfileData.minute_rate,
+          preferredWorkingHours: profileData.preferred_working_hours,
+          lastActive: devProfileData.last_active,
+          communicationPreferences: devProfileData.communication_preferences,
+          profileCompleted: profileData.profile_completed
+        } as Developer;
+      } else {
+        const { data: clientProfileData, error: clientProfileError } = await supabase
+          .from('client_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+          
+        if (clientProfileError) {
+          console.error('Error fetching client profile data:', clientProfileError);
+          return getUserDataFromLocalStorage(userType, userId);
+        }
+        
+        // Combine the data for a Client
+        return {
+          ...profileData,
+          ...clientProfileData,
+          // Handle naming differences between DB and TypeScript interfaces
+          lookingFor: clientProfileData.looking_for,
+          completedProjects: clientProfileData.completed_projects,
+          profileCompletionPercentage: clientProfileData.profile_completion_percentage,
+          preferredWorkingHours: profileData.preferred_working_hours,
+          profileCompleted: profileData.profile_completed
+        } as Client;
+      }
     } catch (error) {
       console.error('Exception fetching user data from Supabase:', error);
       // Fall back to localStorage
@@ -421,7 +534,7 @@ const getUserDataFromLocalStorage = (userType: string | null, userId: string | n
   return null;
 };
 
-// Function to update user data
+// Function to update user data - updated to work with the new schema
 export const updateUserData = async (userData: Partial<Developer | Client>): Promise<boolean> => {
   const { isAuthenticated, userType, userId } = JSON.parse(localStorage.getItem('authState') || '{}');
   
@@ -429,15 +542,82 @@ export const updateUserData = async (userData: Partial<Developer | Client>): Pro
   
   if (supabase && supabaseUrl && supabaseKey) {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(userData)
-        .eq('id', userId);
+      // Separate profile data from type-specific data
+      const { 
+        hourlyRate, minuteRate, category, skills, experience, rating, availability, 
+        featured, online, lastActive, communicationPreferences,
+        lookingFor, completedProjects, profileCompletionPercentage,
+        ...profileData 
+      } = userData;
+      
+      // Update the profiles table if there's data to update
+      if (Object.keys(profileData).length > 0) {
+        // Convert camelCase to snake_case for database fields
+        const dbProfileData = {
+          ...profileData,
+          preferred_working_hours: profileData.preferredWorkingHours,
+          profile_completed: profileData.profileCompleted,
+        };
         
-      if (error) {
-        console.error('Error updating user data in Supabase:', error);
-        // Fallback to localStorage
-        return updateUserDataInLocalStorage(userType, userId, userData);
+        delete dbProfileData.preferredWorkingHours;
+        delete dbProfileData.profileCompleted;
+        
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update(dbProfileData)
+          .eq('id', userId);
+          
+        if (profileError) {
+          console.error('Error updating profile in Supabase:', profileError);
+          return updateUserDataInLocalStorage(userType, userId, userData);
+        }
+      }
+      
+      // Update type-specific tables
+      if (userType === 'developer') {
+        const devUpdates: any = {};
+        
+        if (hourlyRate !== undefined) devUpdates.hourly_rate = hourlyRate;
+        if (minuteRate !== undefined) devUpdates.minute_rate = minuteRate;
+        if (category !== undefined) devUpdates.category = category;
+        if (skills !== undefined) devUpdates.skills = skills;
+        if (experience !== undefined) devUpdates.experience = experience;
+        if (rating !== undefined) devUpdates.rating = rating;
+        if (availability !== undefined) devUpdates.availability = availability;
+        if (featured !== undefined) devUpdates.featured = featured;
+        if (online !== undefined) devUpdates.online = online;
+        if (lastActive !== undefined) devUpdates.last_active = lastActive;
+        if (communicationPreferences !== undefined) devUpdates.communication_preferences = communicationPreferences;
+        
+        if (Object.keys(devUpdates).length > 0) {
+          const { error: devError } = await supabase
+            .from('developer_profiles')
+            .update(devUpdates)
+            .eq('id', userId);
+            
+          if (devError) {
+            console.error('Error updating developer profile:', devError);
+            return updateUserDataInLocalStorage(userType, userId, userData);
+          }
+        }
+      } else if (userType === 'client') {
+        const clientUpdates: any = {};
+        
+        if (lookingFor !== undefined) clientUpdates.looking_for = lookingFor;
+        if (completedProjects !== undefined) clientUpdates.completed_projects = completedProjects;
+        if (profileCompletionPercentage !== undefined) clientUpdates.profile_completion_percentage = profileCompletionPercentage;
+        
+        if (Object.keys(clientUpdates).length > 0) {
+          const { error: clientError } = await supabase
+            .from('client_profiles')
+            .update(clientUpdates)
+            .eq('id', userId);
+            
+          if (clientError) {
+            console.error('Error updating client profile:', clientError);
+            return updateUserDataInLocalStorage(userType, userId, userData);
+          }
+        }
       }
       
       return true;
