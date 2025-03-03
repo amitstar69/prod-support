@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { AuthState, AuthContextType, Developer, Client } from '../types/product';
@@ -274,19 +273,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const registerWithLocalStorage = (userData: Partial<Developer | Client>, userType: 'developer' | 'client'): boolean => {
     try {
       if (userType === 'developer') {
+        const developerData = userData as Partial<Developer>;
+        
         const newDev = {
           id: `dev-${Date.now()}`,
-          name: userData.name || '',
+          name: developerData.name || '',
           hourlyRate: 75,
           image: '/placeholder.svg',
-          category: userData.category || 'frontend',
-          skills: userData.skills || ['JavaScript', 'React'],
-          experience: userData.experience || '3 years',
-          description: userData.description || '',
+          category: developerData.category || 'frontend',
+          skills: developerData.skills || ['JavaScript', 'React'],
+          experience: developerData.experience || '3 years',
+          description: developerData.description || '',
           rating: 4.5,
           availability: true,
-          email: userData.email,
-          ...userData,
+          email: developerData.email,
+          ...developerData,
         } as Developer;
         
         const updatedDevelopers = [...mockDevelopers, newDev];
@@ -307,12 +308,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         return true;
       } else {
+        const clientData = userData as Partial<Client>;
+        
         const newClient = {
           id: `client-${Date.now()}`,
-          name: userData.name || '',
-          email: userData.email || '',
+          name: clientData.name || '',
+          email: clientData.email || '',
           joinedDate: new Date().toISOString(),
-          ...userData,
+          ...clientData,
         } as Client;
         
         const updatedClients = [...mockClients, newClient];
