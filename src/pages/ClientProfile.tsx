@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { User, MapPin, Calendar, Clock, ExternalLink, Eye, Edit3, Plus, Target, Save } from 'lucide-react';
@@ -23,22 +22,28 @@ const ClientProfile: React.FC = () => {
   });
   
   useEffect(() => {
-    const fetchUser = () => {
+    const fetchUser = async () => {
       setIsLoading(true);
-      const userData = getCurrentUserData() as Client;
-      if (userData) {
-        setClient(userData);
-        setEditFormData({
-          name: userData.name || '',
-          username: userData.username || '',
-          location: userData.location || '',
-          description: userData.description || '',
-          preferredWorkingHours: userData.preferredWorkingHours || '',
-          languages: userData.languages || ['English'],
-          lookingFor: userData.lookingFor || ['']
-        });
+      try {
+        const userData = await getCurrentUserData();
+        if (userData) {
+          setClient(userData as Client);
+          setEditFormData({
+            name: userData.name || '',
+            username: (userData as Client).username || '',
+            location: userData.location || '',
+            description: userData.description || '',
+            preferredWorkingHours: userData.preferredWorkingHours || '',
+            languages: userData.languages || ['English'],
+            lookingFor: (userData as Client).lookingFor || ['']
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     
     fetchUser();
@@ -54,15 +59,17 @@ const ClientProfile: React.FC = () => {
     setIsSaving(true);
     
     try {
-      const success = updateUserData({
+      const success = await updateUserData({
         ...editFormData,
         profileCompletionPercentage: calculateCompletionPercentage(editFormData)
       });
       
       if (success) {
         // Refresh client data
-        const userData = getCurrentUserData() as Client;
-        setClient(userData);
+        const userData = await getCurrentUserData();
+        if (userData) {
+          setClient(userData as Client);
+        }
         setIsEditing(false);
         toast.success('Profile updated successfully');
       } else {

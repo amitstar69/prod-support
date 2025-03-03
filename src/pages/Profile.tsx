@@ -15,13 +15,19 @@ const Profile: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    const fetchUser = () => {
+    const fetchUser = async () => {
       setIsLoading(true);
-      const userData = getCurrentUserData() as Developer;
-      if (userData) {
-        setDeveloper(userData);
+      try {
+        const userData = await getCurrentUserData();
+        if (userData) {
+          setDeveloper(userData as Developer);
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     
     fetchUser();
@@ -47,12 +53,14 @@ const Profile: React.FC = () => {
     };
     
     try {
-      const success = updateUserData(updatedData);
+      const success = await updateUserData(updatedData);
       
       if (success) {
         // Refresh developer data
-        const userData = getCurrentUserData() as Developer;
-        setDeveloper(userData);
+        const userData = await getCurrentUserData();
+        if (userData) {
+          setDeveloper(userData as Developer);
+        }
         toast.success('Profile updated successfully');
       } else {
         toast.error('Failed to update profile');
