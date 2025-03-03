@@ -1,58 +1,95 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { toast } from 'sonner';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, getCurrentUserData, updateUserData } from '../contexts/AuthContext';
 
 const DeveloperRegistration: React.FC = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { isAuthenticated, userType } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Redirect if not authenticated or already a developer with completed profile
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      if (!isAuthenticated) {
+        navigate('/login');
+        return;
+      }
+      
+      if (userType === 'developer') {
+        const userData = await getCurrentUserData();
+        // Check if developer has a completed profile
+        if (userData && 'category' in userData && userData.category) {
+          navigate('/profile');
+        }
+      }
+    };
+    
+    checkUserStatus();
+  }, [isAuthenticated, userType, navigate]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    const formData = new FormData(e.currentTarget);
-    
-    // Extract form values
-    const firstName = formData.get('firstName') as string;
-    const lastName = formData.get('lastName') as string;
-    const email = formData.get('email') as string;
-    const phone = formData.get('phone') as string;
-    const category = formData.get('category') as string;
-    const skills = (formData.get('skills') as string).split(',').map(skill => skill.trim());
-    const experience = formData.get('experience') as string;
-    const description = formData.get('description') as string;
-    const hourlyRate = parseFloat(formData.get('hourlyRate') as string);
-    const minuteRate = parseFloat(formData.get('minuteRate') as string);
-    const availability = formData.has('availability');
-    
-    // Create developer object
-    const developerData = {
-      name: `${firstName} ${lastName}`,
-      email,
-      phone,
-      category,
-      skills,
-      experience,
-      description,
-      hourlyRate,
-      minuteRate,
-      availability
-    };
-    
     try {
-      const success = await register(developerData, 'developer');
+      const form = e.currentTarget;
+      const formData = new FormData(form);
+      
+      // Extract form values
+      const firstName = formData.get('firstName') as string;
+      const lastName = formData.get('lastName') as string;
+      const email = formData.get('email') as string;
+      const phone = formData.get('phone') as string;
+      const category = formData.get('category') as string;
+      const skills = formData.get('skills') as string;
+      const experience = formData.get('experience') as string;
+      const description = formData.get('description') as string;
+      const hourlyRate = parseFloat(formData.get('hourlyRate') as string);
+      const minuteRate = parseFloat(formData.get('minuteRate') as string);
+      const availability = formData.has('availability');
+      
+      // Get selected communication methods
+      const communicationMethods: string[] = [];
+      if (form.querySelector<HTMLInputElement>('input[name="communication[]"][value="video"]:checked')) {
+        communicationMethods.push('video');
+      }
+      if (form.querySelector<HTMLInputElement>('input[name="communication[]"][value="audio"]:checked')) {
+        communicationMethods.push('audio');
+      }
+      if (form.querySelector<HTMLInputElement>('input[name="communication[]"][value="chat"]:checked')) {
+        communicationMethods.push('chat');
+      }
+      
+      // Create developer object
+      const developerData = {
+        name: `${firstName} ${lastName}`,
+        email,
+        phone,
+        category,
+        skills: skills.split(',').map(skill => skill.trim()),
+        experience,
+        description,
+        hourlyRate,
+        minuteRate,
+        availability,
+        communicationPreferences: communicationMethods,
+        profileCompleted: true
+      };
+      
+      // Update the user profile
+      const success = await updateUserData(developerData);
       
       if (success) {
+        toast.success('Profile saved successfully!');
         navigate('/profile');
       } else {
-        toast.error('Registration failed. Please try again.');
+        toast.error('Failed to save profile. Please try again.');
       }
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Profile update error:', error);
       toast.error('An unexpected error occurred.');
     } finally {
       setIsSubmitting(false);

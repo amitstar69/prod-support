@@ -1,4 +1,3 @@
-
 export interface Developer {
   id: string;
   name: string;
@@ -21,6 +20,8 @@ export interface Developer {
   joinedDate?: string;
   languages?: string[];
   preferredWorkingHours?: string;
+  communicationPreferences?: string[];
+  profileCompleted?: boolean;
 }
 
 export interface Client {
@@ -37,6 +38,7 @@ export interface Client {
   lookingFor?: string[];  // Skills/categories the client is interested in
   completedProjects?: number;
   profileCompletionPercentage?: number;
+  profileCompleted?: boolean;
 }
 
 export interface Category {

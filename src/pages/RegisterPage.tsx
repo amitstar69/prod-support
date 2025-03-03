@@ -38,14 +38,17 @@ const RegisterPage: React.FC = () => {
       const success = await register(userData, userType);
       
       if (success) {
+        toast.success('Account created successfully');
+        
         if (userType === 'developer') {
-          // If registering as a developer, redirect to the complete profile form
+          // If registering as a developer, redirect to complete the profile
           navigate('/developer-registration');
-          toast.info('Please complete your developer profile');
         } else {
           // If registering as a client, redirect to client profile
           navigate('/client-profile');
         }
+      } else {
+        toast.error('Registration failed. Please try with a different email.');
       }
     } catch (error) {
       console.error('Registration error:', error);
