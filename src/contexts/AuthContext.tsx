@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { AuthState, AuthContextType, Developer, Client } from '../types/product';
@@ -128,6 +129,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         if (error) {
           console.error('Supabase login error:', error);
+          toast.error('Login failed: ' + error.message);
           // Fallback to localStorage login if Supabase fails
           return loginWithLocalStorage(email, password, userType);
         }
@@ -142,12 +144,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
           if (profileError || !profileData) {
             console.error('Error getting profile:', profileError);
+            toast.error('Profile not found. You may need to register first.');
+            await supabase.auth.signOut();
             return false;
           }
           
           // Check if user type matches
           if (profileData.user_type !== userType) {
             console.error('User type mismatch');
+            toast.error(`You registered as a ${profileData.user_type}, but tried to log in as a ${userType}.`);
             await supabase.auth.signOut();
             return false;
           }
@@ -222,7 +227,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // First create auth user
         const { data, error } = await supabase.auth.signUp({
           email: userData.email as string,
-          password: 'password123', // Set a default password - in a real app, this would come from user input
+          password: userData.password as string,  // Accept password from userData
         });
         
         if (error) {
@@ -246,7 +251,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             languages: userData.languages || [],
             preferred_working_hours: userData.preferredWorkingHours || '',
             profile_completed: false,
-            username: (userData as Client).username || null,
+            username: (userData as any).username || null,
           };
           
           const { error: profileError } = await supabase
@@ -294,6 +299,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               looking_for: clientData.lookingFor || [],
               completed_projects: clientData.completedProjects || 0,
               profile_completion_percentage: clientData.profileCompletionPercentage || 0,
+              preferred_help_format: clientData.preferredHelpFormat || [],
+              budget: clientData.budget || null,
+              payment_method: clientData.paymentMethod || null,
+              bio: clientData.bio || null,
+              tech_stack: clientData.techStack || [],
+              budget_per_hour: clientData.budgetPerHour || null,
+              company: clientData.company || null,
+              position: clientData.position || null,
+              project_types: clientData.projectTypes || [],
+              industry: clientData.industry || null,
+              social_links: clientData.socialLinks || {},
+              time_zone: clientData.timeZone || null,
+              availability: clientData.availability || {},
+              communication_preferences: clientData.communicationPreferences || []
             };
             
             const { error: clientProfileError } = await supabase
@@ -508,7 +527,15 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
           completedProjects: clientProfileData.completed_projects,
           profileCompletionPercentage: clientProfileData.profile_completion_percentage,
           preferredWorkingHours: profileData.preferred_working_hours,
-          profileCompleted: profileData.profile_completed
+          profileCompleted: profileData.profile_completed,
+          preferredHelpFormat: clientProfileData.preferred_help_format,
+          budgetPerHour: clientProfileData.budget_per_hour,
+          paymentMethod: clientProfileData.payment_method,
+          techStack: clientProfileData.tech_stack,
+          projectTypes: clientProfileData.project_types,
+          socialLinks: clientProfileData.social_links,
+          timeZone: clientProfileData.time_zone,
+          communicationPreferences: clientProfileData.communication_preferences
         } as Client;
       }
     } catch (error) {
@@ -548,7 +575,9 @@ export const updateUserData = async (userData: Partial<Developer | Client>): Pro
         hourlyRate, minuteRate, category, skills, experience, rating, availability,
         featured, online, lastActive, communicationPreferences,
         // Properties that can only exist on Client
-        lookingFor, completedProjects, profileCompletionPercentage,
+        lookingFor, completedProjects, profileCompletionPercentage, preferredHelpFormat,
+        budget, paymentMethod, bio, techStack, budgetPerHour, company, position,
+        projectTypes, industry, socialLinks, timeZone,
         // Common properties or ones we want to handle separately
         ...profileData
       } = userData as any; // Use type assertion to bypass TypeScript's type checking
@@ -609,6 +638,20 @@ export const updateUserData = async (userData: Partial<Developer | Client>): Pro
         if (lookingFor !== undefined) clientUpdates.looking_for = lookingFor;
         if (completedProjects !== undefined) clientUpdates.completed_projects = completedProjects;
         if (profileCompletionPercentage !== undefined) clientUpdates.profile_completion_percentage = profileCompletionPercentage;
+        if (preferredHelpFormat !== undefined) clientUpdates.preferred_help_format = preferredHelpFormat;
+        if (budget !== undefined) clientUpdates.budget = budget;
+        if (paymentMethod !== undefined) clientUpdates.payment_method = paymentMethod;
+        if (bio !== undefined) clientUpdates.bio = bio;
+        if (techStack !== undefined) clientUpdates.tech_stack = techStack;
+        if (budgetPerHour !== undefined) clientUpdates.budget_per_hour = budgetPerHour;
+        if (company !== undefined) clientUpdates.company = company;
+        if (position !== undefined) clientUpdates.position = position;
+        if (projectTypes !== undefined) clientUpdates.project_types = projectTypes;
+        if (industry !== undefined) clientUpdates.industry = industry;
+        if (socialLinks !== undefined) clientUpdates.social_links = socialLinks;
+        if (timeZone !== undefined) clientUpdates.time_zone = timeZone;
+        if (availability !== undefined) clientUpdates.availability = availability;
+        if (communicationPreferences !== undefined) clientUpdates.communication_preferences = communicationPreferences;
         
         if (Object.keys(clientUpdates).length > 0) {
           const { error: clientError } = await supabase

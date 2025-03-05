@@ -9,7 +9,178 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      client_profiles: {
+        Row: {
+          availability: Json | null
+          bio: string | null
+          budget: number | null
+          budget_per_hour: number | null
+          communication_preferences: string[] | null
+          company: string | null
+          completed_projects: number | null
+          id: string
+          industry: string | null
+          looking_for: string[] | null
+          payment_method: string | null
+          position: string | null
+          preferred_help_format: string[] | null
+          profile_completion_percentage: number | null
+          project_types: string[] | null
+          social_links: Json | null
+          tech_stack: string[] | null
+          time_zone: string | null
+        }
+        Insert: {
+          availability?: Json | null
+          bio?: string | null
+          budget?: number | null
+          budget_per_hour?: number | null
+          communication_preferences?: string[] | null
+          company?: string | null
+          completed_projects?: number | null
+          id: string
+          industry?: string | null
+          looking_for?: string[] | null
+          payment_method?: string | null
+          position?: string | null
+          preferred_help_format?: string[] | null
+          profile_completion_percentage?: number | null
+          project_types?: string[] | null
+          social_links?: Json | null
+          tech_stack?: string[] | null
+          time_zone?: string | null
+        }
+        Update: {
+          availability?: Json | null
+          bio?: string | null
+          budget?: number | null
+          budget_per_hour?: number | null
+          communication_preferences?: string[] | null
+          company?: string | null
+          completed_projects?: number | null
+          id?: string
+          industry?: string | null
+          looking_for?: string[] | null
+          payment_method?: string | null
+          position?: string | null
+          preferred_help_format?: string[] | null
+          profile_completion_percentage?: number | null
+          project_types?: string[] | null
+          social_links?: Json | null
+          tech_stack?: string[] | null
+          time_zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      developer_profiles: {
+        Row: {
+          availability: boolean | null
+          category: string | null
+          communication_preferences: string[] | null
+          experience: string | null
+          featured: boolean | null
+          hourly_rate: number | null
+          id: string
+          last_active: string | null
+          minute_rate: number | null
+          online: boolean | null
+          phone: string | null
+          rating: number | null
+          skills: string[] | null
+        }
+        Insert: {
+          availability?: boolean | null
+          category?: string | null
+          communication_preferences?: string[] | null
+          experience?: string | null
+          featured?: boolean | null
+          hourly_rate?: number | null
+          id: string
+          last_active?: string | null
+          minute_rate?: number | null
+          online?: boolean | null
+          phone?: string | null
+          rating?: number | null
+          skills?: string[] | null
+        }
+        Update: {
+          availability?: boolean | null
+          category?: string | null
+          communication_preferences?: string[] | null
+          experience?: string | null
+          featured?: boolean | null
+          hourly_rate?: number | null
+          id?: string
+          last_active?: string | null
+          minute_rate?: number | null
+          online?: boolean | null
+          phone?: string | null
+          rating?: number | null
+          skills?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "developer_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          description: string | null
+          email: string
+          id: string
+          image: string | null
+          joined_date: string | null
+          languages: string[] | null
+          location: string | null
+          name: string
+          preferred_working_hours: string | null
+          profile_completed: boolean | null
+          user_type: string
+          username: string | null
+        }
+        Insert: {
+          description?: string | null
+          email: string
+          id: string
+          image?: string | null
+          joined_date?: string | null
+          languages?: string[] | null
+          location?: string | null
+          name: string
+          preferred_working_hours?: string | null
+          profile_completed?: boolean | null
+          user_type: string
+          username?: string | null
+        }
+        Update: {
+          description?: string | null
+          email?: string
+          id?: string
+          image?: string | null
+          joined_date?: string | null
+          languages?: string[] | null
+          location?: string | null
+          name?: string
+          preferred_working_hours?: string | null
+          profile_completed?: boolean | null
+          user_type?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

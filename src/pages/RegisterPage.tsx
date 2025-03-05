@@ -60,7 +60,7 @@ const RegisterPage: React.FC = () => {
     const userData = {
       name: `${firstName} ${lastName}`,
       email,
-      password,
+      password, // Include password for Supabase auth
       image: imageUrl
     };
     
