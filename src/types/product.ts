@@ -16,6 +16,7 @@ export interface Developer {
   lastActive?: string;  // Field to show when the developer was last active
   // Auth-related properties
   email?: string;
+  password?: string;    // Added password field
   phone?: string;
   location?: string;
   joinedDate?: string;
@@ -30,6 +31,7 @@ export interface Client {
   name: string;
   username?: string;
   email: string;
+  password?: string;    // Added password field
   image?: string;
   location?: string;
   joinedDate?: string;
