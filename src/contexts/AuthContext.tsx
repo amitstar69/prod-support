@@ -542,14 +542,17 @@ export const updateUserData = async (userData: Partial<Developer | Client>): Pro
   
   if (supabase && supabaseUrl && supabaseKey) {
     try {
-      // Separate profile data from type-specific data
-      const { 
-        hourlyRate, minuteRate, category, skills, experience, rating, availability, 
+      // Separate profile data from type-specific data using type assertion and type guards
+      const {
+        // Properties that can only exist on Developer
+        hourlyRate, minuteRate, category, skills, experience, rating, availability,
         featured, online, lastActive, communicationPreferences,
+        // Properties that can only exist on Client
         lookingFor, completedProjects, profileCompletionPercentage,
-        ...profileData 
-      } = userData;
-      
+        // Common properties or ones we want to handle separately
+        ...profileData
+      } = userData as any; // Use type assertion to bypass TypeScript's type checking
+
       // Update the profiles table if there's data to update
       if (Object.keys(profileData).length > 0) {
         // Convert camelCase to snake_case for database fields
