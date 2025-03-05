@@ -1,6 +1,7 @@
 export interface Developer {
   id: string;
   name: string;
+  fullName?: string; // Adding this for consistency with Client
   hourlyRate: number;
   image: string;
   category: string;
@@ -22,11 +23,20 @@ export interface Developer {
   preferredWorkingHours?: string;
   communicationPreferences?: string[];  // ["chat", "voice", "video"]
   profileCompleted?: boolean;
+  
+  // Added properties to match Client interface
+  username?: string;
+  bio?: string;
+  techStack?: string[];
+  preferredHelpFormat?: 'Chat' | 'Voice' | 'Video';
+  budgetPerHour?: number;
+  paymentMethod?: 'Stripe' | 'PayPal';
 }
 
 export interface Client {
   id: string;
   fullName: string;
+  name?: string; // Adding this for consistency with Developer
   username: string;
   email: string;
   image?: string;
@@ -38,12 +48,14 @@ export interface Client {
   paymentMethod: 'Stripe' | 'PayPal';
   joinedDate?: string;
   profileCompleted?: boolean;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  image?: string;
+  
+  // Added these properties to match what's used in AuthContext
+  description?: string;
+  languages?: string[];
+  preferredWorkingHours?: string;
+  lookingFor?: string[];
+  completedProjects?: number;
+  profileCompletionPercentage?: number;
 }
 
 // We'll keep Product type as an alias to Developer for backward compatibility

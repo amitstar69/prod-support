@@ -19,9 +19,9 @@ const ClientProfile: React.FC = () => {
     username: '',
     bio: '',
     techStack: ['React', 'JavaScript'],
-    preferredHelpFormat: 'Chat',
+    preferredHelpFormat: 'Chat' as 'Chat' | 'Voice' | 'Video',
     budgetPerHour: 50,
-    paymentMethod: 'Stripe'
+    paymentMethod: 'Stripe' as 'Stripe' | 'PayPal'
   });
   
   useEffect(() => {
@@ -30,24 +30,26 @@ const ClientProfile: React.FC = () => {
       try {
         const userData = await getCurrentUserData();
         if (userData) {
-          setClient(userData as Client);
+          // Type assertion to Client for client-specific properties
+          const clientData = userData as Client;
+          setClient(clientData);
           
           // Split the name into first and last name for the form
-          const nameParts = userData.fullName ? userData.fullName.split(' ') : ['', ''];
+          const nameParts = clientData.fullName ? clientData.fullName.split(' ') : ['', ''];
           const firstName = nameParts[0] || '';
           const lastName = nameParts.slice(1).join(' ') || '';
           
           setFormData({
             firstName,
             lastName,
-            email: userData.email || '',
-            location: userData.location || '',
-            username: userData.username || '',
-            bio: userData.bio || '',
-            techStack: userData.techStack || ['React', 'JavaScript'],
-            preferredHelpFormat: userData.preferredHelpFormat || 'Chat',
-            budgetPerHour: userData.budgetPerHour || 50,
-            paymentMethod: userData.paymentMethod || 'Stripe'
+            email: clientData.email || '',
+            location: clientData.location || '',
+            username: clientData.username || '',
+            bio: clientData.bio || '',
+            techStack: clientData.techStack || ['React', 'JavaScript'],
+            preferredHelpFormat: clientData.preferredHelpFormat || 'Chat',
+            budgetPerHour: clientData.budgetPerHour || 50,
+            paymentMethod: clientData.paymentMethod || 'Stripe'
           });
         }
       } catch (error) {
@@ -107,9 +109,9 @@ const ClientProfile: React.FC = () => {
         username: formData.username,
         bio: formData.bio,
         techStack: formData.techStack,
-        preferredHelpFormat: formData.preferredHelpFormat as 'Chat' | 'Voice' | 'Video',
+        preferredHelpFormat: formData.preferredHelpFormat,
         budgetPerHour: formData.budgetPerHour,
-        paymentMethod: formData.paymentMethod as 'Stripe' | 'PayPal'
+        paymentMethod: formData.paymentMethod
       };
       
       console.log("Submitting client profile update:", updatedData);
