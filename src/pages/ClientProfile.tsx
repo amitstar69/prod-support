@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { User, Save } from 'lucide-react';
@@ -34,17 +35,22 @@ const ClientProfile: React.FC = () => {
     e.preventDefault();
     setIsSaving(true);
     
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    
-    const updatedData: Partial<Client> = {
-      name: formData.get('firstName') + ' ' + formData.get('lastName'),
-      email: formData.get('email') as string,
-      location: formData.get('location') as string,
-      description: formData.get('description') as string
-    };
-    
     try {
+      const form = e.target as HTMLFormElement;
+      const formData = new FormData(form);
+      
+      const firstName = formData.get('firstName') as string;
+      const lastName = formData.get('lastName') as string;
+      
+      const updatedData: Partial<Client> = {
+        name: `${firstName} ${lastName}`.trim(),
+        email: formData.get('email') as string,
+        location: formData.get('location') as string,
+        description: formData.get('description') as string
+      };
+      
+      console.log("Submitting client profile update:", updatedData);
+      
       const success = await updateUserData(updatedData);
       
       if (success) {
@@ -87,7 +93,7 @@ const ClientProfile: React.FC = () => {
   }
   
   // Split the name into first and last name
-  const nameParts = client.name ? client.name.split(' ') : ['', ''];
+  const nameParts = client?.name ? client.name.split(' ') : ['', ''];
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
   
