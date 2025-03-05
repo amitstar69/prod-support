@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 
 interface AboutSectionProps {
   description: string;
@@ -7,6 +7,8 @@ interface AboutSectionProps {
 }
 
 const AboutSection: React.FC<AboutSectionProps> = ({ description, onChange }) => {
+  const [isFocused, setIsFocused] = useState(false);
+  
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (onChange) {
       onChange(e.target.value);
@@ -22,14 +24,19 @@ const AboutSection: React.FC<AboutSectionProps> = ({ description, onChange }) =>
           <label htmlFor="description" className="block text-sm font-medium mb-1">
             Brief Description
           </label>
-          <textarea
-            id="description"
-            name="description"
-            rows={4}
-            value={description}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-          />
+          <div className={`relative transition-all duration-300 ${isFocused ? 'ring-2 ring-primary/20 rounded-md' : ''}`}>
+            <textarea
+              id="description"
+              name="description"
+              rows={4}
+              value={description}
+              onChange={handleChange}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+              aria-label="Brief description about yourself"
+            />
+          </div>
         </div>
       </div>
     </div>
