@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { User, Save } from 'lucide-react';
@@ -92,7 +91,6 @@ const ClientProfile: React.FC = () => {
     );
   }
   
-  // Split the name into first and last name
   const nameParts = client?.name ? client.name.split(' ') : ['', ''];
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
@@ -114,7 +112,6 @@ const ClientProfile: React.FC = () => {
                 <h2 className="text-xl font-semibold mb-6">Client Information</h2>
                 
                 <div className="flex flex-col md:flex-row gap-8">
-                  {/* Profile Image */}
                   <div className="flex flex-col items-center md:items-start gap-4">
                     <div className="relative">
                       <div className="h-20 w-20 md:h-24 md:w-24 rounded-full bg-muted flex items-center justify-center">
@@ -131,7 +128,6 @@ const ClientProfile: React.FC = () => {
                     </button>
                   </div>
                   
-                  {/* Form */}
                   <div className="flex-1 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
