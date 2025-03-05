@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { AuthState, AuthContextType, Developer, Client } from '../types/product';
@@ -219,15 +218,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return false;
   };
   
-  // Register function - updated to work with the new database schema
+  // Register function - updated to properly create database records
   const register = async (userData: Partial<Developer | Client>, userType: 'developer' | 'client'): Promise<boolean> => {
     // Try Supabase registration first
     if (supabase) {
       try {
+        console.log('Registering with Supabase', {
+          email: userData.email,
+          userType,
+          hasPassword: !!userData.password
+        });
+        
         // First create auth user
         const { data, error } = await supabase.auth.signUp({
           email: userData.email as string,
-          password: userData.password as string,  // Accept password from userData
+          password: userData.password as string,
         });
         
         if (error) {
@@ -238,6 +243,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         
         if (data.user) {
+          console.log('User created in Auth system:', data.user.id);
+          
           // Now create the profile record
           const profileData = {
             id: data.user.id,
@@ -254,6 +261,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             username: (userData as any).username || null,
           };
           
+          console.log('Creating profile record:', profileData);
+          
           const { error: profileError } = await supabase
             .from('profiles')
             .insert([profileData]);
@@ -263,6 +272,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             toast.error('Error creating profile: ' + profileError.message);
             return false;
           }
+          
+          console.log('Profile created successfully');
           
           // Create type-specific profile record
           if (userType === 'developer') {
@@ -280,8 +291,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               online: devData.online || false,
               last_active: new Date().toISOString(),
               phone: devData.phone || null,
-              communication_preferences: devData.communicationPreferences || null,
+              communication_preferences: devData.communicationPreferences || [],
             };
+            
+            console.log('Creating developer profile:', developerProfileData);
             
             const { error: devProfileError } = await supabase
               .from('developer_profiles')
@@ -292,6 +305,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               toast.error('Error creating developer profile: ' + devProfileError.message);
               return false;
             }
+            
+            console.log('Developer profile created successfully');
           } else {
             const clientData = userData as Partial<Client>;
             const clientProfileData = {
@@ -315,6 +330,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               communication_preferences: clientData.communicationPreferences || []
             };
             
+            console.log('Creating client profile:', clientProfileData);
+            
             const { error: clientProfileError } = await supabase
               .from('client_profiles')
               .insert([clientProfileData]);
@@ -324,6 +341,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               toast.error('Error creating client profile: ' + clientProfileError.message);
               return false;
             }
+            
+            console.log('Client profile created successfully');
           }
           
           setAuthState({
@@ -338,6 +357,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             userId: data.user.id,
           }));
           
+          console.log('Registration completed successfully');
           return true;
         }
         return false;
@@ -354,74 +374,69 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   
   // Helper for localStorage registration
   const registerWithLocalStorage = (userData: Partial<Developer | Client>, userType: 'developer' | 'client'): boolean => {
-    try {
-      if (userType === 'developer') {
-        const developerData = userData as Partial<Developer>;
-        
-        const newDev = {
-          id: `dev-${Date.now()}`,
-          name: developerData.name || '',
-          hourlyRate: 75,
-          image: '/placeholder.svg',
-          category: developerData.category || 'frontend',
-          skills: developerData.skills || ['JavaScript', 'React'],
-          experience: developerData.experience || '3 years',
-          description: developerData.description || '',
-          rating: 4.5,
-          availability: true,
-          email: developerData.email,
-          ...developerData,
-        } as Developer;
-        
-        const updatedDevelopers = [...mockDevelopers, newDev];
-        setMockDevelopers(updatedDevelopers);
-        localStorage.setItem('mockDevelopers', JSON.stringify(updatedDevelopers));
-        
-        setAuthState({
-          isAuthenticated: true,
-          userType: 'developer',
-          userId: newDev.id,
-        });
-        
-        localStorage.setItem('authState', JSON.stringify({
-          isAuthenticated: true,
-          userType: 'developer',
-          userId: newDev.id,
-        }));
-        
-        return true;
-      } else {
-        const clientData = userData as Partial<Client>;
-        
-        const newClient = {
-          id: `client-${Date.now()}`,
-          name: clientData.name || '',
-          email: clientData.email || '',
-          joinedDate: new Date().toISOString(),
-          ...clientData,
-        } as Client;
-        
-        const updatedClients = [...mockClients, newClient];
-        setMockClients(updatedClients);
-        localStorage.setItem('mockClients', JSON.stringify(updatedClients));
-        
-        setAuthState({
-          isAuthenticated: true,
-          userType: 'client',
-          userId: newClient.id,
-        });
-        
-        localStorage.setItem('authState', JSON.stringify({
-          isAuthenticated: true,
-          userType: 'client',
-          userId: newClient.id,
-        }));
-        
-        return true;
-      }
-    } catch (error) {
-      console.error('LocalStorage registration error:', error);
-      return false;
+    if (userType === 'developer') {
+      const developerData = userData as Partial<Developer>;
+      
+      const newDev = {
+        id: `dev-${Date.now()}`,
+        name: developerData.name || '',
+        hourlyRate: 75,
+        image: '/placeholder.svg',
+        category: developerData.category || 'frontend',
+        skills: developerData.skills || ['JavaScript', 'React'],
+        experience: developerData.experience || '3 years',
+        description: developerData.description || '',
+        rating: 4.5,
+        availability: true,
+        email: developerData.email,
+        ...developerData,
+      } as Developer;
+      
+      const updatedDevelopers = [...mockDevelopers, newDev];
+      setMockDevelopers(updatedDevelopers);
+      localStorage.setItem('mockDevelopers', JSON.stringify(updatedDevelopers));
+      
+      setAuthState({
+        isAuthenticated: true,
+        userType: 'developer',
+        userId: newDev.id,
+      });
+      
+      localStorage.setItem('authState', JSON.stringify({
+        isAuthenticated: true,
+        userType: 'developer',
+        userId: newDev.id,
+      }));
+      
+      return true;
+    } else {
+      const clientData = userData as Partial<Client>;
+      
+      const newClient = {
+        id: `client-${Date.now()}`,
+        name: clientData.name || '',
+        email: clientData.email || '',
+        joinedDate: new Date().toISOString(),
+        ...clientData,
+      } as Client;
+      
+      const updatedClients = [...mockClients, newClient];
+      setMockClients(updatedClients);
+      localStorage.setItem('mockClients', JSON.stringify(updatedClients));
+      
+      setAuthState({
+        isAuthenticated: true,
+        userType: 'client',
+        userId: newClient.id,
+      });
+      
+      localStorage.setItem('authState', JSON.stringify({
+        isAuthenticated: true,
+        userType: 'client',
+        userId: newClient.id,
+      }));
+      
+      return true;
     }
   };
   

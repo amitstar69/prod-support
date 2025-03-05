@@ -57,11 +57,19 @@ const RegisterPage: React.FC = () => {
       imageUrl = imagePreview || '/placeholder.svg';
     }
     
+    console.log(`Registering as ${userType} with:`, {
+      name: `${firstName} ${lastName}`,
+      email,
+      hasPassword: !!password,
+      imageUrl
+    });
+    
     const userData = {
       name: `${firstName} ${lastName}`,
       email,
       password, // Include password for Supabase auth
-      image: imageUrl
+      image: imageUrl,
+      profileCompleted: false
     };
     
     try {
