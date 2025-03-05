@@ -11,6 +11,13 @@ const ClientProfile: React.FC = () => {
   const [client, setClient] = useState<Client | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    location: '',
+    description: ''
+  });
   
   useEffect(() => {
     const fetchUser = async () => {
@@ -19,6 +26,19 @@ const ClientProfile: React.FC = () => {
         const userData = await getCurrentUserData();
         if (userData) {
           setClient(userData as Client);
+          
+          // Split the name into first and last name for the form
+          const nameParts = userData.name ? userData.name.split(' ') : ['', ''];
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+          
+          setFormData({
+            firstName,
+            lastName,
+            email: userData.email || '',
+            location: userData.location || '',
+            description: userData.description || ''
+          });
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -31,22 +51,22 @@ const ClientProfile: React.FC = () => {
     fetchUser();
   }, [userId]);
   
-  const handleSaveChanges = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+  
+  const handleSaveChanges = async () => {
     setIsSaving(true);
     
     try {
-      const form = e.target as HTMLFormElement;
-      const formData = new FormData(form);
-      
-      const firstName = formData.get('firstName') as string;
-      const lastName = formData.get('lastName') as string;
-      
       const updatedData: Partial<Client> = {
-        name: `${firstName} ${lastName}`.trim(),
-        email: formData.get('email') as string,
-        location: formData.get('location') as string,
-        description: formData.get('description') as string
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        location: formData.location,
+        description: formData.description
       };
       
       console.log("Submitting client profile update:", updatedData);
@@ -103,9 +123,11 @@ const ClientProfile: React.FC = () => {
       
       <div className="container mx-auto px-4 py-12">
         <ProfileCard 
-          client={client} 
-          isSaving={isSaving} 
-          onSubmit={handleSaveChanges} 
+          client={client}
+          formData={formData}
+          onInputChange={handleInputChange}
+          isSaving={isSaving}
+          onSave={handleSaveChanges}
         />
       </div>
     </Layout>

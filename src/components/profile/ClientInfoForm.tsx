@@ -6,13 +6,15 @@ interface ClientInfoFormProps {
   lastName: string;
   email: string;
   location: string;
+  onChange: (field: string, value: string) => void;
 }
 
 const ClientInfoForm: React.FC<ClientInfoFormProps> = ({ 
   firstName, 
   lastName, 
   email, 
-  location 
+  location,
+  onChange
 }) => {
   return (
     <div className="flex-1 space-y-6">
@@ -25,7 +27,8 @@ const ClientInfoForm: React.FC<ClientInfoFormProps> = ({
             id="firstName"
             name="firstName"
             type="text"
-            defaultValue={firstName}
+            value={firstName}
+            onChange={(e) => onChange('firstName', e.target.value)}
             className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
             required
           />
@@ -38,7 +41,8 @@ const ClientInfoForm: React.FC<ClientInfoFormProps> = ({
             id="lastName"
             name="lastName"
             type="text"
-            defaultValue={lastName}
+            value={lastName}
+            onChange={(e) => onChange('lastName', e.target.value)}
             className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
             required
           />
@@ -53,7 +57,8 @@ const ClientInfoForm: React.FC<ClientInfoFormProps> = ({
           id="email"
           name="email"
           type="email"
-          defaultValue={email}
+          value={email}
+          onChange={(e) => onChange('email', e.target.value)}
           className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
           required
         />
@@ -67,7 +72,8 @@ const ClientInfoForm: React.FC<ClientInfoFormProps> = ({
           id="location"
           name="location"
           type="text"
-          defaultValue={location}
+          value={location}
+          onChange={(e) => onChange('location', e.target.value)}
           className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
         />
       </div>

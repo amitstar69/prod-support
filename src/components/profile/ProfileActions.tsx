@@ -4,15 +4,17 @@ import { Save } from 'lucide-react';
 
 interface ProfileActionsProps {
   isSaving: boolean;
+  onSave?: () => void;
 }
 
-const ProfileActions: React.FC<ProfileActionsProps> = ({ isSaving }) => {
+const ProfileActions: React.FC<ProfileActionsProps> = ({ isSaving, onSave }) => {
   return (
     <div className="border-t border-border/40 p-6 md:p-8">
       <button 
         type="submit"
         className="button-primary inline-flex items-center gap-2"
         disabled={isSaving}
+        onClick={onSave}
       >
         {isSaving ? (
           <>

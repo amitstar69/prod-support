@@ -8,37 +8,50 @@ import { Client } from '../../types/product';
 
 interface ProfileCardProps {
   client: Client;
+  formData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    location: string;
+    description: string;
+  };
+  onInputChange: (field: string, value: string) => void;
   isSaving: boolean;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  onSave: () => void;
 }
 
-const ProfileCard: React.FC<ProfileCardProps> = ({ client, isSaving, onSubmit }) => {
-  const nameParts = client?.name ? client.name.split(' ') : ['', ''];
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.slice(1).join(' ') || '';
-  
+const ProfileCard: React.FC<ProfileCardProps> = ({ 
+  client, 
+  formData,
+  onInputChange,
+  isSaving, 
+  onSave
+}) => {
   return (
     <div className="max-w-2xl mx-auto">
-      <form onSubmit={onSubmit}>
-        <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden">
-          <div className="p-6 md:p-8">
-            <h2 className="text-xl font-semibold mb-6">Client Information</h2>
-            
-            <div className="flex flex-col md:flex-row gap-8">
-              <ProfileImageUpload imageUrl={client.image} />
-              <ClientInfoForm 
-                firstName={firstName}
-                lastName={lastName}
-                email={client.email}
-                location={client.location || ''}
-              />
-            </div>
-          </div>
+      <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden">
+        <div className="p-6 md:p-8">
+          <h2 className="text-xl font-semibold mb-6">Client Information</h2>
           
-          <AboutSection description={client.description || ''} />
-          <ProfileActions isSaving={isSaving} />
+          <div className="flex flex-col md:flex-row gap-8">
+            <ProfileImageUpload imageUrl={client.image} />
+            <ClientInfoForm 
+              firstName={formData.firstName}
+              lastName={formData.lastName}
+              email={formData.email}
+              location={formData.location}
+              onChange={(field, value) => onInputChange(field, value)}
+            />
+          </div>
         </div>
-      </form>
+        
+        <AboutSection 
+          description={formData.description} 
+          onChange={(value) => onInputChange('description', value)}
+        />
+        
+        <ProfileActions isSaving={isSaving} onSave={onSave} />
+      </div>
     </div>
   );
 };
