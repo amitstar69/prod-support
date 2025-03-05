@@ -16,12 +16,7 @@ const ClientProfile: React.FC = () => {
     lastName: '',
     email: '',
     location: '',
-    username: '',
-    bio: '',
-    techStack: ['React', 'JavaScript'],
-    preferredHelpFormat: 'Chat' as 'Chat' | 'Voice' | 'Video',
-    budgetPerHour: 50,
-    paymentMethod: 'Stripe' as 'Stripe' | 'PayPal'
+    description: ''
   });
   
   useEffect(() => {
@@ -30,26 +25,19 @@ const ClientProfile: React.FC = () => {
       try {
         const userData = await getCurrentUserData();
         if (userData) {
-          // Type assertion to Client for client-specific properties
-          const clientData = userData as Client;
-          setClient(clientData);
+          setClient(userData as Client);
           
           // Split the name into first and last name for the form
-          const nameParts = clientData.fullName ? clientData.fullName.split(' ') : ['', ''];
+          const nameParts = userData.name ? userData.name.split(' ') : ['', ''];
           const firstName = nameParts[0] || '';
           const lastName = nameParts.slice(1).join(' ') || '';
           
           setFormData({
             firstName,
             lastName,
-            email: clientData.email || '',
-            location: clientData.location || '',
-            username: clientData.username || '',
-            bio: clientData.bio || '',
-            techStack: clientData.techStack || ['React', 'JavaScript'],
-            preferredHelpFormat: clientData.preferredHelpFormat || 'Chat',
-            budgetPerHour: clientData.budgetPerHour || 50,
-            paymentMethod: clientData.paymentMethod || 'Stripe'
+            email: userData.email || '',
+            location: userData.location || '',
+            description: userData.description || ''
           });
         }
       } catch (error) {
@@ -70,48 +58,15 @@ const ClientProfile: React.FC = () => {
     }));
   };
   
-  const handleTechStackChange = (techStack: string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      techStack
-    }));
-  };
-  
-  const handleFormatChange = (format: string) => {
-    setFormData(prev => ({
-      ...prev,
-      preferredHelpFormat: format
-    }));
-  };
-  
-  const handleBudgetChange = (budget: number) => {
-    setFormData(prev => ({
-      ...prev,
-      budgetPerHour: budget
-    }));
-  };
-  
-  const handlePaymentMethodChange = (method: string) => {
-    setFormData(prev => ({
-      ...prev,
-      paymentMethod: method
-    }));
-  };
-  
   const handleSaveChanges = async () => {
     setIsSaving(true);
     
     try {
       const updatedData: Partial<Client> = {
-        fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.email,
         location: formData.location,
-        username: formData.username,
-        bio: formData.bio,
-        techStack: formData.techStack,
-        preferredHelpFormat: formData.preferredHelpFormat,
-        budgetPerHour: formData.budgetPerHour,
-        paymentMethod: formData.paymentMethod
+        description: formData.description
       };
       
       console.log("Submitting client profile update:", updatedData);
@@ -171,10 +126,6 @@ const ClientProfile: React.FC = () => {
           client={client}
           formData={formData}
           onInputChange={handleInputChange}
-          onTechStackChange={handleTechStackChange}
-          onFormatChange={handleFormatChange}
-          onBudgetChange={handleBudgetChange}
-          onPaymentMethodChange={handlePaymentMethodChange}
           isSaving={isSaving}
           onSave={handleSaveChanges}
         />

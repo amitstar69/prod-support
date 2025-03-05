@@ -6,7 +6,6 @@ interface ClientInfoFormProps {
   lastName: string;
   email: string;
   location: string;
-  username: string;
   onChange: (field: string, value: string) => void;
 }
 
@@ -15,7 +14,6 @@ const ClientInfoForm: React.FC<ClientInfoFormProps> = ({
   lastName, 
   email, 
   location,
-  username,
   onChange
 }) => {
   return (
@@ -52,21 +50,6 @@ const ClientInfoForm: React.FC<ClientInfoFormProps> = ({
       </div>
       
       <div>
-        <label htmlFor="username" className="block text-sm font-medium mb-1">
-          Username
-        </label>
-        <input
-          id="username"
-          name="username"
-          type="text"
-          value={username}
-          onChange={(e) => onChange('username', e.target.value)}
-          className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-          required
-        />
-      </div>
-      
-      <div>
         <label htmlFor="email" className="block text-sm font-medium mb-1">
           Email
         </label>
@@ -92,7 +75,6 @@ const ClientInfoForm: React.FC<ClientInfoFormProps> = ({
           value={location}
           onChange={(e) => onChange('location', e.target.value)}
           className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-          required
         />
       </div>
     </div>

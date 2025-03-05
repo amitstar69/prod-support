@@ -1,7 +1,7 @@
+
 export interface Developer {
   id: string;
   name: string;
-  fullName?: string; // Adding this for consistency with Client
   hourlyRate: number;
   image: string;
   category: string;
@@ -23,39 +23,32 @@ export interface Developer {
   preferredWorkingHours?: string;
   communicationPreferences?: string[];  // ["chat", "voice", "video"]
   profileCompleted?: boolean;
-  
-  // Added properties to match Client interface
-  username?: string;
-  bio?: string;
-  techStack?: string[];
-  preferredHelpFormat?: 'Chat' | 'Voice' | 'Video';
-  budgetPerHour?: number;
-  paymentMethod?: 'Stripe' | 'PayPal';
 }
 
 export interface Client {
   id: string;
-  fullName: string;
-  name?: string; // Adding this for consistency with Developer
-  username: string;
+  name: string;
+  username?: string;
   email: string;
   image?: string;
-  location: string;
-  bio?: string;
-  techStack: string[];
-  preferredHelpFormat: 'Chat' | 'Voice' | 'Video';
-  budgetPerHour: number;
-  paymentMethod: 'Stripe' | 'PayPal';
+  location?: string;
   joinedDate?: string;
-  profileCompleted?: boolean;
-  
-  // Added these properties to match what's used in AuthContext
-  description?: string;
   languages?: string[];
   preferredWorkingHours?: string;
-  lookingFor?: string[];
+  description?: string;
+  lookingFor?: string[];  // Skills/categories the client is interested in
   completedProjects?: number;
   profileCompletionPercentage?: number;
+  profileCompleted?: boolean;
+  // New fields for on-demand help
+  preferredHelpFormat?: string[];  // ["chat", "voice", "video"]
+  budget?: number;  // Budget per session or per minute
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  image?: string;
 }
 
 // We'll keep Product type as an alias to Developer for backward compatibility

@@ -2,9 +2,7 @@
 import React from 'react';
 import ProfileImageUpload from './ProfileImageUpload';
 import ClientInfoForm from './ClientInfoForm';
-import BioSection from './BioSection';
-import TechPreferencesSection from './TechPreferencesSection';
-import BudgetPaymentSection from './BudgetPaymentSection';
+import AboutSection from './AboutSection';
 import ProfileActions from './ProfileActions';
 import { Client } from '../../types/product';
 
@@ -15,18 +13,9 @@ interface ProfileCardProps {
     lastName: string;
     email: string;
     location: string;
-    username: string;
-    bio: string;
-    techStack: string[];
-    preferredHelpFormat: string;
-    budgetPerHour: number;
-    paymentMethod: string;
+    description: string;
   };
   onInputChange: (field: string, value: string) => void;
-  onTechStackChange: (techStack: string[]) => void;
-  onFormatChange: (format: string) => void;
-  onBudgetChange: (budget: number) => void;
-  onPaymentMethodChange: (method: string) => void;
   isSaving: boolean;
   onSave: () => void;
 }
@@ -35,10 +24,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
   client, 
   formData,
   onInputChange,
-  onTechStackChange,
-  onFormatChange,
-  onBudgetChange,
-  onPaymentMethodChange,
   isSaving, 
   onSave
 }) => {
@@ -55,29 +40,14 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
               lastName={formData.lastName}
               email={formData.email}
               location={formData.location}
-              username={formData.username}
               onChange={(field, value) => onInputChange(field, value)}
             />
           </div>
         </div>
         
-        <BioSection 
-          bio={formData.bio} 
-          onChange={(value) => onInputChange('bio', value)}
-        />
-        
-        <TechPreferencesSection
-          techStack={formData.techStack}
-          preferredHelpFormat={formData.preferredHelpFormat}
-          onTechStackChange={onTechStackChange}
-          onFormatChange={onFormatChange}
-        />
-        
-        <BudgetPaymentSection
-          budgetPerHour={formData.budgetPerHour}
-          paymentMethod={formData.paymentMethod}
-          onBudgetChange={onBudgetChange}
-          onPaymentMethodChange={onPaymentMethodChange}
+        <AboutSection 
+          description={formData.description} 
+          onChange={(value) => onInputChange('description', value)}
         />
         
         <ProfileActions isSaving={isSaving} onSave={onSave} />
