@@ -1,4 +1,3 @@
-
 export interface Developer {
   id: string;
   name: string;
@@ -27,22 +26,18 @@ export interface Developer {
 
 export interface Client {
   id: string;
-  name: string;
-  username?: string;
+  fullName: string;
+  username: string;
   email: string;
   image?: string;
-  location?: string;
+  location: string;
+  bio?: string;
+  techStack: string[];
+  preferredHelpFormat: 'Chat' | 'Voice' | 'Video';
+  budgetPerHour: number;
+  paymentMethod: 'Stripe' | 'PayPal';
   joinedDate?: string;
-  languages?: string[];
-  preferredWorkingHours?: string;
-  description?: string;
-  lookingFor?: string[];  // Skills/categories the client is interested in
-  completedProjects?: number;
-  profileCompletionPercentage?: number;
   profileCompleted?: boolean;
-  // New fields for on-demand help
-  preferredHelpFormat?: string[];  // ["chat", "voice", "video"]
-  budget?: number;  // Budget per session or per minute
 }
 
 export interface Category {

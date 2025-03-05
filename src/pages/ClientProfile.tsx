@@ -16,7 +16,12 @@ const ClientProfile: React.FC = () => {
     lastName: '',
     email: '',
     location: '',
-    description: ''
+    username: '',
+    bio: '',
+    techStack: ['React', 'JavaScript'],
+    preferredHelpFormat: 'Chat',
+    budgetPerHour: 50,
+    paymentMethod: 'Stripe'
   });
   
   useEffect(() => {
@@ -28,7 +33,7 @@ const ClientProfile: React.FC = () => {
           setClient(userData as Client);
           
           // Split the name into first and last name for the form
-          const nameParts = userData.name ? userData.name.split(' ') : ['', ''];
+          const nameParts = userData.fullName ? userData.fullName.split(' ') : ['', ''];
           const firstName = nameParts[0] || '';
           const lastName = nameParts.slice(1).join(' ') || '';
           
@@ -37,7 +42,12 @@ const ClientProfile: React.FC = () => {
             lastName,
             email: userData.email || '',
             location: userData.location || '',
-            description: userData.description || ''
+            username: userData.username || '',
+            bio: userData.bio || '',
+            techStack: userData.techStack || ['React', 'JavaScript'],
+            preferredHelpFormat: userData.preferredHelpFormat || 'Chat',
+            budgetPerHour: userData.budgetPerHour || 50,
+            paymentMethod: userData.paymentMethod || 'Stripe'
           });
         }
       } catch (error) {
@@ -58,15 +68,48 @@ const ClientProfile: React.FC = () => {
     }));
   };
   
+  const handleTechStackChange = (techStack: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      techStack
+    }));
+  };
+  
+  const handleFormatChange = (format: string) => {
+    setFormData(prev => ({
+      ...prev,
+      preferredHelpFormat: format
+    }));
+  };
+  
+  const handleBudgetChange = (budget: number) => {
+    setFormData(prev => ({
+      ...prev,
+      budgetPerHour: budget
+    }));
+  };
+  
+  const handlePaymentMethodChange = (method: string) => {
+    setFormData(prev => ({
+      ...prev,
+      paymentMethod: method
+    }));
+  };
+  
   const handleSaveChanges = async () => {
     setIsSaving(true);
     
     try {
       const updatedData: Partial<Client> = {
-        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        fullName: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.email,
         location: formData.location,
-        description: formData.description
+        username: formData.username,
+        bio: formData.bio,
+        techStack: formData.techStack,
+        preferredHelpFormat: formData.preferredHelpFormat as 'Chat' | 'Voice' | 'Video',
+        budgetPerHour: formData.budgetPerHour,
+        paymentMethod: formData.paymentMethod as 'Stripe' | 'PayPal'
       };
       
       console.log("Submitting client profile update:", updatedData);
@@ -126,6 +169,10 @@ const ClientProfile: React.FC = () => {
           client={client}
           formData={formData}
           onInputChange={handleInputChange}
+          onTechStackChange={handleTechStackChange}
+          onFormatChange={handleFormatChange}
+          onBudgetChange={handleBudgetChange}
+          onPaymentMethodChange={handlePaymentMethodChange}
           isSaving={isSaving}
           onSave={handleSaveChanges}
         />
