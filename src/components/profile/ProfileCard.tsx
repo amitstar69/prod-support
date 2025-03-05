@@ -3,6 +3,9 @@ import React from 'react';
 import ProfileImageUpload from './ProfileImageUpload';
 import ClientInfoForm from './ClientInfoForm';
 import AboutSection from './AboutSection';
+import BioSection from './BioSection';
+import TechPreferencesSection from './TechPreferencesSection';
+import BudgetPaymentSection from './BudgetPaymentSection';
 import ProfileActions from './ProfileActions';
 import { Client } from '../../types/product';
 
@@ -14,8 +17,18 @@ interface ProfileCardProps {
     email: string;
     location: string;
     description: string;
+    username: string;
+    bio: string;
+    company: string;
+    position: string;
+    techStack: string[];
+    industry: string;
+    projectTypes: string[];
+    preferredHelpFormat: string[];
+    budgetPerHour: number;
+    paymentMethod: string;
   };
-  onInputChange: (field: string, value: string) => void;
+  onInputChange: (field: string, value: any) => void;
   isSaving: boolean;
   onSave: () => void;
 }
@@ -44,6 +57,28 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
             />
           </div>
         </div>
+        
+        <BioSection 
+          username={formData.username}
+          bio={formData.bio}
+          company={formData.company}
+          position={formData.position}
+          onChange={onInputChange}
+        />
+        
+        <TechPreferencesSection 
+          techStack={formData.techStack}
+          industry={formData.industry}
+          projectTypes={formData.projectTypes}
+          preferredHelpFormat={formData.preferredHelpFormat}
+          onChange={onInputChange}
+        />
+        
+        <BudgetPaymentSection 
+          budgetPerHour={formData.budgetPerHour}
+          paymentMethod={formData.paymentMethod}
+          onChange={onInputChange}
+        />
         
         <AboutSection 
           description={formData.description} 

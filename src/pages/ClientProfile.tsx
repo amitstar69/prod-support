@@ -16,7 +16,18 @@ const ClientProfile: React.FC = () => {
     lastName: '',
     email: '',
     location: '',
-    description: ''
+    description: '',
+    // New fields
+    username: '',
+    bio: '',
+    company: '',
+    position: '',
+    techStack: [] as string[],
+    industry: '',
+    projectTypes: [] as string[],
+    preferredHelpFormat: [] as string[],
+    budgetPerHour: 0,
+    paymentMethod: 'Stripe' as 'Stripe' | 'PayPal'
   });
   
   useEffect(() => {
@@ -25,19 +36,31 @@ const ClientProfile: React.FC = () => {
       try {
         const userData = await getCurrentUserData();
         if (userData) {
-          setClient(userData as Client);
+          const clientData = userData as Client;
+          setClient(clientData);
           
           // Split the name into first and last name for the form
-          const nameParts = userData.name ? userData.name.split(' ') : ['', ''];
+          const nameParts = clientData.name ? clientData.name.split(' ') : ['', ''];
           const firstName = nameParts[0] || '';
           const lastName = nameParts.slice(1).join(' ') || '';
           
           setFormData({
             firstName,
             lastName,
-            email: userData.email || '',
-            location: userData.location || '',
-            description: userData.description || ''
+            email: clientData.email || '',
+            location: clientData.location || '',
+            description: clientData.description || '',
+            // New fields with fallbacks
+            username: clientData.username || '',
+            bio: clientData.bio || '',
+            company: clientData.company || '',
+            position: clientData.position || '',
+            techStack: clientData.techStack || [],
+            industry: clientData.industry || '',
+            projectTypes: clientData.projectTypes || [],
+            preferredHelpFormat: (clientData.preferredHelpFormat || []) as string[],
+            budgetPerHour: clientData.budgetPerHour || 0,
+            paymentMethod: (clientData.paymentMethod || 'Stripe') as 'Stripe' | 'PayPal'
           });
         }
       } catch (error) {
@@ -51,7 +74,7 @@ const ClientProfile: React.FC = () => {
     fetchUser();
   }, [userId]);
   
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -66,7 +89,21 @@ const ClientProfile: React.FC = () => {
         name: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.email,
         location: formData.location,
-        description: formData.description
+        description: formData.description,
+        // Add new fields
+        username: formData.username,
+        bio: formData.bio,
+        company: formData.company,
+        position: formData.position,
+        techStack: formData.techStack,
+        industry: formData.industry,
+        projectTypes: formData.projectTypes,
+        preferredHelpFormat: formData.preferredHelpFormat,
+        budgetPerHour: formData.budgetPerHour,
+        paymentMethod: formData.paymentMethod,
+        // Update profile completion status
+        profileCompleted: true,
+        profileCompletionPercentage: 100
       };
       
       console.log("Submitting client profile update:", updatedData);

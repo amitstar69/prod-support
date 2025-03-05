@@ -41,8 +41,29 @@ export interface Client {
   profileCompletionPercentage?: number;
   profileCompleted?: boolean;
   // New fields for on-demand help
-  preferredHelpFormat?: string[];  // ["chat", "voice", "video"]
+  preferredHelpFormat?: string[];  // ["Chat", "Voice", "Video"]
   budget?: number;  // Budget per session or per minute
+  paymentMethod?: string; // ["Stripe", "PayPal"]
+  bio?: string;
+  techStack?: string[];
+  budgetPerHour?: number;
+  // Additional fields
+  company?: string;
+  position?: string;
+  projectTypes?: string[];
+  industry?: string;
+  socialLinks?: {
+    github?: string;
+    linkedin?: string;
+    twitter?: string;
+    website?: string;
+  };
+  timeZone?: string;
+  availability?: {
+    days?: string[];
+    hours?: string;
+  };
+  communicationPreferences?: string[];
 }
 
 export interface Category {
