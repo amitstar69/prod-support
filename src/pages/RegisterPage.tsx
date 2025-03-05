@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { User, Code } from 'lucide-react';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -10,6 +11,9 @@ const RegisterPage: React.FC = () => {
   const { register, isAuthenticated } = useAuth();
   const [userType, setUserType] = useState<'client' | 'developer'>('client');
   const [isLoading, setIsLoading] = useState(false);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Redirect if already logged in
   React.useEffect(() => {
@@ -17,6 +21,24 @@ const RegisterPage: React.FC = () => {
       navigate('/');
     }
   }, [isAuthenticated, navigate]);
+  
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setProfileImage(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,10 +50,18 @@ const RegisterPage: React.FC = () => {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     
+    let imageUrl = '/placeholder.svg';
+    if (profileImage) {
+      // In a real app, we would upload the image to a server
+      // For now, we'll use the local preview URL
+      imageUrl = imagePreview || '/placeholder.svg';
+    }
+    
     const userData = {
       name: `${firstName} ${lastName}`,
       email,
-      password
+      password,
+      image: imageUrl
     };
     
     try {
@@ -73,6 +103,37 @@ const RegisterPage: React.FC = () => {
             <div className="p-6 md:p-8">
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
+                  {/* Profile Image Upload */}
+                  <div className="flex flex-col items-center space-y-2">
+                    <div 
+                      onClick={handleImageClick}
+                      className="relative w-24 h-24 rounded-full border-2 border-primary/50 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center bg-secondary"
+                    >
+                      {imagePreview ? (
+                        <img 
+                          src={imagePreview} 
+                          alt="Profile Preview" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-primary/70 text-sm font-medium text-center">
+                          <span className="block text-xs">Add Profile Photo</span>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      Click to upload profile picture
+                    </span>
+                  </div>
+                  
+                  {/* User Type Selection */}
                   <div className="space-y-4 mb-4">
                     <label className="block text-sm font-medium mb-2">
                       I want to:
@@ -87,9 +148,7 @@ const RegisterPage: React.FC = () => {
                         }`}
                         onClick={() => setUserType('client')}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
+                        <User className="h-6 w-6 mb-2" />
                         <span className="text-sm font-medium">Find a Developer</span>
                         <span className="text-xs text-muted-foreground mt-1">Get technical help</span>
                       </button>
@@ -103,11 +162,9 @@ const RegisterPage: React.FC = () => {
                         }`}
                         onClick={() => setUserType('developer')}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                        </svg>
-                        <span className="text-sm font-medium">Offer Services</span>
-                        <span className="text-xs text-muted-foreground mt-1">Share your expertise</span>
+                        <Code className="h-6 w-6 mb-2" />
+                        <span className="text-sm font-medium">I am a Developer</span>
+                        <span className="text-xs text-muted-foreground mt-1">Offer my services</span>
                       </button>
                     </div>
                   </div>
