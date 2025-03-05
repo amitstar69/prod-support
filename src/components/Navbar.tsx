@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Search, ChevronDown, LogIn, User, LogOut } from 'lucide-react';
+import { Menu, X, Search, ChevronDown, LogIn, User, LogOut, Clock, MessageSquare } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navbar: React.FC = () => {
@@ -95,32 +95,48 @@ const Navbar: React.FC = () => {
           {/* Right Side - Auth / Search */}
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
-              <div className="relative group">
-                <button className="button-secondary flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>My Account</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-background border border-border/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
-                  <div className="py-1">
-                    <button
-                      onClick={handleProfileClick}
-                      className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors"
-                    >
-                      {userType === 'developer' ? 'Developer Profile' : 'Client Profile'}
-                    </button>
-                    <button
-                      onClick={handleLogoutClick}
-                      className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors"
-                    >
-                      <span className="flex items-center">
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Logout
-                      </span>
-                    </button>
+              <>
+                {userType === 'client' && (
+                  <button className="button-primary flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Get Instant Help</span>
+                  </button>
+                )}
+                <div className="relative group">
+                  <button className="button-secondary flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>My Account</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-background border border-border/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                    <div className="py-1">
+                      <button
+                        onClick={handleProfileClick}
+                        className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors"
+                      >
+                        {userType === 'developer' ? 'Developer Profile' : 'Client Profile'}
+                      </button>
+                      {userType === 'client' && (
+                        <Link to="/session-history" className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors">
+                          <span className="flex items-center">
+                            <Clock className="h-4 w-4 mr-2" />
+                            Session History
+                          </span>
+                        </Link>
+                      )}
+                      <button
+                        onClick={handleLogoutClick}
+                        className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors"
+                      >
+                        <span className="flex items-center">
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Logout
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </>
             ) : (
               <>
                 <button className="button-ghost" onClick={handleLoginClick}>
@@ -177,13 +193,35 @@ const Navbar: React.FC = () => {
           <div className="pt-4 pb-3 border-t border-border/40">
             {isAuthenticated ? (
               <>
+                {userType === 'client' && (
+                  <button
+                    className="flex items-center w-full px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    onClick={() => {
+                      navigate('/get-help');
+                      setIsOpen(false);
+                    }}
+                  >
+                    <MessageSquare className="h-5 w-5 mr-2" />
+                    Get Instant Help
+                  </button>
+                )}
                 <button
                   onClick={handleProfileClick}
-                  className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+                  className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors mt-2"
                 >
                   <User className="h-5 w-5 mr-2" />
                   {userType === 'developer' ? 'Developer Profile' : 'Client Profile'}
                 </button>
+                {userType === 'client' && (
+                  <Link
+                    to="/session-history"
+                    className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Clock className="h-5 w-5 mr-2" />
+                    Session History
+                  </Link>
+                )}
                 <button
                   onClick={handleLogoutClick}
                   className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"

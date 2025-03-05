@@ -27,11 +27,20 @@ function App() {
           <Route path="/developer-registration" element={<DeveloperRegistration />} />
           <Route 
             path="/profile" 
-            element={<ProtectedRoute><Profile /></ProtectedRoute>} 
+            element={<ProtectedRoute requiredUserType="developer"><Profile /></ProtectedRoute>} 
           />
           <Route 
             path="/client-profile" 
-            element={<ProtectedRoute><ClientProfile /></ProtectedRoute>} 
+            element={<ProtectedRoute requiredUserType="client"><ClientProfile /></ProtectedRoute>} 
+          />
+          {/* Add new routes for on-demand platform */}
+          <Route 
+            path="/get-help" 
+            element={<ProtectedRoute requiredUserType="client"><NotFound /></ProtectedRoute>} 
+          />
+          <Route 
+            path="/session-history" 
+            element={<ProtectedRoute requiredUserType="client"><NotFound /></ProtectedRoute>} 
           />
           <Route path="*" element={<NotFound />} />
         </Routes>

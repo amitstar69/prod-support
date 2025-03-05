@@ -1,3 +1,4 @@
+
 export interface Developer {
   id: string;
   name: string;
@@ -20,7 +21,7 @@ export interface Developer {
   joinedDate?: string;
   languages?: string[];
   preferredWorkingHours?: string;
-  communicationPreferences?: string[];
+  communicationPreferences?: string[];  // ["chat", "voice", "video"]
   profileCompleted?: boolean;
 }
 
@@ -39,6 +40,9 @@ export interface Client {
   completedProjects?: number;
   profileCompletionPercentage?: number;
   profileCompleted?: boolean;
+  // New fields for on-demand help
+  preferredHelpFormat?: string[];  // ["chat", "voice", "video"]
+  budget?: number;  // Budget per session or per minute
 }
 
 export interface Category {

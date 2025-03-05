@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -11,6 +12,7 @@ const LoginPage: React.FC = () => {
   const [userType, setUserType] = useState<'client' | 'developer'>('client');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   
   // Redirect if already logged in
   React.useEffect(() => {
@@ -116,6 +118,21 @@ const LoginPage: React.FC = () => {
                         <span className="ml-2 text-sm">Developer</span>
                       </label>
                     </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={() => setRememberMe(!rememberMe)}
+                        className="h-4 w-4 text-primary border-border focus:ring-primary/25 rounded"
+                      />
+                      <span className="ml-2 text-sm">Remember me</span>
+                    </label>
+                    <a href="#" className="text-sm text-primary hover:underline">
+                      Forgot password?
+                    </a>
                   </div>
                   
                   <div>

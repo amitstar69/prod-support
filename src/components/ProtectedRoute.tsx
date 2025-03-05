@@ -20,7 +20,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (requiredUserType && userType !== requiredUserType) {
     // If a specific user type is required but the current user is of a different type
-    return <Navigate to="/" replace />;
+    // Redirect to the appropriate dashboard based on user type
+    return <Navigate to={userType === 'developer' ? '/profile' : '/client-profile'} replace />;
   }
 
   return <>{children}</>;
