@@ -16,10 +16,10 @@ const Index: React.FC = () => {
   return (
     <Layout>
       <Hero />
+      <DeveloperShowcase developers={onlineDevelopers.length > 0 ? onlineDevelopers : featuredDevelopers} />
       <PainPointsSection />
       <HowItWorksSection />
       <TargetAudienceSection />
-      <DeveloperShowcase developers={onlineDevelopers.length > 0 ? onlineDevelopers : featuredDevelopers} />
       <CTASection />
     </Layout>
   );
