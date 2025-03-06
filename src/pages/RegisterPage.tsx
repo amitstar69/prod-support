@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Code } from 'lucide-react';
@@ -70,13 +71,16 @@ const RegisterPage: React.FC = () => {
         imageUrl
       });
       
-      // Create base user data
+      // Create base user data with metadata
       const userData = {
         name: `${firstName} ${lastName}`,
         email,
-        password, // Include password for Supabase auth
+        password,
         image: imageUrl,
-        profileCompleted: false
+        profileCompleted: false,
+        // Include firstName and lastName in metadata
+        firstName,
+        lastName
       };
       
       // Add user type specific initial data
@@ -258,7 +262,9 @@ const RegisterPage: React.FC = () => {
                       type="password"
                       className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                       required
+                      minLength={6}
                     />
+                    <p className="text-xs text-muted-foreground mt-1">Password must be at least 6 characters</p>
                   </div>
                   
                   <div>

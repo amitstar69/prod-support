@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { AuthState, AuthContextType, Developer, Client } from '../types/product';
@@ -237,6 +236,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           hasPassword: !!userData.password
         });
         
+        // Extract firstName and lastName for metadata
+        const firstName = (userData as any).firstName || '';
+        const lastName = (userData as any).lastName || '';
+        
         // First create auth user
         const { data, error } = await supabase.auth.signUp({
           email: userData.email,
@@ -244,10 +247,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           options: {
             data: {
               user_type: userType,
-              name: userData.name
+              name: userData.name,
+              first_name: firstName,
+              last_name: lastName
             }
           }
         });
+        
+        console.log('Supabase signUp response:', { data, error });
         
         if (error) {
           console.error('Supabase registration error:', error);
@@ -289,8 +296,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (profileError) {
           console.error('Error creating profile:', profileError);
           toast.error('Error creating profile: ' + profileError.message);
-          // Try to clean up the auth user since profile creation failed
-          await supabase.auth.admin.deleteUser(data.user.id);
           return false;
         }
         
@@ -388,6 +393,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } else {
       // Use localStorage registration as fallback
+      console.warn('No Supabase client available, falling back to localStorage registration');
       return registerWithLocalStorage(userData, userType);
     }
   };
