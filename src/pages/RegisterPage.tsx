@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { User, Code } from 'lucide-react';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,8 +9,13 @@ import { supabase, debugCheckProfileExists, debugCreateProfile } from '../integr
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { register, isAuthenticated } = useAuth();
-  const [userType, setUserType] = useState<'client' | 'developer'>('client');
+  
+  // Initialize userType from location state if available
+  const defaultUserType = location.state?.userType || 'client';
+  const [userType, setUserType] = useState<'client' | 'developer'>(defaultUserType);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -21,6 +26,13 @@ const RegisterPage: React.FC = () => {
       navigate('/');
     }
   }, [isAuthenticated, navigate]);
+  
+  // Update userType if location state changes
+  useEffect(() => {
+    if (location.state?.userType) {
+      setUserType(location.state.userType);
+    }
+  }, [location.state]);
   
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
