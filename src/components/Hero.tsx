@@ -98,14 +98,14 @@ const Hero: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">
           <button 
             onClick={handleClientSignup}
-            className="button-primary bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 px-6 py-3 text-center rounded-full font-medium"
+            className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white px-6 py-3 rounded-full font-medium cursor-pointer"
             type="button"
           >
             Hire Developers
           </button>
           <button 
             onClick={handleDeveloperSignup}
-            className="button-secondary border border-[#1E3A8A]/30 text-[#1E3A8A] hover:bg-[#1E3A8A]/5 px-6 py-3 text-center rounded-full font-medium"
+            className="border border-[#1E3A8A]/30 text-[#1E3A8A] hover:bg-[#1E3A8A]/5 px-6 py-3 rounded-full font-medium cursor-pointer"
             type="button"
           >
             Join as Developer
