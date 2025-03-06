@@ -1,25 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { AuthState, AuthContextType, Developer, Client } from '../types/product';
 import { toast } from 'sonner';
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../integrations/supabase/client';
 
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Add console logs to verify Supabase configuration
-console.log('Supabase URL: ', supabaseUrl ? 'URL is set' : 'URL is missing');
-console.log('Supabase Key: ', supabaseKey ? 'Key is set' : 'Key is missing');
-
-const supabase = supabaseUrl && supabaseKey 
-  ? createClient(supabaseUrl, supabaseKey) 
-  : null;
-
-if (!supabase) {
-  console.error('Supabase client could not be initialized. Check your environment variables.');
-} else {
-  console.log('Supabase client initialized successfully');
-}
+// Log Supabase configuration information
+console.log('AuthContext: Supabase URL:', SUPABASE_URL ? 'URL is set' : 'URL is missing');
+console.log('AuthContext: Supabase Key:', SUPABASE_ANON_KEY ? 'Key is set' : 'Key is missing');
+console.log('AuthContext: Supabase Client:', supabase ? 'Client is initialized' : 'Client is not initialized');
 
 // Create the auth context
 const AuthContext = createContext<AuthContextType>({
@@ -64,14 +51,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     // Check Supabase session if available
     if (supabase) {
-      supabase.auth.getSession().then(({ data }) => {
+      console.log('Checking Supabase session...');
+      supabase.auth.getSession().then(({ data, error }) => {
+        console.log('Supabase session result:', { data, error });
         if (data.session) {
           // Get user profile from Supabase
+          console.log('User is authenticated, fetching profile for user:', data.session.user.id);
           supabase.from('profiles')
             .select('*')
             .eq('id', data.session.user.id)
             .single()
-            .then(({ data: profileData, error }) => {
+            .then(({ data: profileData, error: profileError }) => {
+              console.log('Profile fetch result:', { profileData, profileError });
               if (profileData && !error) {
                 setAuthState({
                   isAuthenticated: true,
@@ -91,6 +82,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Listen for auth state changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, session) => {
+          console.log('Auth state changed:', event, 'Session:', session ? 'exists' : 'none');
           if (event === 'SIGNED_IN' && session) {
             // Get user profile
             const { data: profileData } = await supabase.from('profiles')
@@ -124,6 +116,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return () => {
         subscription.unsubscribe();
       };
+    } else {
+      console.error('Supabase client is not available. Authentication will not work properly.');
     }
   }, []);
   
@@ -132,6 +126,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Try Supabase login first
     if (supabase) {
       try {
+        console.log(`Attempting to login user: ${email} as ${userType}`);
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -144,92 +139,56 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return loginWithLocalStorage(email, password, userType);
         }
         
-        if (data.user) {
-          // Get user profile to determine user type
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
-            
-          if (profileError || !profileData) {
-            console.error('Error getting profile:', profileError);
-            toast.error('Profile not found. You may need to register first.');
-            await supabase.auth.signOut();
-            return false;
-          }
+        console.log('Login successful, user data:', data);
+        
+        // Get user profile to determine user type
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
           
-          // Check if user type matches
-          if (profileData.user_type !== userType) {
-            console.error('User type mismatch');
-            toast.error(`You registered as a ${profileData.user_type}, but tried to log in as a ${userType}.`);
-            await supabase.auth.signOut();
-            return false;
-          }
-          
-          setAuthState({
-            isAuthenticated: true,
-            userType: profileData.user_type,
-            userId: data.user.id,
-          });
-          
-          localStorage.setItem('authState', JSON.stringify({
-            isAuthenticated: true,
-            userType: profileData.user_type,
-            userId: data.user.id,
-          }));
-          
-          return true;
+        if (profileError || !profileData) {
+          console.error('Error getting profile:', profileError);
+          toast.error('Profile not found. You may need to register first.');
+          await supabase.auth.signOut();
+          return false;
         }
-        return false;
+        
+        // Check if user type matches
+        if (profileData.user_type !== userType) {
+          console.error('User type mismatch');
+          toast.error(`You registered as a ${profileData.user_type}, but tried to log in as a ${userType}.`);
+          await supabase.auth.signOut();
+          return false;
+        }
+        
+        setAuthState({
+          isAuthenticated: true,
+          userType: profileData.user_type,
+          userId: data.user.id,
+        });
+        
+        localStorage.setItem('authState', JSON.stringify({
+          isAuthenticated: true,
+          userType: profileData.user_type,
+          userId: data.user.id,
+        }));
+        
+        return true;
       } catch (error) {
         console.error('Supabase login exception:', error);
         // Fallback to localStorage login
         return loginWithLocalStorage(email, password, userType);
       }
     } else {
+      console.error('Supabase client is not available. Falling back to localStorage login.');
       // Use localStorage login as fallback
       return loginWithLocalStorage(email, password, userType);
     }
   };
   
-  // Helper for localStorage login
-  const loginWithLocalStorage = (email: string, password: string, userType: 'developer' | 'client'): boolean => {
-    if (userType === 'developer') {
-      const developer = mockDevelopers.find(dev => dev.email === email);
-      if (developer) {
-        setAuthState({
-          isAuthenticated: true,
-          userType: 'developer',
-          userId: developer.id,
-        });
-        localStorage.setItem('authState', JSON.stringify({
-          isAuthenticated: true,
-          userType: 'developer',
-          userId: developer.id,
-        }));
-        return true;
-      }
-    } else {
-      const client = mockClients.find(c => c.email === email);
-      if (client) {
-        setAuthState({
-          isAuthenticated: true,
-          userType: 'client',
-          userId: client.id,
-        });
-        localStorage.setItem('authState', JSON.stringify({
-          isAuthenticated: true,
-          userType: 'client',
-          userId: client.id,
-        }));
-        return true;
-      }
-    }
-    return false;
-  };
-  
-  // Register function - updated to properly create database records
+  // Register function 
   const register = async (userData: Partial<Developer | Client>, userType: 'developer' | 'client'): Promise<boolean> => {
     // Try Supabase registration first
     if (supabase) {
@@ -403,10 +362,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return registerWithLocalStorage(userData, userType);
       }
     } else {
-      // Use localStorage registration as fallback
       console.warn('No Supabase client available, falling back to localStorage registration');
       return registerWithLocalStorage(userData, userType);
     }
+  };
+  
+  // Helper for localStorage login
+  const loginWithLocalStorage = (email: string, password: string, userType: 'developer' | 'client'): boolean => {
+    if (userType === 'developer') {
+      const developer = mockDevelopers.find(dev => dev.email === email);
+      if (developer) {
+        setAuthState({
+          isAuthenticated: true,
+          userType: 'developer',
+          userId: developer.id,
+        });
+        localStorage.setItem('authState', JSON.stringify({
+          isAuthenticated: true,
+          userType: 'developer',
+          userId: developer.id,
+        }));
+        return true;
+      }
+    } else {
+      const client = mockClients.find(c => c.email === email);
+      if (client) {
+        setAuthState({
+          isAuthenticated: true,
+          userType: 'client',
+          userId: client.id,
+        });
+        localStorage.setItem('authState', JSON.stringify({
+          isAuthenticated: true,
+          userType: 'client',
+          userId: client.id,
+        }));
+        return true;
+      }
+    }
+    return false;
   };
   
   // Helper for localStorage registration
@@ -512,7 +506,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-// Function to get the current user's data - updated to work with the new schema
+// Function to get the current user's data
 export const getCurrentUserData = async (): Promise<Developer | Client | null> => {
   const { isAuthenticated, userType, userId } = JSON.parse(localStorage.getItem('authState') || '{}');
   
@@ -613,7 +607,7 @@ const getUserDataFromLocalStorage = (userType: string | null, userId: string | n
   return null;
 };
 
-// Function to update user data - updated to work with the new schema
+// Function to update user data
 export const updateUserData = async (userData: Partial<Developer | Client>): Promise<boolean> => {
   const { isAuthenticated, userType, userId } = JSON.parse(localStorage.getItem('authState') || '{}');
   

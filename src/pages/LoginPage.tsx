@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../integrations/supabase/client';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,9 +15,20 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   
+  // Log current Supabase auth status on component mount
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      console.log('Current auth status (LoginPage):', { session: data.session, error });
+    };
+    
+    checkAuthStatus();
+  }, []);
+  
   // Redirect if already logged in
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated) {
+      console.log('User is already authenticated, redirecting to home');
       navigate('/');
     }
   }, [isAuthenticated, navigate]);
@@ -25,17 +37,21 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
+    console.log(`Attempting to login: ${email} as ${userType}`);
     
     try {
       const success = await login(email, password, userType);
+      console.log('Login result:', success ? 'Success' : 'Failed');
+      
       if (success) {
+        console.log(`Login successful, redirecting to ${userType === 'developer' ? '/profile' : '/client-profile'}`);
         navigate(userType === 'developer' ? '/profile' : '/client-profile');
       } else {
         setError('Invalid email or password');
       }
     } catch (error) {
+      console.error('Login error:', error);
       setError('An unexpected error occurred');
-      console.error(error);
     } finally {
       setIsLoading(false);
     }
