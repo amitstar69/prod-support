@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Shield, Clock, Zap } from 'lucide-react';
 import SearchBar from './SearchBar';
 
@@ -8,10 +8,12 @@ const Hero: React.FC = () => {
   const navigate = useNavigate();
 
   const handleClientSignup = () => {
+    console.log('Navigating to register as client');
     navigate('/register', { state: { userType: 'client' } });
   };
 
   const handleDeveloperSignup = () => {
+    console.log('Navigating to register as developer');
     navigate('/register', { state: { userType: 'developer' } });
   };
 
@@ -96,13 +98,15 @@ const Hero: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">
           <button 
             onClick={handleClientSignup}
-            className="button-primary bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 px-6 py-3 text-center"
+            className="button-primary bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 px-6 py-3 text-center rounded-full font-medium"
+            type="button"
           >
             Hire Developers
           </button>
           <button 
             onClick={handleDeveloperSignup}
-            className="button-secondary border border-[#1E3A8A]/30 text-[#1E3A8A] hover:bg-[#1E3A8A]/5 px-6 py-3 text-center"
+            className="button-secondary border border-[#1E3A8A]/30 text-[#1E3A8A] hover:bg-[#1E3A8A]/5 px-6 py-3 text-center rounded-full font-medium"
+            type="button"
           >
             Join as Developer
           </button>
