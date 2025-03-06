@@ -6,9 +6,20 @@ import { toast } from 'sonner';
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Add console logs to verify Supabase configuration
+console.log('Supabase URL: ', supabaseUrl ? 'URL is set' : 'URL is missing');
+console.log('Supabase Key: ', supabaseKey ? 'Key is set' : 'Key is missing');
+
 const supabase = supabaseUrl && supabaseKey 
   ? createClient(supabaseUrl, supabaseKey) 
   : null;
+
+if (!supabase) {
+  console.error('Supabase client could not be initialized. Check your environment variables.');
+} else {
+  console.log('Supabase client initialized successfully');
+}
 
 // Create the auth context
 const AuthContext = createContext<AuthContextType>({
