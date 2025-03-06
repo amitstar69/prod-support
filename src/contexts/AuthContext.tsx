@@ -251,7 +251,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         console.log('User created in Auth system with ID:', data.user.id);
         
-        // Now create the profile record using the service role to bypass RLS
+        // Now explicitly create the profile record
         const profileData = {
           id: data.user.id,
           user_type: userType,
@@ -270,7 +270,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log('Creating profile record with data:', profileData);
         
         try {
-          // Insert with proper error handling
+          // Insert profile with proper error handling
           const { error: profileError } = await supabase
             .from('profiles')
             .insert([profileData]);
@@ -278,15 +278,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (profileError) {
             console.error('Error creating profile:', profileError);
             toast.error('Error creating profile: ' + profileError.message);
-            
-            // Try to clean up the auth user if profile creation failed
-            try {
-              // Note: In a real-world app, you would need admin access to delete users
-              console.log('Attempt to clean up the auth user that was created');
-            } catch (cleanupError) {
-              console.error('Failed to clean up auth user:', cleanupError);
-            }
-            
             return false;
           }
           
@@ -320,7 +311,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (devProfileError) {
               console.error('Error creating developer profile:', devProfileError);
               toast.error('Error creating developer profile: ' + devProfileError.message);
-              return false;
+              // Still continue as the base profile was created
             }
             
             console.log('Developer profile created successfully');
@@ -356,7 +347,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (clientProfileError) {
               console.error('Error creating client profile:', clientProfileError);
               toast.error('Error creating client profile: ' + clientProfileError.message);
-              return false;
+              // Still continue as the base profile was created
             }
             
             console.log('Client profile created successfully');
@@ -381,6 +372,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }));
         
         console.log('Registration completed successfully');
+        
+        // Verify profile creation with our debug function
+        const profileCheck = await debugCheckProfileExists(data.user.id);
+        console.log('Profile creation verification:', profileCheck);
+        
         return true;
       } catch (error) {
         console.error('Supabase registration exception:', error);
@@ -778,4 +774,25 @@ const updateUserDataInLocalStorage = (
   }
   
   return false;
+};
+
+// Function to check if a profile exists in Supabase
+const debugCheckProfileExists = async (userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+      
+    if (error) {
+      console.error('Error checking profile existence:', error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (error) {
+    console.error('Exception checking profile existence:', error);
+    return false;
+  }
 };

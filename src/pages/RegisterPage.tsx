@@ -4,6 +4,7 @@ import { User, Code } from 'lucide-react';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
+import { supabase, debugCheckProfileExists } from '../integrations/supabase/client';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +20,12 @@ const RegisterPage: React.FC = () => {
       navigate('/');
     }
   }, [isAuthenticated, navigate]);
+  
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data, error }) => {
+      console.log('Current auth status (RegisterPage):', { session: data.session, error });
+    });
+  }, []);
   
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -73,7 +80,12 @@ const RegisterPage: React.FC = () => {
         image: imageUrl,
         profileCompleted: false,
         firstName,
-        lastName
+        lastName,
+        location: '',
+        description: '',
+        languages: [],
+        preferredWorkingHours: '',
+        username: `${firstName.toLowerCase()}${lastName.toLowerCase()}`
       };
       
       if (userType === 'developer') {
@@ -93,7 +105,9 @@ const RegisterPage: React.FC = () => {
           preferredHelpFormat: ['chat'],
           techStack: ['React'],
           budgetPerHour: 75,
-          paymentMethod: 'Stripe'
+          paymentMethod: 'Stripe',
+          communicationPreferences: ['chat'],
+          profileCompletionPercentage: 30
         });
       }
       
@@ -103,6 +117,12 @@ const RegisterPage: React.FC = () => {
       
       if (success) {
         toast.success('Account created successfully');
+        
+        const authData = JSON.parse(localStorage.getItem('authState') || '{}');
+        if (authData.userId) {
+          const profileCheck = await debugCheckProfileExists(authData.userId);
+          console.log('Post-registration profile check:', profileCheck);
+        }
         
         if (userType === 'developer') {
           navigate('/developer-registration');
@@ -114,7 +134,7 @@ const RegisterPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error('Registration failed');
+      toast.error('Registration failed: ' + (error.message || 'Unknown error'));
     } finally {
       setIsLoading(false);
     }
