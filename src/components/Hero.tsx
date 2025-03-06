@@ -1,22 +1,9 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Shield, Clock, Zap } from 'lucide-react';
 import SearchBar from './SearchBar';
 
 const Hero: React.FC = () => {
-  const navigate = useNavigate();
-
-  const handleClientSignup = () => {
-    console.log('Navigating to register as client');
-    navigate('/register', { state: { userType: 'client' } });
-  };
-
-  const handleDeveloperSignup = () => {
-    console.log('Navigating to register as developer');
-    navigate('/register', { state: { userType: 'developer' } });
-  };
-
   return (
     <section className="relative pt-20 pb-16 md:pt-24 md:pb-20 overflow-hidden">
       {/* Background gradient */}
@@ -92,24 +79,6 @@ const Hero: React.FC = () => {
               <span>Instant technical solutions</span>
             </div>
           </div>
-        </div>
-        
-        {/* CTA buttons */}
-        <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">
-          <a 
-            onClick={handleClientSignup}
-            className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white px-6 py-3 rounded-full font-medium cursor-pointer text-center inline-block"
-            role="button"
-          >
-            Hire Developers
-          </a>
-          <a 
-            onClick={handleDeveloperSignup}
-            className="border border-[#1E3A8A]/30 text-[#1E3A8A] hover:bg-[#1E3A8A]/5 px-6 py-3 rounded-full font-medium cursor-pointer text-center inline-block"
-            role="button"
-          >
-            Join as Developer
-          </a>
         </div>
       </div>
     </section>
