@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthState, AuthContextType, Developer, Client } from '../types/product';
 import { toast } from 'sonner';
@@ -64,14 +65,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .then(({ data: profileData, error: profileError }) => {
               console.log('Profile fetch result:', { profileData, profileError });
               if (profileData && !error) {
+                // Fix type error by ensuring userType is 'developer' | 'client' | null
+                const userType = profileData.user_type === 'developer' || profileData.user_type === 'client' 
+                  ? profileData.user_type as 'developer' | 'client'
+                  : null;
+                
                 setAuthState({
                   isAuthenticated: true,
-                  userType: profileData.user_type,
+                  userType: userType,
                   userId: data.session.user.id,
                 });
                 localStorage.setItem('authState', JSON.stringify({
                   isAuthenticated: true,
-                  userType: profileData.user_type,
+                  userType: userType,
                   userId: data.session.user.id,
                 }));
               }
@@ -91,14 +97,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               .single();
               
             if (profileData) {
+              // Fix type error by ensuring userType is 'developer' | 'client' | null
+              const userType = profileData.user_type === 'developer' || profileData.user_type === 'client' 
+                ? profileData.user_type as 'developer' | 'client'
+                : null;
+                
               setAuthState({
                 isAuthenticated: true,
-                userType: profileData.user_type,
+                userType: userType,
                 userId: session.user.id,
               });
               localStorage.setItem('authState', JSON.stringify({
                 isAuthenticated: true,
-                userType: profileData.user_type,
+                userType: userType,
                 userId: session.user.id,
               }));
             }
@@ -165,13 +176,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         setAuthState({
           isAuthenticated: true,
-          userType: profileData.user_type,
+          userType: profileData.user_type as 'developer' | 'client',
           userId: data.user.id,
         });
         
         localStorage.setItem('authState', JSON.stringify({
           isAuthenticated: true,
-          userType: profileData.user_type,
+          userType: profileData.user_type as 'developer' | 'client',
           userId: data.user.id,
         }));
         
@@ -512,7 +523,7 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
   
   if (!isAuthenticated || !userId) return null;
   
-  if (supabase && supabaseUrl && supabaseKey) {
+  if (supabase && SUPABASE_URL && SUPABASE_ANON_KEY) {
     try {
       // First get the base profile data
       const { data: profileData, error: profileError } = await supabase
@@ -613,7 +624,7 @@ export const updateUserData = async (userData: Partial<Developer | Client>): Pro
   
   if (!isAuthenticated || !userId) return false;
   
-  if (supabase && supabaseUrl && supabaseKey) {
+  if (supabase && SUPABASE_URL && SUPABASE_ANON_KEY) {
     try {
       // Separate profile data from type-specific data using type assertion and type guards
       const {
