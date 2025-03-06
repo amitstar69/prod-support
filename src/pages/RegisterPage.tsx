@@ -1,10 +1,11 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Code } from 'lucide-react';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
-import { supabase, debugCheckProfileExists } from '../integrations/supabase/client';
+import { supabase, debugCheckProfileExists, debugCreateProfile } from '../integrations/supabase/client';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -122,6 +123,24 @@ const RegisterPage: React.FC = () => {
         if (authData.userId) {
           const profileCheck = await debugCheckProfileExists(authData.userId);
           console.log('Post-registration profile check:', profileCheck);
+          
+          // If profile doesn't exist, try direct creation as a fallback
+          if (!profileCheck.exists) {
+            console.log('Profile does not exist after registration, attempting direct creation...');
+            const directCreation = await debugCreateProfile(
+              authData.userId, 
+              userType, 
+              email, 
+              `${firstName} ${lastName}`
+            );
+            console.log('Direct profile creation result:', directCreation);
+            
+            if (directCreation.success) {
+              toast.success('Profile created successfully via direct creation');
+            } else {
+              toast.error('Failed to create profile directly: ' + directCreation.error);
+            }
+          }
         }
         
         if (userType === 'developer') {

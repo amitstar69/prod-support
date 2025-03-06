@@ -33,6 +33,8 @@ export const debugCheckProfileExists = async (userId: string) => {
   if (!userId) return { exists: false, error: 'No user ID provided' };
   
   try {
+    console.log(`Checking if profile exists for user ID: ${userId}`);
+    
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('*')
@@ -44,24 +46,89 @@ export const debugCheckProfileExists = async (userId: string) => {
       return { exists: false, error: profileError.message };
     }
     
-    const { data: typeProfileData, error: typeProfileError } = profileData?.user_type === 'developer' 
-      ? await supabase.from('developer_profiles').select('*').eq('id', userId).single()
-      : await supabase.from('client_profiles').select('*').eq('id', userId).single();
-      
-    console.log('Profile check results:', {
-      baseProfile: profileData ? 'exists' : 'missing',
-      typeProfile: typeProfileData ? 'exists' : 'missing',
-      typeProfileError: typeProfileError
-    });
+    console.log('Profile data found:', profileData);
     
-    return { 
-      exists: !!profileData, 
-      profileData,
-      typeProfileExists: !!typeProfileData,
-      typeProfileData
-    };
+    // Check if user type specific profile exists
+    if (profileData?.user_type) {
+      const { data: typeProfileData, error: typeProfileError } = profileData.user_type === 'developer' 
+        ? await supabase.from('developer_profiles').select('*').eq('id', userId).single()
+        : await supabase.from('client_profiles').select('*').eq('id', userId).single();
+        
+      console.log(`${profileData.user_type}_profiles check results:`, {
+        typeProfile: typeProfileData ? 'exists' : 'missing',
+        typeProfileError: typeProfileError
+      });
+      
+      return { 
+        exists: !!profileData, 
+        profileData,
+        typeProfileExists: !!typeProfileData,
+        typeProfileData,
+        typeProfileError
+      };
+    }
+    
+    return { exists: !!profileData, profileData };
   } catch (error) {
     console.error('Exception checking profile:', error);
     return { exists: false, error: error.message };
+  }
+};
+
+// Function to test profile insertion
+export const debugCreateProfile = async (userId: string, userType: 'developer' | 'client', email: string, name: string) => {
+  try {
+    console.log(`Attempting to create test profile for user ID: ${userId}, type: ${userType}`);
+    
+    // Create base profile
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .insert([{
+        id: userId,
+        user_type: userType,
+        name: name,
+        email: email,
+        username: email.split('@')[0].toLowerCase(),
+      }])
+      .select();
+      
+    if (profileError) {
+      console.error('Error creating test profile:', profileError);
+      return { success: false, error: profileError.message };
+    }
+    
+    console.log('Test profile created successfully:', profileData);
+    
+    // Create type-specific profile
+    if (userType === 'developer') {
+      const { data: devData, error: devError } = await supabase
+        .from('developer_profiles')
+        .insert([{ id: userId }])
+        .select();
+        
+      if (devError) {
+        console.error('Error creating test developer profile:', devError);
+        return { success: true, profileData, error: devError.message };
+      }
+      
+      console.log('Test developer profile created successfully:', devData);
+      return { success: true, profileData, devData };
+    } else {
+      const { data: clientData, error: clientError } = await supabase
+        .from('client_profiles')
+        .insert([{ id: userId }])
+        .select();
+        
+      if (clientError) {
+        console.error('Error creating test client profile:', clientError);
+        return { success: true, profileData, error: clientError.message };
+      }
+      
+      console.log('Test client profile created successfully:', clientData);
+      return { success: true, profileData, clientData };
+    }
+  } catch (error) {
+    console.error('Exception creating test profile:', error);
+    return { success: false, error: error.message };
   }
 };
