@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { AuthState, AuthContextType, Developer, Client } from '../types/product';
@@ -257,8 +258,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             joined_date: new Date().toISOString(),
             languages: userData.languages || [],
             preferred_working_hours: userData.preferredWorkingHours || '',
-            profile_completed: false,
-            username: (userData as any).username || null,
+            profile_completed: userData.profileCompleted || false,
+            username: (userData as Client).username || null,
           };
           
           console.log('Creating profile record:', profileData);

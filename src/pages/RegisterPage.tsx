@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Code } from 'lucide-react';
@@ -64,6 +63,7 @@ const RegisterPage: React.FC = () => {
       imageUrl
     });
     
+    // Create base user data
     const userData = {
       name: `${firstName} ${lastName}`,
       email,
@@ -72,7 +72,31 @@ const RegisterPage: React.FC = () => {
       profileCompleted: false
     };
     
+    // Add user type specific initial data
+    if (userType === 'developer') {
+      Object.assign(userData, {
+        category: 'frontend', // Default category
+        skills: ['JavaScript', 'React'], // Default skills
+        hourlyRate: 75, // Default hourly rate
+        minuteRate: 1.5, // Default per-minute rate
+        experience: '3+ years', // Default experience
+        availability: true, // Default availability
+        rating: 4.5, // Default rating
+        communicationPreferences: ['chat', 'video'] // Default communication preferences
+      });
+    } else {
+      // Client specific initial data
+      Object.assign(userData, {
+        lookingFor: ['web development'], // Default looking for
+        preferredHelpFormat: ['chat'], // Default preferred help format
+        techStack: ['React'], // Default tech stack
+        budgetPerHour: 75, // Default budget per hour
+        paymentMethod: 'Stripe' // Default payment method
+      });
+    }
+    
     try {
+      console.log('Submitting registration with data:', userData);
       const success = await register(userData, userType);
       
       if (success) {
