@@ -817,24 +817,3 @@ const updateUserDataInLocalStorage = (
   
   return false;
 };
-
-// Function to check if a profile exists in Supabase
-const debugCheckProfileExists = async (userId: string): Promise<boolean> => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-      
-    if (error) {
-      console.error('Error checking profile existence:', error);
-      return false;
-    }
-    
-    return !!data;
-  } catch (error) {
-    console.error('Exception checking profile existence:', error);
-    return false;
-  }
-};
