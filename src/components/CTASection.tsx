@@ -1,9 +1,19 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Building, GraduationCap } from 'lucide-react';
 
 const CTASection: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleClientSignup = () => {
+    navigate('/register', { state: { userType: 'client' } });
+  };
+
+  const handleDeveloperSignup = () => {
+    navigate('/register', { state: { userType: 'developer' } });
+  };
+
   return (
     <section className="bg-gradient-to-b from-secondary/30 to-background py-16 md:py-24">
       <div className="container mx-auto px-4">
@@ -24,13 +34,12 @@ const CTASection: React.FC = () => {
             <p className="text-muted-foreground mb-6">
               Find top developers to help with your projects
             </p>
-            <Link 
-              to="/register" 
-              state={{ userType: 'client' }}
+            <button 
+              onClick={handleClientSignup}
               className="button-primary w-full"
             >
               Hire Developers
-            </Link>
+            </button>
           </div>
           
           {/* Join as Developer CTA */}
@@ -42,13 +51,12 @@ const CTASection: React.FC = () => {
             <p className="text-muted-foreground mb-6">
               Share your expertise and earn by helping others
             </p>
-            <Link 
-              to="/register" 
-              state={{ userType: 'developer' }}
+            <button 
+              onClick={handleDeveloperSignup}
               className="button-secondary w-full"
             >
               Join as Developer
-            </Link>
+            </button>
           </div>
         </div>
       </div>

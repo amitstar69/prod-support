@@ -1,10 +1,20 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Shield, Clock, Zap } from 'lucide-react';
 import SearchBar from './SearchBar';
 
 const Hero: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleClientSignup = () => {
+    navigate('/register', { state: { userType: 'client' } });
+  };
+
+  const handleDeveloperSignup = () => {
+    navigate('/register', { state: { userType: 'developer' } });
+  };
+
   return (
     <section className="relative pt-20 pb-16 md:pt-24 md:pb-20 overflow-hidden">
       {/* Background gradient */}
@@ -84,20 +94,18 @@ const Hero: React.FC = () => {
         
         {/* CTA buttons */}
         <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">
-          <Link 
-            to="/register" 
-            state={{ userType: 'client' }}
+          <button 
+            onClick={handleClientSignup}
             className="button-primary bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 px-6 py-3 text-center"
           >
             Hire Developers
-          </Link>
-          <Link 
-            to="/register" 
-            state={{ userType: 'developer' }}
+          </button>
+          <button 
+            onClick={handleDeveloperSignup}
             className="button-secondary border border-[#1E3A8A]/30 text-[#1E3A8A] hover:bg-[#1E3A8A]/5 px-6 py-3 text-center"
           >
             Join as Developer
-          </Link>
+          </button>
         </div>
       </div>
     </section>
