@@ -9,5 +9,15 @@ export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Create and export the supabase client
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Console log to verify the client is properly initialized
-console.log('Supabase client initialized with URL:', SUPABASE_URL ? 'URL is set' : 'URL is missing');
+// Log Supabase client initialization
+console.log('Supabase client initialized with URL:', SUPABASE_URL);
+console.log('Initializing with key starting with:', SUPABASE_ANON_KEY.substring(0, 10) + '...');
+
+// Test the connection
+supabase.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error('Error checking Supabase session:', error);
+  } else {
+    console.log('Supabase session check successful:', data.session ? 'Active session' : 'No active session');
+  }
+});

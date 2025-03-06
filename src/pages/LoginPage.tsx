@@ -14,7 +14,6 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   
-  // Log current Supabase auth status on component mount
   useEffect(() => {
     const checkAuthStatus = async () => {
       const { data, error } = await supabase.auth.getSession();
@@ -24,7 +23,6 @@ const LoginPage: React.FC = () => {
     checkAuthStatus();
   }, []);
   
-  // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated) {
       console.log('User is already authenticated, redirecting to home');

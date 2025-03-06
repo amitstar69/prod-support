@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Code } from 'lucide-react';
@@ -15,7 +14,6 @@ const RegisterPage: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/');
@@ -27,7 +25,6 @@ const RegisterPage: React.FC = () => {
       const file = e.target.files[0];
       setProfileImage(file);
       
-      // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -59,8 +56,6 @@ const RegisterPage: React.FC = () => {
       
       let imageUrl = '/placeholder.svg';
       if (profileImage) {
-        // In a real app, we would upload the image to a server
-        // For now, we'll use the local preview URL
         imageUrl = imagePreview || '/placeholder.svg';
       }
       
@@ -71,52 +66,47 @@ const RegisterPage: React.FC = () => {
         imageUrl
       });
       
-      // Create base user data with metadata
       const userData = {
         name: `${firstName} ${lastName}`,
         email,
         password,
         image: imageUrl,
         profileCompleted: false,
-        // Include firstName and lastName in metadata
         firstName,
         lastName
       };
       
-      // Add user type specific initial data
       if (userType === 'developer') {
         Object.assign(userData, {
-          category: 'frontend', // Default category
-          skills: ['JavaScript', 'React'], // Default skills
-          hourlyRate: 75, // Default hourly rate
-          minuteRate: 1.5, // Default per-minute rate
-          experience: '3+ years', // Default experience
-          availability: true, // Default availability
-          rating: 4.5, // Default rating
-          communicationPreferences: ['chat', 'video'] // Default communication preferences
+          category: 'frontend',
+          skills: ['JavaScript', 'React'],
+          hourlyRate: 75,
+          minuteRate: 1.5,
+          experience: '3+ years',
+          availability: true,
+          rating: 4.5,
+          communicationPreferences: ['chat', 'video']
         });
       } else {
-        // Client specific initial data
         Object.assign(userData, {
-          lookingFor: ['web development'], // Default looking for
-          preferredHelpFormat: ['chat'], // Default preferred help format
-          techStack: ['React'], // Default tech stack
-          budgetPerHour: 75, // Default budget per hour
-          paymentMethod: 'Stripe' // Default payment method
+          lookingFor: ['web development'],
+          preferredHelpFormat: ['chat'],
+          techStack: ['React'],
+          budgetPerHour: 75,
+          paymentMethod: 'Stripe'
         });
       }
       
       console.log('Submitting registration with data:', userData);
       const success = await register(userData, userType);
+      console.log('Registration result:', success ? 'Success' : 'Failed');
       
       if (success) {
         toast.success('Account created successfully');
         
         if (userType === 'developer') {
-          // If registering as a developer, redirect to complete the profile
           navigate('/developer-registration');
         } else {
-          // If registering as a client, redirect to client profile
           navigate('/client-profile');
         }
       } else {
@@ -145,7 +135,6 @@ const RegisterPage: React.FC = () => {
             <div className="p-6 md:p-8">
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
-                  {/* Profile Image Upload */}
                   <div className="flex flex-col items-center space-y-2">
                     <div 
                       onClick={handleImageClick}
@@ -175,7 +164,6 @@ const RegisterPage: React.FC = () => {
                     </span>
                   </div>
                   
-                  {/* User Type Selection */}
                   <div className="space-y-4 mb-4">
                     <label className="block text-sm font-medium mb-2">
                       I want to:

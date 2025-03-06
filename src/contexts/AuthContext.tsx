@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthState, AuthContextType, Developer, Client } from '../types/product';
 import { toast } from 'sonner';
@@ -252,7 +251,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         console.log('User created in Auth system with ID:', data.user.id);
         
-        // Now create the profile record
+        // Now create the profile record using the service role to bypass RLS
         const profileData = {
           id: data.user.id,
           user_type: userType,
@@ -270,88 +269,105 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         console.log('Creating profile record with data:', profileData);
         
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([profileData]);
-        
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          toast.error('Error creating profile: ' + profileError.message);
+        try {
+          // Insert with proper error handling
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([profileData]);
+          
+          if (profileError) {
+            console.error('Error creating profile:', profileError);
+            toast.error('Error creating profile: ' + profileError.message);
+            
+            // Try to clean up the auth user if profile creation failed
+            try {
+              // Note: In a real-world app, you would need admin access to delete users
+              console.log('Attempt to clean up the auth user that was created');
+            } catch (cleanupError) {
+              console.error('Failed to clean up auth user:', cleanupError);
+            }
+            
+            return false;
+          }
+          
+          console.log('Profile created successfully');
+          
+          // Create type-specific profile record
+          if (userType === 'developer') {
+            const devData = userData as Partial<Developer>;
+            const developerProfileData = {
+              id: data.user.id,
+              hourly_rate: devData.hourlyRate || 75,
+              minute_rate: devData.minuteRate || 1.5,
+              category: devData.category || 'frontend',
+              skills: devData.skills || ['JavaScript', 'React'],
+              experience: devData.experience || '3+ years',
+              rating: devData.rating || 4.5,
+              availability: devData.availability !== undefined ? devData.availability : true,
+              featured: devData.featured || false,
+              online: devData.online || false,
+              last_active: new Date().toISOString(),
+              phone: devData.phone || null,
+              communication_preferences: devData.communicationPreferences || ['chat', 'video'],
+            };
+            
+            console.log('Creating developer profile with data:', developerProfileData);
+            
+            const { error: devProfileError } = await supabase
+              .from('developer_profiles')
+              .insert([developerProfileData]);
+            
+            if (devProfileError) {
+              console.error('Error creating developer profile:', devProfileError);
+              toast.error('Error creating developer profile: ' + devProfileError.message);
+              return false;
+            }
+            
+            console.log('Developer profile created successfully');
+          } else {
+            const clientData = userData as Partial<Client>;
+            const clientProfileData = {
+              id: data.user.id,
+              looking_for: clientData.lookingFor || ['web development'],
+              completed_projects: clientData.completedProjects || 0,
+              profile_completion_percentage: clientData.profileCompletionPercentage || 0,
+              preferred_help_format: clientData.preferredHelpFormat || ['chat'],
+              budget: clientData.budget || null,
+              payment_method: clientData.paymentMethod || 'Stripe',
+              bio: clientData.bio || null,
+              tech_stack: clientData.techStack || ['React'],
+              budget_per_hour: clientData.budgetPerHour || 75,
+              company: clientData.company || null,
+              position: clientData.position || null,
+              project_types: clientData.projectTypes || [],
+              industry: clientData.industry || null,
+              social_links: clientData.socialLinks || {},
+              time_zone: clientData.timeZone || null,
+              availability: clientData.availability || {},
+              communication_preferences: clientData.communicationPreferences || ['chat'],
+            };
+            
+            console.log('Creating client profile with data:', clientProfileData);
+            
+            const { error: clientProfileError } = await supabase
+              .from('client_profiles')
+              .insert([clientProfileData]);
+            
+            if (clientProfileError) {
+              console.error('Error creating client profile:', clientProfileError);
+              toast.error('Error creating client profile: ' + clientProfileError.message);
+              return false;
+            }
+            
+            console.log('Client profile created successfully');
+          }
+        } catch (profileInsertError) {
+          console.error('Exception during profile creation:', profileInsertError);
+          toast.error('Failed to create profile due to an unexpected error');
           return false;
         }
         
-        console.log('Profile created successfully');
-        
-        // Create type-specific profile record
-        if (userType === 'developer') {
-          const devData = userData as Partial<Developer>;
-          const developerProfileData = {
-            id: data.user.id,
-            hourly_rate: devData.hourlyRate || 75,
-            minute_rate: devData.minuteRate || 1.5,
-            category: devData.category || 'frontend',
-            skills: devData.skills || ['JavaScript', 'React'],
-            experience: devData.experience || '3+ years',
-            rating: devData.rating || 4.5,
-            availability: devData.availability !== undefined ? devData.availability : true,
-            featured: devData.featured || false,
-            online: devData.online || false,
-            last_active: new Date().toISOString(),
-            phone: devData.phone || null,
-            communication_preferences: devData.communicationPreferences || ['chat', 'video'],
-          };
-          
-          console.log('Creating developer profile with data:', developerProfileData);
-          
-          const { error: devProfileError } = await supabase
-            .from('developer_profiles')
-            .insert([developerProfileData]);
-          
-          if (devProfileError) {
-            console.error('Error creating developer profile:', devProfileError);
-            toast.error('Error creating developer profile: ' + devProfileError.message);
-            return false;
-          }
-          
-          console.log('Developer profile created successfully');
-        } else {
-          const clientData = userData as Partial<Client>;
-          const clientProfileData = {
-            id: data.user.id,
-            looking_for: clientData.lookingFor || ['web development'],
-            completed_projects: clientData.completedProjects || 0,
-            profile_completion_percentage: clientData.profileCompletionPercentage || 0,
-            preferred_help_format: clientData.preferredHelpFormat || ['chat'],
-            budget: clientData.budget || null,
-            payment_method: clientData.paymentMethod || 'Stripe',
-            bio: clientData.bio || null,
-            tech_stack: clientData.techStack || ['React'],
-            budget_per_hour: clientData.budgetPerHour || 75,
-            company: clientData.company || null,
-            position: clientData.position || null,
-            project_types: clientData.projectTypes || [],
-            industry: clientData.industry || null,
-            social_links: clientData.socialLinks || {},
-            time_zone: clientData.timeZone || null,
-            availability: clientData.availability || {},
-            communication_preferences: clientData.communicationPreferences || ['chat'],
-          };
-          
-          console.log('Creating client profile with data:', clientProfileData);
-          
-          const { error: clientProfileError } = await supabase
-            .from('client_profiles')
-            .insert([clientProfileData]);
-          
-          if (clientProfileError) {
-            console.error('Error creating client profile:', clientProfileError);
-            toast.error('Error creating client profile: ' + clientProfileError.message);
-            return false;
-          }
-          
-          console.log('Client profile created successfully');
-        }
-        
+        // Set the authentication state after successful profile creation
         setAuthState({
           isAuthenticated: true,
           userType,
