@@ -244,7 +244,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         
         if (data.user) {
-          console.log('User created in Auth system:', data.user.id);
+          console.log('User created in Auth system with ID:', data.user.id);
           
           // Now create the profile record
           const profileData = {
@@ -259,10 +259,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             languages: userData.languages || [],
             preferred_working_hours: userData.preferredWorkingHours || '',
             profile_completed: userData.profileCompleted || false,
-            username: (userData as Client).username || null,
+            username: (userData as any).username || null,
           };
           
-          console.log('Creating profile record:', profileData);
+          console.log('Creating profile record with data:', profileData);
           
           const { error: profileError } = await supabase
             .from('profiles')
@@ -282,20 +282,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const developerProfileData = {
               id: data.user.id,
               hourly_rate: devData.hourlyRate || 75,
-              minute_rate: devData.minuteRate || null,
+              minute_rate: devData.minuteRate || 1.5,
               category: devData.category || 'frontend',
               skills: devData.skills || ['JavaScript', 'React'],
-              experience: devData.experience || '3 years',
+              experience: devData.experience || '3+ years',
               rating: devData.rating || 4.5,
               availability: devData.availability !== undefined ? devData.availability : true,
               featured: devData.featured || false,
               online: devData.online || false,
               last_active: new Date().toISOString(),
               phone: devData.phone || null,
-              communication_preferences: devData.communicationPreferences || [],
+              communication_preferences: devData.communicationPreferences || ['chat', 'video'],
             };
             
-            console.log('Creating developer profile:', developerProfileData);
+            console.log('Creating developer profile with data:', developerProfileData);
             
             const { error: devProfileError } = await supabase
               .from('developer_profiles')
@@ -312,15 +312,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const clientData = userData as Partial<Client>;
             const clientProfileData = {
               id: data.user.id,
-              looking_for: clientData.lookingFor || [],
+              looking_for: clientData.lookingFor || ['web development'],
               completed_projects: clientData.completedProjects || 0,
               profile_completion_percentage: clientData.profileCompletionPercentage || 0,
-              preferred_help_format: clientData.preferredHelpFormat || [],
+              preferred_help_format: clientData.preferredHelpFormat || ['chat'],
               budget: clientData.budget || null,
-              payment_method: clientData.paymentMethod || null,
+              payment_method: clientData.paymentMethod || 'Stripe',
               bio: clientData.bio || null,
-              tech_stack: clientData.techStack || [],
-              budget_per_hour: clientData.budgetPerHour || null,
+              tech_stack: clientData.techStack || ['React'],
+              budget_per_hour: clientData.budgetPerHour || 75,
               company: clientData.company || null,
               position: clientData.position || null,
               project_types: clientData.projectTypes || [],
@@ -328,10 +328,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               social_links: clientData.socialLinks || {},
               time_zone: clientData.timeZone || null,
               availability: clientData.availability || {},
-              communication_preferences: clientData.communicationPreferences || []
+              communication_preferences: clientData.communicationPreferences || ['chat'],
             };
             
-            console.log('Creating client profile:', clientProfileData);
+            console.log('Creating client profile with data:', clientProfileData);
             
             const { error: clientProfileError } = await supabase
               .from('client_profiles')
