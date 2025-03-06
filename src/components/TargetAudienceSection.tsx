@@ -9,25 +9,29 @@ const TargetAudienceSection: React.FC = () => {
       icon: <Rocket className="h-8 w-8 text-[#00B4D8]" />,
       title: "Startups & Solo Founders",
       description: "Get the tech help you need without the overhead of a full-time hire. Scale your development on demand.",
-      cta: "Launch faster"
+      cta: "Launch faster",
+      userType: "client"
     },
     {
       icon: <Briefcase className="h-8 w-8 text-[#00B4D8]" />,
       title: "Agencies & Freelancers",
       description: "Extend your capabilities on client projects. Access specialized expertise exactly when you need it.",
-      cta: "Expand your services"
+      cta: "Expand your services",
+      userType: "client"
     },
     {
       icon: <Building className="h-8 w-8 text-[#00B4D8]" />,
       title: "Corporate Dev Teams",
       description: "Overcome blockers quickly with on-demand specialists. Keep your projects moving forward on schedule.",
-      cta: "Accelerate delivery"
+      cta: "Accelerate delivery",
+      userType: "client"
     },
     {
       icon: <GraduationCap className="h-8 w-8 text-[#00B4D8]" />,
       title: "Students & Learners",
       description: "Learn directly from industry professionals. Get personalized guidance on your projects and assignments.",
-      cta: "Learn from pros"
+      cta: "Learn from pros",
+      userType: "client"
     }
   ];
 
@@ -57,6 +61,7 @@ const TargetAudienceSection: React.FC = () => {
               <div className="mt-auto">
                 <Link 
                   to="/register" 
+                  state={{ userType: audience.userType }}
                   className="text-[#1E3A8A] font-medium inline-flex items-center group"
                 >
                   {audience.cta}
