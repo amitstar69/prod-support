@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthState, AuthContextType, Developer, Client } from '../types/product';
 import { toast } from 'sonner';
-import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../integrations/supabase/client';
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY, debugCheckProfileExists } from '../integrations/supabase/client';
 
 // Log Supabase configuration information
 console.log('AuthContext: Supabase URL:', SUPABASE_URL ? 'URL is set' : 'URL is missing');
@@ -372,7 +372,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               
               console.log('Creating client profile with data:', clientProfileData);
               
-              const { error: clientProfileError, data: clientProfileData } = await supabase
+              const { error: clientProfileError, data: clientProfileInsertData } = await supabase
                 .from('client_profiles')
                 .insert([clientProfileData])
                 .select();
@@ -389,7 +389,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   console.error('Simple client profile insertion also failed:', simpleClientProfileError);
                 }
               } else {
-                console.log('Client profile created successfully:', clientProfileData);
+                console.log('Client profile created successfully:', clientProfileInsertData);
               }
             } catch (clientProfileError) {
               console.error('Exception during client profile creation:', clientProfileError);
