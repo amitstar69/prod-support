@@ -96,20 +96,20 @@ const Hero: React.FC = () => {
         
         {/* CTA buttons */}
         <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">
-          <button 
+          <a 
             onClick={handleClientSignup}
-            className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white px-6 py-3 rounded-full font-medium cursor-pointer"
-            type="button"
+            className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white px-6 py-3 rounded-full font-medium cursor-pointer text-center inline-block"
+            role="button"
           >
             Hire Developers
-          </button>
-          <button 
+          </a>
+          <a 
             onClick={handleDeveloperSignup}
-            className="border border-[#1E3A8A]/30 text-[#1E3A8A] hover:bg-[#1E3A8A]/5 px-6 py-3 rounded-full font-medium cursor-pointer"
-            type="button"
+            className="border border-[#1E3A8A]/30 text-[#1E3A8A] hover:bg-[#1E3A8A]/5 px-6 py-3 rounded-full font-medium cursor-pointer text-center inline-block"
+            role="button"
           >
             Join as Developer
-          </button>
+          </a>
         </div>
       </div>
     </section>
