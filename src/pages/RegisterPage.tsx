@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Code } from 'lucide-react';
 import Layout from '../components/Layout';
@@ -15,7 +15,7 @@ const RegisterPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Redirect if already logged in
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated) {
       navigate('/');
     }
@@ -43,59 +43,65 @@ const RegisterPage: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    const formData = new FormData(e.currentTarget);
-    const firstName = formData.get('firstName') as string;
-    const lastName = formData.get('lastName') as string;
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    
-    let imageUrl = '/placeholder.svg';
-    if (profileImage) {
-      // In a real app, we would upload the image to a server
-      // For now, we'll use the local preview URL
-      imageUrl = imagePreview || '/placeholder.svg';
-    }
-    
-    console.log(`Registering as ${userType} with:`, {
-      name: `${firstName} ${lastName}`,
-      email,
-      hasPassword: !!password,
-      imageUrl
-    });
-    
-    // Create base user data
-    const userData = {
-      name: `${firstName} ${lastName}`,
-      email,
-      password, // Include password for Supabase auth
-      image: imageUrl,
-      profileCompleted: false
-    };
-    
-    // Add user type specific initial data
-    if (userType === 'developer') {
-      Object.assign(userData, {
-        category: 'frontend', // Default category
-        skills: ['JavaScript', 'React'], // Default skills
-        hourlyRate: 75, // Default hourly rate
-        minuteRate: 1.5, // Default per-minute rate
-        experience: '3+ years', // Default experience
-        availability: true, // Default availability
-        rating: 4.5, // Default rating
-        communicationPreferences: ['chat', 'video'] // Default communication preferences
-      });
-    } else {
-      // Client specific initial data
-      Object.assign(userData, {
-        lookingFor: ['web development'], // Default looking for
-        preferredHelpFormat: ['chat'], // Default preferred help format
-        techStack: ['React'], // Default tech stack
-        budgetPerHour: 75, // Default budget per hour
-        paymentMethod: 'Stripe' // Default payment method
-      });
-    }
-    
     try {
+      const formData = new FormData(e.currentTarget);
+      const firstName = formData.get('firstName') as string;
+      const lastName = formData.get('lastName') as string;
+      const email = formData.get('email') as string;
+      const password = formData.get('password') as string;
+      
+      if (!firstName || !lastName || !email || !password) {
+        toast.error('Please fill out all required fields');
+        setIsLoading(false);
+        return;
+      }
+      
+      let imageUrl = '/placeholder.svg';
+      if (profileImage) {
+        // In a real app, we would upload the image to a server
+        // For now, we'll use the local preview URL
+        imageUrl = imagePreview || '/placeholder.svg';
+      }
+      
+      console.log(`Registering as ${userType} with:`, {
+        name: `${firstName} ${lastName}`,
+        email,
+        hasPassword: !!password,
+        imageUrl
+      });
+      
+      // Create base user data
+      const userData = {
+        name: `${firstName} ${lastName}`,
+        email,
+        password, // Include password for Supabase auth
+        image: imageUrl,
+        profileCompleted: false
+      };
+      
+      // Add user type specific initial data
+      if (userType === 'developer') {
+        Object.assign(userData, {
+          category: 'frontend', // Default category
+          skills: ['JavaScript', 'React'], // Default skills
+          hourlyRate: 75, // Default hourly rate
+          minuteRate: 1.5, // Default per-minute rate
+          experience: '3+ years', // Default experience
+          availability: true, // Default availability
+          rating: 4.5, // Default rating
+          communicationPreferences: ['chat', 'video'] // Default communication preferences
+        });
+      } else {
+        // Client specific initial data
+        Object.assign(userData, {
+          lookingFor: ['web development'], // Default looking for
+          preferredHelpFormat: ['chat'], // Default preferred help format
+          techStack: ['React'], // Default tech stack
+          budgetPerHour: 75, // Default budget per hour
+          paymentMethod: 'Stripe' // Default payment method
+        });
+      }
+      
       console.log('Submitting registration with data:', userData);
       const success = await register(userData, userType);
       

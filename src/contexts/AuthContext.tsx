@@ -224,16 +224,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Try Supabase registration first
     if (supabase) {
       try {
+        if (!userData.email || !userData.password) {
+          console.error('Registration failed: Email and password are required');
+          toast.error('Registration failed: Email and password are required');
+          return false;
+        }
+        
         console.log('Registering with Supabase', {
           email: userData.email,
           userType,
+          name: userData.name,
           hasPassword: !!userData.password
         });
         
         // First create auth user
         const { data, error } = await supabase.auth.signUp({
-          email: userData.email as string,
-          password: userData.password as string,
+          email: userData.email,
+          password: userData.password,
+          options: {
+            data: {
+              user_type: userType,
+              name: userData.name
+            }
+          }
         });
         
         if (error) {
@@ -243,127 +256,133 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return registerWithLocalStorage(userData, userType);
         }
         
-        if (data.user) {
-          console.log('User created in Auth system with ID:', data.user.id);
-          
-          // Now create the profile record
-          const profileData = {
+        if (!data.user) {
+          console.error('No user data returned from Supabase');
+          toast.error('Registration failed: No user data returned');
+          return false;
+        }
+        
+        console.log('User created in Auth system with ID:', data.user.id);
+        
+        // Now create the profile record
+        const profileData = {
+          id: data.user.id,
+          user_type: userType,
+          name: userData.name || '',
+          email: userData.email,
+          image: userData.image || '/placeholder.svg',
+          description: userData.description || '',
+          location: userData.location || '',
+          joined_date: new Date().toISOString(),
+          languages: userData.languages || [],
+          preferred_working_hours: userData.preferredWorkingHours || '',
+          profile_completed: userData.profileCompleted || false,
+          username: (userData as any).username || null,
+        };
+        
+        console.log('Creating profile record with data:', profileData);
+        
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([profileData]);
+        
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          toast.error('Error creating profile: ' + profileError.message);
+          // Try to clean up the auth user since profile creation failed
+          await supabase.auth.admin.deleteUser(data.user.id);
+          return false;
+        }
+        
+        console.log('Profile created successfully');
+        
+        // Create type-specific profile record
+        if (userType === 'developer') {
+          const devData = userData as Partial<Developer>;
+          const developerProfileData = {
             id: data.user.id,
-            user_type: userType,
-            name: userData.name || '',
-            email: userData.email || '',
-            image: userData.image || '/placeholder.svg',
-            description: userData.description || '',
-            location: userData.location || '',
-            joined_date: new Date().toISOString(),
-            languages: userData.languages || [],
-            preferred_working_hours: userData.preferredWorkingHours || '',
-            profile_completed: userData.profileCompleted || false,
-            username: (userData as any).username || null,
+            hourly_rate: devData.hourlyRate || 75,
+            minute_rate: devData.minuteRate || 1.5,
+            category: devData.category || 'frontend',
+            skills: devData.skills || ['JavaScript', 'React'],
+            experience: devData.experience || '3+ years',
+            rating: devData.rating || 4.5,
+            availability: devData.availability !== undefined ? devData.availability : true,
+            featured: devData.featured || false,
+            online: devData.online || false,
+            last_active: new Date().toISOString(),
+            phone: devData.phone || null,
+            communication_preferences: devData.communicationPreferences || ['chat', 'video'],
           };
           
-          console.log('Creating profile record with data:', profileData);
+          console.log('Creating developer profile with data:', developerProfileData);
           
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([profileData]);
+          const { error: devProfileError } = await supabase
+            .from('developer_profiles')
+            .insert([developerProfileData]);
           
-          if (profileError) {
-            console.error('Error creating profile:', profileError);
-            toast.error('Error creating profile: ' + profileError.message);
+          if (devProfileError) {
+            console.error('Error creating developer profile:', devProfileError);
+            toast.error('Error creating developer profile: ' + devProfileError.message);
             return false;
           }
           
-          console.log('Profile created successfully');
+          console.log('Developer profile created successfully');
+        } else {
+          const clientData = userData as Partial<Client>;
+          const clientProfileData = {
+            id: data.user.id,
+            looking_for: clientData.lookingFor || ['web development'],
+            completed_projects: clientData.completedProjects || 0,
+            profile_completion_percentage: clientData.profileCompletionPercentage || 0,
+            preferred_help_format: clientData.preferredHelpFormat || ['chat'],
+            budget: clientData.budget || null,
+            payment_method: clientData.paymentMethod || 'Stripe',
+            bio: clientData.bio || null,
+            tech_stack: clientData.techStack || ['React'],
+            budget_per_hour: clientData.budgetPerHour || 75,
+            company: clientData.company || null,
+            position: clientData.position || null,
+            project_types: clientData.projectTypes || [],
+            industry: clientData.industry || null,
+            social_links: clientData.socialLinks || {},
+            time_zone: clientData.timeZone || null,
+            availability: clientData.availability || {},
+            communication_preferences: clientData.communicationPreferences || ['chat'],
+          };
           
-          // Create type-specific profile record
-          if (userType === 'developer') {
-            const devData = userData as Partial<Developer>;
-            const developerProfileData = {
-              id: data.user.id,
-              hourly_rate: devData.hourlyRate || 75,
-              minute_rate: devData.minuteRate || 1.5,
-              category: devData.category || 'frontend',
-              skills: devData.skills || ['JavaScript', 'React'],
-              experience: devData.experience || '3+ years',
-              rating: devData.rating || 4.5,
-              availability: devData.availability !== undefined ? devData.availability : true,
-              featured: devData.featured || false,
-              online: devData.online || false,
-              last_active: new Date().toISOString(),
-              phone: devData.phone || null,
-              communication_preferences: devData.communicationPreferences || ['chat', 'video'],
-            };
-            
-            console.log('Creating developer profile with data:', developerProfileData);
-            
-            const { error: devProfileError } = await supabase
-              .from('developer_profiles')
-              .insert([developerProfileData]);
-            
-            if (devProfileError) {
-              console.error('Error creating developer profile:', devProfileError);
-              toast.error('Error creating developer profile: ' + devProfileError.message);
-              return false;
-            }
-            
-            console.log('Developer profile created successfully');
-          } else {
-            const clientData = userData as Partial<Client>;
-            const clientProfileData = {
-              id: data.user.id,
-              looking_for: clientData.lookingFor || ['web development'],
-              completed_projects: clientData.completedProjects || 0,
-              profile_completion_percentage: clientData.profileCompletionPercentage || 0,
-              preferred_help_format: clientData.preferredHelpFormat || ['chat'],
-              budget: clientData.budget || null,
-              payment_method: clientData.paymentMethod || 'Stripe',
-              bio: clientData.bio || null,
-              tech_stack: clientData.techStack || ['React'],
-              budget_per_hour: clientData.budgetPerHour || 75,
-              company: clientData.company || null,
-              position: clientData.position || null,
-              project_types: clientData.projectTypes || [],
-              industry: clientData.industry || null,
-              social_links: clientData.socialLinks || {},
-              time_zone: clientData.timeZone || null,
-              availability: clientData.availability || {},
-              communication_preferences: clientData.communicationPreferences || ['chat'],
-            };
-            
-            console.log('Creating client profile with data:', clientProfileData);
-            
-            const { error: clientProfileError } = await supabase
-              .from('client_profiles')
-              .insert([clientProfileData]);
-            
-            if (clientProfileError) {
-              console.error('Error creating client profile:', clientProfileError);
-              toast.error('Error creating client profile: ' + clientProfileError.message);
-              return false;
-            }
-            
-            console.log('Client profile created successfully');
+          console.log('Creating client profile with data:', clientProfileData);
+          
+          const { error: clientProfileError } = await supabase
+            .from('client_profiles')
+            .insert([clientProfileData]);
+          
+          if (clientProfileError) {
+            console.error('Error creating client profile:', clientProfileError);
+            toast.error('Error creating client profile: ' + clientProfileError.message);
+            return false;
           }
           
-          setAuthState({
-            isAuthenticated: true,
-            userType,
-            userId: data.user.id,
-          });
-          
-          localStorage.setItem('authState', JSON.stringify({
-            isAuthenticated: true,
-            userType,
-            userId: data.user.id,
-          }));
-          
-          console.log('Registration completed successfully');
-          return true;
+          console.log('Client profile created successfully');
         }
-        return false;
+        
+        setAuthState({
+          isAuthenticated: true,
+          userType,
+          userId: data.user.id,
+        });
+        
+        localStorage.setItem('authState', JSON.stringify({
+          isAuthenticated: true,
+          userType,
+          userId: data.user.id,
+        }));
+        
+        console.log('Registration completed successfully');
+        return true;
       } catch (error) {
         console.error('Supabase registration exception:', error);
+        toast.error('Registration failed with an unexpected error. Please try again.');
         // Fallback to localStorage registration
         return registerWithLocalStorage(userData, userType);
       }
