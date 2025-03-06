@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Buildings, GraduationCap } from 'lucide-react';
+import { Building, GraduationCap } from 'lucide-react';
 
 const CTASection: React.FC = () => {
   return (
@@ -18,7 +18,7 @@ const CTASection: React.FC = () => {
           {/* Hire Developers CTA */}
           <div className="bg-white border border-border/40 rounded-xl p-8 text-center flex flex-col items-center shadow-sm hover:shadow-md transition-shadow">
             <div className="bg-primary/10 p-4 rounded-full mb-4">
-              <Buildings className="h-8 w-8 text-primary" />
+              <Building className="h-8 w-8 text-primary" />
             </div>
             <h3 className="text-xl font-semibold mb-2">I'm looking to hire</h3>
             <p className="text-muted-foreground mb-6">
