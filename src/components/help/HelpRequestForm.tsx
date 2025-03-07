@@ -48,6 +48,39 @@ const HelpRequestFormContent: React.FC = () => {
         ? parseInt(formData.estimated_duration, 10) 
         : formData.estimated_duration;
       
+      // Check if using local storage authentication (client ID starts with "client-")
+      const isLocalAuth = userId.startsWith('client-');
+      
+      if (isLocalAuth) {
+        // For local storage authentication, store in localStorage
+        const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+        const newRequest = {
+          id: `help-${Date.now()}`,
+          title: formData.title || 'Untitled Request',
+          description: formData.description || 'No description provided',
+          technical_area: formData.technical_area,
+          urgency: formData.urgency || 'medium',
+          communication_preference: formData.communication_preference,
+          estimated_duration: duration,
+          budget_range: formData.budget_range,
+          code_snippet: formData.code_snippet || '',
+          client_id: userId,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        localHelpRequests.push(newRequest);
+        localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+        console.log('Help request stored locally:', newRequest);
+        
+        toast.success('Help request submitted successfully!');
+        resetForm();
+        navigate('/get-help/success', { state: { requestId: newRequest.id } });
+        return;
+      }
+      
+      // For Supabase authentication, store in database
       const helpRequest = {
         title: formData.title || 'Untitled Request',
         description: formData.description || 'No description provided',
@@ -57,7 +90,7 @@ const HelpRequestFormContent: React.FC = () => {
         estimated_duration: duration,
         budget_range: formData.budget_range,
         code_snippet: formData.code_snippet || '',
-        client_id: userId,
+        client_id: userId,  // This should be a UUID for Supabase
         status: 'pending'
       };
       
