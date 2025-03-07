@@ -30,8 +30,8 @@ const GetHelpPage: React.FC = () => {
       
       <div className="container mx-auto px-4 py-12">
         <Routes>
-          <Route path="/" element={<HelpRequestForm />} />
-          <Route path="/success" element={<HelpRequestSuccess />} />
+          <Route index element={<HelpRequestForm />} />
+          <Route path="success" element={<HelpRequestSuccess />} />
         </Routes>
       </div>
     </Layout>
