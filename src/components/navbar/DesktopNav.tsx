@@ -78,12 +78,24 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
                     {userType === 'developer' ? 'Developer Profile' : 'Client Profile'}
                   </button>
                   {userType === 'client' && (
-                    <Link to="/session-history" className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors">
-                      <span className="flex items-center">
-                        <Clock className="h-4 w-4 mr-2" />
-                        Session History
-                      </span>
-                    </Link>
+                    <>
+                      <Link 
+                        to="/get-help/tracking" 
+                        className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <span className="flex items-center">
+                          <Clock className="h-4 w-4 mr-2" />
+                          Help Requests
+                        </span>
+                      </Link>
+                      <Link to="/session-history" className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors">
+                        <span className="flex items-center">
+                          <Clock className="h-4 w-4 mr-2" />
+                          Session History
+                        </span>
+                      </Link>
+                    </>
                   )}
                   <button
                     onClick={handleLogoutClick}

@@ -84,14 +84,24 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
                 {userType === 'developer' ? 'Developer Profile' : 'Client Profile'}
               </button>
               {userType === 'client' && (
-                <Link
-                  to="/session-history"
-                  className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Clock className="h-5 w-5 mr-2" />
-                  Session History
-                </Link>
+                <>
+                  <Link
+                    to="/get-help/tracking"
+                    className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Clock className="h-5 w-5 mr-2" />
+                    Help Requests
+                  </Link>
+                  <Link
+                    to="/session-history"
+                    className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Clock className="h-5 w-5 mr-2" />
+                    Session History
+                  </Link>
+                </>
               )}
               <button
                 onClick={handleLogoutClick}
