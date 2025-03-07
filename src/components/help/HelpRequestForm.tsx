@@ -48,40 +48,8 @@ const HelpRequestFormContent: React.FC = () => {
         ? parseInt(formData.estimated_duration, 10) 
         : formData.estimated_duration;
       
-      // Check if using local storage authentication (client ID starts with "client-")
-      const isLocalAuth = userId.startsWith('client-');
-      
-      if (isLocalAuth) {
-        // For local storage authentication, store in localStorage
-        const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
-        const newRequest = {
-          id: `help-${Date.now()}`,
-          title: formData.title || 'Untitled Request',
-          description: formData.description || 'No description provided',
-          technical_area: formData.technical_area,
-          urgency: formData.urgency || 'medium',
-          communication_preference: formData.communication_preference,
-          estimated_duration: duration,
-          budget_range: formData.budget_range,
-          code_snippet: formData.code_snippet || '',
-          client_id: userId,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        localHelpRequests.push(newRequest);
-        localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
-        console.log('Help request stored locally:', newRequest);
-        
-        toast.success('Help request submitted successfully!');
-        resetForm();
-        navigate('/get-help/success', { state: { requestId: newRequest.id } });
-        return;
-      }
-      
-      // For Supabase authentication, store in database
-      const helpRequest = {
+      // Create base request object
+      const helpRequestBase = {
         title: formData.title || 'Untitled Request',
         description: formData.description || 'No description provided',
         technical_area: formData.technical_area,
@@ -90,34 +58,64 @@ const HelpRequestFormContent: React.FC = () => {
         estimated_duration: duration,
         budget_range: formData.budget_range,
         code_snippet: formData.code_snippet || '',
-        client_id: userId,  // This should be a UUID for Supabase
-        status: 'pending'
+        status: 'requirements',
       };
       
-      console.log('Help request data:', helpRequest);
+      // Check if using local storage authentication (client ID starts with "client-")
+      const isLocalAuth = userId.startsWith('client-');
       
-      const { data, error } = await supabase
-        .from('help_requests')
-        .insert(helpRequest)
-        .select()
-        .single();
+      let requestId: string;
       
-      if (error) {
-        console.error('Error submitting help request:', error);
-        toast.error('Failed to submit help request: ' + error.message);
-        setFormErrors([error.message]);
-        setIsSubmitting(false);
-        return;
+      if (isLocalAuth) {
+        // For local storage authentication, store in localStorage
+        const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+        const newRequest = {
+          ...helpRequestBase,
+          id: `help-${Date.now()}`,
+          client_id: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        localHelpRequests.push(newRequest);
+        localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+        console.log('Help request stored locally:', newRequest);
+        requestId = newRequest.id;
+        
+      } else {
+        // For Supabase authentication, store in database
+        const helpRequest = {
+          ...helpRequestBase,
+          client_id: userId,  // This should be a UUID for Supabase
+        };
+        
+        console.log('Help request data for Supabase:', helpRequest);
+        
+        const { data, error } = await supabase
+          .from('help_requests')
+          .insert(helpRequest)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error submitting help request:', error);
+          toast.error('Failed to submit help request: ' + error.message);
+          setFormErrors([error.message]);
+          setIsSubmitting(false);
+          return;
+        }
+        
+        console.log('Help request submitted to Supabase:', data);
+        requestId = data.id;
       }
       
       toast.success('Help request submitted successfully!');
-      console.log('Help request submitted:', data);
       
       // Reset form after successful submission
       resetForm();
       
       // Redirect to success page with the request ID
-      navigate('/get-help/success', { state: { requestId: data.id } });
+      navigate('/get-help/success', { state: { requestId } });
     } catch (error: any) {
       console.error('Error in form submission:', error);
       toast.error('An unexpected error occurred: ' + error.message);

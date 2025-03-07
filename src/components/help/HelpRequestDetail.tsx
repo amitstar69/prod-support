@@ -5,16 +5,62 @@ import { supabase } from '../../integrations/supabase/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { HelpRequest } from '../../types/helpRequest';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Clock, Calendar, Hourglass, Wallet, MessageSquare } from 'lucide-react';
+import { Loader2, ArrowLeft, Clock, Calendar, Hourglass, Wallet, MessageSquare, FileEdit, Play, UserCheck2, PauseCircle, Check, AlertCircle } from 'lucide-react';
 
 const statusColors = {
+  'requirements': 'bg-purple-100 text-purple-800',
+  'todo': 'bg-blue-100 text-blue-800',
+  'in-progress-unpaid': 'bg-yellow-100 text-yellow-800',
+  'in-progress-paid': 'bg-green-100 text-green-800',
+  'client-review': 'bg-orange-100 text-orange-800',
+  'production': 'bg-pink-100 text-pink-800',
+  'completed': 'bg-gray-100 text-gray-800',
+  'cancelled': 'bg-red-100 text-red-800',
   'pending': 'bg-yellow-100 text-yellow-800',
   'matching': 'bg-blue-100 text-blue-800',
   'scheduled': 'bg-purple-100 text-purple-800',
-  'in-progress': 'bg-green-100 text-green-800',
-  'completed': 'bg-gray-100 text-gray-800',
-  'cancelled': 'bg-red-100 text-red-800'
+  'in-progress': 'bg-green-100 text-green-800'
 };
+
+const statusIcons = {
+  'requirements': <FileEdit className="h-5 w-5" />,
+  'todo': <Clock className="h-5 w-5" />,
+  'in-progress-unpaid': <Play className="h-5 w-5" />,
+  'in-progress-paid': <Play className="h-5 w-5 text-green-600" />,
+  'client-review': <UserCheck2 className="h-5 w-5" />,
+  'production': <PauseCircle className="h-5 w-5" />,
+  'completed': <Check className="h-5 w-5" />,
+  'cancelled': <AlertCircle className="h-5 w-5" />,
+  'pending': <Clock className="h-5 w-5" />,
+  'matching': <Loader2 className="h-5 w-5" />,
+  'scheduled': <Calendar className="h-5 w-5" />,
+  'in-progress': <Loader2 className="h-5 w-5 animate-spin" />
+};
+
+const statusLabels = {
+  'requirements': 'Requirements',
+  'todo': 'To Do',
+  'in-progress-unpaid': 'In Progress (Unpaid)',
+  'in-progress-paid': 'In Progress (Paid)',
+  'client-review': 'Client Review',
+  'production': 'In Production',
+  'completed': 'Completed',
+  'cancelled': 'Cancelled',
+  'pending': 'Pending',
+  'matching': 'Matching',
+  'scheduled': 'Scheduled',
+  'in-progress': 'In Progress'
+};
+
+const workflowSteps = [
+  { id: 'requirements', label: 'Requirements' },
+  { id: 'todo', label: 'To Do' },
+  { id: 'in-progress-unpaid', label: 'In Progress (Unpaid)' },
+  { id: 'in-progress-paid', label: 'In Progress (Paid)' },
+  { id: 'client-review', label: 'Client Review' },
+  { id: 'production', label: 'In Production' },
+  { id: 'completed', label: 'Completed' }
+];
 
 const HelpRequestDetail: React.FC = () => {
   const { requestId } = useParams<{ requestId: string }>();
@@ -32,6 +78,29 @@ const HelpRequestDetail: React.FC = () => {
 
       try {
         console.log('Fetching help request details for:', requestId);
+        
+        // Check if using local storage authentication
+        const isLocalAuth = userId.startsWith('client-');
+        
+        if (isLocalAuth) {
+          // Fetch from localStorage
+          const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+          const requestDetails = localHelpRequests.find((req: HelpRequest) => req.id === requestId && req.client_id === userId);
+          
+          if (requestDetails) {
+            console.log('Local help request details:', requestDetails);
+            setRequest(requestDetails);
+          } else {
+            console.error('Help request not found in local storage');
+            toast.error('Help request not found');
+            navigate('/get-help/tracking');
+          }
+          
+          setIsLoading(false);
+          return;
+        }
+        
+        // Fetch from Supabase
         const { data, error } = await supabase
           .from('help_requests')
           .select('*')
@@ -95,6 +164,10 @@ const HelpRequestDetail: React.FC = () => {
     );
   }
 
+  // Get current status index
+  const currentStepIndex = workflowSteps.findIndex(step => step.id === request.status);
+  const normalizedStepIndex = currentStepIndex === -1 ? 0 : currentStepIndex;
+
   return (
     <div className="max-w-4xl mx-auto">
       <button 
@@ -109,7 +182,32 @@ const HelpRequestDetail: React.FC = () => {
         <div className="flex justify-between items-start mb-6">
           <h2 className="text-2xl font-semibold">{request.title}</h2>
           <div className={`px-4 py-1 rounded-full text-sm font-medium ${statusColors[request.status || 'pending']}`}>
-            {request.status}
+            {statusIcons[request.status || 'pending']}
+            <span className="ml-1">{statusLabels[request.status || 'pending']}</span>
+          </div>
+        </div>
+
+        {/* Workflow Status Bar */}
+        <div className="mb-8">
+          <h3 className="text-lg font-medium mb-4">Request Status</h3>
+          <div className="relative">
+            <div className="overflow-x-auto pb-2">
+              <div className="flex min-w-max">
+                {workflowSteps.map((step, index) => (
+                  <div key={step.id} className="flex-1 relative">
+                    <div className={`flex items-center justify-center ${index <= normalizedStepIndex ? 'text-primary' : 'text-gray-400'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${index <= normalizedStepIndex ? 'border-primary bg-primary/10' : 'border-gray-300'}`}>
+                        {index + 1}
+                      </div>
+                    </div>
+                    <div className="text-xs text-center mt-2">{step.label}</div>
+                    {index < workflowSteps.length - 1 && (
+                      <div className={`absolute top-4 left-1/2 w-full h-0.5 ${index < normalizedStepIndex ? 'bg-primary' : 'bg-gray-300'}`}></div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 

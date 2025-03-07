@@ -5,24 +5,51 @@ import { supabase } from '../../integrations/supabase/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { HelpRequest } from '../../types/helpRequest';
 import { toast } from 'sonner';
-import { Loader2, ExternalLink, Clock, AlertCircle, CheckCircle2, Calendar } from 'lucide-react';
+import { Loader2, ExternalLink, Clock, AlertCircle, CheckCircle2, Calendar, FileEdit, Play, PauseCircle, UserCheck2, Check } from 'lucide-react';
 
 const statusColors = {
+  'requirements': 'bg-purple-100 text-purple-800',
+  'todo': 'bg-blue-100 text-blue-800',
+  'in-progress-unpaid': 'bg-yellow-100 text-yellow-800',
+  'in-progress-paid': 'bg-green-100 text-green-800',
+  'client-review': 'bg-orange-100 text-orange-800',
+  'production': 'bg-pink-100 text-pink-800',
+  'completed': 'bg-gray-100 text-gray-800',
+  'cancelled': 'bg-red-100 text-red-800',
   'pending': 'bg-yellow-100 text-yellow-800',
   'matching': 'bg-blue-100 text-blue-800',
   'scheduled': 'bg-purple-100 text-purple-800',
-  'in-progress': 'bg-green-100 text-green-800',
-  'completed': 'bg-gray-100 text-gray-800',
-  'cancelled': 'bg-red-100 text-red-800'
+  'in-progress': 'bg-green-100 text-green-800'
 };
 
 const statusIcons = {
+  'requirements': <FileEdit className="h-4 w-4" />,
+  'todo': <Clock className="h-4 w-4" />,
+  'in-progress-unpaid': <Play className="h-4 w-4" />,
+  'in-progress-paid': <Play className="h-4 w-4 text-green-600" />,
+  'client-review': <UserCheck2 className="h-4 w-4" />,
+  'production': <PauseCircle className="h-4 w-4" />,
+  'completed': <Check className="h-4 w-4" />,
+  'cancelled': <AlertCircle className="h-4 w-4" />,
   'pending': <Clock className="h-4 w-4" />,
   'matching': <Loader2 className="h-4 w-4" />,
   'scheduled': <Calendar className="h-4 w-4" />,
-  'in-progress': <Loader2 className="h-4 w-4 animate-spin" />,
-  'completed': <CheckCircle2 className="h-4 w-4" />,
-  'cancelled': <AlertCircle className="h-4 w-4" />
+  'in-progress': <Loader2 className="h-4 w-4 animate-spin" />
+};
+
+const statusLabels = {
+  'requirements': 'Requirements',
+  'todo': 'To Do',
+  'in-progress-unpaid': 'In Progress (Unpaid)',
+  'in-progress-paid': 'In Progress (Paid)',
+  'client-review': 'Client Review',
+  'production': 'In Production',
+  'completed': 'Completed',
+  'cancelled': 'Cancelled',
+  'pending': 'Pending',
+  'matching': 'Matching',
+  'scheduled': 'Scheduled',
+  'in-progress': 'In Progress'
 };
 
 const HelpRequestsTracking: React.FC = () => {
@@ -41,6 +68,21 @@ const HelpRequestsTracking: React.FC = () => {
 
       try {
         console.log('Fetching help requests for user:', userId);
+        
+        // Check if using local storage authentication
+        const isLocalAuth = userId.startsWith('client-');
+        
+        if (isLocalAuth) {
+          // Fetch from localStorage
+          const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+          const userHelpRequests = localHelpRequests.filter((req: HelpRequest) => req.client_id === userId);
+          console.log('Local help requests for user:', userHelpRequests);
+          setHelpRequests(userHelpRequests);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Fetch from Supabase
         const { data, error } = await supabase
           .from('help_requests')
           .select('*')
@@ -48,13 +90,13 @@ const HelpRequestsTracking: React.FC = () => {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('Error fetching help requests:', error);
+          console.error('Error fetching help requests from Supabase:', error);
           toast.error('Failed to load your help requests');
           setIsLoading(false);
           return;
         }
 
-        console.log('Help requests data:', data);
+        console.log('Help requests data from Supabase:', data);
         setHelpRequests(data || []);
       } catch (error) {
         console.error('Exception fetching help requests:', error);
@@ -127,7 +169,7 @@ const HelpRequestsTracking: React.FC = () => {
                 <h3 className="text-lg font-medium">{request.title}</h3>
                 <div className={`px-3 py-1 rounded-full text-xs flex items-center gap-1 ${statusColors[request.status || 'pending']}`}>
                   {statusIcons[request.status || 'pending']}
-                  <span>{request.status}</span>
+                  <span>{statusLabels[request.status || 'pending']}</span>
                 </div>
               </div>
               

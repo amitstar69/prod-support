@@ -5,12 +5,12 @@ export interface HelpRequest {
   title: string;
   description: string;
   technical_area: string[];
-  urgency: string; // Changed from 'low' | 'medium' | 'high' to string
+  urgency: string;
   communication_preference: string[];
   estimated_duration: number;
   budget_range: string;
   code_snippet?: string;
-  status?: string; // Changed from enum to string
+  status?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -71,4 +71,15 @@ export const budgetRangeOptions = [
   '$100 - $200',
   '$200 - $500',
   '$500+'
+];
+
+export const requestStatusOptions = [
+  { value: 'requirements', label: 'Requirements' },
+  { value: 'todo', label: 'To Do' },
+  { value: 'in-progress-unpaid', label: 'In Progress (Unpaid)' },
+  { value: 'in-progress-paid', label: 'In Progress (Paid)' },
+  { value: 'client-review', label: 'Client Review' },
+  { value: 'production', label: 'In Production' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' }
 ];
