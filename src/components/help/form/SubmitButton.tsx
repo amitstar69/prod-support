@@ -2,17 +2,23 @@
 import React from 'react';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
 import { Loader2, Send } from 'lucide-react';
+import { Button } from '../../ui/button';
 
 const SubmitButton: React.FC = () => {
-  const { isSubmitting } = useHelpRequest();
+  const { isSubmitting, validateForm } = useHelpRequest();
   
   return (
-    <button
+    <Button
       type="submit"
       disabled={isSubmitting}
-      className={`w-full py-3 px-6 text-white rounded-md transition-colors flex items-center justify-center gap-2 
-        bg-primary hover:bg-primary/90 disabled:opacity-70 disabled:cursor-not-allowed`}
+      className="w-full h-12 py-3 px-6 text-white rounded-md transition-colors flex items-center justify-center gap-2"
       aria-live="polite"
+      onClick={(e) => {
+        // Client-side validation before form submission
+        if (!validateForm()) {
+          e.preventDefault();
+        }
+      }}
     >
       {isSubmitting ? (
         <>
@@ -25,7 +31,7 @@ const SubmitButton: React.FC = () => {
           <span>Submit Help Request</span>
         </>
       )}
-    </button>
+    </Button>
   );
 };
 
