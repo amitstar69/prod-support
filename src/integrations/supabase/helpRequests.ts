@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Function to directly test if the help_requests table is accessible
@@ -223,5 +222,79 @@ export const debugInspectHelpRequests = async () => {
   } catch (error) {
     console.error('Exception inspecting help_requests:', error);
     return { error: error.message };
+  }
+};
+
+// Function to get valid status values from the help_requests table
+export const getValidHelpRequestStatuses = async () => {
+  try {
+    console.log('Checking valid status values for help_requests table...');
+    
+    // Get table constraint information
+    const { data, error } = await supabase
+      .rpc('get_table_info', { table_name: 'help_requests' });
+      
+    if (error) {
+      console.error('Error getting help_requests table info:', error);
+      return { success: false, error };
+    }
+    
+    // Find the status constraint
+    let statusConstraint = null;
+    
+    if (data && data.constraints) {
+      for (const constraint of data.constraints) {
+        if (constraint.constraint_name.includes('status') && constraint.constraint_type === 'CHECK') {
+          statusConstraint = constraint;
+          break;
+        }
+      }
+    }
+    
+    console.log('Status constraint found:', statusConstraint);
+    
+    return { 
+      success: true, 
+      data, 
+      statusConstraint 
+    };
+  } catch (error) {
+    console.error('Exception checking valid status values:', error);
+    return { success: false, error };
+  }
+};
+
+// Function to directly test inserting a help request with specific status value
+export const testInsertWithStatus = async (clientId: string, status: string) => {
+  try {
+    const testRequest = {
+      title: `Test with status: ${status}`,
+      description: 'This is a test to verify the status constraint',
+      technical_area: ['Testing'],
+      urgency: 'medium',
+      communication_preference: ['Chat'],
+      estimated_duration: 15,
+      budget_range: '$50 - $100',
+      client_id: clientId,
+      status
+    };
+    
+    console.log(`Testing insert with status "${status}":`, testRequest);
+    
+    const { data, error } = await supabase
+      .from('help_requests')
+      .insert(testRequest)
+      .select();
+      
+    if (error) {
+      console.error(`Error inserting with status "${status}":`, error);
+      return { success: false, error, status };
+    }
+    
+    console.log(`Insert with status "${status}" successful:`, data);
+    return { success: true, data, status };
+  } catch (error) {
+    console.error(`Exception testing insert with status "${status}":`, error);
+    return { success: false, error, status };
   }
 };

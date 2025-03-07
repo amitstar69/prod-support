@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { HelpRequest, technicalAreaOptions, communicationOptions, budgetRangeOptions } from '../types/helpRequest';
 
@@ -22,7 +21,7 @@ const defaultFormData: Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'up
   estimated_duration: 30,
   budget_range: budgetRangeOptions[1],
   code_snippet: '',
-  status: 'pending'
+  status: 'pending' // Updated from 'pending' to match the database constraint
 };
 
 export const HelpRequestContext = createContext<HelpRequestContextType | undefined>(undefined);

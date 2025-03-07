@@ -73,13 +73,13 @@ export const budgetRangeOptions = [
   '$500+'
 ];
 
+// Updated to match the database constraint for help_requests_status_check
 export const requestStatusOptions = [
-  { value: 'requirements', label: 'Requirements' },
-  { value: 'todo', label: 'To Do' },
-  { value: 'in-progress-unpaid', label: 'In Progress (Unpaid)' },
-  { value: 'in-progress-paid', label: 'In Progress (Paid)' },
-  { value: 'client-review', label: 'Client Review' },
-  { value: 'production', label: 'In Production' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'matching', label: 'Matching' },
+  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'in-progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' }
 ];
+

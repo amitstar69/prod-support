@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -63,7 +64,8 @@ const HelpRequestFormContent: React.FC = () => {
         estimated_duration: duration,
         budget_range: formData.budget_range,
         code_snippet: formData.code_snippet || '',
-        status: 'requirements',
+        // Changed from 'requirements' to 'pending' to match the database constraint
+        status: 'pending',
       };
       
       // Check if using local storage authentication
