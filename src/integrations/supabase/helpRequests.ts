@@ -244,13 +244,15 @@ export const getValidHelpRequestStatuses = async () => {
     // Find the status constraint
     let statusConstraint = null;
     
-    // Properly type and safely access the data structure
+    // Safely access the data structure with proper typechecking
     if (data && typeof data === 'object') {
-      // Ensure constraints exists and is an array before trying to access it
-      if ('constraints' in data && Array.isArray((data as any).constraints)) {
-        const constraintsArray = (data as any).constraints;
+      // Check if data has constraints property and it's an array
+      if ('constraints' in data && 
+          data.constraints && 
+          Array.isArray(data.constraints)) {
         
-        for (const constraint of constraintsArray) {
+        // Now search through constraints
+        for (const constraint of data.constraints) {
           if (constraint && 
               typeof constraint === 'object' && 
               'constraint_name' in constraint && 

@@ -135,20 +135,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
   
-  // Logout function - fixed to return a Promise
+  // Logout function - enhanced to ensure it always works
   const logout = async () => {
     console.log('Logging out user...');
     
     try {
-      if (supabase) {
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-          console.error('Error signing out from Supabase:', error);
-          toast.error('Error signing out: ' + error.message);
-        }
-      }
-      
-      // Always clear local state regardless of Supabase result
+      // First clear local state to ensure UI updates immediately
       setAuthState({
         isAuthenticated: false,
         userType: null,
@@ -156,20 +148,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       localStorage.removeItem('authState');
       
+      // Then attempt to sign out from Supabase
+      if (supabase) {
+        try {
+          const { error } = await supabase.auth.signOut();
+          if (error) {
+            console.error('Error signing out from Supabase:', error);
+            toast.error('Error signing out from server, but you have been logged out locally');
+          } else {
+            console.log('Successfully signed out from Supabase');
+          }
+        } catch (supabaseError) {
+          console.error('Exception during Supabase signout:', supabaseError);
+          toast.error('Error communicating with the server, but you have been logged out locally');
+        }
+      }
+      
       console.log('Logout completed, auth state cleared');
       toast.success('Successfully logged out');
+      
+      // Force page refresh to clear any cached state
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
       
     } catch (error) {
       console.error('Exception during logout:', error);
       toast.error('An error occurred during logout');
       
-      // Still clear state on error
+      // Still clear state on error and force refresh
       setAuthState({
         isAuthenticated: false,
         userType: null,
         userId: null,
       });
       localStorage.removeItem('authState');
+      
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
     }
   };
   

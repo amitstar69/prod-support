@@ -71,25 +71,36 @@ const HelpRequestsTracking: React.FC = () => {
       if (!userId) {
         console.error('No user ID found');
         setIsLoading(false);
+        setError('User not authenticated. Please log in again.');
         return;
       }
 
       try {
         console.log('Fetching help requests for user:', userId);
         
-        const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+        // Get local help requests first
+        let localHelpRequests = [];
+        try {
+          localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+        } catch (e) {
+          console.error('Error parsing local help requests:', e);
+          localHelpRequests = [];
+        }
+        
         const userLocalHelpRequests = localHelpRequests.filter((req: HelpRequest) => req.client_id === userId);
         console.log('Local help requests for user:', userLocalHelpRequests);
         
         const isLocalAuth = userId.startsWith('client-');
         const isValidUserUUID = isValidUUID(userId);
         
+        // If using local auth or invalid UUID, just use local storage
         if (isLocalAuth || !isValidUserUUID) {
           setHelpRequests(userLocalHelpRequests);
           setIsLoading(false);
           return;
         }
         
+        // Try to fetch from Supabase
         try {
           console.log('Fetching from Supabase with user ID:', userId);
           
@@ -97,34 +108,44 @@ const HelpRequestsTracking: React.FC = () => {
           const { data: sessionData } = await supabase.auth.getSession();
           console.log('Current session:', sessionData);
           
-          const { data, error: supabaseError } = await supabase
-            .from('help_requests')
-            .select('*')
-            .eq('client_id', userId);
+          // Only try to fetch from Supabase if we have a valid session
+          if (sessionData && sessionData.session) {
+            const { data, error: supabaseError } = await supabase
+              .from('help_requests')
+              .select('*')
+              .eq('client_id', userId);
 
-          if (supabaseError) {
-            console.error('Error fetching help requests from Supabase:', supabaseError);
-            setError('Failed to load help requests from database');
-            setHelpRequests(userLocalHelpRequests);
+            if (supabaseError) {
+              console.error('Error fetching help requests from Supabase:', supabaseError);
+              setError('Failed to load help requests from database');
+              setHelpRequests(userLocalHelpRequests);
+            } else {
+              console.log('Help requests data from Supabase:', data);
+              // Ensure data is an array before combining
+              const supabaseData = Array.isArray(data) ? data : [];
+              const combinedRequests = [...supabaseData, ...userLocalHelpRequests];
+              
+              const uniqueRequests = combinedRequests.reduce((acc: HelpRequest[], current: HelpRequest) => {
+                if (!current.id) return acc; // Skip items without ID
+                const existingIndex = acc.findIndex((item: HelpRequest) => item.id === current.id);
+                if (existingIndex === -1) {
+                  acc.push(current);
+                }
+                return acc;
+              }, []);
+              
+              uniqueRequests.sort((a: HelpRequest, b: HelpRequest) => {
+                const dateA = new Date(a.created_at || '').getTime() || 0;
+                const dateB = new Date(b.created_at || '').getTime() || 0;
+                return dateB - dateA;
+              });
+              
+              setHelpRequests(uniqueRequests);
+            }
           } else {
-            console.log('Help requests data from Supabase:', data);
-            const combinedRequests = [...(data || []), ...userLocalHelpRequests];
-            
-            const uniqueRequests = combinedRequests.reduce((acc: HelpRequest[], current: HelpRequest) => {
-              const existingIndex = acc.findIndex((item: HelpRequest) => item.id === current.id);
-              if (existingIndex === -1) {
-                acc.push(current);
-              }
-              return acc;
-            }, []);
-            
-            uniqueRequests.sort((a: HelpRequest, b: HelpRequest) => {
-              const dateA = new Date(a.created_at || '').getTime();
-              const dateB = new Date(b.created_at || '').getTime();
-              return dateB - dateA;
-            });
-            
-            setHelpRequests(uniqueRequests);
+            console.log('No active session, using local data only');
+            setHelpRequests(userLocalHelpRequests);
+            setError('No active session. Please log in again.');
           }
         } catch (supabaseError) {
           console.error('Exception fetching from Supabase:', supabaseError);
@@ -134,6 +155,7 @@ const HelpRequestsTracking: React.FC = () => {
       } catch (error) {
         console.error('Exception fetching help requests:', error);
         setError('An unexpected error occurred');
+        setHelpRequests([]);
       } finally {
         setIsLoading(false);
       }
@@ -207,25 +229,25 @@ const HelpRequestsTracking: React.FC = () => {
         <div className="space-y-4">
           {helpRequests.map((request) => (
             <div
-              key={request.id}
+              key={request.id || `temp-${Math.random()}`}
               className="bg-white p-6 rounded-xl border border-border/40 hover:border-primary/40 transition-colors cursor-pointer"
               onClick={() => request.id && handleViewDetails(request.id)}
             >
               <div className="flex justify-between items-start mb-2">
-                <h3 className="text-lg font-medium">{request.title}</h3>
+                <h3 className="text-lg font-medium">{request.title || 'Untitled Request'}</h3>
                 <div className={`px-3 py-1 rounded-full text-xs flex items-center gap-1 ${statusColors[request.status || 'pending']}`}>
                   {statusIcons[request.status || 'pending']}
                   <span>{statusLabels[request.status || 'pending']}</span>
                 </div>
               </div>
               
-              <p className="text-muted-foreground line-clamp-2 mb-3">{request.description}</p>
+              <p className="text-muted-foreground line-clamp-2 mb-3">{request.description || 'No description'}</p>
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-3">
                 <div>
                   <span className="text-muted-foreground">Technical Area:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {request.technical_area && request.technical_area.length > 0 ? (
+                    {request.technical_area && Array.isArray(request.technical_area) && request.technical_area.length > 0 ? (
                       <>
                         {request.technical_area.slice(0, 2).map((area, i) => (
                           <span key={i} className="bg-secondary/50 px-2 py-0.5 rounded text-xs">
@@ -269,7 +291,8 @@ const HelpRequestsTracking: React.FC = () => {
         </div>
       )}
       
-      <DebugHelpRequestDatabase />
+      {/* Hide debug component in production */}
+      {false && <DebugHelpRequestDatabase />}
     </div>
   );
 };
