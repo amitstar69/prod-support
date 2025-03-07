@@ -193,6 +193,103 @@ export const debugCheckProfileExists = async (userId: string) => {
   }
 };
 
+// Add the missing debugCreateProfile function
+export const debugCreateProfile = async (userId: string, userType: string, email: string, name: string) => {
+  if (!userId) return { success: false, error: 'No user ID provided' };
+  
+  try {
+    console.log(`Creating profile for user ID: ${userId}, type: ${userType}`);
+    
+    // First, create the base profile record
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: userId,
+        user_type: userType,
+        email: email,
+        name: name,
+        image: '/placeholder.svg',
+        profile_completed: false,
+        username: name.toLowerCase().replace(/\s+/g, '')
+      })
+      .select()
+      .single();
+      
+    if (profileError) {
+      console.error('Error creating base profile:', profileError);
+      return { success: false, error: profileError.message };
+    }
+    
+    console.log('Base profile created:', profileData);
+    
+    // Next, create the type-specific profile record
+    let typeProfileData, typeProfileError;
+    
+    if (userType === 'developer') {
+      const { data, error } = await supabase
+        .from('developer_profiles')
+        .insert({
+          id: userId,
+          category: 'frontend',
+          skills: ['JavaScript', 'React'],
+          hourly_rate: 75,
+          minute_rate: 1.5,
+          experience: '3+ years',
+          availability: true,
+          rating: 4.5,
+          communication_preferences: ['chat', 'video']
+        })
+        .select()
+        .single();
+        
+      typeProfileData = data;
+      typeProfileError = error;
+    } else {
+      const { data, error } = await supabase
+        .from('client_profiles')
+        .insert({
+          id: userId,
+          looking_for: ['web development'],
+          preferred_help_format: ['chat'],
+          tech_stack: ['React'],
+          budget_per_hour: 75,
+          payment_method: 'Stripe',
+          communication_preferences: ['chat'],
+          profile_completion_percentage: 30
+        })
+        .select()
+        .single();
+        
+      typeProfileData = data;
+      typeProfileError = error;
+    }
+    
+    if (typeProfileError) {
+      console.error(`Error creating ${userType} profile:`, typeProfileError);
+      return { 
+        success: true, 
+        baseProfileCreated: true,
+        typeProfileCreated: false,
+        profileData,
+        error: typeProfileError.message 
+      };
+    }
+    
+    console.log(`${userType} profile created:`, typeProfileData);
+    
+    return { 
+      success: true, 
+      baseProfileCreated: true,
+      typeProfileCreated: true,
+      profileData,
+      typeProfileData
+    };
+  } catch (error) {
+    console.error('Exception creating profile:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 //Function to create test help request
 export const createTestHelpRequest = async (clientId: string) => {
   try {
