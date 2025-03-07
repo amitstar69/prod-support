@@ -9,6 +9,7 @@ const DebugHelpRequestDatabase: React.FC = () => {
   const { userId } = useAuth();
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
 
   const handleInspectTable = async () => {
     setIsLoading(true);
@@ -30,22 +31,21 @@ const DebugHelpRequestDatabase: React.FC = () => {
       return;
     }
 
-    if (userId.startsWith('client-')) {
-      toast.error('Cannot create test request with a local storage user ID');
-      return;
-    }
-
     setIsLoading(true);
     try {
       const result = await createTestHelpRequest(userId);
+      setTestResult(result);
+      
       if (result.success) {
-        toast.success('Test help request created successfully');
+        const storageMethod = result.storageMethod || 'unknown';
+        toast.success(`Test help request created successfully in ${storageMethod}`);
       } else {
         toast.error(`Failed to create test request: ${result.error}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating test request:', error);
-      toast.error('Error creating test request');
+      toast.error('Error creating test request: ' + error.message);
+      setTestResult({ success: false, error: error.message });
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +75,7 @@ const DebugHelpRequestDatabase: React.FC = () => {
           
           <Button 
             onClick={handleCreateTestRequest}
-            disabled={isLoading || !userId || userId.startsWith('client-')}
+            disabled={isLoading || !userId}
             variant="outline"
             className="bg-secondary/50"
           >
@@ -87,6 +87,29 @@ const DebugHelpRequestDatabase: React.FC = () => {
           <div className="p-3 bg-secondary/20 rounded text-sm overflow-x-auto">
             <p><strong>Current User ID:</strong> {userId}</p>
             <p><strong>ID Type:</strong> {userId.startsWith('client-') ? 'Local Storage (cannot be used with Supabase)' : 'UUID (compatible with Supabase)'}</p>
+          </div>
+        )}
+
+        {testResult && (
+          <div className="mt-4 p-4 bg-secondary/10 rounded-lg">
+            <h3 className="font-medium mb-2">Test Request Result</h3>
+            <div className="text-sm">
+              <p><strong>Success:</strong> {testResult.success ? 'Yes' : 'No'}</p>
+              {testResult.storageMethod && (
+                <p><strong>Storage Method:</strong> {testResult.storageMethod}</p>
+              )}
+              {testResult.error && (
+                <p className="text-red-600"><strong>Error:</strong> {testResult.error}</p>
+              )}
+              {testResult.data && (
+                <div className="mt-2">
+                  <p className="font-medium">Data:</p>
+                  <pre className="p-2 bg-gray-100 rounded overflow-x-auto text-xs max-h-40">
+                    {formatJson(testResult.data)}
+                  </pre>
+                </div>
+              )}
+            </div>
           </div>
         )}
         

@@ -133,14 +133,14 @@ export const debugCreateProfile = async (userId: string, userType: 'developer' |
   }
 };
 
-// Debug function to inspect help_requests table
+// Debug function to inspect help_requests table - Fixed TypeScript error
 export const debugInspectHelpRequests = async () => {
   try {
     console.log('Inspecting help_requests table structure and content');
     
-    // Get table information
+    // Use a type any for the response to avoid TypeScript errors
     const { data: tableInfo, error: tableInfoError } = await supabase
-      .rpc('get_table_info', { table_name: 'help_requests' });
+      .rpc('get_table_info' as any, { table_name: 'help_requests' });
       
     if (tableInfoError) {
       console.error('Error getting help_requests table info:', tableInfoError);
@@ -170,13 +170,14 @@ export const debugInspectHelpRequests = async () => {
 // Function to create a test help request - use this for debugging
 export const createTestHelpRequest = async (clientId: string) => {
   try {
-    // First validate if this is a UUID
+    // First validate if this is a UUID format for Supabase or a local ID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const isValidUUID = uuidRegex.test(clientId);
+    const isLocalId = clientId.startsWith('client-');
     
-    if (!isValidUUID) {
-      console.error('Invalid UUID format for client_id:', clientId);
-      return { success: false, error: 'Invalid UUID format for client_id' };
+    if (!isValidUUID && !isLocalId) {
+      console.error('Invalid ID format for client_id:', clientId);
+      return { success: false, error: 'Invalid ID format for client_id' };
     }
     
     console.log('Creating test help request for client ID:', clientId);
@@ -193,18 +194,36 @@ export const createTestHelpRequest = async (clientId: string) => {
       status: 'requirements'
     };
     
+    // For local storage IDs, we can't use Supabase
+    if (isLocalId) {
+      // Store in localStorage instead
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      const newRequest = {
+        ...testRequest,
+        id: `help-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      localHelpRequests.push(newRequest);
+      localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+      console.log('Test help request stored locally:', newRequest);
+      return { success: true, data: newRequest, storageMethod: 'localStorage' };
+    }
+    
+    // For UUID, try to store in Supabase
     const { data, error } = await supabase
       .from('help_requests')
       .insert(testRequest)
       .select();
       
     if (error) {
-      console.error('Error creating test help request:', error);
+      console.error('Error creating test help request in Supabase:', error);
       return { success: false, error: error.message };
     }
     
-    console.log('Test help request created successfully:', data);
-    return { success: true, data };
+    console.log('Test help request created successfully in Supabase:', data);
+    return { success: true, data, storageMethod: 'Supabase' };
     
   } catch (error) {
     console.error('Exception creating test help request:', error);
