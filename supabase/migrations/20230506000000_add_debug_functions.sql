@@ -51,18 +51,4 @@ GRANT EXECUTE ON FUNCTION public.get_table_info(text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_table_info(text) TO service_role;
 
 -- Add the function to the list of available RPC functions in Supabase
-DO $$
-BEGIN
-  -- Add the function to expose it via the Supabase client
-  -- This is needed for TypeScript type safety
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_proc p
-    JOIN pg_namespace n ON p.pronamespace = n.oid
-    WHERE n.nspname = 'public' 
-    AND p.proname = 'get_table_info'
-  ) THEN
-    RAISE NOTICE 'Function get_table_info does not exist';
-  ELSE
-    RAISE NOTICE 'Function get_table_info exists';
-  END IF;
-END $$;
+COMMENT ON FUNCTION public.get_table_info IS 'Retrieves detailed information about a database table structure';

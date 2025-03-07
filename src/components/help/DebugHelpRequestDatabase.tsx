@@ -5,7 +5,15 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
 
+// Check if we're in development environment
+const isDevelopment = import.meta.env.MODE === 'development';
+
 const DebugHelpRequestDatabase: React.FC = () => {
+  // If not in development mode, don't render anything
+  if (!isDevelopment) {
+    return null;
+  }
+
   const { userId } = useAuth();
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);

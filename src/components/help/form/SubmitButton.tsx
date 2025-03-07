@@ -1,11 +1,15 @@
 
 import React from 'react';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, Info } from 'lucide-react';
 import { Button } from '../../ui/button';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const SubmitButton: React.FC = () => {
   const { isSubmitting, validateForm } = useHelpRequest();
+  const { userId } = useAuth();
+  
+  const isLocalStorage = userId?.startsWith('client-');
   
   return (
     <div>
@@ -34,8 +38,18 @@ const SubmitButton: React.FC = () => {
         )}
       </Button>
       
+      {isLocalStorage && (
+        <div className="mt-3 p-3 border border-yellow-200 bg-yellow-50 rounded-md flex items-start gap-2">
+          <Info className="h-5 w-5 text-yellow-500 shrink-0 mt-0.5" />
+          <p className="text-sm text-yellow-700">
+            You're using a temporary account. Your request will be stored locally on this device only. 
+            To save to the database and access from any device, please create an account or log in.
+          </p>
+        </div>
+      )}
+      
       <p className="text-xs text-muted-foreground mt-2 text-center">
-        Note: If you're using a local account (not logged in with email), your request will be stored locally.
+        After submitting, you'll be able to track your request status.
       </p>
     </div>
   );
