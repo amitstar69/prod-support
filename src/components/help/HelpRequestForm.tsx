@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,9 +22,11 @@ const HelpRequestFormContent: React.FC = () => {
   const { 
     formData, 
     isSubmitting, 
-    setIsSubmitting, 
-    validateForm 
+    setIsSubmitting,
+    resetForm
   } = useHelpRequest();
+
+  const [formErrors, setFormErrors] = useState<string[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,12 +37,8 @@ const HelpRequestFormContent: React.FC = () => {
       return;
     }
     
-    if (!validateForm()) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-    
     setIsSubmitting(true);
+    setFormErrors([]);
     
     try {
       console.log('Submitting help request with userId:', userId);
@@ -50,11 +48,11 @@ const HelpRequestFormContent: React.FC = () => {
         ? parseInt(formData.estimated_duration, 10) 
         : formData.estimated_duration;
       
-      const helpRequest: Omit<HelpRequest, 'id' | 'created_at' | 'updated_at'> = {
-        title: formData.title,
-        description: formData.description,
+      const helpRequest = {
+        title: formData.title || 'Untitled Request',
+        description: formData.description || 'No description provided',
         technical_area: formData.technical_area,
-        urgency: formData.urgency,
+        urgency: formData.urgency || 'medium',
         communication_preference: formData.communication_preference,
         estimated_duration: duration,
         budget_range: formData.budget_range,
@@ -74,6 +72,7 @@ const HelpRequestFormContent: React.FC = () => {
       if (error) {
         console.error('Error submitting help request:', error);
         toast.error('Failed to submit help request: ' + error.message);
+        setFormErrors([error.message]);
         setIsSubmitting(false);
         return;
       }
@@ -81,11 +80,15 @@ const HelpRequestFormContent: React.FC = () => {
       toast.success('Help request submitted successfully!');
       console.log('Help request submitted:', data);
       
+      // Reset form after successful submission
+      resetForm();
+      
       // Redirect to success page with the request ID
       navigate('/get-help/success', { state: { requestId: data.id } });
     } catch (error: any) {
       console.error('Error in form submission:', error);
       toast.error('An unexpected error occurred: ' + error.message);
+      setFormErrors([error.message]);
       setIsSubmitting(false);
     }
   };
@@ -93,6 +96,17 @@ const HelpRequestFormContent: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-sm border border-border/40">
       <h2 className="text-2xl font-semibold mb-6">Request Developer Help</h2>
+      
+      {formErrors.length > 0 && (
+        <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-6">
+          <h3 className="font-medium">Please correct the following errors:</h3>
+          <ul className="list-disc list-inside mt-2">
+            {formErrors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <TitleDescriptionSection />

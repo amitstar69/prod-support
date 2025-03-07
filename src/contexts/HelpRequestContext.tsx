@@ -9,6 +9,7 @@ type HelpRequestContextType = {
   setIsSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   handleMultiSelectChange: (name: string, value: string) => void;
+  resetForm: () => void;
   validateForm: () => boolean;
 };
 
@@ -69,13 +70,14 @@ export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ childre
     });
   };
 
+  const resetForm = () => {
+    setFormData(defaultFormData);
+    setIsSubmitting(false);
+  };
+
   const validateForm = (): boolean => {
-    return !!(
-      formData.title.trim() && 
-      formData.description.trim() && 
-      formData.technical_area.length > 0 && 
-      formData.communication_preference.length > 0
-    );
+    // Make all fields optional for now
+    return true;
   };
 
   return (
@@ -86,7 +88,8 @@ export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ childre
         setFormData, 
         setIsSubmitting, 
         handleInputChange, 
-        handleMultiSelectChange, 
+        handleMultiSelectChange,
+        resetForm,
         validateForm 
       }}
     >
