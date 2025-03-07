@@ -67,8 +67,8 @@ const HelpRequestFormContent: React.FC = () => {
         status: 'requirements',
       };
       
-      // Check if using local storage authentication (client ID starts with "client-")
-      const isLocalAuth = !isValidUUID(userId);
+      // Check if using local storage authentication
+      const isLocalAuth = userId.startsWith('client-');
       
       let requestId: string;
       
@@ -89,30 +89,72 @@ const HelpRequestFormContent: React.FC = () => {
         requestId = newRequest.id;
         
       } else {
-        // For Supabase authentication, store in database
-        const helpRequest = {
-          ...helpRequestBase,
-          client_id: userId,  // This should be a UUID for Supabase
-        };
-        
-        console.log('Help request data for Supabase:', helpRequest);
-        
-        const { data, error } = await supabase
-          .from('help_requests')
-          .insert(helpRequest)
-          .select()
-          .single();
-        
-        if (error) {
-          console.error('Error submitting help request:', error);
-          toast.error('Failed to submit help request: ' + error.message);
-          setFormErrors([error.message]);
+        // For Supabase authentication, we need a valid UUID
+        if (!isValidUUID(userId)) {
+          console.error('Invalid UUID format for Supabase:', userId);
+          toast.error('Authentication error: Invalid user ID format');
           setIsSubmitting(false);
           return;
         }
         
-        console.log('Help request submitted to Supabase:', data);
-        requestId = data.id;
+        // For Supabase authentication, store in database
+        const helpRequest = {
+          ...helpRequestBase,
+          client_id: userId,
+        };
+        
+        console.log('Help request data for Supabase:', helpRequest);
+        
+        try {
+          const { data, error } = await supabase
+            .from('help_requests')
+            .insert(helpRequest)
+            .select()
+            .single();
+          
+          if (error) {
+            console.error('Error submitting help request to Supabase:', error);
+            
+            // If failed due to Supabase, fall back to localStorage
+            toast.warning('Could not save to database, storing locally instead');
+            
+            const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+            const newRequest = {
+              ...helpRequestBase,
+              id: `help-${Date.now()}`,
+              client_id: userId,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            
+            localHelpRequests.push(newRequest);
+            localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+            console.log('Help request stored locally as fallback:', newRequest);
+            requestId = newRequest.id;
+          } else {
+            console.log('Help request submitted to Supabase successfully:', data);
+            requestId = data.id;
+          }
+        } catch (supabaseError) {
+          console.error('Exception during Supabase insert:', supabaseError);
+          
+          // Fall back to localStorage
+          toast.warning('Could not save to database, storing locally instead');
+          
+          const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+          const newRequest = {
+            ...helpRequestBase,
+            id: `help-${Date.now()}`,
+            client_id: userId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          localHelpRequests.push(newRequest);
+          localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+          console.log('Help request stored locally as fallback:', newRequest);
+          requestId = newRequest.id;
+        }
       }
       
       toast.success('Help request submitted successfully!');

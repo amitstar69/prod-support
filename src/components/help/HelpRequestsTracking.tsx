@@ -57,6 +57,13 @@ const HelpRequestsTracking: React.FC = () => {
   const navigate = useNavigate();
   const [helpRequests, setHelpRequests] = useState<HelpRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Function to validate UUID format
+  const isValidUUID = (uuid: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  };
 
   useEffect(() => {
     const fetchHelpRequests = async () => {
@@ -69,38 +76,66 @@ const HelpRequestsTracking: React.FC = () => {
       try {
         console.log('Fetching help requests for user:', userId);
         
-        // Check if using local storage authentication
+        // Always fetch from localStorage first
+        const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+        const userLocalHelpRequests = localHelpRequests.filter((req: HelpRequest) => req.client_id === userId);
+        console.log('Local help requests for user:', userLocalHelpRequests);
+        
+        // Check if using local storage authentication or valid UUID for Supabase
         const isLocalAuth = userId.startsWith('client-');
+        const isValidUserUUID = isValidUUID(userId);
         
-        if (isLocalAuth) {
-          // Fetch from localStorage
-          const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
-          const userHelpRequests = localHelpRequests.filter((req: HelpRequest) => req.client_id === userId);
-          console.log('Local help requests for user:', userHelpRequests);
-          setHelpRequests(userHelpRequests);
+        if (isLocalAuth || !isValidUserUUID) {
+          // Only use localStorage data
+          setHelpRequests(userLocalHelpRequests);
           setIsLoading(false);
           return;
         }
         
-        // Fetch from Supabase
-        const { data, error } = await supabase
-          .from('help_requests')
-          .select('*')
-          .eq('client_id', userId)
-          .order('created_at', { ascending: false });
+        // For valid UUIDs, also try to fetch from Supabase
+        try {
+          const { data, error } = await supabase
+            .from('help_requests')
+            .select('*')
+            .eq('client_id', userId)
+            .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching help requests from Supabase:', error);
-          toast.error('Failed to load your help requests');
-          setIsLoading(false);
-          return;
+          if (error) {
+            console.error('Error fetching help requests from Supabase:', error);
+            setError('Failed to load help requests from database');
+            // Still show local requests if any
+            setHelpRequests(userLocalHelpRequests);
+          } else {
+            console.log('Help requests data from Supabase:', data);
+            // Combine local and Supabase data (may contain duplicates if saved to both)
+            const combinedRequests = [...(data || []), ...userLocalHelpRequests];
+            
+            // Try to remove duplicates by ID if possible
+            const uniqueRequests = combinedRequests.reduce((acc: HelpRequest[], current: HelpRequest) => {
+              const existingIndex = acc.findIndex((item: HelpRequest) => item.id === current.id);
+              if (existingIndex === -1) {
+                acc.push(current);
+              }
+              return acc;
+            }, []);
+            
+            // Sort by created_at date, newest first
+            uniqueRequests.sort((a: HelpRequest, b: HelpRequest) => {
+              const dateA = new Date(a.created_at || '').getTime();
+              const dateB = new Date(b.created_at || '').getTime();
+              return dateB - dateA;
+            });
+            
+            setHelpRequests(uniqueRequests);
+          }
+        } catch (supabaseError) {
+          console.error('Exception fetching from Supabase:', supabaseError);
+          // Still show local requests if any
+          setHelpRequests(userLocalHelpRequests);
         }
-
-        console.log('Help requests data from Supabase:', data);
-        setHelpRequests(data || []);
       } catch (error) {
         console.error('Exception fetching help requests:', error);
-        toast.error('An unexpected error occurred');
+        setError('An unexpected error occurred');
       } finally {
         setIsLoading(false);
       }
@@ -143,6 +178,13 @@ const HelpRequestsTracking: React.FC = () => {
           Create New Request
         </button>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-6">
+          <p className="font-medium">{error}</p>
+          <p>Showing available requests from local storage.</p>
+        </div>
+      )}
 
       {helpRequests.length === 0 ? (
         <div className="bg-white p-8 rounded-xl border border-border/40 text-center">

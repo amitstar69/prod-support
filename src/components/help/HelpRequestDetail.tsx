@@ -68,6 +68,13 @@ const HelpRequestDetail: React.FC = () => {
   const navigate = useNavigate();
   const [request, setRequest] = useState<HelpRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Function to validate UUID format
+  const isValidUUID = (uuid: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  };
 
   useEffect(() => {
     const fetchHelpRequest = async () => {
@@ -79,47 +86,53 @@ const HelpRequestDetail: React.FC = () => {
       try {
         console.log('Fetching help request details for:', requestId);
         
-        // Check if using local storage authentication
-        const isLocalAuth = userId.startsWith('client-');
+        // Check for help request in localStorage
+        const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+        const localRequest = localHelpRequests.find((req: HelpRequest) => 
+          req.id === requestId && req.client_id === userId
+        );
         
-        if (isLocalAuth) {
-          // Fetch from localStorage
-          const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
-          const requestDetails = localHelpRequests.find((req: HelpRequest) => req.id === requestId && req.client_id === userId);
-          
-          if (requestDetails) {
-            console.log('Local help request details:', requestDetails);
-            setRequest(requestDetails);
-          } else {
-            console.error('Help request not found in local storage');
-            toast.error('Help request not found');
-            navigate('/get-help/tracking');
-          }
-          
+        if (localRequest) {
+          console.log('Found request in local storage:', localRequest);
+          setRequest(localRequest);
           setIsLoading(false);
           return;
         }
         
-        // Fetch from Supabase
-        const { data, error } = await supabase
-          .from('help_requests')
-          .select('*')
-          .eq('id', requestId)
-          .eq('client_id', userId)
-          .single();
-
-        if (error) {
-          console.error('Error fetching help request details:', error);
-          toast.error('Failed to load request details');
-          navigate('/get-help/tracking');
+        // If not found in localStorage and the user ID is not a valid UUID, show error
+        const isValidUserUUID = isValidUUID(userId);
+        if (!isValidUserUUID) {
+          console.error('Invalid UUID format for Supabase query:', userId);
+          setError('Help request not found');
+          setIsLoading(false);
           return;
         }
+        
+        // Try to fetch from Supabase if not found locally and userId is valid UUID
+        try {
+          const { data, error } = await supabase
+            .from('help_requests')
+            .select('*')
+            .eq('id', requestId)
+            .eq('client_id', userId)
+            .single();
 
-        console.log('Help request detail data:', data);
-        setRequest(data);
+          if (error) {
+            console.error('Error fetching help request details from Supabase:', error);
+            setError('Help request not found in database');
+            setIsLoading(false);
+            return;
+          }
+
+          console.log('Help request detail data from Supabase:', data);
+          setRequest(data);
+        } catch (supabaseError) {
+          console.error('Exception fetching from Supabase:', supabaseError);
+          setError('Error connecting to database');
+        }
       } catch (error) {
         console.error('Exception fetching help request details:', error);
-        toast.error('An unexpected error occurred');
+        setError('An unexpected error occurred');
       } finally {
         setIsLoading(false);
       }
@@ -152,7 +165,7 @@ const HelpRequestDetail: React.FC = () => {
       <div className="max-w-3xl mx-auto bg-white p-8 rounded-xl border border-border/40 text-center">
         <h3 className="text-lg font-medium mb-2">Help request not found</h3>
         <p className="text-muted-foreground mb-4">
-          The help request you're looking for doesn't exist or you don't have permission to view it.
+          {error || "The help request you're looking for doesn't exist or you don't have permission to view it."}
         </p>
         <button
           onClick={() => navigate('/get-help/tracking')}
