@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { toast } from 'sonner';
-import { useAuth, getCurrentUserData, updateUserData } from '../contexts/AuthContext';
+import { useAuth, getCurrentUserData, updateUserData } from '../contexts/auth';
 import { Client } from '../types/product';
 import ProfileCard from '../components/profile/ProfileCard';
 

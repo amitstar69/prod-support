@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { User, CreditCard, LogOut, Settings, Video, MessageSquare, Save } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth, getCurrentUserData, updateUserData } from '../contexts/AuthContext';
+import { useAuth, getCurrentUserData, updateUserData } from '../contexts/auth';
 import { Developer } from '../types/product';
 import { useNavigate } from 'react-router-dom';
 

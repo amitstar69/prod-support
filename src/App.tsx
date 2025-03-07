@@ -12,7 +12,7 @@ import DeveloperRegistration from './pages/DeveloperRegistration';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import GetHelpPage from './pages/GetHelpPage';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/auth';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {

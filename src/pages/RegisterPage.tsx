@@ -1,18 +1,17 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { User, Code } from 'lucide-react';
 import Layout from '../components/Layout';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
-import { supabase, debugCheckProfileExists, debugCreateProfile } from '../integrations/supabase/client';
+import { supabase } from '../integrations/supabase/client';
+import { debugCheckProfileExists, debugCreateProfile } from '../contexts/auth';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { register, isAuthenticated } = useAuth();
   
-  // Initialize userType from location state if available
   const defaultUserType = location.state?.userType || 'client';
   const [userType, setUserType] = useState<'client' | 'developer'>(defaultUserType);
   
@@ -27,7 +26,6 @@ const RegisterPage: React.FC = () => {
     }
   }, [isAuthenticated, navigate]);
   
-  // Update userType if location state changes
   useEffect(() => {
     if (location.state?.userType) {
       setUserType(location.state.userType);
@@ -136,7 +134,6 @@ const RegisterPage: React.FC = () => {
           const profileCheck = await debugCheckProfileExists(authData.userId);
           console.log('Post-registration profile check:', profileCheck);
           
-          // If profile doesn't exist, try direct creation as a fallback
           if (!profileCheck.exists) {
             console.log('Profile does not exist after registration, attempting direct creation...');
             const directCreation = await debugCreateProfile(

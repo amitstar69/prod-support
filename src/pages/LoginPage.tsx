@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/auth';
 import { supabase } from '../integrations/supabase/client';
 
 const LoginPage: React.FC = () => {

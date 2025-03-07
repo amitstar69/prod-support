@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, User, LogOut, Clock, MessageSquare } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/auth';
 import { NavLinks } from './NavLinks';
 import { ServiceDropdown } from './ServiceDropdown';
 import { NavAuthActions } from './NavAuthActions';
