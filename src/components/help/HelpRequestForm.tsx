@@ -88,6 +88,10 @@ const HelpRequestFormContent: React.FC = () => {
         console.log('Help request stored locally:', newRequest);
         requestId = newRequest.id;
         
+        // Show success message and redirect
+        toast.success('Help request submitted successfully!');
+        resetForm();
+        navigate('/get-help/success', { state: { requestId } });
       } else {
         // For Supabase authentication, we need a valid UUID
         if (!isValidUUID(userId)) {
@@ -131,9 +135,19 @@ const HelpRequestFormContent: React.FC = () => {
             localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
             console.log('Help request stored locally as fallback:', newRequest);
             requestId = newRequest.id;
+            
+            // Show success message and redirect
+            toast.success('Help request submitted successfully (stored locally)!');
+            resetForm();
+            navigate('/get-help/success', { state: { requestId } });
           } else {
             console.log('Help request submitted to Supabase successfully:', data);
             requestId = data.id;
+            
+            // Show success message and redirect
+            toast.success('Help request submitted to database successfully!');
+            resetForm();
+            navigate('/get-help/success', { state: { requestId } });
           }
         } catch (supabaseError) {
           console.error('Exception during Supabase insert:', supabaseError);
@@ -154,16 +168,13 @@ const HelpRequestFormContent: React.FC = () => {
           localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
           console.log('Help request stored locally as fallback:', newRequest);
           requestId = newRequest.id;
+          
+          // Show success message and redirect
+          toast.success('Help request submitted successfully (stored locally)!');
+          resetForm();
+          navigate('/get-help/success', { state: { requestId } });
         }
       }
-      
-      toast.success('Help request submitted successfully!');
-      
-      // Reset form after successful submission
-      resetForm();
-      
-      // Redirect to success page with the request ID
-      navigate('/get-help/success', { state: { requestId } });
     } catch (error: any) {
       console.error('Error in form submission:', error);
       toast.error('An unexpected error occurred: ' + error.message);

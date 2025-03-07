@@ -132,3 +132,82 @@ export const debugCreateProfile = async (userId: string, userType: 'developer' |
     return { success: false, error: error.message };
   }
 };
+
+// Debug function to inspect help_requests table
+export const debugInspectHelpRequests = async () => {
+  try {
+    console.log('Inspecting help_requests table structure and content');
+    
+    // Get table information
+    const { data: tableInfo, error: tableInfoError } = await supabase
+      .rpc('get_table_info', { table_name: 'help_requests' });
+      
+    if (tableInfoError) {
+      console.error('Error getting help_requests table info:', tableInfoError);
+    } else {
+      console.log('help_requests table structure:', tableInfo);
+    }
+    
+    // Get a few records
+    const { data: records, error: recordsError } = await supabase
+      .from('help_requests')
+      .select('*')
+      .limit(5);
+      
+    if (recordsError) {
+      console.error('Error getting help_requests records:', recordsError);
+    } else {
+      console.log('help_requests records (max 5):', records);
+    }
+    
+    return { tableInfo, records, tableInfoError, recordsError };
+  } catch (error) {
+    console.error('Exception inspecting help_requests:', error);
+    return { error: error.message };
+  }
+};
+
+// Function to create a test help request - use this for debugging
+export const createTestHelpRequest = async (clientId: string) => {
+  try {
+    // First validate if this is a UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isValidUUID = uuidRegex.test(clientId);
+    
+    if (!isValidUUID) {
+      console.error('Invalid UUID format for client_id:', clientId);
+      return { success: false, error: 'Invalid UUID format for client_id' };
+    }
+    
+    console.log('Creating test help request for client ID:', clientId);
+    
+    const testRequest = {
+      title: 'Test Help Request',
+      description: 'This is a test help request created for debugging purposes',
+      technical_area: ['Backend', 'Database'],
+      urgency: 'medium',
+      communication_preference: ['Chat', 'Video Call'],
+      estimated_duration: 30,
+      budget_range: '$50 - $100',
+      client_id: clientId,
+      status: 'requirements'
+    };
+    
+    const { data, error } = await supabase
+      .from('help_requests')
+      .insert(testRequest)
+      .select();
+      
+    if (error) {
+      console.error('Error creating test help request:', error);
+      return { success: false, error: error.message };
+    }
+    
+    console.log('Test help request created successfully:', data);
+    return { success: true, data };
+    
+  } catch (error) {
+    console.error('Exception creating test help request:', error);
+    return { success: false, error: error.message };
+  }
+};
