@@ -31,10 +31,19 @@ export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Special handling for estimated_duration to convert to number
+    if (name === 'estimated_duration') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: parseInt(value, 10)
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleMultiSelectChange = (name: string, value: string) => {

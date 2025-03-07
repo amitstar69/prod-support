@@ -33,7 +33,7 @@ const UrgencyDurationSection: React.FC = () => {
         <select
           id="estimated_duration"
           name="estimated_duration"
-          value={formData.estimated_duration}
+          value={formData.estimated_duration.toString()}
           onChange={handleInputChange}
           className="w-full px-4 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
         >
