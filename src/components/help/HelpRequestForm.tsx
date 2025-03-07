@@ -45,14 +45,20 @@ const HelpRequestFormContent: React.FC = () => {
     try {
       console.log('Submitting help request with userId:', userId);
       
-      // Convert estimated_duration to a number if it's a string
+      // Ensure estimated_duration is a number
       const duration = typeof formData.estimated_duration === 'string' 
         ? parseInt(formData.estimated_duration, 10) 
         : formData.estimated_duration;
       
-      const helpRequest: HelpRequest = {
-        ...formData,
+      const helpRequest: Omit<HelpRequest, 'id' | 'created_at' | 'updated_at'> = {
+        title: formData.title,
+        description: formData.description,
+        technical_area: formData.technical_area,
+        urgency: formData.urgency,
+        communication_preference: formData.communication_preference,
         estimated_duration: duration,
+        budget_range: formData.budget_range,
+        code_snippet: formData.code_snippet || '',
         client_id: userId,
         status: 'pending'
       };

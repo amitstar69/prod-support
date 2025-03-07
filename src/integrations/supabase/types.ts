@@ -358,6 +358,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      is_owner_of_help_request: {
+        Args: {
+          record_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

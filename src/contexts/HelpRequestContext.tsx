@@ -3,16 +3,16 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { HelpRequest, technicalAreaOptions, communicationOptions, budgetRangeOptions } from '../types/helpRequest';
 
 type HelpRequestContextType = {
-  formData: Omit<HelpRequest, 'client_id'>;
+  formData: Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'updated_at'>;
   isSubmitting: boolean;
-  setFormData: React.Dispatch<React.SetStateAction<Omit<HelpRequest, 'client_id'>>>;
+  setFormData: React.Dispatch<React.SetStateAction<Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'updated_at'>>>;
   setIsSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   handleMultiSelectChange: (name: string, value: string) => void;
   validateForm: () => boolean;
 };
 
-const defaultFormData: Omit<HelpRequest, 'client_id'> = {
+const defaultFormData: Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'updated_at'> = {
   title: '',
   description: '',
   technical_area: [],
@@ -20,13 +20,14 @@ const defaultFormData: Omit<HelpRequest, 'client_id'> = {
   communication_preference: [],
   estimated_duration: 30,
   budget_range: budgetRangeOptions[1],
-  code_snippet: ''
+  code_snippet: '',
+  status: 'pending'
 };
 
 export const HelpRequestContext = createContext<HelpRequestContextType | undefined>(undefined);
 
 export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [formData, setFormData] = useState<Omit<HelpRequest, 'client_id'>>(defaultFormData);
+  const [formData, setFormData] = useState<Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'updated_at'>>(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
