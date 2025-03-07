@@ -28,6 +28,12 @@ const HelpRequestFormContent: React.FC = () => {
 
   const [formErrors, setFormErrors] = useState<string[]>([]);
 
+  // Function to validate UUID format
+  const isValidUUID = (uuid: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -62,7 +68,7 @@ const HelpRequestFormContent: React.FC = () => {
       };
       
       // Check if using local storage authentication (client ID starts with "client-")
-      const isLocalAuth = userId.startsWith('client-');
+      const isLocalAuth = !isValidUUID(userId);
       
       let requestId: string;
       
