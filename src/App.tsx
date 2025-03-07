@@ -11,6 +11,7 @@ import NotFound from './pages/NotFound';
 import DeveloperRegistration from './pages/DeveloperRegistration';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import GetHelpPage from './pages/GetHelpPage';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -33,10 +34,10 @@ function App() {
             path="/client-profile" 
             element={<ProtectedRoute requiredUserType="client"><ClientProfile /></ProtectedRoute>} 
           />
-          {/* Add new routes for on-demand platform */}
+          {/* Help request routes */}
           <Route 
-            path="/get-help" 
-            element={<ProtectedRoute requiredUserType="client"><NotFound /></ProtectedRoute>} 
+            path="/get-help/*" 
+            element={<ProtectedRoute requiredUserType="client"><GetHelpPage /></ProtectedRoute>} 
           />
           <Route 
             path="/session-history" 

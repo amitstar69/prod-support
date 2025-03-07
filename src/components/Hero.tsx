@@ -2,8 +2,23 @@
 import React from 'react';
 import { Shield, Clock, Zap } from 'lucide-react';
 import SearchBar from './SearchBar';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Hero: React.FC = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, userType } = useAuth();
+
+  const handleGetHelp = () => {
+    if (isAuthenticated && userType === 'client') {
+      navigate('/get-help');
+    } else if (isAuthenticated && userType === 'developer') {
+      navigate('/profile');
+    } else {
+      navigate('/register', { state: { userType: 'client' } });
+    }
+  };
+
   return (
     <section className="relative pt-20 pb-16 md:pt-24 md:pb-20 overflow-hidden">
       {/* Background gradient */}
@@ -58,7 +73,7 @@ const Hero: React.FC = () => {
         </div>
         
         {/* Centered search bar */}
-        <div className="max-w-2xl mx-auto mb-16">
+        <div className="max-w-2xl mx-auto mb-8">
           <SearchBar 
             className="shadow-lg" 
             placeholder="Search for any service..." 
@@ -79,6 +94,16 @@ const Hero: React.FC = () => {
               <span>Instant technical solutions</span>
             </div>
           </div>
+        </div>
+        
+        {/* Help CTA button */}
+        <div className="flex justify-center mb-8">
+          <button
+            onClick={handleGetHelp}
+            className="px-8 py-3 bg-[#1E3A8A] text-white rounded-lg hover:bg-[#1E3A8A]/90 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1"
+          >
+            Get Developer Help Now
+          </button>
         </div>
       </div>
     </section>
