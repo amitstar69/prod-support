@@ -70,13 +70,83 @@ const setupHelpRequestsSubscription = async () => {
         });
       
       console.log('Real-time subscription to help_requests set up for user:', userId);
+      return channel;
     } catch (error) {
       console.error('Error setting up real-time subscription:', error);
+      return null;
     }
   }
+  return null;
 };
 
+// Setup realtime subscription
 setupHelpRequestsSubscription();
+
+// Function to directly test if the help_requests table is accessible
+export const testHelpRequestsTableAccess = async () => {
+  console.log('Testing help_requests table access...');
+  
+  // First check authentication status
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  
+  if (sessionError) {
+    console.error('Authentication error:', sessionError);
+    return { success: false, error: sessionError, authenticated: false };
+  }
+  
+  if (!sessionData.session) {
+    console.log('No active session found');
+    return { success: false, error: 'No active session', authenticated: false };
+  }
+  
+  console.log('Active session found for user:', sessionData.session.user.id);
+  
+  try {
+    // Try to get a count of help_requests
+    const { count, error: countError } = await supabase
+      .from('help_requests')
+      .select('*', { count: 'exact', head: true });
+    
+    if (countError) {
+      console.error('Error accessing help_requests table:', countError);
+      
+      // Get more details about the error
+      if (countError.code === '42501') {
+        return { 
+          success: false, 
+          error: 'Permission denied. RLS policies may be preventing access.', 
+          details: countError,
+          authenticated: true 
+        };
+      }
+      
+      return { success: false, error: countError, authenticated: true };
+    }
+    
+    console.log('Successfully accessed help_requests table. Count:', count);
+    
+    // Now try to fetch actual data
+    const { data, error } = await supabase
+      .from('help_requests')
+      .select('*')
+      .limit(1);
+    
+    if (error) {
+      console.error('Error fetching help_requests data:', error);
+      return { success: false, error, authenticated: true, count };
+    }
+    
+    return { 
+      success: true, 
+      count, 
+      sampleData: data && data.length > 0 ? 'Data found' : 'No data found',
+      authenticated: true
+    };
+  } catch (error) {
+    console.error('Exception while testing help_requests access:', error);
+    return { success: false, error, authenticated: true };
+  }
+};
 
 // Add debugging functions to check profile creation
 export const debugCheckProfileExists = async (userId: string) => {
@@ -183,19 +253,27 @@ export const debugCreateProfile = async (userId: string, userType: 'developer' |
   }
 };
 
-// Debug function to inspect help_requests table - Fixed TypeScript error
+// Debug function to inspect help_requests table
 export const debugInspectHelpRequests = async () => {
   try {
     console.log('Inspecting help_requests table structure and content');
     
-    // Use a type any for the response to avoid TypeScript errors
+    // Get table info using RPC
     const { data: tableInfo, error: tableInfoError } = await supabase
-      .rpc('get_table_info' as any, { table_name: 'help_requests' });
+      .rpc('get_table_info', { table_name: 'help_requests' });
       
     if (tableInfoError) {
       console.error('Error getting help_requests table info:', tableInfoError);
     } else {
       console.log('help_requests table structure:', tableInfo);
+    }
+    
+    // Check session status
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData.session) {
+      console.log('Fetching help_requests as authenticated user:', sessionData.session.user.id);
+    } else {
+      console.log('Fetching help_requests without authentication');
     }
     
     // Get a few records
@@ -217,7 +295,7 @@ export const debugInspectHelpRequests = async () => {
   }
 };
 
-// Function to create a test help request - use this for debugging
+// Function to create a test help request
 export const createTestHelpRequest = async (clientId: string) => {
   try {
     // First validate if this is a UUID format for Supabase or a local ID
@@ -269,6 +347,20 @@ export const createTestHelpRequest = async (clientId: string) => {
       
     if (error) {
       console.error('Error creating test help request in Supabase:', error);
+      
+      // Try with service key if possible (this is just for testing)
+      console.log('Checking session state to verify auth issues...');
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Current session state:', sessionData.session ? 'Authenticated' : 'Not authenticated');
+      
+      if (!sessionData.session) {
+        return { 
+          success: false, 
+          error: error.message, 
+          authError: 'Not authenticated - you must be logged in to insert data with RLS enabled' 
+        };
+      }
+      
       return { success: false, error: error.message };
     }
     
@@ -317,5 +409,113 @@ export const testInsertHelpRequest = async (clientId: string, title: string = 'T
   } catch (error) {
     console.error('Exception in direct test insert:', error);
     return { success: false, error };
+  }
+};
+
+// Add a utility function to enable Supabase real-time for help_requests table
+export const enableRealtimeForHelpRequests = async () => {
+  try {
+    console.log('Running SQL to enable real-time for help_requests table...');
+    
+    // This requires admin privileges - this is a demonstration only
+    // In production, this would be done via migrations
+    const { error } = await supabase.rpc('enable_realtime_for_table', { 
+      table_name: 'help_requests'
+    });
+    
+    if (error) {
+      console.error('Error enabling real-time:', error);
+      return { success: false, error };
+    }
+    
+    console.log('Real-time enabled for help_requests table successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('Exception enabling real-time:', error);
+    return { success: false, error };
+  }
+};
+
+// Special test function to debug the database access with RLS policies
+export const testRLSPolicies = async () => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
+  
+  if (!userId) {
+    console.log('No authenticated user found. RLS policies require authentication.');
+    return { authenticated: false };
+  }
+  
+  try {
+    console.log(`Testing RLS policies with user ID: ${userId}`);
+    
+    // Test SELECT
+    const { data: selectData, error: selectError } = await supabase
+      .from('help_requests')
+      .select('*')
+      .limit(5);
+      
+    // Test INSERT  
+    const testInsert = {
+      title: 'RLS Test Request',
+      description: 'Testing RLS policies',
+      technical_area: ['Testing'],
+      urgency: 'medium',
+      communication_preference: ['Chat'],
+      estimated_duration: 10,
+      budget_range: '$50 - $100',
+      client_id: userId,
+      status: 'requirements'
+    };
+    
+    const { data: insertData, error: insertError } = await supabase
+      .from('help_requests')
+      .insert(testInsert)
+      .select()
+      .single();
+      
+    // If insert was successful, try to update
+    let updateData = null;
+    let updateError = null;
+    let deleteData = null;
+    let deleteError = null;
+    
+    if (insertData) {
+      // Test UPDATE
+      const { data: uData, error: uError } = await supabase
+        .from('help_requests')
+        .update({ title: 'Updated RLS Test Request' })
+        .eq('id', insertData.id)
+        .select()
+        .single();
+        
+      updateData = uData;
+      updateError = uError;
+      
+      // Test DELETE  
+      const { data: dData, error: dError } = await supabase
+        .from('help_requests')
+        .delete()
+        .eq('id', insertData.id)
+        .select()
+        .single();
+        
+      deleteData = dData;
+      deleteError = dError;
+    }
+    
+    // Return comprehensive results
+    return {
+      authenticated: true,
+      userId,
+      select: { success: !selectError, data: selectData, error: selectError },
+      insert: { success: !insertError, data: insertData, error: insertError },
+      update: { success: !updateError, data: updateData, error: updateError },
+      delete: { success: !deleteError, data: deleteData, error: deleteError }
+    };
+    
+  } catch (error) {
+    console.error('Exception testing RLS policies:', error);
+    return { authenticated: true, userId, error };
   }
 };

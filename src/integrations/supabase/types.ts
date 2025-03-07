@@ -358,6 +358,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_table_info: {
+        Args: {
+          table_name: string
+        }
+        Returns: Json
+      }
       is_owner_of_help_request: {
         Args: {
           record_id: string
