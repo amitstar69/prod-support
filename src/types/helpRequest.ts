@@ -5,12 +5,12 @@ export interface HelpRequest {
   title: string;
   description: string;
   technical_area: string[];
-  urgency: 'low' | 'medium' | 'high';
+  urgency: string; // Changed from 'low' | 'medium' | 'high' to string
   communication_preference: string[];
   estimated_duration: number;
   budget_range: string;
   code_snippet?: string;
-  status?: 'pending' | 'matching' | 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
+  status?: string; // Changed from enum to string
   created_at?: string;
   updated_at?: string;
 }
