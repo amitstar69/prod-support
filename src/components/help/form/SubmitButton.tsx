@@ -4,13 +4,19 @@ import { useHelpRequest } from '../../../contexts/HelpRequestContext';
 import { Loader2, Send } from 'lucide-react';
 
 const SubmitButton: React.FC = () => {
-  const { isSubmitting } = useHelpRequest();
+  const { isSubmitting, validateForm } = useHelpRequest();
+  
+  // Get validation state for visual feedback
+  const isValid = validateForm();
 
   return (
     <button
       type="submit"
-      disabled={isSubmitting}
-      className="w-full py-3 px-6 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+      disabled={isSubmitting || !isValid}
+      className={`w-full py-3 px-6 text-white rounded-md transition-colors flex items-center justify-center gap-2 ${
+        isValid ? 'bg-primary hover:bg-primary/90' : 'bg-gray-400'
+      } disabled:opacity-70`}
+      aria-live="polite"
     >
       {isSubmitting ? (
         <>

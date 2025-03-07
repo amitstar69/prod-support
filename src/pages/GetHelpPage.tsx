@@ -4,6 +4,8 @@ import { useNavigate, Route, Routes } from 'react-router-dom';
 import Layout from '../components/Layout';
 import HelpRequestForm from '../components/help/HelpRequestForm';
 import HelpRequestSuccess from '../components/help/HelpRequestSuccess';
+import HelpRequestsTracking from '../components/help/HelpRequestsTracking';
+import HelpRequestDetail from '../components/help/HelpRequestDetail';
 import { ArrowLeft } from 'lucide-react';
 
 const GetHelpPage: React.FC = () => {
@@ -21,10 +23,40 @@ const GetHelpPage: React.FC = () => {
             Back
           </button>
           
-          <h1 className="heading-2 mb-2">Get Developer Help</h1>
-          <p className="text-muted-foreground">
-            Describe your technical issue and get matched with skilled developers
-          </p>
+          <Routes>
+            <Route path="/" element={
+              <>
+                <h1 className="heading-2 mb-2">Get Developer Help</h1>
+                <p className="text-muted-foreground">
+                  Describe your technical issue and get matched with skilled developers
+                </p>
+              </>
+            } />
+            <Route path="/success" element={
+              <>
+                <h1 className="heading-2 mb-2">Request Submitted</h1>
+                <p className="text-muted-foreground">
+                  Your help request has been successfully submitted
+                </p>
+              </>
+            } />
+            <Route path="/tracking" element={
+              <>
+                <h1 className="heading-2 mb-2">Help Request Tracker</h1>
+                <p className="text-muted-foreground">
+                  View and manage your submitted help requests
+                </p>
+              </>
+            } />
+            <Route path="/request/:requestId" element={
+              <>
+                <h1 className="heading-2 mb-2">Help Request Details</h1>
+                <p className="text-muted-foreground">
+                  View the details of your help request
+                </p>
+              </>
+            } />
+          </Routes>
         </div>
       </div>
       
@@ -32,6 +64,8 @@ const GetHelpPage: React.FC = () => {
         <Routes>
           <Route index element={<HelpRequestForm />} />
           <Route path="success" element={<HelpRequestSuccess />} />
+          <Route path="tracking" element={<HelpRequestsTracking />} />
+          <Route path="request/:requestId" element={<HelpRequestDetail />} />
         </Routes>
       </div>
     </Layout>
