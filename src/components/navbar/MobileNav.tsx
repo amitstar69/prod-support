@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, LogIn, LogOut, Clock, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
+import { toast } from 'sonner';
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -27,10 +29,15 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
     setIsOpen(false);
   };
   
-  const handleLogoutClick = () => {
-    logout();
-    navigate('/');
-    setIsOpen(false);
+  const handleLogoutClick = async () => {
+    try {
+      await logout();
+      navigate('/');
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to log out properly. Please try again.');
+    }
   };
 
   if (!isOpen) return null;

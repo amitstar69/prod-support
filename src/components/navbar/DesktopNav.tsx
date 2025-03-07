@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/auth';
 import { NavLinks } from './NavLinks';
 import { ServiceDropdown } from './ServiceDropdown';
 import { NavAuthActions } from './NavAuthActions';
+import { toast } from 'sonner';
 
 interface DesktopNavProps {
   isOpen: boolean;
@@ -31,10 +32,15 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
     setIsOpen(false);
   };
   
-  const handleLogoutClick = () => {
-    logout();
-    navigate('/');
-    setIsOpen(false);
+  const handleLogoutClick = async () => {
+    try {
+      await logout();
+      navigate('/');
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to log out properly. Please try again.');
+    }
   };
 
   return (

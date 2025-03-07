@@ -12,6 +12,7 @@ import DeveloperRegistration from './pages/DeveloperRegistration';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import GetHelpPage from './pages/GetHelpPage';
+import SessionHistory from './pages/SessionHistory';
 import { AuthProvider } from './contexts/auth';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -41,7 +42,7 @@ function App() {
           />
           <Route 
             path="/session-history" 
-            element={<ProtectedRoute requiredUserType="client"><NotFound /></ProtectedRoute>} 
+            element={<ProtectedRoute requiredUserType="client"><SessionHistory /></ProtectedRoute>} 
           />
           <Route path="*" element={<NotFound />} />
         </Routes>

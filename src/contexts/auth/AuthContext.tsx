@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   userId: null,
   login: async () => false,
   register: async () => false,
-  logout: () => {},
+  logout: async () => {},
 });
 
 // Custom hook to use the auth context
@@ -135,18 +135,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
   
-  // Logout function
-  const logout = () => {
-    if (supabase) {
-      supabase.auth.signOut().then(() => {
-        setAuthState({
-          isAuthenticated: false,
-          userType: null,
-          userId: null,
-        });
-        localStorage.removeItem('authState');
+  // Logout function - fixed to return a Promise
+  const logout = async () => {
+    console.log('Logging out user...');
+    
+    try {
+      if (supabase) {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.error('Error signing out from Supabase:', error);
+          toast.error('Error signing out: ' + error.message);
+        }
+      }
+      
+      // Always clear local state regardless of Supabase result
+      setAuthState({
+        isAuthenticated: false,
+        userType: null,
+        userId: null,
       });
-    } else {
+      localStorage.removeItem('authState');
+      
+      console.log('Logout completed, auth state cleared');
+      toast.success('Successfully logged out');
+      
+    } catch (error) {
+      console.error('Exception during logout:', error);
+      toast.error('An error occurred during logout');
+      
+      // Still clear state on error
       setAuthState({
         isAuthenticated: false,
         userType: null,
