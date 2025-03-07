@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../integrations/supabase/client';
 import { HelpRequest, technicalAreaOptions, communicationOptions, budgetRangeOptions } from '../../types/helpRequest';
-import { Loader2, Send, Check } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 
 const HelpRequestForm: React.FC = () => {
   const { userId } = useAuth();
@@ -93,10 +93,14 @@ const HelpRequestForm: React.FC = () => {
     setIsSubmitting(true);
     
     try {
+      console.log('Submitting help request with userId:', userId);
+      
       const helpRequest: HelpRequest = {
         ...formData,
         client_id: userId
       };
+      
+      console.log('Help request data:', helpRequest);
       
       const { data, error } = await supabase
         .from('help_requests')
@@ -106,7 +110,7 @@ const HelpRequestForm: React.FC = () => {
       
       if (error) {
         console.error('Error submitting help request:', error);
-        toast.error('Failed to submit help request');
+        toast.error('Failed to submit help request: ' + error.message);
         setIsSubmitting(false);
         return;
       }
@@ -114,11 +118,11 @@ const HelpRequestForm: React.FC = () => {
       toast.success('Help request submitted successfully!');
       console.log('Help request submitted:', data);
       
-      // Redirect to a confirmation or tracking page
+      // Redirect to success page with the request ID
       navigate('/get-help/success', { state: { requestId: data.id } });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in form submission:', error);
-      toast.error('An unexpected error occurred');
+      toast.error('An unexpected error occurred: ' + error.message);
       setIsSubmitting(false);
     }
   };
