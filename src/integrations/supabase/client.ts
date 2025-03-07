@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -23,7 +22,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
     schema: 'public'
   },
   global: {
-    fetch: (url, options) => fetch(url, options),
     headers: { 'X-Client-Info': 'devHelp' }
   }
 });
@@ -195,107 +193,7 @@ export const debugCheckProfileExists = async (userId: string) => {
   }
 };
 
-// Function to test profile insertion
-export const debugCreateProfile = async (userId: string, userType: 'developer' | 'client', email: string, name: string) => {
-  try {
-    console.log(`Attempting to create test profile for user ID: ${userId}, type: ${userType}`);
-    
-    // Create base profile
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .insert([{
-        id: userId,
-        user_type: userType,
-        name: name,
-        email: email,
-        username: email.split('@')[0].toLowerCase(),
-      }])
-      .select();
-      
-    if (profileError) {
-      console.error('Error creating test profile:', profileError);
-      return { success: false, error: profileError.message };
-    }
-    
-    console.log('Test profile created successfully:', profileData);
-    
-    // Create type-specific profile
-    if (userType === 'developer') {
-      const { data: devData, error: devError } = await supabase
-        .from('developer_profiles')
-        .insert([{ id: userId }])
-        .select();
-        
-      if (devError) {
-        console.error('Error creating test developer profile:', devError);
-        return { success: true, profileData, error: devError.message };
-      }
-      
-      console.log('Test developer profile created successfully:', devData);
-      return { success: true, profileData, devData };
-    } else {
-      const { data: clientData, error: clientError } = await supabase
-        .from('client_profiles')
-        .insert([{ id: userId }])
-        .select();
-        
-      if (clientError) {
-        console.error('Error creating test client profile:', clientError);
-        return { success: true, profileData, error: clientError.message };
-      }
-      
-      console.log('Test client profile created successfully:', clientData);
-      return { success: true, profileData, clientData };
-    }
-  } catch (error) {
-    console.error('Exception creating test profile:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-// Debug function to inspect help_requests table
-export const debugInspectHelpRequests = async () => {
-  try {
-    console.log('Inspecting help_requests table structure and content');
-    
-    // Get table info using RPC
-    const { data: tableInfo, error: tableInfoError } = await supabase
-      .rpc('get_table_info', { table_name: 'help_requests' });
-      
-    if (tableInfoError) {
-      console.error('Error getting help_requests table info:', tableInfoError);
-    } else {
-      console.log('help_requests table structure:', tableInfo);
-    }
-    
-    // Check session status
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (sessionData.session) {
-      console.log('Fetching help_requests as authenticated user:', sessionData.session.user.id);
-    } else {
-      console.log('Fetching help_requests without authentication');
-    }
-    
-    // Get a few records
-    const { data: records, error: recordsError } = await supabase
-      .from('help_requests')
-      .select('*')
-      .limit(5);
-      
-    if (recordsError) {
-      console.error('Error getting help_requests records:', recordsError);
-    } else {
-      console.log('help_requests records (max 5):', records);
-    }
-    
-    return { tableInfo, records, tableInfoError, recordsError };
-  } catch (error) {
-    console.error('Exception inspecting help_requests:', error);
-    return { error: error.message };
-  }
-};
-
-// Function to create a test help request
+//Function to create test help request
 export const createTestHelpRequest = async (clientId: string) => {
   try {
     // First validate if this is a UUID format for Supabase or a local ID
@@ -412,24 +310,31 @@ export const testInsertHelpRequest = async (clientId: string, title: string = 'T
   }
 };
 
-// Add a utility function to enable Supabase real-time for help_requests table
+// Update the enableRealtimeForHelpRequests function to use Supabase's built-in channel functionality
 export const enableRealtimeForHelpRequests = async () => {
   try {
-    console.log('Running SQL to enable real-time for help_requests table...');
+    console.log('Setting up real-time channel for help_requests table...');
     
-    // This requires admin privileges - this is a demonstration only
-    // In production, this would be done via migrations
-    const { error } = await supabase.rpc('enable_realtime_for_table', { 
-      table_name: 'help_requests'
-    });
-    
-    if (error) {
-      console.error('Error enabling real-time:', error);
-      return { success: false, error };
+    const channel = supabase
+      .channel('help_requests_realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'help_requests'
+      }, (payload) => {
+        console.log('Real-time update received:', payload);
+      })
+      .subscribe((status) => {
+        console.log('Real-time subscription status:', status);
+      });
+
+    if (channel) {
+      console.log('Real-time enabled for help_requests table successfully');
+      return { success: true, channel };
+    } else {
+      console.error('Failed to create channel');
+      return { success: false, error: 'Failed to create channel' };
     }
-    
-    console.log('Real-time enabled for help_requests table successfully');
-    return { success: true };
   } catch (error) {
     console.error('Exception enabling real-time:', error);
     return { success: false, error };
@@ -517,5 +422,47 @@ export const testRLSPolicies = async () => {
   } catch (error) {
     console.error('Exception testing RLS policies:', error);
     return { authenticated: true, userId, error };
+  }
+};
+
+// Function to test insertion and get detailed feedback
+export const debugInspectHelpRequests = async () => {
+  try {
+    console.log('Inspecting help_requests table structure and content');
+    
+    // Get table info using RPC
+    const { data: tableInfo, error: tableInfoError } = await supabase
+      .rpc('get_table_info', { table_name: 'help_requests' });
+      
+    if (tableInfoError) {
+      console.error('Error getting help_requests table info:', tableInfoError);
+    } else {
+      console.log('help_requests table structure:', tableInfo);
+    }
+    
+    // Check session status
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData.session) {
+      console.log('Fetching help_requests as authenticated user:', sessionData.session.user.id);
+    } else {
+      console.log('Fetching help_requests without authentication');
+    }
+    
+    // Get a few records
+    const { data: records, error: recordsError } = await supabase
+      .from('help_requests')
+      .select('*')
+      .limit(5);
+      
+    if (recordsError) {
+      console.error('Error getting help_requests records:', recordsError);
+    } else {
+      console.log('help_requests records (max 5):', records);
+    }
+    
+    return { tableInfo, records, tableInfoError, recordsError };
+  } catch (error) {
+    console.error('Exception inspecting help_requests:', error);
+    return { error: error.message };
   }
 };
