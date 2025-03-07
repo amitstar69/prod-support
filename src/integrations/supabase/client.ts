@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -11,7 +10,20 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    storageKey: 'supabase.auth.token',
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  },
+  db: {
+    schema: 'public'
+  },
+  global: {
+    fetch: (...args) => fetch(...args),
+    headers: { 'X-Client-Info': 'devHelp' }
   }
 });
 
@@ -25,8 +37,45 @@ supabase.auth.getSession().then(({ data, error }) => {
     console.error('Error checking Supabase session:', error);
   } else {
     console.log('Supabase session check successful:', data.session ? 'Active session' : 'No active session');
+    
+    // If we have a session, log the user ID to verify it's valid
+    if (data.session) {
+      console.log('Authenticated user ID:', data.session.user.id);
+      console.log('Session expires at:', new Date(data.session.expires_at! * 1000).toISOString());
+    }
   }
 });
+
+// Add real-time subscription to help_requests table
+const setupHelpRequestsSubscription = async () => {
+  const { data: authData } = await supabase.auth.getSession();
+  
+  if (authData.session) {
+    const userId = authData.session.user.id;
+    
+    try {
+      const channel = supabase
+        .channel('help_requests_changes')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'help_requests',
+          filter: `client_id=eq.${userId}`
+        }, (payload) => {
+          console.log('Real-time update received for help_requests:', payload);
+        })
+        .subscribe((status) => {
+          console.log('Help requests subscription status:', status);
+        });
+      
+      console.log('Real-time subscription to help_requests set up for user:', userId);
+    } catch (error) {
+      console.error('Error setting up real-time subscription:', error);
+    }
+  }
+};
+
+setupHelpRequestsSubscription();
 
 // Add debugging functions to check profile creation
 export const debugCheckProfileExists = async (userId: string) => {
@@ -228,5 +277,44 @@ export const createTestHelpRequest = async (clientId: string) => {
   } catch (error) {
     console.error('Exception creating test help request:', error);
     return { success: false, error: error.message };
+  }
+};
+
+// Export a function to test inserting a help request directly
+export const testInsertHelpRequest = async (clientId: string, title: string = 'Test Request') => {
+  try {
+    // Validate session
+    const { data: sessionData } = await supabase.auth.getSession();
+    console.log('Session when testing insert:', sessionData);
+    
+    const testRequest = {
+      title,
+      description: 'This is a direct test request from the client utility',
+      technical_area: ['Testing', 'Database'],
+      urgency: 'medium',
+      communication_preference: ['Chat'],
+      estimated_duration: 15,
+      budget_range: '$50 - $100',
+      client_id: clientId,
+      status: 'requirements'
+    };
+    
+    console.log('Attempting direct test insert with request:', testRequest);
+    
+    const { data, error } = await supabase
+      .from('help_requests')
+      .insert(testRequest)
+      .select();
+      
+    if (error) {
+      console.error('Error in direct test insert:', error);
+      return { success: false, error };
+    }
+    
+    console.log('Direct test insert successful:', data);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception in direct test insert:', error);
+    return { success: false, error };
   }
 };

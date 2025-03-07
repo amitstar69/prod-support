@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
@@ -89,11 +90,16 @@ const HelpRequestsTracking: React.FC = () => {
         }
         
         try {
+          console.log('Fetching from Supabase with user ID:', userId);
+          
+          // Debug: Get session to verify authentication
+          const { data: sessionData } = await supabase.auth.getSession();
+          console.log('Current session:', sessionData);
+          
           const { data, error } = await supabase
             .from('help_requests')
             .select('*')
-            .eq('client_id', userId)
-            .order('created_at', { ascending: false });
+            .eq('client_id', userId);
 
           if (error) {
             console.error('Error fetching help requests from Supabase:', error);
@@ -121,6 +127,7 @@ const HelpRequestsTracking: React.FC = () => {
           }
         } catch (supabaseError) {
           console.error('Exception fetching from Supabase:', supabaseError);
+          setError('Failed to connect to database, showing local requests only');
           setHelpRequests(userLocalHelpRequests);
         }
       } catch (error) {

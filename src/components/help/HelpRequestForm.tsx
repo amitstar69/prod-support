@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -109,7 +108,17 @@ const HelpRequestFormContent: React.FC = () => {
         
         console.log('Help request data for Supabase:', helpRequest);
         
+        // Get current session to verify authentication
+        const { data: sessionData } = await supabase.auth.getSession();
+        console.log('Current session when submitting:', sessionData);
+        
         try {
+          // Check if we have an active session
+          if (!sessionData.session) {
+            console.error('No active Supabase session found');
+            throw new Error('Authentication required');
+          }
+          
           const { data, error } = await supabase
             .from('help_requests')
             .insert(helpRequest)
@@ -149,7 +158,7 @@ const HelpRequestFormContent: React.FC = () => {
             resetForm();
             navigate('/get-help/success', { state: { requestId } });
           }
-        } catch (supabaseError) {
+        } catch (supabaseError: any) {
           console.error('Exception during Supabase insert:', supabaseError);
           
           // Fall back to localStorage
