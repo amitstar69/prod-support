@@ -30,45 +30,66 @@ export const login = async (
         return loginWithLocalStorage(email, password, userType, mockDevelopers, mockClients, setAuthState);
       }
       
+      if (!data.user) {
+        console.error('No user data returned from Supabase');
+        toast.error('Login failed: No user data returned');
+        return false;
+      }
+      
       console.log('Login successful, user data:', data);
       
-      // Get user profile to determine user type
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
+      try {
+        // Get user profile to determine user type
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .maybeSingle();
+          
+        if (profileError) {
+          console.error('Error getting profile:', profileError);
+          toast.error('Error retrieving user profile');
+          await supabase.auth.signOut();
+          return false;
+        }
         
-      if (profileError || !profileData) {
-        console.error('Error getting profile:', profileError);
-        toast.error('Profile not found. You may need to register first.');
+        if (!profileData) {
+          console.error('Profile not found');
+          toast.error('Profile not found. You may need to register first.');
+          await supabase.auth.signOut();
+          return false;
+        }
+        
+        // Check if user type matches
+        if (profileData.user_type !== userType) {
+          console.error('User type mismatch');
+          toast.error(`You registered as a ${profileData.user_type}, but tried to log in as a ${userType}.`);
+          await supabase.auth.signOut();
+          return false;
+        }
+        
+        setAuthState({
+          isAuthenticated: true,
+          userType: profileData.user_type as 'developer' | 'client',
+          userId: data.user.id,
+        });
+        
+        localStorage.setItem('authState', JSON.stringify({
+          isAuthenticated: true,
+          userType: profileData.user_type as 'developer' | 'client',
+          userId: data.user.id,
+        }));
+        
+        return true;
+      } catch (profileException) {
+        console.error('Exception during profile fetch:', profileException);
+        toast.error('Error processing login. Please try again.');
         await supabase.auth.signOut();
         return false;
       }
-      
-      // Check if user type matches
-      if (profileData.user_type !== userType) {
-        console.error('User type mismatch');
-        toast.error(`You registered as a ${profileData.user_type}, but tried to log in as a ${userType}.`);
-        await supabase.auth.signOut();
-        return false;
-      }
-      
-      setAuthState({
-        isAuthenticated: true,
-        userType: profileData.user_type as 'developer' | 'client',
-        userId: data.user.id,
-      });
-      
-      localStorage.setItem('authState', JSON.stringify({
-        isAuthenticated: true,
-        userType: profileData.user_type as 'developer' | 'client',
-        userId: data.user.id,
-      }));
-      
-      return true;
     } catch (error) {
       console.error('Supabase login exception:', error);
+      toast.error('Login service unavailable. Please try again later.');
       // Fallback to localStorage login
       return loginWithLocalStorage(email, password, userType, mockDevelopers, mockClients, setAuthState);
     }
@@ -119,5 +140,6 @@ const loginWithLocalStorage = (
       return true;
     }
   }
+  toast.error('Invalid email or password for ' + userType + ' account');
   return false;
 };

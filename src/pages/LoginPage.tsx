@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/auth';
 import { supabase } from '../integrations/supabase/client';
+import { toast } from 'sonner';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -38,18 +39,35 @@ const LoginPage: React.FC = () => {
     console.log(`Attempting to login: ${email} as ${userType}`);
     
     try {
-      const success = await login(email, password, userType);
+      // Add timeout to prevent UI from being stuck indefinitely
+      const loginPromise = login(email, password, userType);
+      
+      // Set a timeout for the login process
+      const timeoutPromise = new Promise<boolean>((_, reject) => {
+        setTimeout(() => reject(new Error('Login request timed out')), 10000);
+      });
+      
+      // Race between login and timeout
+      const success = await Promise.race([loginPromise, timeoutPromise])
+        .catch(error => {
+          console.error('Login error or timeout:', error);
+          toast.error(error.message || 'Login timed out. Please try again.');
+          return false;
+        });
+      
       console.log('Login result:', success ? 'Success' : 'Failed');
       
       if (success) {
         console.log(`Login successful, redirecting to ${userType === 'developer' ? '/profile' : '/client-profile'}`);
+        toast.success(`Successfully logged in as ${userType}`);
         navigate(userType === 'developer' ? '/profile' : '/client-profile');
-      } else {
-        setError('Invalid email or password');
+      } else if (!error) {
+        setError('Login failed. Please check your credentials and try again.');
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('An unexpected error occurred');
+      setError('An unexpected error occurred during login');
+      toast.error('Login failed. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -87,6 +105,7 @@ const LoginPage: React.FC = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                       required
+                      disabled={isLoading}
                     />
                   </div>
                   
@@ -101,6 +120,7 @@ const LoginPage: React.FC = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                       required
+                      disabled={isLoading}
                     />
                   </div>
                   
@@ -117,6 +137,7 @@ const LoginPage: React.FC = () => {
                           checked={userType === 'client'}
                           onChange={() => setUserType('client')}
                           className="h-4 w-4 text-primary border-border focus:ring-primary/25"
+                          disabled={isLoading}
                         />
                         <span className="ml-2 text-sm">Client</span>
                       </label>
@@ -128,6 +149,7 @@ const LoginPage: React.FC = () => {
                           checked={userType === 'developer'}
                           onChange={() => setUserType('developer')}
                           className="h-4 w-4 text-primary border-border focus:ring-primary/25"
+                          disabled={isLoading}
                         />
                         <span className="ml-2 text-sm">Developer</span>
                       </label>
@@ -141,6 +163,7 @@ const LoginPage: React.FC = () => {
                         checked={rememberMe}
                         onChange={() => setRememberMe(!rememberMe)}
                         className="h-4 w-4 text-primary border-border focus:ring-primary/25 rounded"
+                        disabled={isLoading}
                       />
                       <span className="ml-2 text-sm">Remember me</span>
                     </label>
@@ -152,10 +175,20 @@ const LoginPage: React.FC = () => {
                   <div>
                     <button
                       type="submit"
-                      className="button-primary w-full"
+                      className="button-primary w-full flex justify-center items-center"
                       disabled={isLoading}
                     >
-                      {isLoading ? 'Logging in...' : 'Log In'}
+                      {isLoading ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Logging in...
+                        </>
+                      ) : (
+                        'Log In'
+                      )}
                     </button>
                   </div>
                 </div>
