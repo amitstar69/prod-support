@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -22,7 +23,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
     schema: 'public'
   },
   global: {
-    fetch: (...args) => fetch(...args),
+    fetch: (url, options) => fetch(url, options),
     headers: { 'X-Client-Info': 'devHelp' }
   }
 });
