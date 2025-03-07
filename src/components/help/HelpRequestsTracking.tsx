@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/auth';
 import { HelpRequest } from '../../types/helpRequest';
 import { toast } from 'sonner';
 import { Loader2, ExternalLink, Clock, AlertCircle, CheckCircle2, Calendar, FileEdit, Play, PauseCircle, UserCheck2, Check } from 'lucide-react';
@@ -61,6 +61,7 @@ const HelpRequestsTracking: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const isValidUUID = (uuid: string) => {
+    if (!uuid) return false;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid);
   };
@@ -96,13 +97,13 @@ const HelpRequestsTracking: React.FC = () => {
           const { data: sessionData } = await supabase.auth.getSession();
           console.log('Current session:', sessionData);
           
-          const { data, error } = await supabase
+          const { data, error: supabaseError } = await supabase
             .from('help_requests')
             .select('*')
             .eq('client_id', userId);
 
-          if (error) {
-            console.error('Error fetching help requests from Supabase:', error);
+          if (supabaseError) {
+            console.error('Error fetching help requests from Supabase:', supabaseError);
             setError('Failed to load help requests from database');
             setHelpRequests(userLocalHelpRequests);
           } else {
@@ -142,14 +143,20 @@ const HelpRequestsTracking: React.FC = () => {
   }, [userId]);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return 'Invalid date';
+    }
   };
 
   const handleViewDetails = (requestId: string) => {
@@ -218,21 +225,27 @@ const HelpRequestsTracking: React.FC = () => {
                 <div>
                   <span className="text-muted-foreground">Technical Area:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {request.technical_area.slice(0, 2).map((area, i) => (
-                      <span key={i} className="bg-secondary/50 px-2 py-0.5 rounded text-xs">
-                        {area}
-                      </span>
-                    ))}
-                    {request.technical_area.length > 2 && (
-                      <span className="bg-secondary/50 px-2 py-0.5 rounded text-xs">
-                        +{request.technical_area.length - 2}
-                      </span>
+                    {request.technical_area && request.technical_area.length > 0 ? (
+                      <>
+                        {request.technical_area.slice(0, 2).map((area, i) => (
+                          <span key={i} className="bg-secondary/50 px-2 py-0.5 rounded text-xs">
+                            {area}
+                          </span>
+                        ))}
+                        {request.technical_area.length > 2 && (
+                          <span className="bg-secondary/50 px-2 py-0.5 rounded text-xs">
+                            +{request.technical_area.length - 2}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not specified</span>
                     )}
                   </div>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Budget:</span>
-                  <p>{request.budget_range}</p>
+                  <p>{request.budget_range || 'Not specified'}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Created:</span>
