@@ -1,4 +1,6 @@
+
 import { supabase } from './client';
+import { Json } from './types';
 
 // Function to directly test if the help_requests table is accessible
 export const testHelpRequestsTableAccess = async () => {
@@ -242,11 +244,22 @@ export const getValidHelpRequestStatuses = async () => {
     // Find the status constraint
     let statusConstraint = null;
     
-    if (data && data.constraints) {
-      for (const constraint of data.constraints) {
-        if (constraint.constraint_name.includes('status') && constraint.constraint_type === 'CHECK') {
-          statusConstraint = constraint;
-          break;
+    // Safely access the data structure
+    if (data && typeof data === 'object' && 'constraints' in data) {
+      const constraintsArray = data.constraints;
+      
+      if (Array.isArray(constraintsArray)) {
+        for (const constraint of constraintsArray) {
+          if (constraint && 
+              typeof constraint === 'object' && 
+              'constraint_name' in constraint && 
+              'constraint_type' in constraint &&
+              typeof constraint.constraint_name === 'string' &&
+              constraint.constraint_name.includes('status') && 
+              constraint.constraint_type === 'CHECK') {
+            statusConstraint = constraint;
+            break;
+          }
         }
       }
     }
