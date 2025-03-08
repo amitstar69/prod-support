@@ -20,7 +20,7 @@ export interface HelpRequestMatch {
   request_id: string;
   developer_id: string;
   match_score?: number;
-  status: 'pending' | 'accepted' | 'rejected' | 'completed';
+  status: string; // Changed from specific literals to allow any string from database
   created_at?: string;
   updated_at?: string;
   proposed_message?: string;
@@ -37,7 +37,7 @@ export interface HelpSession {
   scheduled_end?: string;
   actual_start?: string;
   actual_end?: string;
-  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
+  status: string; // Changed from specific literals to allow any string from database
   final_cost?: number;
   created_at?: string;
   updated_at?: string;

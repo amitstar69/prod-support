@@ -101,11 +101,11 @@ const ClientDashboard: React.FC = () => {
       // Group matches by request_id
       const matchesByRequest: Record<string, HelpRequestMatch[]> = {};
       
-      data.forEach((match: HelpRequestMatch) => {
+      data.forEach((match) => {
         if (!matchesByRequest[match.request_id]) {
           matchesByRequest[match.request_id] = [];
         }
-        matchesByRequest[match.request_id].push(match);
+        matchesByRequest[match.request_id].push(match as HelpRequestMatch);
       });
       
       setRequestMatches(matchesByRequest);
