@@ -5,6 +5,10 @@ import { Loader2, Send, Info } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { useAuth } from '../../../contexts/AuthContext';
 
+/**
+ * Component that renders the submit button for the help request form
+ * and displays authentication status information
+ */
 const SubmitButton: React.FC = () => {
   const { isSubmitting, validateForm } = useHelpRequest();
   const { userId } = useAuth();
@@ -12,6 +16,13 @@ const SubmitButton: React.FC = () => {
   const isLocalStorage = userId?.startsWith('client-');
   const isAuthenticated = !!userId && !isLocalStorage;
   
+  const handleFormValidation = (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Client-side validation before form submission
+    if (!validateForm()) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <div>
       <Button
@@ -19,12 +30,7 @@ const SubmitButton: React.FC = () => {
         disabled={isSubmitting}
         className="w-full h-12 py-3 px-6 text-white rounded-md transition-colors flex items-center justify-center gap-2"
         aria-live="polite"
-        onClick={(e) => {
-          // Client-side validation before form submission
-          if (!validateForm()) {
-            e.preventDefault();
-          }
-        }}
+        onClick={handleFormValidation}
       >
         {isSubmitting ? (
           <>

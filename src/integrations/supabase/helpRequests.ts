@@ -1,106 +1,31 @@
 
 import { supabase } from './client';
-import { Json } from './types';
+import { HelpRequest } from '../../types/helpRequest';
+import { isValidUUID, isLocalId } from './helpRequestsUtils';
 
-// Function to directly test if the help_requests table is accessible
-export const testHelpRequestsTableAccess = async () => {
-  console.log('Testing help_requests table access...');
-  
-  // First check authentication status
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  
-  if (sessionError) {
-    console.error('Authentication error:', sessionError);
-    return { success: false, error: sessionError, authenticated: false };
-  }
-  
-  if (!sessionData.session) {
-    console.log('No active session found');
-    return { success: false, error: 'No active session', authenticated: false };
-  }
-  
-  console.log('Active session found for user:', sessionData.session.user.id);
-  
+// Core function to create a help request
+export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'created_at' | 'updated_at'>) => {
   try {
-    // Try to get a count of help_requests
-    const { count, error: countError } = await supabase
-      .from('help_requests')
-      .select('*', { count: 'exact', head: true });
+    const { client_id } = helpRequest;
     
-    if (countError) {
-      console.error('Error accessing help_requests table:', countError);
-      
-      // Get more details about the error
-      if (countError.code === '42501') {
-        return { 
-          success: false, 
-          error: 'Permission denied. RLS policies may be preventing access.', 
-          details: countError,
-          authenticated: true 
-        };
-      }
-      
-      return { success: false, error: countError, authenticated: true };
+    // Validate client ID
+    if (!client_id) {
+      return { success: false, error: 'Client ID is required' };
     }
     
-    console.log('Successfully accessed help_requests table. Count:', count);
+    // Determine if we should use local storage or Supabase
+    const useLocalStorage = isLocalId(client_id);
+    const useSupabase = isValidUUID(client_id);
     
-    // Now try to fetch actual data
-    const { data, error } = await supabase
-      .from('help_requests')
-      .select('*')
-      .limit(1);
-    
-    if (error) {
-      console.error('Error fetching help_requests data:', error);
-      return { success: false, error, authenticated: true, count };
+    if (!useLocalStorage && !useSupabase) {
+      return { success: false, error: 'Invalid client ID format' };
     }
     
-    return { 
-      success: true, 
-      count, 
-      sampleData: data && data.length > 0 ? 'Data found' : 'No data found',
-      authenticated: true
-    };
-  } catch (error) {
-    console.error('Exception while testing help_requests access:', error);
-    return { success: false, error, authenticated: true };
-  }
-};
-
-// Function to create test help request
-export const createTestHelpRequest = async (clientId: string) => {
-  try {
-    // First validate if this is a UUID format for Supabase or a local ID
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const isValidUUID = uuidRegex.test(clientId);
-    const isLocalId = clientId.startsWith('client-');
-    
-    if (!isValidUUID && !isLocalId) {
-      console.error('Invalid ID format for client_id:', clientId);
-      return { success: false, error: 'Invalid ID format for client_id' };
-    }
-    
-    console.log('Creating test help request for client ID:', clientId);
-    
-    const testRequest = {
-      title: 'Test Help Request',
-      description: 'This is a test help request created for debugging purposes',
-      technical_area: ['Backend', 'Database'],
-      urgency: 'medium',
-      communication_preference: ['Chat', 'Video Call'],
-      estimated_duration: 30,
-      budget_range: '$50 - $100',
-      client_id: clientId,
-      status: 'requirements'
-    };
-    
-    // For local storage IDs, we can't use Supabase
-    if (isLocalId) {
-      // Store in localStorage instead
+    // For local storage
+    if (useLocalStorage) {
       const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
       const newRequest = {
-        ...testRequest,
+        ...helpRequest,
         id: `help-${Date.now()}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -108,209 +33,182 @@ export const createTestHelpRequest = async (clientId: string) => {
       
       localHelpRequests.push(newRequest);
       localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
-      console.log('Test help request stored locally:', newRequest);
+      console.log('Help request stored locally:', newRequest);
+      
       return { success: true, data: newRequest, storageMethod: 'localStorage' };
     }
     
-    // For UUID, try to store in Supabase
+    // For Supabase
     const { data, error } = await supabase
       .from('help_requests')
-      .insert(testRequest)
+      .insert(helpRequest)
       .select();
       
     if (error) {
-      console.error('Error creating test help request in Supabase:', error);
-      
-      // Try with service key if possible (this is just for testing)
-      console.log('Checking session state to verify auth issues...');
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Current session state:', sessionData.session ? 'Authenticated' : 'Not authenticated');
-      
-      if (!sessionData.session) {
-        return { 
-          success: false, 
-          error: error.message, 
-          authError: 'Not authenticated - you must be logged in to insert data with RLS enabled' 
-        };
-      }
-      
+      console.error('Error creating help request in Supabase:', error);
       return { success: false, error: error.message };
     }
     
-    console.log('Test help request created successfully in Supabase:', data);
-    return { success: true, data, storageMethod: 'Supabase' };
+    console.log('Help request created successfully in Supabase:', data);
+    return { success: true, data: data[0], storageMethod: 'Supabase' };
     
   } catch (error) {
-    console.error('Exception creating test help request:', error);
+    console.error('Exception creating help request:', error);
     return { success: false, error: error.message };
   }
 };
 
-// Export a function to test inserting a help request directly
-export const testInsertHelpRequest = async (clientId: string, title: string = 'Test Request') => {
+// Function to fetch help requests for a client
+export const getHelpRequestsForClient = async (clientId: string) => {
   try {
-    // Validate session
-    const { data: sessionData } = await supabase.auth.getSession();
-    console.log('Session when testing insert:', sessionData);
+    // Get local help requests
+    const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+    const filteredLocalHelpRequests = localHelpRequests.filter(
+      (request: HelpRequest) => request.client_id === clientId
+    );
     
-    const testRequest = {
-      title,
-      description: 'This is a direct test request from the client utility',
-      technical_area: ['Testing', 'Database'],
-      urgency: 'medium',
-      communication_preference: ['Chat'],
-      estimated_duration: 15,
-      budget_range: '$50 - $100',
-      client_id: clientId,
-      status: 'requirements'
-    };
-    
-    console.log('Attempting direct test insert with request:', testRequest);
-    
-    const { data, error } = await supabase
-      .from('help_requests')
-      .insert(testRequest)
-      .select();
-      
-    if (error) {
-      console.error('Error in direct test insert:', error);
-      return { success: false, error };
+    // If it's a local client ID, return only local requests
+    if (isLocalId(clientId)) {
+      return { 
+        success: true, 
+        data: filteredLocalHelpRequests, 
+        storageMethod: 'localStorage' 
+      };
     }
     
-    console.log('Direct test insert successful:', data);
-    return { success: true, data };
-  } catch (error) {
-    console.error('Exception in direct test insert:', error);
-    return { success: false, error };
-  }
-};
-
-// Function to debug insertion and get detailed feedback
-export const debugInspectHelpRequests = async () => {
-  try {
-    console.log('Inspecting help_requests table structure and content');
-    
-    // Get table info using RPC
-    const { data: tableInfo, error: tableInfoError } = await supabase
-      .rpc('get_table_info', { table_name: 'help_requests' });
-      
-    if (tableInfoError) {
-      console.error('Error getting help_requests table info:', tableInfoError);
-    } else {
-      console.log('help_requests table structure:', tableInfo);
-    }
-    
-    // Check session status
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (sessionData.session) {
-      console.log('Fetching help_requests as authenticated user:', sessionData.session.user.id);
-    } else {
-      console.log('Fetching help_requests without authentication');
-    }
-    
-    // Get a few records
-    const { data: records, error: recordsError } = await supabase
-      .from('help_requests')
-      .select('*')
-      .limit(5);
-      
-    if (recordsError) {
-      console.error('Error getting help_requests records:', recordsError);
-    } else {
-      console.log('help_requests records (max 5):', records);
-    }
-    
-    return { tableInfo, records, tableInfoError, recordsError };
-  } catch (error) {
-    console.error('Exception inspecting help_requests:', error);
-    return { error: error.message };
-  }
-};
-
-// Function to get valid status values from the help_requests table
-export const getValidHelpRequestStatuses = async () => {
-  try {
-    console.log('Checking valid status values for help_requests table...');
-    
-    // Get table constraint information
-    const { data, error } = await supabase
-      .rpc('get_table_info', { table_name: 'help_requests' });
-      
-    if (error) {
-      console.error('Error getting help_requests table info:', error);
-      return { success: false, error };
-    }
-    
-    // Find the status constraint
-    let statusConstraint = null;
-    
-    // Safely access the data structure with proper typechecking
-    if (data && typeof data === 'object') {
-      // Check if data has constraints property and it's an array
-      if ('constraints' in data && 
-          data.constraints && 
-          Array.isArray(data.constraints)) {
+    // For Supabase client ID, fetch from database
+    if (isValidUUID(clientId)) {
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
         
-        // Now search through constraints
-        for (const constraint of data.constraints) {
-          if (constraint && 
-              typeof constraint === 'object' && 
-              'constraint_name' in constraint && 
-              'constraint_type' in constraint &&
-              typeof constraint.constraint_name === 'string' &&
-              constraint.constraint_name.includes('status') && 
-              constraint.constraint_type === 'CHECK') {
-            statusConstraint = constraint;
-            break;
-          }
-        }
+      if (error) {
+        console.error('Error fetching help requests from Supabase:', error);
+        // If there's an error with Supabase, still return local requests
+        return { 
+          success: false, 
+          error: error.message,
+          data: filteredLocalHelpRequests, 
+          storageMethod: 'fallbackToLocalStorage' 
+        };
       }
+      
+      // Combine Supabase results with any local requests
+      const combinedResults = [...data, ...filteredLocalHelpRequests];
+      
+      return { 
+        success: true, 
+        data: combinedResults, 
+        storageMethod: 'combined' 
+      };
     }
     
-    console.log('Status constraint found:', statusConstraint);
+    // Invalid client ID format
+    return { success: false, error: 'Invalid client ID format' };
     
-    return { 
-      success: true, 
-      data, 
-      statusConstraint 
-    };
   } catch (error) {
-    console.error('Exception checking valid status values:', error);
-    return { success: false, error };
+    console.error('Exception fetching help requests:', error);
+    return { success: false, error: error.message };
   }
 };
 
-// Function to directly test inserting a help request with specific status value
-export const testInsertWithStatus = async (clientId: string, status: string) => {
+// Function to get a specific help request
+export const getHelpRequest = async (requestId: string) => {
   try {
-    const testRequest = {
-      title: `Test with status: ${status}`,
-      description: 'This is a test to verify the status constraint',
-      technical_area: ['Testing'],
-      urgency: 'medium',
-      communication_preference: ['Chat'],
-      estimated_duration: 15,
-      budget_range: '$50 - $100',
-      client_id: clientId,
-      status
-    };
-    
-    console.log(`Testing insert with status "${status}":`, testRequest);
-    
-    const { data, error } = await supabase
-      .from('help_requests')
-      .insert(testRequest)
-      .select();
+    // For local help request ID
+    if (requestId.startsWith('help-')) {
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      const helpRequest = localHelpRequests.find(
+        (request: HelpRequest) => request.id === requestId
+      );
       
-    if (error) {
-      console.error(`Error inserting with status "${status}":`, error);
-      return { success: false, error, status };
+      if (!helpRequest) {
+        return { success: false, error: 'Help request not found in local storage' };
+      }
+      
+      return { success: true, data: helpRequest, storageMethod: 'localStorage' };
     }
     
-    console.log(`Insert with status "${status}" successful:`, data);
-    return { success: true, data, status };
+    // For Supabase help request ID
+    if (isValidUUID(requestId)) {
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching help request from Supabase:', error);
+        return { success: false, error: error.message };
+      }
+      
+      return { success: true, data, storageMethod: 'Supabase' };
+    }
+    
+    // Invalid request ID format
+    return { success: false, error: 'Invalid help request ID format' };
+    
   } catch (error) {
-    console.error(`Exception testing insert with status "${status}":`, error);
-    return { success: false, error, status };
+    console.error('Exception fetching help request:', error);
+    return { success: false, error: error.message };
   }
 };
+
+// Function to update a help request
+export const updateHelpRequest = async (requestId: string, updates: Partial<HelpRequest>) => {
+  try {
+    // For local help request ID
+    if (requestId.startsWith('help-')) {
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      const requestIndex = localHelpRequests.findIndex(
+        (request: HelpRequest) => request.id === requestId
+      );
+      
+      if (requestIndex === -1) {
+        return { success: false, error: 'Help request not found in local storage' };
+      }
+      
+      const updatedRequest = {
+        ...localHelpRequests[requestIndex],
+        ...updates,
+        updated_at: new Date().toISOString()
+      };
+      
+      localHelpRequests[requestIndex] = updatedRequest;
+      localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+      
+      return { success: true, data: updatedRequest, storageMethod: 'localStorage' };
+    }
+    
+    // For Supabase help request ID
+    if (isValidUUID(requestId)) {
+      const { data, error } = await supabase
+        .from('help_requests')
+        .update(updates)
+        .eq('id', requestId)
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error updating help request in Supabase:', error);
+        return { success: false, error: error.message };
+      }
+      
+      return { success: true, data, storageMethod: 'Supabase' };
+    }
+    
+    // Invalid request ID format
+    return { success: false, error: 'Invalid help request ID format' };
+    
+  } catch (error) {
+    console.error('Exception updating help request:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Export the testing functions from helpRequestsDebug module
+export * from './helpRequestsDebug';
+// Export utility functions
+export * from './helpRequestsUtils';
