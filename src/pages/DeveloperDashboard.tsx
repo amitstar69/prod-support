@@ -22,6 +22,7 @@ const DeveloperDashboard = () => {
     setShowFilters,
     isAuthenticated,
     userId,
+    dataSource,
     handleFilterChange,
     handleClaimTicket,
     handleForceRefresh,
@@ -66,6 +67,7 @@ const DeveloperDashboard = () => {
             <TicketSummary 
               filteredCount={filteredTickets.length} 
               totalCount={tickets.length} 
+              dataSource={dataSource}
             />
             
             <TicketList 

@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -122,11 +123,11 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
     const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
     console.log('Local help requests:', localHelpRequests.length);
     
-    // Fetch real data from the database for both authenticated and non-authenticated users
+    // Fetch data from the database for both authenticated and non-authenticated users
+    // Important: We remove the 'status=eq.pending' filter to see all help requests regardless of status
     const { data, error } = await supabase
       .from('help_requests')
       .select('*')
-      .eq('status', 'pending') // Only show pending requests that need devs
       .order('created_at', { ascending: false });
       
     if (error) {
@@ -134,17 +135,27 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
       return { 
         success: false, 
         error: 'Failed to fetch help requests: ' + error.message,
-        data: [] 
+        data: localHelpRequests 
       };
     }
     
-    // Always return real data from the database, regardless of authentication status
-    console.log('Found database data, returning it:', data ? data.length : 0, 'records');
-    return {
-      success: true,
-      data: data || [],
-      storageMethod: 'database'
-    };
+    // If we got data from the database, use it
+    if (data && data.length > 0) {
+      console.log('Found database data, returning it:', data.length, 'records');
+      return {
+        success: true,
+        data: data,
+        storageMethod: 'database'
+      };
+    } else {
+      // If no data from database, fall back to local storage
+      console.log('No database data found, returning local help requests:', localHelpRequests.length);
+      return {
+        success: true,
+        data: localHelpRequests,
+        storageMethod: 'localStorage'
+      };
+    }
   } catch (error) {
     console.error('Exception fetching public help requests:', error);
     return { 

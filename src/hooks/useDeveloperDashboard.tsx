@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -17,6 +18,7 @@ export const useDeveloperDashboard = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [dataSource, setDataSource] = useState<string>('database');
   const { isAuthenticated, userId, userType } = useAuth();
   const navigate = useNavigate();
 
@@ -74,16 +76,17 @@ export const useDeveloperDashboard = () => {
         console.log('Successfully fetched tickets:', response.data.length);
         
         if (response.data.length > 0) {
-          // We have real data from the database
+          // We have data
           setTickets(response.data);
+          setDataSource(response.storageMethod || 'database');
           
-          if (showLoading && !isAuthenticated) {
-            toast.info('Showing all available help requests', {
+          if (showLoading && response.storageMethod === 'localStorage') {
+            toast.info('Using local help request data', {
               duration: 3000
             });
           }
         } else {
-          // No data from database
+          // No data
           setTickets([]);
           
           if (showLoading) {
@@ -217,6 +220,7 @@ export const useDeveloperDashboard = () => {
     setShowFilters,
     isAuthenticated,
     userId,
+    dataSource,
     handleFilterChange,
     handleClaimTicket,
     handleForceRefresh,
