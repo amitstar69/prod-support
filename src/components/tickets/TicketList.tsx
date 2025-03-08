@@ -1,10 +1,10 @@
 
 import React from 'react';
 import { HelpRequest } from '../../types/helpRequest';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { Clock, Calendar, AlertCircle, CheckCircle2, FileEdit, Play, PauseCircle, User } from 'lucide-react';
+import { ExternalLink, ArrowUpRight } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 interface TicketListProps {
   tickets: HelpRequest[];
@@ -13,47 +13,10 @@ interface TicketListProps {
 }
 
 const TicketList: React.FC<TicketListProps> = ({ tickets, onClaimTicket, currentUserId }) => {
-  const statusColors = {
-    'pending': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    'matching': 'bg-blue-100 text-blue-800 border-blue-200',
-    'scheduled': 'bg-purple-100 text-purple-800 border-purple-200',
-    'in-progress': 'bg-green-100 text-green-800 border-green-200',
-    'completed': 'bg-gray-100 text-gray-800 border-gray-200',
-    'cancelled': 'bg-red-100 text-red-800 border-red-200'
-  };
-
-  const statusIcons = {
-    'pending': <Clock className="h-4 w-4" />,
-    'matching': <User className="h-4 w-4" />,
-    'scheduled': <Calendar className="h-4 w-4" />,
-    'in-progress': <Play className="h-4 w-4" />,
-    'completed': <CheckCircle2 className="h-4 w-4" />,
-    'cancelled': <AlertCircle className="h-4 w-4" />
-  };
-
-  const urgencyColors = {
-    'low': 'bg-blue-100 text-blue-800',
-    'medium': 'bg-yellow-100 text-yellow-800',
-    'high': 'bg-orange-100 text-orange-800',
-    'critical': 'bg-red-100 text-red-800'
-  };
-
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   if (tickets.length === 0) {
     return (
       <div className="bg-white p-8 rounded-lg border border-border/40 text-center">
-        <FileEdit className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">📋</div>
         <h3 className="text-xl font-medium mb-2">No tickets found</h3>
         <p className="text-muted-foreground">
           There are no tickets matching your current filters. Try adjusting your filters or check back later.
@@ -62,98 +25,130 @@ const TicketList: React.FC<TicketListProps> = ({ tickets, onClaimTicket, current
     );
   }
 
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'N/A';
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    } catch (e) {
+      return 'Invalid date';
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 gap-4">
-      {tickets.map(ticket => (
-        <Card key={ticket.id} className="border border-border/40 hover:border-primary/40 transition-colors">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-xl">{ticket.title}</CardTitle>
-                <CardDescription className="text-sm mt-1">
-                  Created {formatDate(ticket.created_at)}
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Badge variant="outline" className={statusColors[ticket.status || 'pending']}>
-                  <span className="flex items-center gap-1">
-                    {statusIcons[ticket.status || 'pending']}
-                    {ticket.status}
-                  </span>
-                </Badge>
-                <Badge variant="outline" className={urgencyColors[ticket.urgency || 'medium']}>
-                  {ticket.urgency}
-                </Badge>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-foreground/80 mb-4 line-clamp-2">
-              {ticket.description}
-            </p>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Technical Areas:</span>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {ticket.technical_area && ticket.technical_area.length > 0 ? (
-                    ticket.technical_area.map((area, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
-                        {area}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-muted-foreground text-xs">None specified</span>
-                  )}
-                </div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Budget Range:</span>
-                <p className="font-medium">{ticket.budget_range}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Est. Duration:</span>
-                <p className="font-medium">{ticket.estimated_duration} minutes</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Communication:</span>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {ticket.communication_preference && ticket.communication_preference.length > 0 ? (
-                    ticket.communication_preference.map((pref, i) => (
-                      <Badge key={i} variant="outline" className="text-xs">
-                        {pref}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-muted-foreground text-xs">None specified</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between border-t pt-4">
-            <Button 
-              variant="outline"
-              onClick={() => window.location.href = `/get-help/request/${ticket.id}`}
-            >
-              View Details
-            </Button>
-            
-            {ticket.status === 'pending' || ticket.status === 'matching' ? (
-              <Button 
-                onClick={() => ticket.id && onClaimTicket(ticket.id)}
-                className="bg-primary text-white hover:bg-primary/90"
+    <div className="overflow-hidden border border-border/40 rounded-md">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-muted/50">
+            <th className="px-4 py-3 text-left font-medium text-foreground/70">Key</th>
+            <th className="px-4 py-3 text-left font-medium text-foreground/70 w-[30%]">Title</th>
+            <th className="px-4 py-3 text-left font-medium text-foreground/70">Technical Area</th>
+            <th className="px-4 py-3 text-left font-medium text-foreground/70">Urgency</th>
+            <th className="px-4 py-3 text-left font-medium text-foreground/70">Status</th>
+            <th className="px-4 py-3 text-left font-medium text-foreground/70">Linked</th>
+            <th className="px-4 py-3 text-left font-medium text-foreground/70">Created</th>
+            <th className="px-4 py-3 text-left font-medium text-foreground/70">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tickets.map((ticket, index) => {
+            // Create a simple key from the id or index (like HELP-123)
+            const ticketKey = ticket.id ? 
+              `HELP-${ticket.id.substring(0, 3)}` : 
+              `HELP-${index + 100}`;
+              
+            return (
+              <tr 
+                key={ticket.id || index} 
+                className="border-t border-border/20 hover:bg-muted/30 transition-colors"
               >
-                Claim Ticket
-              </Button>
-            ) : (
-              <Button disabled variant="outline">
-                {ticket.status === 'in-progress' ? 'In Progress' : 
-                 ticket.status === 'completed' ? 'Completed' : 'Unavailable'}
-              </Button>
-            )}
-          </CardFooter>
-        </Card>
-      ))}
+                <td className="px-4 py-3 font-medium">
+                  <a href={`/get-help/request/${ticket.id}`} className="text-primary">
+                    {ticketKey}
+                  </a>
+                </td>
+                <td className="px-4 py-3 font-medium">
+                  <a href={`/get-help/request/${ticket.id}`} className="hover:text-primary hover:underline transition-colors">
+                    {ticket.title}
+                  </a>
+                </td>
+                <td className="px-4 py-3">
+                  {ticket.technical_area && ticket.technical_area.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {ticket.technical_area.slice(0, 1).map((area, i) => (
+                        <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
+                          {area}
+                        </Badge>
+                      ))}
+                      {ticket.technical_area.length > 1 && (
+                        <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">
+                          +{ticket.technical_area.length - 1}
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">None</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  <Badge 
+                    variant="outline" 
+                    className={`
+                      ${ticket.urgency === 'high' ? 'bg-orange-50 text-orange-800 border-orange-200' : 
+                        ticket.urgency === 'critical' ? 'bg-red-50 text-red-800 border-red-200' :
+                        ticket.urgency === 'medium' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
+                        'bg-blue-50 text-blue-800 border-blue-200'}
+                    `}
+                  >
+                    {ticket.urgency || 'low'}
+                  </Badge>
+                </td>
+                <td className="px-4 py-3">
+                  <Badge 
+                    variant="outline"
+                    className={`
+                      ${ticket.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
+                        ticket.status === 'completed' ? 'bg-slate-50 text-slate-800 border-slate-200' :
+                        ticket.status === 'cancelled' ? 'bg-red-50 text-red-800 border-red-200' :
+                        'bg-yellow-50 text-yellow-800 border-yellow-200'}
+                    `}
+                  >
+                    {ticket.status || 'pending'}
+                  </Badge>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-blue-600 font-medium">
+                    {ticket.related_requests?.length || 0} request{(ticket.related_requests?.length || 0) !== 1 ? 's' : ''}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {formatDate(ticket.created_at)}
+                </td>
+                <td className="px-4 py-3">
+                  {ticket.status === 'pending' || ticket.status === 'matching' ? (
+                    <Button 
+                      size="sm"
+                      onClick={() => ticket.id && onClaimTicket(ticket.id)}
+                      className="h-8 px-3 bg-primary text-white hover:bg-primary/90"
+                    >
+                      Claim
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      disabled 
+                      variant="outline"
+                      className="h-8 px-3"
+                    >
+                      {ticket.status === 'in-progress' ? 'In Progress' : 
+                       ticket.status === 'completed' ? 'Completed' : 'Unavailable'}
+                    </Button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 };

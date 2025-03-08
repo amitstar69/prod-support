@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -7,7 +8,8 @@ import TicketList from '../components/tickets/TicketList';
 import TicketFilters from '../components/tickets/TicketFilters';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/auth';
-import { Loader2 } from 'lucide-react';
+import { Loader2, LayoutGrid, PlusCircle, ArrowDownUp, Filter, RefreshCw } from 'lucide-react';
+import { Button } from '../components/ui/button';
 
 const DeveloperDashboard = () => {
   const [tickets, setTickets] = useState<HelpRequest[]>([]);
@@ -18,6 +20,7 @@ const DeveloperDashboard = () => {
     technicalArea: 'all',
     urgency: 'all',
   });
+  const [showFilters, setShowFilters] = useState(false);
   const { userId, userType } = useAuth();
   const navigate = useNavigate();
 
@@ -151,27 +154,66 @@ const DeveloperDashboard = () => {
     <Layout>
       <div className="container mx-auto py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Developer Dashboard</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Developer Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              Browse and claim available help requests from clients
+            </p>
+          </div>
           <div className="flex items-center gap-2">
-            <button 
-              onClick={fetchAllTickets}
-              className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors"
+            <Button 
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1"
+              onClick={() => setShowFilters(!showFilters)}
             >
-              Refresh Tickets
-            </button>
+              <Filter className="h-4 w-4" />
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </Button>
+            <Button 
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1"
+              onClick={fetchAllTickets}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
           </div>
         </div>
         
-        <TicketFilters 
-          filters={filters} 
-          onFilterChange={handleFilterChange} 
-        />
+        {showFilters && (
+          <div className="mb-6 p-4 bg-muted/30 border border-border/30 rounded-md">
+            <TicketFilters 
+              filters={filters} 
+              onFilterChange={handleFilterChange} 
+            />
+          </div>
+        )}
+
+        <div className="bg-white rounded-md shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border/30 p-3 bg-muted/20">
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredTickets.length} of {tickets.length} tickets
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-xs flex items-center gap-1"
+              >
+                <ArrowDownUp className="h-3 w-3" />
+                Sort
+              </Button>
+            </div>
+          </div>
         
-        <TicketList 
-          tickets={filteredTickets} 
-          onClaimTicket={handleClaimTicket} 
-          currentUserId={userId || ''} 
-        />
+          <TicketList 
+            tickets={filteredTickets} 
+            onClaimTicket={handleClaimTicket} 
+            currentUserId={userId || ''} 
+          />
+        </div>
       </div>
     </Layout>
   );
