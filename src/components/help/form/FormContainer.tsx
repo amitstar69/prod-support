@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
-import { createHelpRequest, isValidUUID } from '../../../integrations/supabase/helpRequests';
+import { createHelpRequest } from '../../../integrations/supabase/helpRequests';
 
 interface FormContainerProps {
   children: React.ReactNode;
@@ -18,17 +18,18 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userId) {
-      toast.error('You must be logged in to submit a help request');
-      navigate('/login');
-      return;
+    if (isSubmitting) {
+      return; // Prevent multiple submissions
     }
     
+    // Proceed with submission even if userId is null (guest mode)
+    // Local storage will be used in that case
+    const clientId = userId || `client-guest-${Date.now()}`;
+    
     setIsSubmitting(true);
+    console.log('Submitting help request with userId:', clientId);
     
     try {
-      console.log('Submitting help request with userId:', userId);
-      
       // Ensure estimated_duration is a number
       const duration = typeof formData.estimated_duration === 'string' 
         ? parseInt(formData.estimated_duration, 10) 
@@ -45,7 +46,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
         budget_range: formData.budget_range,
         code_snippet: formData.code_snippet || '',
         status: 'pending',
-        client_id: userId,
+        client_id: clientId,
       };
       
       // Use the createHelpRequest utility function
@@ -65,6 +66,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
     } catch (error: any) {
       console.error('Error in form submission:', error);
       toast.error('An unexpected error occurred: ' + error.message);
+    } finally {
       setIsSubmitting(false);
     }
   };

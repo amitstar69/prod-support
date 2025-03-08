@@ -1,5 +1,7 @@
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { HelpRequest, technicalAreaOptions, communicationOptions, budgetRangeOptions } from '../types/helpRequest';
+import { toast } from 'sonner';
 
 type HelpRequestContextType = {
   formData: Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'updated_at'>;
@@ -75,7 +77,27 @@ export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
 
   const validateForm = (): boolean => {
-    // Make all fields optional for now
+    // Basic validation of required fields
+    if (!formData.title.trim()) {
+      toast.error("Please provide a title for your help request");
+      return false;
+    }
+    
+    if (!formData.description.trim()) {
+      toast.error("Please provide a description of your issue");
+      return false;
+    }
+    
+    if (formData.technical_area.length === 0) {
+      toast.error("Please select at least one technical area");
+      return false;
+    }
+    
+    if (formData.communication_preference.length === 0) {
+      toast.error("Please select at least one communication preference");
+      return false;
+    }
+    
     return true;
   };
 

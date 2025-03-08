@@ -5,6 +5,7 @@ import { Button } from '../../ui/button';
 import { useAuth } from '../../../contexts/AuthContext';
 import AuthWarning from './AuthWarning';
 import SubmitButtonContent from './SubmitButtonContent';
+import { toast } from 'sonner';
 
 /**
  * Component that renders the submit button for the help request form
@@ -18,10 +19,19 @@ const SubmitButton: React.FC = () => {
   const isAuthenticated = !!userId && !isLocalStorage;
   
   const handleFormValidation = (e: React.MouseEvent<HTMLButtonElement>) => {
-    // Client-side validation before form submission
+    // Only do client-side validation if button isn't already in submitting state
+    if (isSubmitting) {
+      e.preventDefault();
+      return;
+    }
+    
+    // Check if form is valid
     if (!validateForm()) {
       e.preventDefault();
+      toast.error("Please fill out all required fields");
     }
+    
+    // Form is valid and will submit normally through the form's onSubmit handler
   };
 
   return (
