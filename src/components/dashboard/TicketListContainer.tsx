@@ -28,7 +28,7 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
         <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">📋</div>
         <h3 className="text-xl font-medium mb-2">No tickets found</h3>
         <p className="text-muted-foreground mb-4">
-          There are no tickets matching your current filters or no help requests have been submitted yet.
+          There are no help requests available at the moment. New tickets created by clients will appear here.
         </p>
         <p className="text-sm text-muted-foreground mb-6">
           New help requests will appear here automatically. You can also try refreshing the page.

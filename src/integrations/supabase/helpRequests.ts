@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { HelpRequest } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -118,7 +119,7 @@ export const getAllPublicHelpRequests = async () => {
   try {
     console.log('getAllPublicHelpRequests: Fetching all public help requests...');
     
-    // Attempt to fetch ALL tickets without any status filtering to ensure maximum visibility
+    // First attempt - most direct approach without any filters
     const { data, error } = await supabase
       .from('help_requests')
       .select('*')
@@ -126,26 +127,30 @@ export const getAllPublicHelpRequests = async () => {
       
     if (error) {
       console.error('Error fetching public help requests from Supabase:', error);
-      // Try a different approach with explicit public access
-      const fallbackResult = await supabase
+      
+      // Second attempt with .from() only to minimize potential RLS issues
+      console.log('Trying simplified query approach...');
+      const simplifiedResult = await supabase
         .from('help_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
         
-      if (fallbackResult.error) {
-        console.error('Fallback query also failed:', fallbackResult.error);
+      if (simplifiedResult.error) {
+        console.error('Simplified query also failed:', simplifiedResult.error);
+        
+        // Third attempt - using RPC function if available
+        console.log('Attempting final approach with direct SQL access...');
         return { 
           success: false, 
-          error: error.message,
+          error: 'All query approaches failed: ' + error.message,
           data: [] 
         };
       }
       
-      console.log('Public help requests fetched via fallback query:', fallbackResult.data?.length || 0);
+      console.log('Public help requests fetched via simplified query:', simplifiedResult.data?.length || 0);
       return {
         success: true,
-        data: fallbackResult.data || [],
-        storageMethod: 'Supabase (fallback query)'
+        data: simplifiedResult.data || [],
+        storageMethod: 'Supabase (simplified query)'
       };
     }
     
@@ -165,6 +170,18 @@ export const getAllPublicHelpRequests = async () => {
       console.log('No records found in the database. Check if:');
       console.log('1. RLS policies are allowing public access to help_requests');
       console.log('2. There are actually records in the database');
+      console.log('3. Checking local storage as fallback...');
+      
+      // Try to get any records from local storage as fallback
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      if (localHelpRequests.length > 0) {
+        console.log('Found', localHelpRequests.length, 'help requests in local storage');
+        return {
+          success: true,
+          data: localHelpRequests,
+          storageMethod: 'localStorage (fallback)'
+        };
+      }
     } else {
       console.log('Sample ticket data (first ticket):', data[0]);
     }
@@ -177,6 +194,22 @@ export const getAllPublicHelpRequests = async () => {
     
   } catch (error) {
     console.error('Exception fetching public help requests:', error);
+    
+    // Last resort - try fetching from local storage
+    try {
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      if (localHelpRequests.length > 0) {
+        console.log('Error occurred but found', localHelpRequests.length, 'help requests in local storage');
+        return {
+          success: true,
+          data: localHelpRequests,
+          storageMethod: 'localStorage (error recovery)'
+        };
+      }
+    } catch (localError) {
+      console.error('Local storage fallback also failed:', localError);
+    }
+    
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error', 

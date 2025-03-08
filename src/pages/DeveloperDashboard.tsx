@@ -59,38 +59,55 @@ const DeveloperDashboard = () => {
       setIsLoading(true);
       console.log('Fetching all tickets...');
       
-      // First attempt: Direct Supabase query without any filters for maximum inclusivity
-      const { data, error } = await supabase
-        .from('help_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Try multiple approaches to fetch tickets for maximum reliability
+      let ticketsData: HelpRequest[] = [];
       
-      if (error) {
-        console.error('Error fetching tickets directly:', error);
-        
-        // Try helper function as fallback
-        console.log('Trying fallback method...');
-        const response = await getAllPublicHelpRequests();
-        if (response.success) {
-          console.log('Tickets fetched via helper function:', response.data.length);
-          setTickets(response.data || []);
-        } else {
-          console.error('Helper function also failed:', response.error);
-          toast.error('Failed to load tickets. Please try again.');
-          // Don't clear existing tickets if we already have some
-          if (tickets.length === 0) {
-            setTickets([]);
-          }
-        }
+      // 1. First try the helper function approach
+      console.log('Approach 1: Using getAllPublicHelpRequests helper');
+      const response = await getAllPublicHelpRequests();
+      
+      if (response.success && response.data && response.data.length > 0) {
+        console.log('Successfully fetched tickets via helper:', response.data.length);
+        ticketsData = response.data;
       } else {
-        console.log('Tickets fetched directly:', data?.length || 0);
-        if (data && Array.isArray(data)) {
-          setTickets(data);
+        console.log('Helper function returned no tickets or failed, trying direct query');
+        
+        // 2. Try direct Supabase query as backup
+        console.log('Approach 2: Direct Supabase query');
+        const { data, error } = await supabase
+          .from('help_requests')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Direct query also failed:', error);
+          toast.error('Failed to load tickets. Please try again.');
+        } else if (data && data.length > 0) {
+          console.log('Successfully fetched tickets via direct query:', data.length);
+          ticketsData = data;
         } else {
-          console.warn('Received invalid data format:', data);
-          setTickets([]);
+          console.log('Direct query returned no tickets');
         }
       }
+      
+      // 3. Final fallback - check localStorage
+      if (ticketsData.length === 0) {
+        console.log('Approach 3: Checking localStorage as last resort');
+        const localTickets = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+        if (localTickets.length > 0) {
+          console.log('Found tickets in localStorage:', localTickets.length);
+          ticketsData = localTickets;
+        }
+      }
+      
+      // Set tickets data if we found any through any method
+      if (ticketsData.length > 0) {
+        setTickets(ticketsData);
+        console.log('Total tickets found across all methods:', ticketsData.length);
+      } else {
+        console.log('No tickets found through any method');
+      }
+      
     } catch (error) {
       console.error('Exception fetching tickets:', error);
       toast.error('Unexpected error occurred. Please try again.');
