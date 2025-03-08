@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, LogIn, LogOut, Clock, MessageSquare } from 'lucide-react';
+import { User, LogIn, Clock, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
-import { toast } from 'sonner';
+import LogoutButton from './LogoutButton';
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -11,7 +11,7 @@ interface MobileNavProps {
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
-  const { isAuthenticated, userType, logout } = useAuth();
+  const { isAuthenticated, userType } = useAuth();
   const navigate = useNavigate();
   
   const handleLoginClick = () => {
@@ -27,17 +27,6 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
   const handleProfileClick = () => {
     navigate(userType === 'developer' ? '/profile' : '/client-profile');
     setIsOpen(false);
-  };
-  
-  const handleLogoutClick = async () => {
-    try {
-      await logout();
-      navigate('/');
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Failed to log out properly. Please try again.');
-    }
   };
 
   if (!isOpen) return null;
@@ -109,13 +98,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
                   </Link>
                 </>
               )}
-              <button
-                onClick={handleLogoutClick}
+              <LogoutButton 
+                variant="text" 
                 className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
-              >
-                <LogOut className="h-5 w-5 mr-2" />
-                Logout
-              </button>
+              />
             </>
           ) : (
             <>

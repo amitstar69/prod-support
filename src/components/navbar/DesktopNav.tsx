@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/auth';
 import { NavLinks } from './NavLinks';
 import { ServiceDropdown } from './ServiceDropdown';
 import { NavAuthActions } from './NavAuthActions';
+import LogoutButton from './LogoutButton';
 import { toast } from 'sonner';
 
 interface DesktopNavProps {
@@ -14,7 +15,7 @@ interface DesktopNavProps {
 }
 
 export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => {
-  const { isAuthenticated, userType, logout } = useAuth();
+  const { isAuthenticated, userType } = useAuth();
   const navigate = useNavigate();
   
   const handleLoginClick = () => {
@@ -30,17 +31,6 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
   const handleProfileClick = () => {
     navigate(userType === 'developer' ? '/profile' : '/client-profile');
     setIsOpen(false);
-  };
-  
-  const handleLogoutClick = async () => {
-    try {
-      await logout();
-      navigate('/');
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Failed to log out properly. Please try again.');
-    }
   };
 
   return (
@@ -103,15 +93,10 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
                       </Link>
                     </>
                   )}
-                  <button
-                    onClick={handleLogoutClick}
-                    className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors"
-                  >
-                    <span className="flex items-center">
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Logout
-                    </span>
-                  </button>
+                  <LogoutButton 
+                    variant="text" 
+                    className="w-full text-left px-4 py-2 hover:bg-secondary transition-colors"
+                  />
                 </div>
               </div>
             </div>

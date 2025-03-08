@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/auth';
 import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface LogoutButtonProps {
   variant?: 'icon' | 'text' | 'full';
@@ -16,9 +17,12 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
 }) => {
   const { logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent the event from bubbling up
+    
     if (isLoggingOut) return; // Prevent multiple clicks
     
     setIsLoggingOut(true);
@@ -26,7 +30,7 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
     
     try {
       await logout();
-      // Note: We don't need to show success toast here since logoutUser already does that
+      navigate('/'); // Navigate to home page after logout
     } catch (error) {
       console.error('LogoutButton: Error logging out:', error);
       toast.error('Failed to log out. Please try again.');
@@ -58,7 +62,10 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
         variant="ghost"
         className={`text-muted-foreground hover:text-foreground transition-colors ${className}`}
       >
-        Log Out
+        <span className="flex items-center">
+          <LogOut className="h-4 w-4 mr-2" />
+          Logout
+        </span>
       </Button>
     );
   }
