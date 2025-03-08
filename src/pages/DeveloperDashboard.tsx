@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -14,7 +13,6 @@ import TicketList from '../components/tickets/TicketList';
 import { Loader2, ArrowDown, RotateCw } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
-// Sample demo data to display if no tickets are found or for non-authenticated users
 const DEMO_TICKETS: HelpRequest[] = [
   {
     id: 'demo-1',
@@ -74,28 +72,22 @@ const DeveloperDashboard = () => {
   const { isAuthenticated, userId, userType } = useAuth();
   const navigate = useNavigate();
 
-  // Add auto-refresh effect - fetch tickets every 30 seconds
   useEffect(() => {
-    // Initial fetch
     fetchAllTickets();
     
-    // Debug the database access if we're authenticated but not seeing requests
     if (isAuthenticated) {
       testDatabaseAccess();
     }
     
-    // Set up interval for periodic refresh
     const refreshInterval = setInterval(() => {
       console.log('Auto-refreshing tickets...');
-      fetchAllTickets(false); // Don't show loading indicator for auto-refresh
-    }, 30000); // 30 seconds
+      fetchAllTickets(false);
+    }, 30000);
     
-    // Clean up interval on component unmount
     return () => clearInterval(refreshInterval);
-  }, [isAuthenticated]); // Re-run when authentication status changes
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    // If user is logged in and is a client, redirect them to client dashboard
     if (isAuthenticated && userType === 'client') {
       toast('You are logged in as a client. Redirecting to client dashboard.');
       navigate('/client-dashboard');
@@ -128,7 +120,6 @@ const DeveloperDashboard = () => {
       }
       console.log('Fetching all tickets...');
       
-      // Get help requests - pass authentication status
       const response = await getAllPublicHelpRequests(isAuthenticated);
       
       if (response.success && response.data) {
@@ -137,7 +128,6 @@ const DeveloperDashboard = () => {
         if (response.data.length > 0) {
           setTickets(response.data);
         } else {
-          // For authenticated users with no tickets, show empty state
           if (isAuthenticated) {
             setTickets([]);
             
@@ -147,7 +137,6 @@ const DeveloperDashboard = () => {
               });
             }
           } else {
-            // For non-authenticated users with no data, use demo tickets
             setTickets(DEMO_TICKETS);
             
             if (showLoading) {
@@ -160,7 +149,6 @@ const DeveloperDashboard = () => {
       } else {
         console.log('Fetch failed or returned no data, handling fallback');
         
-        // Only use demo data for non-authenticated users
         if (!isAuthenticated) {
           setTickets(DEMO_TICKETS);
           
@@ -170,7 +158,6 @@ const DeveloperDashboard = () => {
             });
           }
         } else {
-          // For authenticated users with no tickets or errors, show empty state
           setTickets([]);
           
           if (showLoading && response.error) {
@@ -206,19 +193,16 @@ const DeveloperDashboard = () => {
   const applyFilters = () => {
     let result = [...tickets];
     
-    // Apply status filter
     if (filters.status !== 'all') {
       result = result.filter(ticket => ticket.status === filters.status);
     }
     
-    // Apply technical area filter
     if (filters.technicalArea !== 'all') {
       result = result.filter(ticket => 
         ticket.technical_area && ticket.technical_area.includes(filters.technicalArea)
       );
     }
     
-    // Apply urgency filter
     if (filters.urgency !== 'all') {
       result = result.filter(ticket => ticket.urgency === filters.urgency);
     }
@@ -248,13 +232,11 @@ const DeveloperDashboard = () => {
     try {
       toast.loading('Claiming ticket...');
       
-      // Don't allow claiming demo tickets when authenticated
       if ((ticketId.startsWith('demo-') || ticketId.startsWith('help-')) && isAuthenticated) {
         toast.error('Cannot claim demo tickets. Please apply to real help requests.');
         return;
       }
       
-      // First create a match record
       const { data: matchData, error: matchError } = await supabase
         .from('help_request_matches')
         .insert({
@@ -271,7 +253,6 @@ const DeveloperDashboard = () => {
         return;
       }
       
-      // Then update the help request status
       const { error: updateError } = await supabase
         .from('help_requests')
         .update({ status: 'in-progress' })
@@ -284,7 +265,7 @@ const DeveloperDashboard = () => {
       }
       
       toast.success('Ticket claimed successfully!');
-      fetchAllTickets(); // Refresh the ticket list
+      fetchAllTickets();
     } catch (error) {
       console.error('Exception claiming ticket:', error);
       toast.error('An unexpected error occurred. Please try again.');
@@ -292,7 +273,6 @@ const DeveloperDashboard = () => {
   };
 
   const handleForceRefresh = () => {
-    // Clear local storage help requests to remove any stale data
     localStorage.removeItem('helpRequests');
     toast.success('Local cache cleared. Refreshing data...');
     fetchAllTickets();
@@ -322,19 +302,17 @@ const DeveloperDashboard = () => {
           </div>
         )}
         
-        {isAuthenticated && (
-          <div className="mb-4 flex justify-end">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleForceRefresh}
-              className="flex items-center gap-1"
-            >
-              <RotateCw className="h-4 w-4" />
-              Force Refresh
-            </Button>
-          </div>
-        )}
+        <div className="mb-4 flex justify-end">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleForceRefresh}
+            className="flex items-center gap-1"
+          >
+            <RotateCw className="h-4 w-4" />
+            Force Refresh
+          </Button>
+        </div>
         
         {showFilters && (
           <div className="mb-6">
@@ -354,7 +332,7 @@ const DeveloperDashboard = () => {
           <>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">
-                {isAuthenticated ? 'Available Help Requests' : 'Demo Help Requests'}
+                {isAuthenticated ? 'Available Help Requests' : 'Help Requests'}
               </h2>
               <div className="text-sm text-muted-foreground">
                 Showing {filteredTickets.length} of {tickets.length} tickets
@@ -385,7 +363,7 @@ const DeveloperDashboard = () => {
                 ? "There are no tickets matching your current filters. Try adjusting your filters."
                 : isAuthenticated 
                   ? "There are no active help requests at the moment. Check back later."
-                  : "Sign in as a developer to see real help requests from clients."}
+                  : "No help requests are available right now. Check back later or sign in to see more."}
             </p>
             <button 
               onClick={() => fetchAllTickets()}

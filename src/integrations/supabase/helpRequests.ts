@@ -123,53 +123,54 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
     const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
     console.log('Local help requests:', localHelpRequests.length);
     
-    // For authenticated users, show database requests and exclude any that might be duplicated in local storage
-    if (isAuthenticated) {
-      const { data, error } = await supabase
-        .from('help_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
+    // Fetch real data from the database for both authenticated and non-authenticated users
+    const { data, error } = await supabase
+      .from('help_requests')
+      .select('*')
+      .eq('status', 'pending') // Only show pending requests that need devs
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching public help requests from Supabase:', error);
+      // Only fall back to demo data if this is a permissions error and user is not authenticated
+      if (!isAuthenticated && error.message.includes('permission denied')) {
+        // Use demo data from DeveloperDashboard.tsx
+        const demoData = []; // We'll use the DEMO_TICKETS from DeveloperDashboard.tsx
         
-      if (error) {
-        console.error('Error fetching public help requests from Supabase:', error);
-        return { 
-          success: false, 
-          error: 'Failed to fetch help requests: ' + error.message,
-          data: [] 
+        return {
+          success: true,
+          data: demoData,
+          storageMethod: 'demoOnly'
         };
       }
       
-      // Filter out any local requests that match database IDs to prevent duplicates
-      const dbIds = data.map(item => item.id);
-      
-      // Add any local requests that don't exist in the database (these might be test requests)
-      // Only include local requests with client_id that is NOT a UUID (meaning it's a local client)
-      const validLocalRequests = localHelpRequests.filter(req => 
-        !dbIds.includes(req.id) && 
-        req.id?.startsWith('help-') && 
-        req.client_id?.startsWith('client-')
-      );
-      
-      const combinedRequests = [...data, ...validLocalRequests];
-      console.log('Combined requests count:', combinedRequests.length, '(DB:', data.length, ', Local:', validLocalRequests.length, ')');
-      
       return { 
-        success: true, 
-        data: combinedRequests,
-        storageMethod: 'combined' 
-      };
-    } 
-    // For non-authenticated users, only show demo data
-    else {
-      // Fetch demo data from a separate location or use hardcoded data
-      const demoData = []; // We'll use the DEMO_TICKETS from DeveloperDashboard.tsx
-      
-      return {
-        success: true,
-        data: demoData,
-        storageMethod: 'demoOnly'
+        success: false, 
+        error: 'Failed to fetch help requests: ' + error.message,
+        data: [] 
       };
     }
+    
+    // Filter out any local requests that match database IDs to prevent duplicates
+    const dbIds = data.map(item => item.id);
+    
+    // Merge valid local requests with DB requests (for testing only)
+    // Only include local requests with client_id that is NOT a UUID (meaning it's a local client)
+    const validLocalRequests = isAuthenticated ? [] : localHelpRequests.filter(req => 
+      !dbIds.includes(req.id) && 
+      req.id?.startsWith('help-') && 
+      req.client_id?.startsWith('client-') &&
+      req.status === 'pending'
+    );
+    
+    const combinedRequests = [...data, ...validLocalRequests];
+    console.log('Combined requests count:', combinedRequests.length, '(DB:', data.length, ', Local:', validLocalRequests.length, ')');
+    
+    return { 
+      success: true, 
+      data: combinedRequests,
+      storageMethod: combinedRequests.length > 0 ? 'combined' : 'empty'
+    };
   } catch (error) {
     console.error('Exception fetching public help requests:', error);
     return { 
