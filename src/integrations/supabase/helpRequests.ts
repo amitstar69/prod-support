@@ -114,101 +114,58 @@ export const getHelpRequestsForClient = async (clientId: string) => {
 };
 
 // Function to get all public help requests for listing
-export const getAllPublicHelpRequests = async () => {
+export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
   try {
     console.log('getAllPublicHelpRequests: Fetching all public help requests...');
     
-    // First attempt - most direct approach without any filters
-    const { data, error } = await supabase
-      .from('help_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
-      
-    if (error) {
-      console.error('Error fetching public help requests from Supabase:', error);
-      
-      // Second attempt with .from() only to minimize potential RLS issues
-      console.log('Trying simplified query approach...');
-      const simplifiedResult = await supabase
+    // For authenticated users, only show real database requests
+    if (isAuthenticated) {
+      // First attempt - most direct approach without any filters
+      const { data, error } = await supabase
         .from('help_requests')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
         
-      if (simplifiedResult.error) {
-        console.error('Simplified query also failed:', simplifiedResult.error);
-        
-        // Third attempt - using RPC function if available
-        console.log('Attempting final approach with direct SQL access...');
+      if (error) {
+        console.error('Error fetching public help requests from Supabase:', error);
         return { 
           success: false, 
-          error: 'All query approaches failed: ' + error.message,
+          error: 'Failed to fetch help requests: ' + error.message,
           data: [] 
         };
       }
       
-      console.log('Public help requests fetched via simplified query:', simplifiedResult.data?.length || 0);
+      console.log('Public help requests fetched successfully:', data.length, 'records found');
+      return { 
+        success: true, 
+        data: data, 
+        storageMethod: 'Supabase' 
+      };
+    } 
+    // For non-authenticated users, we can use local storage or demo data
+    else {
+      // Try local storage first
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      
+      // If we have local data, use it
+      if (localHelpRequests.length > 0) {
+        console.log('Using locally stored help requests for non-authenticated user:', localHelpRequests.length);
+        return {
+          success: true,
+          data: localHelpRequests,
+          storageMethod: 'localStorage'
+        };
+      }
+      
+      // No local data, return empty array - the component will show demo data
       return {
         success: true,
-        data: simplifiedResult.data || [],
-        storageMethod: 'Supabase (simplified query)'
+        data: [],
+        storageMethod: 'emptyData'
       };
     }
-    
-    // Validate the returned data
-    if (!data || !Array.isArray(data)) {
-      console.error('Invalid data format returned from Supabase:', data);
-      return {
-        success: false,
-        error: 'Invalid data format returned from database',
-        data: []
-      };
-    }
-    
-    console.log('Public help requests fetched successfully:', data.length, 'records found');
-    // Include detailed info about the data for debugging
-    if (data.length === 0) {
-      console.log('No records found in the database. Check if:');
-      console.log('1. RLS policies are allowing public access to help_requests');
-      console.log('2. There are actually records in the database');
-      console.log('3. Checking local storage as fallback...');
-      
-      // Try to get any records from local storage as fallback
-      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
-      if (localHelpRequests.length > 0) {
-        console.log('Found', localHelpRequests.length, 'help requests in local storage');
-        return {
-          success: true,
-          data: localHelpRequests,
-          storageMethod: 'localStorage (fallback)'
-        };
-      }
-    } else {
-      console.log('Sample ticket data (first ticket):', data[0]);
-    }
-    
-    return { 
-      success: true, 
-      data: data, 
-      storageMethod: 'Supabase' 
-    };
-    
   } catch (error) {
     console.error('Exception fetching public help requests:', error);
-    
-    // Last resort - try fetching from local storage
-    try {
-      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
-      if (localHelpRequests.length > 0) {
-        console.log('Error occurred but found', localHelpRequests.length, 'help requests in local storage');
-        return {
-          success: true,
-          data: localHelpRequests,
-          storageMethod: 'localStorage (error recovery)'
-        };
-      }
-    } catch (localError) {
-      console.error('Local storage fallback also failed:', localError);
-    }
-    
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error', 
@@ -327,7 +284,7 @@ export const submitDeveloperApplication = async (
     }
 
     // Check if this is a local storage ticket (starts with "help-")
-    if (requestId.startsWith('help-')) {
+    if (requestId.startsWith('help-') || requestId.startsWith('demo-')) {
       // For local storage tickets, we can't use the database
       // Instead, we'll store the application in local storage
       const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');

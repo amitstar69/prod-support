@@ -85,7 +85,7 @@ const DeveloperDashboard = () => {
     
     // Clean up interval on component unmount
     return () => clearInterval(refreshInterval);
-  }, []);
+  }, [isAuthenticated]); // Re-run when authentication status changes
 
   useEffect(() => {
     // If user is logged in and is a client, redirect them to client dashboard
@@ -107,76 +107,47 @@ const DeveloperDashboard = () => {
       }
       console.log('Fetching all tickets...');
       
-      // Try multiple approaches to fetch tickets for maximum reliability
-      let ticketsData: HelpRequest[] = [];
-      
-      // 1. First try the helper function approach
-      console.log('Approach 1: Using getAllPublicHelpRequests helper');
-      const response = await getAllPublicHelpRequests();
+      // Get help requests - pass authentication status
+      const response = await getAllPublicHelpRequests(isAuthenticated);
       
       if (response.success && response.data && response.data.length > 0) {
-        console.log('Successfully fetched tickets via helper:', response.data.length);
-        ticketsData = response.data;
+        console.log('Successfully fetched tickets:', response.data.length);
+        setTickets(response.data);
       } else {
-        console.log('Helper function returned no tickets or failed, trying direct query');
+        console.log('No tickets found or fetch failed, using demo data for non-authenticated users');
         
-        // 2. Try direct Supabase query as backup
-        console.log('Approach 2: Direct Supabase query');
-        const { data, error } = await supabase
-          .from('help_requests')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (error) {
-          console.error('Direct query also failed:', error);
+        // Only use demo data for non-authenticated users
+        if (!isAuthenticated) {
+          setTickets(DEMO_TICKETS);
+          
           if (showLoading) {
-            toast.error('Failed to load tickets. Using demo data instead.');
+            toast.info('Showing demo data. Sign in to see real help requests.', {
+              duration: 5000
+            });
           }
-        } else if (data && data.length > 0) {
-          console.log('Successfully fetched tickets via direct query:', data.length);
-          ticketsData = data;
         } else {
-          console.log('Direct query returned no tickets');
+          // For authenticated users with no tickets, show empty state
+          setTickets([]);
+          
+          if (showLoading) {
+            toast.info('No help requests found. New requests will appear here.', {
+              duration: 5000
+            });
+          }
         }
       }
-      
-      // 3. Final fallback - check localStorage
-      if (ticketsData.length === 0) {
-        console.log('Approach 3: Checking localStorage as last resort');
-        const localTickets = JSON.parse(localStorage.getItem('helpRequests') || '[]');
-        if (localTickets.length > 0) {
-          console.log('Found tickets in localStorage:', localTickets.length);
-          ticketsData = localTickets;
-        }
-      }
-      
-      // Set tickets data if we found any through any method
-      if (ticketsData.length > 0) {
-        setTickets(ticketsData);
-        console.log('Total tickets found across all methods:', ticketsData.length);
-      } else {
-        console.log('No tickets found through any method, using demo data');
-        // Use demo data when no tickets are found
-        setTickets(DEMO_TICKETS);
-        
-        // Store demo data in localStorage for future use
-        localStorage.setItem('helpRequests', JSON.stringify(DEMO_TICKETS));
-        
-        if (showLoading) {
-          toast.info('No tickets found in database. Showing demo data.', {
-            duration: 5000
-          });
-        }
-      }
-      
     } catch (error) {
       console.error('Exception fetching tickets:', error);
-      if (showLoading) {
-        toast.error('Unexpected error occurred. Showing demo data instead.');
-      }
       
-      // Use demo data on error
-      setTickets(DEMO_TICKETS);
+      if (showLoading) {
+        if (!isAuthenticated) {
+          toast.error('Error loading tickets. Showing demo data instead.');
+          setTickets(DEMO_TICKETS);
+        } else {
+          toast.error('Error loading tickets. Please try again later.');
+          setTickets([]);
+        }
+      }
     } finally {
       if (showLoading) {
         setIsLoading(false);
@@ -228,6 +199,12 @@ const DeveloperDashboard = () => {
 
     try {
       toast.loading('Claiming ticket...');
+      
+      // Don't allow claiming demo tickets when authenticated
+      if ((ticketId.startsWith('demo-') || ticketId.startsWith('help-')) && isAuthenticated) {
+        toast.error('Cannot claim demo tickets. Please apply to real help requests.');
+        return;
+      }
       
       // First create a match record
       const { data: matchData, error: matchError } = await supabase
@@ -307,7 +284,9 @@ const DeveloperDashboard = () => {
         ) : filteredTickets.length > 0 ? (
           <>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Available Help Requests</h2>
+              <h2 className="text-xl font-semibold">
+                {isAuthenticated ? 'Available Help Requests' : 'Demo Help Requests'}
+              </h2>
               <div className="text-sm text-muted-foreground">
                 Showing {filteredTickets.length} of {tickets.length} tickets
               </div>
@@ -335,7 +314,9 @@ const DeveloperDashboard = () => {
             <p className="text-muted-foreground mb-4">
               {tickets.length > 0 
                 ? "There are no tickets matching your current filters. Try adjusting your filters."
-                : "There are no active help requests at the moment."}
+                : isAuthenticated 
+                  ? "There are no active help requests at the moment. Check back later."
+                  : "Sign in as a developer to see real help requests from clients."}
             </p>
             <button 
               onClick={() => fetchAllTickets()}

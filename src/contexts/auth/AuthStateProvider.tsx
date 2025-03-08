@@ -60,13 +60,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         // Then verify with Supabase (which is more reliable but slower)
         if (supabase) {
-          await checkSupabaseSession(setAuthState);
+          const authData = await checkSupabaseSession(setAuthState);
+          
+          // If the server indicates we're not authenticated but local storage did,
+          // clear the local storage to prevent stale authentication
+          if (!authData?.isAuthenticated && storedAuthState) {
+            const parsedState = JSON.parse(storedAuthState);
+            if (parsedState.isAuthenticated) {
+              console.log('Local auth state conflicts with server state. Resetting...');
+              localStorage.removeItem('authState');
+              setAuthState({
+                isAuthenticated: false,
+                userType: null,
+                userId: null,
+              });
+            }
+          }
           
           // Set up auth state change listener
           setupAuthStateChangeListener(setAuthState);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
+        // Clear potentially corrupt auth state
+        localStorage.removeItem('authState');
+        setAuthState({
+          isAuthenticated: false,
+          userType: null,
+          userId: null,
+        });
       } finally {
         // Mark auth as initialized even if there was an error
         setAuthInitialized(true);
