@@ -16,7 +16,7 @@ const TicketSummary: React.FC<TicketSummaryProps> = ({
         Available Help Requests
       </h2>
       <div className="text-sm text-muted-foreground">
-        Showing {filteredCount} of {totalCount} tickets
+        Showing {filteredCount} of {totalCount} real help requests
       </div>
     </div>
   );

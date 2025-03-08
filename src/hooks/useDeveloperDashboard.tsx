@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -6,52 +5,6 @@ import { supabase } from '../integrations/supabase/client';
 import { HelpRequest } from '../types/helpRequest';
 import { getAllPublicHelpRequests, testHelpRequestsTableAccess } from '../integrations/supabase/helpRequests';
 import { useAuth } from '../contexts/auth';
-
-// Demo tickets for fallback
-const DEMO_TICKETS: HelpRequest[] = [
-  {
-    id: 'demo-1',
-    client_id: 'demo-client-1',
-    title: 'Fix React Router Navigation Bug',
-    description: 'Our React application is experiencing navigation issues when using nested routes. Users cannot navigate back correctly and sometimes the URL changes but the content doesn\'t update.',
-    technical_area: ['Frontend', 'React', 'React Router'],
-    urgency: 'medium',
-    communication_preference: ['Chat', 'Video Call'],
-    estimated_duration: 45,
-    budget_range: '$50 - $100',
-    code_snippet: 'import { BrowserRouter, Routes, Route } from "react-router-dom";\n\nfunction App() {\n  return (\n    <BrowserRouter>\n      <Routes>\n        <Route path="/" element={<Home />} />\n        <Route path="dashboard/*" element={<Dashboard />} />\n      </Routes>\n    </BrowserRouter>\n  );\n}',
-    status: 'pending',
-    created_at: new Date().toISOString()
-  },
-  {
-    id: 'demo-2',
-    client_id: 'demo-client-1',
-    title: 'Database Query Optimization',
-    description: 'Our PostgreSQL queries are running slow on larger datasets. Need help optimizing the query performance for our listing page that shows thousands of products.',
-    technical_area: ['Backend', 'Database', 'SQL'],
-    urgency: 'high',
-    communication_preference: ['Chat', 'Screen Sharing'],
-    estimated_duration: 60,
-    budget_range: '$100 - $200',
-    code_snippet: 'SELECT p.*, c.name as category_name, AVG(r.rating) as avg_rating\nFROM products p\nJOIN categories c ON p.category_id = c.id\nLEFT JOIN reviews r ON p.id = r.product_id\nWHERE p.is_active = true\nGROUP BY p.id, c.name\nORDER BY created_at DESC\nLIMIT 50 OFFSET 0;',
-    status: 'pending',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() // 2 hours ago
-  },
-  {
-    id: 'demo-3',
-    client_id: 'demo-client-2',
-    title: 'Implement Stripe Payment Integration',
-    description: 'Need help integrating Stripe payment processing into our React/Node.js e-commerce application. We want to accept credit cards and Apple Pay.',
-    technical_area: ['Full Stack', 'API Integration', 'Payment Processing'],
-    urgency: 'medium',
-    communication_preference: ['Video Call', 'Screen Sharing'],
-    estimated_duration: 90,
-    budget_range: '$200 - $500',
-    code_snippet: 'const stripe = require("stripe")("sk_test_...");\n\nasync function createPaymentIntent(req, res) {\n  try {\n    const paymentIntent = await stripe.paymentIntents.create({\n      amount: 1000,\n      currency: "usd"\n    });\n    res.status(200).json({ clientSecret: paymentIntent.client_secret });\n  } catch (err) {\n    res.status(500).json({ error: err.message });\n  }\n}',
-    status: 'pending',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() // 1 day ago
-  }
-];
 
 export const useDeveloperDashboard = () => {
   const [tickets, setTickets] = useState<HelpRequest[]>([]);
@@ -123,67 +76,42 @@ export const useDeveloperDashboard = () => {
         if (response.data.length > 0) {
           // We have real data from the database
           setTickets(response.data);
+          
+          if (showLoading && !isAuthenticated) {
+            toast.info('Showing all available help requests', {
+              duration: 3000
+            });
+          }
         } else {
           // No data from database
-          if (isAuthenticated) {
-            // Authenticated users get empty state
-            setTickets([]);
-            
-            if (showLoading) {
-              toast.info('No help requests found. New requests will appear here.', {
-                duration: 5000
-              });
-            }
-          } else {
-            // Non-authenticated users get demo data
-            console.log('No database data for non-authenticated user, using demo data');
-            setTickets(DEMO_TICKETS);
-            
-            if (showLoading) {
-              toast.info('Showing demo data. Sign in to see real help requests.', {
-                duration: 5000
-              });
-            }
-          }
-        }
-      } else {
-        console.log('Fetch failed or returned no data, handling fallback');
-        
-        if (!isAuthenticated) {
-          // For non-authenticated users, show demo data
-          setTickets(DEMO_TICKETS);
-          
-          if (showLoading) {
-            toast.info('Showing demo data. Sign in to see real help requests.', {
-              duration: 5000
-            });
-          }
-        } else {
-          // For authenticated users with errors, show empty state
           setTickets([]);
           
-          if (showLoading && response.error) {
-            toast.error(`Error loading tickets: ${response.error}`, {
-              duration: 5000
-            });
-          } else if (showLoading) {
+          if (showLoading) {
             toast.info('No help requests found. New requests will appear here.', {
               duration: 5000
             });
           }
+        }
+      } else {
+        console.log('Fetch failed or returned no data');
+        setTickets([]);
+        
+        if (showLoading && response.error) {
+          toast.error(`Error loading tickets: ${response.error}`, {
+            duration: 5000
+          });
+        } else if (showLoading) {
+          toast.info('No help requests found. New requests will appear here.', {
+            duration: 5000
+          });
         }
       }
     } catch (error) {
       console.error('Exception fetching tickets:', error);
       
       if (showLoading) {
-        if (!isAuthenticated) {
-          toast.error('Error loading tickets. Showing demo data instead.');
-          setTickets(DEMO_TICKETS);
-        } else {
-          toast.error('Error loading tickets. Please try again later.');
-          setTickets([]);
-        }
+        toast.error('Error loading tickets. Please try again later.');
+        setTickets([]);
       }
     } finally {
       if (showLoading) {

@@ -131,18 +131,6 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
       
     if (error) {
       console.error('Error fetching public help requests from Supabase:', error);
-      
-      // If there's an error and it's specifically a permissions error for non-authenticated users
-      // only then fall back to demo data
-      if (!isAuthenticated && error.message.includes('permission denied')) {
-        console.log('Permission denied error for non-authenticated user, using demo data');
-        return {
-          success: true,
-          data: [], // We'll use the DEMO_TICKETS from DeveloperDashboard.tsx
-          storageMethod: 'demoOnly'
-        };
-      }
-      
       return { 
         success: false, 
         error: 'Failed to fetch help requests: ' + error.message,
@@ -150,32 +138,12 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
       };
     }
     
-    // If we have real data from the database, use it
-    if (data && data.length > 0) {
-      console.log('Found real database data, returning it:', data.length, 'records');
-      return {
-        success: true,
-        data: data,
-        storageMethod: 'database'
-      };
-    }
-    
-    // If no real data and no authenticated user, include demo data as fallback
-    if (!isAuthenticated && data.length === 0) {
-      console.log('No real data and not authenticated, returning empty array (will use demo data)');
-      return {
-        success: true,
-        data: [],
-        storageMethod: 'demoOnly'
-      };
-    }
-    
-    // Otherwise just return whatever we got (which might be an empty array)
-    console.log('Returning data as-is:', data.length, 'records');
-    return { 
-      success: true, 
-      data: data,
-      storageMethod: data.length > 0 ? 'database' : 'empty'
+    // Always return real data from the database, regardless of authentication status
+    console.log('Found database data, returning it:', data ? data.length : 0, 'records');
+    return {
+      success: true,
+      data: data || [],
+      storageMethod: 'database'
     };
   } catch (error) {
     console.error('Exception fetching public help requests:', error);

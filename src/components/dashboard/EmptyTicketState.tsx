@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from '../ui/button';
+import { RefreshCw } from 'lucide-react';
 
 interface EmptyTicketStateProps {
   tickets: any[];
@@ -20,14 +21,14 @@ const EmptyTicketState: React.FC<EmptyTicketStateProps> = ({
       <p className="text-muted-foreground mb-4">
         {tickets.length > 0 
           ? "There are no tickets matching your current filters. Try adjusting your filters."
-          : isAuthenticated 
-            ? "There are no active help requests at the moment. Check back later."
-            : "No help requests are available right now. Check back later or sign in to see more."}
+          : "There are no active help requests in the database at the moment. Check back later."}
       </p>
       <Button 
         onClick={onRefresh}
-        className="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+        variant="outline"
+        className="px-4 py-2 text-sm rounded-md transition-colors flex items-center gap-2"
       >
+        <RefreshCw className="h-4 w-4" />
         Refresh Requests
       </Button>
     </div>
