@@ -40,6 +40,10 @@ export const useLoginForm = () => {
       return;
     }
     
+    if (isLoading) {
+      return; // Prevent double submission
+    }
+    
     setError('');
     setIsLoading(true);
     console.log(`Attempting to login: ${email} as ${userType}`);
@@ -58,6 +62,7 @@ export const useLoginForm = () => {
         .catch(error => {
           console.error('Login error or timeout:', error);
           toast.error(error.message || 'Login timed out. Please try again.');
+          setError(error.message || 'Login timed out. Please try again.');
           return false;
         });
       
@@ -72,8 +77,8 @@ export const useLoginForm = () => {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      setError('An unexpected error occurred during login');
-      toast.error('Login failed. Please try again later.');
+      setError(error.message || 'An unexpected error occurred during login');
+      toast.error(error.message || 'Login failed. Please try again later.');
     } finally {
       setIsLoading(false);
     }

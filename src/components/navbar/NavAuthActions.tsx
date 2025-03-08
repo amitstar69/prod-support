@@ -2,6 +2,7 @@
 import React from 'react';
 import { useAuth } from '../../contexts/auth';
 import LogoutButton from './LogoutButton';
+import { Button } from '@/components/ui/button';
 
 interface NavAuthActionsProps {
   handleLoginClick: () => void;
@@ -32,20 +33,20 @@ export const NavAuthActions: React.FC<NavAuthActionsProps> = ({
   // If not authenticated, show login and register buttons
   return (
     <>
-      <button 
-        type="button" 
+      <Button 
+        variant="ghost" 
         className="button-ghost" 
         onClick={handleLoginClick}
       >
         Log In
-      </button>
-      <button 
-        type="button" 
+      </Button>
+      <Button 
+        variant="default" 
         className="button-primary" 
         onClick={handleRegisterClick}
       >
         Sign Up
-      </button>
+      </Button>
     </>
   );
 };
