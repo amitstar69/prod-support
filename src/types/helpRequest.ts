@@ -23,6 +23,9 @@ export interface HelpRequestMatch {
   status: 'pending' | 'accepted' | 'rejected' | 'completed';
   created_at?: string;
   updated_at?: string;
+  proposed_message?: string;
+  proposed_duration?: number;
+  proposed_rate?: number;
 }
 
 export interface HelpSession {
@@ -82,4 +85,3 @@ export const requestStatusOptions = [
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' }
 ];
-

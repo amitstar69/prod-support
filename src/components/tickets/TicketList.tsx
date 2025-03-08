@@ -14,6 +14,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '../ui/dialog';
+import DeveloperApplicationModal from '../apply/DeveloperApplicationModal';
 
 interface TicketListProps {
   tickets: HelpRequest[];
@@ -30,8 +31,10 @@ const TicketList: React.FC<TicketListProps> = ({
 }) => {
   const navigate = useNavigate();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{ type: 'view' | 'claim', ticketId: string } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: 'view' | 'claim' | 'apply', ticketId: string } | null>(null);
   const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<HelpRequest | null>(null);
 
   const handleLoginPrompt = () => {
     navigate('/login', { state: { returnTo: '/developer-dashboard' } });
@@ -67,6 +70,21 @@ const TicketList: React.FC<TicketListProps> = ({
       setPendingAction({ type: 'claim', ticketId });
       setShowAuthDialog(true);
     }
+  };
+  
+  const handleApplyClick = (ticket: HelpRequest) => {
+    if (isAuthenticated) {
+      setSelectedTicket(ticket);
+      setShowApplicationModal(true);
+    } else {
+      setPendingAction({ type: 'apply', ticketId: ticket.id || '' });
+      setShowAuthDialog(true);
+    }
+  };
+  
+  const handleApplicationSuccess = () => {
+    // Refresh ticket list
+    // This will be implemented by the parent component
   };
 
   if (tickets.length === 0) {
@@ -153,6 +171,7 @@ const TicketList: React.FC<TicketListProps> = ({
                       ${ticket.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
                         ticket.status === 'completed' ? 'bg-slate-50 text-slate-800 border-slate-200' :
                         ticket.status === 'cancelled' ? 'bg-red-50 text-red-800 border-red-200' :
+                        ticket.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
                         'bg-yellow-50 text-yellow-800 border-yellow-200'}
                     `}
                   >
@@ -219,7 +238,19 @@ const TicketList: React.FC<TicketListProps> = ({
                         <ExternalLink className="h-3.5 w-3.5 ml-1" />
                       </Button>
                       
-                      {(ticket.status === 'pending' || ticket.status === 'matching') ? (
+                      {(ticket.status === 'pending') ? (
+                        <Button 
+                          size="sm"
+                          className="h-8 bg-primary text-white hover:bg-primary/90"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleApplyClick(ticket);
+                          }}
+                        >
+                          Apply
+                          <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
+                        </Button>
+                      ) : ticket.status === 'matching' ? (
                         <Button 
                           size="sm"
                           className="h-8 bg-primary text-white hover:bg-primary/90"
@@ -259,6 +290,8 @@ const TicketList: React.FC<TicketListProps> = ({
             <DialogDescription>
               {pendingAction?.type === 'view' 
                 ? 'You need to sign in to view this ticket\'s details.'
+                : pendingAction?.type === 'apply'
+                ? 'You need to sign in as a developer to apply for this ticket.'
                 : 'You need to sign in as a developer to claim this ticket.'}
             </DialogDescription>
           </DialogHeader>
@@ -269,7 +302,7 @@ const TicketList: React.FC<TicketListProps> = ({
             <p className="text-sm text-muted-foreground">
               {pendingAction?.type === 'view' 
                 ? 'Viewing ticket details requires an account to protect client privacy.'
-                : 'Only registered developers can claim and work on tickets.'}
+                : 'Only registered developers can work on tickets.'}
             </p>
           </div>
           <DialogFooter className="flex gap-2 sm:justify-start">
@@ -282,6 +315,16 @@ const TicketList: React.FC<TicketListProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Developer Application Modal */}
+      {selectedTicket && (
+        <DeveloperApplicationModal 
+          isOpen={showApplicationModal}
+          onClose={() => setShowApplicationModal(false)}
+          ticket={selectedTicket}
+          onApplicationSuccess={handleApplicationSuccess}
+        />
+      )}
     </>
   );
 };

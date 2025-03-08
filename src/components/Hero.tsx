@@ -16,7 +16,7 @@ const Hero: React.FC = () => {
       setIsLoading(true);
       
       if (isAuthenticated && userType === 'client') {
-        navigate('/get-help');
+        navigate('/client-dashboard');
       } else if (isAuthenticated && userType === 'developer') {
         navigate('/developer-dashboard');
       } else {
@@ -36,10 +36,8 @@ const Hero: React.FC = () => {
 
   return (
     <section className="relative py-16 md:py-24 overflow-hidden">
-      {/* Simplified background with subtle gradient */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_50%,rgba(0,180,216,0.08),transparent_70%)]"></div>
       
-      {/* Professional profile images on sides */}
       <div className="hidden md:block absolute inset-0 overflow-hidden -z-5">
         <div className="absolute left-[5%] top-1/4 w-24 h-24 rounded-xl overflow-hidden shadow-md opacity-90 transform rotate-3">
           <img 
@@ -76,19 +74,15 @@ const Hero: React.FC = () => {
       </div>
       
       <div className="container mx-auto px-4">
-        {/* Main content with cleaner layout */}
         <div className="max-w-4xl mx-auto text-center">
-          {/* Updated headline - more concise and direct */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
             On-Demand Dev Support. <span className="text-[#00B4D8]">Fast, Reliable, No Hassle.</span>
           </h1>
           
-          {/* Updated subheading with clearer value proposition */}
           <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
             Clients get instant solutions. Developers get meaningful work.
           </p>
           
-          {/* Search section with better spacing */}
           <div className="max-w-2xl mx-auto mb-10">
             <SearchBar 
               className="shadow-md" 
@@ -96,7 +90,6 @@ const Hero: React.FC = () => {
             />
           </div>
           
-          {/* Two clear CTAs - one for clients, one for developers */}
           <div className="flex flex-col sm:flex-row justify-center gap-5 mb-12">
             <button
               onClick={handleGetHelp}
@@ -113,7 +106,7 @@ const Hero: React.FC = () => {
                   </span>
                 </span>
               ) : (
-                'Get Developer Help Now'
+                isAuthenticated && userType === 'client' ? 'View Your Dashboard' : 'Get Developer Help Now'
               )}
             </button>
             
@@ -126,7 +119,6 @@ const Hero: React.FC = () => {
             </button>
           </div>
           
-          {/* Features with cleaner layout and more space */}
           <div className="flex flex-wrap justify-center gap-8 mt-4">
             <div className="flex items-center space-x-2">
               <Clock className="h-5 w-5 text-[#FF8800]" />
@@ -142,7 +134,6 @@ const Hero: React.FC = () => {
             </div>
           </div>
           
-          {/* Trusted by section similar to Upwork */}
           <div className="mt-16">
             <p className="text-sm text-muted-foreground uppercase tracking-wider mb-4">Trusted by</p>
             <div className="flex justify-center items-center gap-8 opacity-70">

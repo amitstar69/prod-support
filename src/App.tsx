@@ -16,6 +16,8 @@ import ProductDetail from './pages/ProductDetail';
 import DeveloperRegistration from './pages/DeveloperRegistration';
 import SessionHistory from './pages/SessionHistory';
 import DeveloperDashboard from './pages/DeveloperDashboard';
+import ClientDashboard from './pages/ClientDashboard';
+import HelpSessionInterface from './components/session/HelpSessionInterface';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -107,10 +109,28 @@ function App() {
             />
             
             <Route 
+              path="/client-dashboard" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
               path="/developer-dashboard" 
               element={
                 <ProtectedRoute allowPublicAccess={true}>
                   <DeveloperDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/help-session/:sessionId" 
+              element={
+                <ProtectedRoute allowPublicAccess={false}>
+                  <HelpSessionInterface />
                 </ProtectedRoute>
               } 
             />
