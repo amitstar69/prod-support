@@ -2,6 +2,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { UserType } from '../../hooks/useLoginForm';
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "../ui/card";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Loader2, Mail, Lock } from "lucide-react";
 
 interface LoginFormProps {
   email: string;
@@ -31,126 +37,121 @@ const LoginForm: React.FC<LoginFormProps> = ({
   onSubmit,
 }) => {
   return (
-    <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden">
-      <div className="p-6 md:p-8">
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-2xl">Log In</CardTitle>
+        <CardDescription>Enter your credentials to access your account</CardDescription>
+      </CardHeader>
+      
+      <CardContent>
         {error && (
           <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
             {error}
           </div>
         )}
         
-        <form onSubmit={onSubmit}>
-          <div className="space-y-6">
-            <div className="space-y-1">
-              <label htmlFor="email" className="block text-sm font-medium">
-                Email
-              </label>
-              <input
+        <form onSubmit={onSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
+                <Mail size={16} />
+              </div>
+              <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={onEmailChange}
-                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+                className="pl-10"
+                placeholder="you@example.com"
                 required
                 disabled={isLoading}
               />
             </div>
-            
-            <div className="space-y-1">
-              <label htmlFor="password" className="block text-sm font-medium">
-                Password
-              </label>
-              <input
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
+                <Lock size={16} />
+              </div>
+              <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={onPasswordChange}
-                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+                className="pl-10"
+                placeholder="••••••••"
                 required
                 disabled={isLoading}
               />
             </div>
-            
-            <div className="space-y-1">
-              <label className="block text-sm font-medium mb-2">
-                Account Type
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="userType"
-                    value="client"
-                    checked={userType === 'client'}
-                    onChange={() => onUserTypeChange('client')}
-                    className="h-4 w-4 text-primary border-border focus:ring-primary/25"
-                    disabled={isLoading}
-                  />
-                  <span className="ml-2 text-sm">Client</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="userType"
-                    value="developer"
-                    checked={userType === 'developer'}
-                    onChange={() => onUserTypeChange('developer')}
-                    className="h-4 w-4 text-primary border-border focus:ring-primary/25"
-                    disabled={isLoading}
-                  />
-                  <span className="ml-2 text-sm">Developer</span>
-                </label>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={onRememberMeChange}
-                  className="h-4 w-4 text-primary border-border focus:ring-primary/25 rounded"
-                  disabled={isLoading}
-                />
-                <span className="ml-2 text-sm">Remember me</span>
-              </label>
-              <a href="#" className="text-sm text-primary hover:underline">
-                Forgot password?
-              </a>
-            </div>
-            
-            <div>
-              <button
-                type="submit"
-                className="button-primary w-full flex justify-center items-center"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Logging in...
-                  </>
-                ) : (
-                  'Log In'
-                )}
-              </button>
-            </div>
           </div>
-        </form>
-        
-        <div className="mt-6 pt-6 border-t border-border/30 text-center">
-          <p className="text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary font-medium">
-              Register
+          
+          <div className="space-y-2">
+            <Label>Account Type</Label>
+            <RadioGroup 
+              value={userType} 
+              onValueChange={(value) => onUserTypeChange(value as UserType)}
+              className="flex space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="client" id="client" disabled={isLoading} />
+                <Label htmlFor="client" className="cursor-pointer">Client</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="developer" id="developer" disabled={isLoading} />
+                <Label htmlFor="developer" className="cursor-pointer">Developer</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="remember"
+                checked={rememberMe}
+                onChange={onRememberMeChange}
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary/25"
+                disabled={isLoading}
+              />
+              <Label htmlFor="remember" className="text-sm cursor-pointer">
+                Remember me
+              </Label>
+            </div>
+            <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+              Forgot password?
             </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Logging in...
+              </>
+            ) : (
+              'Log In'
+            )}
+          </Button>
+        </form>
+      </CardContent>
+      
+      <CardFooter className="flex justify-center border-t border-border/30 pt-6">
+        <p className="text-sm text-muted-foreground">
+          Don't have an account?{' '}
+          <Link to="/register" className="text-primary font-medium hover:underline">
+            Register
+          </Link>
+        </p>
+      </CardFooter>
+    </Card>
   );
 };
 
