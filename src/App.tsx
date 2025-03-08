@@ -109,7 +109,7 @@ function App() {
             <Route 
               path="/developer-dashboard" 
               element={
-                <ProtectedRoute requiredUserType="developer">
+                <ProtectedRoute allowPublicAccess={true}>
                   <DeveloperDashboard />
                 </ProtectedRoute>
               } 

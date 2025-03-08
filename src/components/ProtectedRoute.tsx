@@ -5,21 +5,25 @@ import { useAuth } from '../contexts/auth';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredUserType?: 'developer' | 'client';
+  allowPublicAccess?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
-  requiredUserType 
+  requiredUserType,
+  allowPublicAccess = false
 }) => {
   const { isAuthenticated, userType } = useAuth();
+
+  if (allowPublicAccess) {
+    return <>{children}</>;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
   if (requiredUserType && userType !== requiredUserType) {
-    // If a specific user type is required but the current user is of a different type
-    // Redirect to the appropriate dashboard based on user type
     return <Navigate to={userType === 'developer' ? '/profile' : '/client-profile'} replace />;
   }
 
