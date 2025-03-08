@@ -21,26 +21,30 @@ const Index: React.FC = () => {
     // Track page load performance
     const startTime = performance.now();
     
-    // Set loading state and fetch developers with timeout protection
+    // Set loading state
     setIsLoading(true);
     
+    // Load featured developers immediately to avoid empty state
+    const featuredDevelopers = getFeaturedDevelopers();
+    setDevelopers(featuredDevelopers);
+    
+    // Set a shorter timeout for better UX
     const loadTimeout = setTimeout(() => {
       if (isLoading && !contentLoaded) {
-        console.warn('Loading homepage content took too long');
-        const fallbackDevelopers = getFeaturedDevelopers();
-        setDevelopers(fallbackDevelopers);
+        console.log('Using cached featured developers data');
         setIsLoading(false);
         setContentLoaded(true);
-        toast.error('Some content took too long to load. Showing cached data.');
       }
-    }, 5000);
+    }, 2000); // Reduced from 5000ms to 2000ms
     
+    // Attempt to get online developers
     try {
-      // Attempt to get online developers, fallback to featured
       const onlineDevelopers = getOnlineDevelopers().slice(0, 4);
-      const featuredDevelopers = getFeaturedDevelopers();
       
-      setDevelopers(onlineDevelopers.length > 0 ? onlineDevelopers : featuredDevelopers);
+      if (onlineDevelopers.length > 0) {
+        setDevelopers(onlineDevelopers);
+      }
+      
       setIsLoading(false);
       setContentLoaded(true);
       
@@ -48,12 +52,10 @@ const Index: React.FC = () => {
       const loadTime = performance.now() - startTime;
       console.log(`Index page loaded in ${loadTime.toFixed(0)}ms`);
     } catch (error) {
-      console.error('Error loading homepage data:', error);
-      const fallbackDevelopers = getFeaturedDevelopers();
-      setDevelopers(fallbackDevelopers);
+      console.error('Error loading developer data:', error);
+      // We already set featured developers as fallback, so just log the error
       setIsLoading(false);
       setContentLoaded(true);
-      toast.error('Error loading developer data. Please try refreshing the page.');
     }
     
     return () => {
@@ -64,7 +66,7 @@ const Index: React.FC = () => {
   return (
     <Layout>
       <Hero />
-      {contentLoaded ? (
+      {contentLoaded || !isLoading ? (
         <DeveloperShowcase developers={developers} />
       ) : (
         <div className="py-8 text-center">
