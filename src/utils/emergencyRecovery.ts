@@ -52,7 +52,7 @@ const attemptRecovery = () => {
   // Refresh the page as a last resort
   try {
     // Force a hard refresh to clear any cached state
-    window.location.reload(true);
+    window.location.reload();
   } catch (error) {
     console.error('Error during recovery attempt:', error);
   }
@@ -103,13 +103,13 @@ export const performEmergencyLogout = () => {
     // Force page reload after a slight delay to allow toast to be seen
     setTimeout(() => {
       window.location.href = '/';
-      setTimeout(() => window.location.reload(true), 100);
+      setTimeout(() => window.location.reload(), 100);
     }, 1000);
   } catch (error) {
     console.error('Error during emergency logout:', error);
     
     // Absolute fallback: direct navigation with hard refresh
     window.location.href = '/';
-    setTimeout(() => window.location.reload(true), 100);
+    setTimeout(() => window.location.reload(), 100);
   }
 };
