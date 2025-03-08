@@ -1,6 +1,5 @@
-
 import { supabase } from './client';
-import { HelpRequest } from '../../types/helpRequest';
+import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
 
 // Core function to create a help request
@@ -309,6 +308,138 @@ export const updateHelpRequest = async (requestId: string, updates: Partial<Help
   } catch (error) {
     console.error('Exception updating help request:', error);
     return { success: false, error: error.message };
+  }
+};
+
+// Function to create or update a developer application for a help request
+export const submitDeveloperApplication = async (
+  requestId: string, 
+  developerId: string, 
+  applicationData: {
+    proposed_message: string;
+    proposed_duration: number;
+    proposed_rate: number;
+  }
+) => {
+  try {
+    if (!requestId || !developerId) {
+      return { success: false, error: 'Missing required fields' };
+    }
+
+    // Check if an application already exists
+    const { data: existingMatch, error: checkError } = await supabase
+      .from('help_request_matches')
+      .select('*')
+      .eq('developer_id', developerId)
+      .eq('request_id', requestId)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking existing application:', checkError);
+      return { success: false, error: checkError.message };
+    }
+
+    if (existingMatch) {
+      // Update existing application
+      const { data, error } = await supabase
+        .from('help_request_matches')
+        .update({
+          proposed_message: applicationData.proposed_message,
+          proposed_duration: applicationData.proposed_duration,
+          proposed_rate: applicationData.proposed_rate,
+          match_score: 85, // This could be calculated based on skills match
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingMatch.id)
+        .select();
+
+      if (error) {
+        console.error('Error updating application:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data, isUpdate: true };
+    }
+
+    // Create new application
+    const { data, error } = await supabase
+      .from('help_request_matches')
+      .insert({
+        request_id: requestId,
+        developer_id: developerId,
+        status: 'pending',
+        match_score: 85,
+        proposed_message: applicationData.proposed_message,
+        proposed_duration: applicationData.proposed_duration,
+        proposed_rate: applicationData.proposed_rate
+      })
+      .select();
+
+    if (error) {
+      console.error('Error creating application:', error);
+      return { success: false, error: error.message };
+    }
+
+    // Update the help request status to 'matching' if it was 'pending'
+    const { data: requestData, error: requestError } = await supabase
+      .from('help_requests')
+      .select('status')
+      .eq('id', requestId)
+      .single();
+
+    if (!requestError && requestData?.status === 'pending') {
+      await supabase
+        .from('help_requests')
+        .update({ status: 'matching' })
+        .eq('id', requestId);
+    }
+
+    return { success: true, data, isUpdate: false };
+  } catch (error) {
+    console.error('Exception in submitDeveloperApplication:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+};
+
+// Function to get developer applications for a help request
+export const getDeveloperApplicationsForRequest = async (requestId: string) => {
+  try {
+    if (!requestId) {
+      return { success: false, error: 'Request ID is required' };
+    }
+
+    const { data, error } = await supabase
+      .from('help_request_matches')
+      .select(`
+        *,
+        developers:developer_id (
+          id,
+          profiles (
+            name,
+            image,
+            description
+          )
+        )
+      `)
+      .eq('request_id', requestId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching developer applications:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception fetching developer applications:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
   }
 };
 

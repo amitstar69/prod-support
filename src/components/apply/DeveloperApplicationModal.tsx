@@ -72,6 +72,9 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
         
       if (checkError) {
         console.error('Error checking existing application:', checkError);
+        toast.error('Error checking existing applications. Please try again.');
+        setIsSubmitting(false);
+        return;
       }
       
       if (existingMatch) {
@@ -120,7 +123,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
 
       if (error) {
         console.error('Error submitting application:', error);
-        toast.error('Failed to submit your application. Please try again.');
+        toast.error(`Failed to submit your application: ${error.message}`);
         setIsSubmitting(false);
         return;
       }
@@ -147,7 +150,8 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
       
     } catch (error) {
       console.error('Exception submitting application:', error);
-      toast.error('An unexpected error occurred. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      toast.error(`Error: ${errorMessage}. Please try again.`);
       setIsSubmitting(false);
     }
   };
@@ -163,7 +167,11 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open && !isSubmitting) {
+        onClose();
+      }
+    }}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Apply for Help Request</DialogTitle>
@@ -186,6 +194,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
               onChange={(e) => setMessage(e.target.value)}
               rows={4}
               className="resize-none"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -200,6 +209,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
               max={180}
               step={15}
               onValueChange={(values) => setEstimatedTime(values[0])}
+              disabled={isSubmitting}
             />
             <p className="text-xs text-muted-foreground">
               Client's estimate: {ticket.estimated_duration} minutes
@@ -217,6 +227,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
               max={200}
               step={5}
               onValueChange={(values) => setProposedRate(values[0])}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -232,10 +243,19 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            disabled={isSubmitting}
+            type="button"
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isSubmitting}
+            type="button"
+          >
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
