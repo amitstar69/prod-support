@@ -44,8 +44,9 @@ const DeveloperDashboard = () => {
   const fetchAllTickets = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching all tickets...');
       
-      // Fetch all help requests without filtering by user ID
+      // First try to fetch directly from supabase
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')
@@ -53,10 +54,18 @@ const DeveloperDashboard = () => {
       
       if (error) {
         console.error('Error fetching tickets:', error);
-        toast.error('Failed to load tickets. Please try again.');
-        setTickets([]);
+        
+        // Try using the helper function as fallback
+        const response = await getAllPublicHelpRequests();
+        if (response.success) {
+          console.log('Tickets fetched via helper function:', response.data);
+          setTickets(response.data || []);
+        } else {
+          toast.error('Failed to load tickets. Please try again.');
+          setTickets([]);
+        }
       } else {
-        console.log('Tickets fetched:', data);
+        console.log('Tickets fetched directly:', data);
         setTickets(data || []);
       }
     } catch (error) {

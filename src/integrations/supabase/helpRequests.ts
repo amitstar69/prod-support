@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { HelpRequest } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -117,6 +116,7 @@ export const getHelpRequestsForClient = async (clientId: string) => {
 // Function to get all public help requests for listing
 export const getAllPublicHelpRequests = async () => {
   try {
+    console.log('Fetching all public help requests...');
     const { data, error } = await supabase
       .from('help_requests')
       .select('*')
@@ -131,6 +131,7 @@ export const getAllPublicHelpRequests = async () => {
       };
     }
     
+    console.log('Public help requests fetched successfully:', data?.length || 0, 'records found');
     return { 
       success: true, 
       data: data || [], 
@@ -139,7 +140,7 @@ export const getAllPublicHelpRequests = async () => {
     
   } catch (error) {
     console.error('Exception fetching public help requests:', error);
-    return { success: false, error: error.message, data: [] };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error', data: [] };
   }
 };
 
