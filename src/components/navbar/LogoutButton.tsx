@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/auth';
 import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { performEmergencyLogout } from '../../utils/emergencyRecovery';
 
 interface LogoutButtonProps {
   variant?: 'icon' | 'text' | 'full';
@@ -16,6 +16,7 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
 }) => {
   const { logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutTimeoutId, setLogoutTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
   const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -26,10 +27,18 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
     setIsLoggingOut(true);
     console.log('LogoutButton: Initiating logout...');
     
+    // First remove auth state from localStorage to ensure UI updates immediately
+    localStorage.removeItem('authState');
+    
+    // Set a timeout to perform emergency logout if normal logout takes too long
+    const timeoutId = setTimeout(() => {
+      console.warn('Logout taking too long, performing emergency logout');
+      performEmergencyLogout();
+    }, 5000); // 5 seconds timeout
+    
+    setLogoutTimeoutId(timeoutId);
+    
     try {
-      // First remove auth state from localStorage to ensure UI updates immediately
-      localStorage.removeItem('authState');
-      
       // Then trigger the logout flow
       await logout();
       
@@ -37,14 +46,28 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
       window.location.href = '/';
     } catch (error) {
       console.error('LogoutButton: Error logging out:', error);
-      toast.error('Failed to log out. Please try again.');
+      toast.error('Failed to log out. Forcing logout...');
       
-      // Force a refresh as fallback
-      window.location.href = '/';
+      // Force an emergency logout as fallback
+      performEmergencyLogout();
     } finally {
+      // Clear timeout if we reach this point
+      if (logoutTimeoutId) {
+        clearTimeout(logoutTimeoutId);
+        setLogoutTimeoutId(null);
+      }
       setIsLoggingOut(false);
     }
   };
+
+  // Clean up timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (logoutTimeoutId) {
+        clearTimeout(logoutTimeoutId);
+      }
+    };
+  }, [logoutTimeoutId]);
 
   if (variant === 'icon') {
     return (

@@ -1,4 +1,3 @@
-
 import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -9,20 +8,34 @@ export const logoutUser = async (): Promise<void> => {
   try {
     // First clear local state to ensure UI updates immediately
     localStorage.removeItem('authState');
+    localStorage.removeItem('supabase.auth.token');
+    
+    // Create a timeout promise to ensure we don't hang on logout
+    const timeoutPromise = new Promise<void>((_, reject) => {
+      setTimeout(() => {
+        console.warn('Supabase signout timeout reached');
+        reject(new Error('Logout timeout reached'));
+      }, 3000); // 3 second timeout for Supabase operations
+    });
     
     // Then attempt to sign out from Supabase
     if (supabase) {
       try {
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-          console.error('Error signing out from Supabase:', error);
-          toast.error('Error signing out from server, but you have been logged out locally');
-        } else {
-          console.log('Successfully signed out from Supabase');
-        }
+        // Race between the signout request and timeout
+        await Promise.race([
+          (async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+              throw error;
+            }
+          })(),
+          timeoutPromise
+        ]);
+        
+        console.log('Successfully signed out from Supabase');
       } catch (supabaseError) {
         console.error('Exception during Supabase signout:', supabaseError);
-        toast.error('Error communicating with the server, but you have been logged out locally');
+        // Continue with logout even if Supabase fails
       }
     }
     
@@ -156,4 +169,40 @@ export const setupAuthStateChangeListener = (setAuthState: (state: any) => void)
   );
   
   return subscription;
+};
+
+// Add a function to check if a user is stuck in a loading state
+export const isUserStuckInLoadingState = (): boolean => {
+  // Check if there might be loading state persisted in localStorage
+  const loadingStateStr = localStorage.getItem('appLoadingState');
+  if (loadingStateStr) {
+    try {
+      const loadingState = JSON.parse(loadingStateStr);
+      const { isLoading, timestamp } = loadingState;
+      
+      if (isLoading) {
+        // If it's been loading for more than 1 minute, consider user stuck
+        const loadingDuration = Date.now() - timestamp;
+        if (loadingDuration > 60000) { // 1 minute
+          return true;
+        }
+      }
+    } catch (e) {
+      // Ignore parsing errors
+    }
+  }
+  
+  return false;
+};
+
+// Helper to set loading state in localStorage
+export const setAppLoadingState = (isLoading: boolean): void => {
+  if (isLoading) {
+    localStorage.setItem('appLoadingState', JSON.stringify({
+      isLoading: true,
+      timestamp: Date.now()
+    }));
+  } else {
+    localStorage.removeItem('appLoadingState');
+  }
 };
