@@ -1,16 +1,37 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/auth';
 
-export const NavLinks: React.FC = () => {
+const NavLinks: React.FC = () => {
+  const { userDetails } = useAuth();
+  const isDeveloper = userDetails?.user_type === 'developer';
+
   return (
-    <>
-      <Link to="/" className="px-3 py-2 rounded-md hover:bg-secondary transition-colors">
+    <div className="hidden md:flex items-center space-x-6">
+      <Link to="/" className="text-foreground hover:text-primary transition-colors">
         Home
       </Link>
-      <Link to="/search" className="px-3 py-2 rounded-md hover:bg-secondary transition-colors">
+      
+      <Link to="/search" className="text-foreground hover:text-primary transition-colors">
         Find Developers
       </Link>
-    </>
+      
+      <Link to="/get-help" className="text-foreground hover:text-primary transition-colors">
+        Get Help
+      </Link>
+      
+      {isDeveloper && (
+        <Link to="/developer-dashboard" className="text-foreground hover:text-primary transition-colors">
+          Ticket Dashboard
+        </Link>
+      )}
+      
+      <Link to="/session-history" className="text-foreground hover:text-primary transition-colors">
+        Session History
+      </Link>
+    </div>
   );
 };
+
+export default NavLinks;

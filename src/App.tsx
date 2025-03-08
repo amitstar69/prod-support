@@ -15,6 +15,7 @@ import ClientProfile from './pages/ClientProfile';
 import ProductDetail from './pages/ProductDetail';
 import DeveloperRegistration from './pages/DeveloperRegistration';
 import SessionHistory from './pages/SessionHistory';
+import DeveloperDashboard from './pages/DeveloperDashboard';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -101,6 +102,15 @@ function App() {
               element={
                 <ProtectedRoute requiredUserType="client">
                   <ClientProfile />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/developer-dashboard" 
+              element={
+                <ProtectedRoute requiredUserType="developer">
+                  <DeveloperDashboard />
                 </ProtectedRoute>
               } 
             />
