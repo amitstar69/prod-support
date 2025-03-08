@@ -23,12 +23,23 @@ export const useLoginForm = () => {
   const handleRememberMeChange = () => setRememberMe(!rememberMe);
 
   const checkAuthStatus = async () => {
-    const { data, error } = await supabase.auth.getSession();
-    console.log('Current auth status (LoginPage):', { session: data.session, error });
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      console.log('Current auth status (LoginPage):', { session: data.session, error });
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      setError('Email and password are required');
+      toast.error('Please enter both email and password');
+      return;
+    }
+    
     setError('');
     setIsLoading(true);
     console.log(`Attempting to login: ${email} as ${userType}`);
@@ -59,7 +70,7 @@ export const useLoginForm = () => {
       } else if (!error) {
         setError('Login failed. Please check your credentials and try again.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
       setError('An unexpected error occurred during login');
       toast.error('Login failed. Please try again later.');

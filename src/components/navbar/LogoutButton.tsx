@@ -16,7 +16,8 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
   const { logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     if (isLoggingOut) return; // Prevent multiple clicks
     
     setIsLoggingOut(true);
@@ -37,6 +38,7 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
       <button
         onClick={handleLogout}
         disabled={isLoggingOut}
+        type="button"
         className={`p-2 text-muted-foreground hover:text-foreground transition-colors ${className}`}
         aria-label="Log out"
       >
@@ -50,6 +52,7 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
       <button
         onClick={handleLogout}
         disabled={isLoggingOut}
+        type="button"
         className={`text-muted-foreground hover:text-foreground transition-colors ${className}`}
       >
         Log Out
@@ -61,6 +64,7 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
     <button
       onClick={handleLogout}
       disabled={isLoggingOut}
+      type="button"
       className={`flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors ${className}`}
     >
       <LogOut size={18} />

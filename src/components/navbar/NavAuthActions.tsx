@@ -32,10 +32,18 @@ export const NavAuthActions: React.FC<NavAuthActionsProps> = ({
   // If not authenticated, show login and register buttons
   return (
     <>
-      <button className="button-ghost" onClick={handleLoginClick}>
+      <button 
+        type="button" 
+        className="button-ghost" 
+        onClick={handleLoginClick}
+      >
         Log In
       </button>
-      <button className="button-primary" onClick={handleRegisterClick}>
+      <button 
+        type="button" 
+        className="button-primary" 
+        onClick={handleRegisterClick}
+      >
         Sign Up
       </button>
     </>

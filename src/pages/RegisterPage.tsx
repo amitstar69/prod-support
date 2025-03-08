@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { User, Code } from 'lucide-react';
@@ -33,9 +34,13 @@ const RegisterPage: React.FC = () => {
   }, [location.state]);
   
   useEffect(() => {
-    supabase.auth.getSession().then(({ data, error }) => {
-      console.log('Current auth status (RegisterPage):', { session: data.session, error });
-    });
+    try {
+      supabase.auth.getSession().then(({ data, error }) => {
+        console.log('Current auth status (RegisterPage):', { session: data.session, error });
+      });
+    } catch (error) {
+      console.error('Error checking auth status in RegisterPage:', error);
+    }
   }, []);
   
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,6 +62,11 @@ const RegisterPage: React.FC = () => {
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (isLoading) {
+      return; // Prevent double submission
+    }
+    
     setIsLoading(true);
     
     try {
@@ -160,7 +170,7 @@ const RegisterPage: React.FC = () => {
       } else {
         toast.error('Registration failed. Please try with a different email.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
       toast.error('Registration failed: ' + (error.message || 'Unknown error'));
     } finally {
