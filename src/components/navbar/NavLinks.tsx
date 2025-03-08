@@ -1,37 +1,15 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth';
 
+// This component is now mostly redundant as we've moved the navigation links
+// directly into the DesktopNav and MobileNav components.
+// Keeping this stub for backwards compatibility in case it's referenced elsewhere.
 const NavLinks: React.FC = () => {
   const { userType } = useAuth();
   const isDeveloper = userType === 'developer';
 
-  return (
-    <div className="hidden md:flex items-center space-x-6">
-      <Link to="/" className="text-foreground hover:text-primary transition-colors">
-        Home
-      </Link>
-      
-      <Link to="/search" className="text-foreground hover:text-primary transition-colors">
-        Find Developers
-      </Link>
-      
-      <Link to="/get-help" className="text-foreground hover:text-primary transition-colors">
-        Get Help
-      </Link>
-      
-      {isDeveloper && (
-        <Link to="/developer-dashboard" className="text-foreground hover:text-primary transition-colors">
-          Ticket Dashboard
-        </Link>
-      )}
-      
-      <Link to="/session-history" className="text-foreground hover:text-primary transition-colors">
-        Session History
-      </Link>
-    </div>
-  );
+  return null; // Returning null as this component is now deprecated
 };
 
 export default NavLinks;

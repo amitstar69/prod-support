@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, LogIn, Clock, MessageSquare } from 'lucide-react';
+import { User, LogIn, Search } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import LogoutButton from './LogoutButton';
+import SearchBar from '../SearchBar';
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -32,93 +33,100 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="md:hidden">
-      <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-        <Link
-          to="/"
-          className="block px-3 py-2 rounded-md hover:bg-secondary transition-colors"
-          onClick={() => setIsOpen(false)}
-        >
-          Home
-        </Link>
-        <Link
-          to="/search"
-          className="block px-3 py-2 rounded-md hover:bg-secondary transition-colors"
-          onClick={() => setIsOpen(false)}
-        >
-          Find Developers
-        </Link>
-        <Link
-          to="#"
-          className="block px-3 py-2 rounded-md hover:bg-secondary transition-colors"
-          onClick={() => setIsOpen(false)}
-        >
-          How It Works
-        </Link>
+    <div className="md:hidden border-t border-border/40">
+      <div className="p-3">
+        <SearchBar
+          placeholder="Find developers..."
+          className="mb-4"
+        />
         
-        <div className="pt-4 pb-3 border-t border-border/40">
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
+            Find Help
+          </p>
+          
+          <Link
+            to="/search"
+            className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            Search Developers
+          </Link>
+          
+          <Link
+            to="/get-help"
+            className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            Get Instant Help
+          </Link>
+          
+          <Link
+            to="/developer-dashboard"
+            className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            Browse Tickets
+          </Link>
+          
+          {isAuthenticated && (
+            <Link
+              to="/session-history"
+              className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              Session History
+            </Link>
+          )}
+        </div>
+        
+        <div className="my-4 border-t border-border/40 pt-4">
           {isAuthenticated ? (
             <>
-              {userType === 'client' && (
-                <button
-                  className="flex items-center w-full px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                  onClick={() => {
-                    navigate('/get-help');
-                    setIsOpen(false);
-                  }}
-                >
-                  <MessageSquare className="h-5 w-5 mr-2" />
-                  Get Instant Help
-                </button>
-              )}
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
+                My Account
+              </p>
+              
               <button
                 onClick={handleProfileClick}
-                className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors mt-2"
+                className="flex items-center w-full px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
               >
-                <User className="h-5 w-5 mr-2" />
+                <User className="h-4 w-4 mr-2" />
                 {userType === 'developer' ? 'Developer Profile' : 'Client Profile'}
               </button>
+              
               {userType === 'client' && (
-                <>
-                  <Link
-                    to="/get-help/tracking"
-                    className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <Clock className="h-5 w-5 mr-2" />
-                    Help Requests
-                  </Link>
-                  <Link
-                    to="/session-history"
-                    className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <Clock className="h-5 w-5 mr-2" />
-                    Session History
-                  </Link>
-                </>
+                <Link
+                  to="/get-help/tracking"
+                  className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors ml-6"
+                  onClick={() => setIsOpen(false)}
+                >
+                  My Help Requests
+                </Link>
               )}
+              
               <LogoutButton 
                 variant="text" 
-                className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+                className="flex items-center w-full px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
               />
             </>
           ) : (
-            <>
+            <div className="flex flex-col space-y-2">
               <button
                 onClick={handleLoginClick}
-                className="flex items-center w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+                className="flex items-center w-full px-3 py-2 rounded-md border border-border hover:bg-secondary transition-colors"
               >
-                <LogIn className="h-5 w-5 mr-2" />
+                <LogIn className="h-4 w-4 mr-2" />
                 Log In
               </button>
+              
               <button
                 onClick={handleRegisterClick}
-                className="w-full mt-2 button-primary"
+                className="w-full px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
               >
                 Sign Up
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
