@@ -17,6 +17,8 @@ import {
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Slider } from '../ui/slider';
+import { submitDeveloperApplication } from '../../integrations/supabase/helpRequests';
+import { isLocalId } from '../../integrations/supabase/helpRequestsUtils';
 
 interface DeveloperApplicationModalProps {
   isOpen: boolean;
@@ -61,97 +63,94 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
         proposed_duration: estimatedTime,
         proposed_rate: proposedRate
       });
-      
-      // Check if an application already exists for this developer and request
-      const { data: existingMatch, error: checkError } = await supabase
-        .from('help_request_matches')
-        .select('*')
-        .eq('developer_id', userId)
-        .eq('request_id', ticket.id)
-        .maybeSingle();
+
+      // Check if this is a local storage ticket (starts with "help-")
+      if (isLocalId(ticket.id)) {
+        // For local storage tickets, we can't use the database
+        // Instead, we'll store the application in local storage
+        const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
         
-      if (checkError) {
-        console.error('Error checking existing application:', checkError);
-        toast.error('Error checking existing applications. Please try again.');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      if (existingMatch) {
-        // Update existing application instead of creating a new one
-        const { data: updatedData, error: updateError } = await supabase
-          .from('help_request_matches')
-          .update({
+        // Check if an application already exists
+        const existingIndex = localApplications.findIndex(
+          (app: any) => app.developer_id === userId && app.request_id === ticket.id
+        );
+        
+        if (existingIndex >= 0) {
+          // Update existing application
+          localApplications[existingIndex] = {
+            ...localApplications[existingIndex],
             proposed_message: message,
             proposed_duration: estimatedTime,
             proposed_rate: proposedRate,
             match_score: 85,
-            status: 'pending'
-          })
-          .eq('id', existingMatch.id)
-          .select();
+            status: 'pending',
+            updated_at: new Date().toISOString()
+          };
           
-        if (updateError) {
-          console.error('Error updating application:', updateError);
-          toast.error('Failed to update your application. Please try again.');
+          localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
+          toast.success('Application updated successfully!');
+          onApplicationSuccess();
+          onClose();
           setIsSubmitting(false);
           return;
         }
         
-        console.log('Application updated successfully:', updatedData);
-        toast.success('Application updated successfully!');
+        // Create new application
+        const newApplication = {
+          id: `app-${Date.now()}`,
+          request_id: ticket.id,
+          developer_id: userId,
+          status: 'pending',
+          match_score: 85,
+          proposed_message: message,
+          proposed_duration: estimatedTime,
+          proposed_rate: proposedRate,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        localApplications.push(newApplication);
+        localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
+        
+        // Update the ticket status to 'matching' if it was 'pending'
+        const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+        const ticketIndex = localHelpRequests.findIndex((req: HelpRequest) => req.id === ticket.id);
+        
+        if (ticketIndex >= 0 && localHelpRequests[ticketIndex].status === 'pending') {
+          localHelpRequests[ticketIndex].status = 'matching';
+          localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+        }
+        
+        toast.success('Application submitted successfully!');
         onApplicationSuccess();
         onClose();
         setIsSubmitting(false);
         return;
       }
       
-      // Create a new match record in the database
-      const { data, error } = await supabase
-        .from('help_request_matches')
-        .insert({
-          request_id: ticket.id,
-          developer_id: userId,
-          status: 'pending',
-          match_score: 85, // Some calculated score based on skills match
+      // For database tickets, use the submit function
+      const result = await submitDeveloperApplication(
+        ticket.id, 
+        userId, 
+        {
           proposed_message: message,
           proposed_duration: estimatedTime,
           proposed_rate: proposedRate
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error submitting application:', error);
-        toast.error(`Failed to submit your application: ${error.message}`);
-        setIsSubmitting(false);
-        return;
-      }
-
-      console.log('Application submitted successfully:', data);
-
-      // Update the ticket status to 'matching' if it was 'pending'
-      if (ticket.status === 'pending') {
-        const { error: updateError } = await supabase
-          .from('help_requests')
-          .update({ status: 'matching' })
-          .eq('id', ticket.id);
-
-        if (updateError) {
-          console.error('Error updating ticket status:', updateError);
-          // Not critical, so just log it
         }
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to submit application');
       }
 
-      toast.success('Application submitted successfully!');
+      toast.success(result.isUpdate ? 'Application updated successfully!' : 'Application submitted successfully!');
       onApplicationSuccess();
       onClose();
-      setIsSubmitting(false);
-      
     } catch (error) {
       console.error('Exception submitting application:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       toast.error(`Error: ${errorMessage}. Please try again.`);
+    } finally {
       setIsSubmitting(false);
     }
   };

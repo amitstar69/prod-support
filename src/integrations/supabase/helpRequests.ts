@@ -326,6 +326,63 @@ export const submitDeveloperApplication = async (
       return { success: false, error: 'Missing required fields' };
     }
 
+    // Check if this is a local storage ticket (starts with "help-")
+    if (requestId.startsWith('help-')) {
+      // For local storage tickets, we can't use the database
+      // Instead, we'll store the application in local storage
+      const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
+      
+      // Check if an application already exists
+      const existingIndex = localApplications.findIndex(
+        (app: any) => app.developer_id === developerId && app.request_id === requestId
+      );
+      
+      if (existingIndex >= 0) {
+        // Update existing application
+        localApplications[existingIndex] = {
+          ...localApplications[existingIndex],
+          proposed_message: applicationData.proposed_message,
+          proposed_duration: applicationData.proposed_duration,
+          proposed_rate: applicationData.proposed_rate,
+          match_score: 85,
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        };
+        
+        localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
+        return { success: true, data: localApplications[existingIndex], isUpdate: true };
+      }
+      
+      // Create new application
+      const newApplication = {
+        id: `app-${Date.now()}`,
+        request_id: requestId,
+        developer_id: developerId,
+        status: 'pending',
+        match_score: 85,
+        proposed_message: applicationData.proposed_message,
+        proposed_duration: applicationData.proposed_duration,
+        proposed_rate: applicationData.proposed_rate,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      localApplications.push(newApplication);
+      localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
+      
+      // Update the ticket status to 'matching' if it was 'pending'
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      const ticketIndex = localHelpRequests.findIndex((req: any) => req.id === requestId);
+      
+      if (ticketIndex >= 0 && localHelpRequests[ticketIndex].status === 'pending') {
+        localHelpRequests[ticketIndex].status = 'matching';
+        localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+      }
+      
+      return { success: true, data: newApplication, isUpdate: false };
+    }
+
+    // For database tickets, proceed with Supabase operations
     // Check if an application already exists
     const { data: existingMatch, error: checkError } = await supabase
       .from('help_request_matches')
