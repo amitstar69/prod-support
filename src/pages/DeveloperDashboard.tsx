@@ -26,6 +26,21 @@ const DeveloperDashboard = () => {
   const { isAuthenticated, userId, userType } = useAuth();
   const navigate = useNavigate();
 
+  // Add auto-refresh effect - fetch tickets every 30 seconds
+  useEffect(() => {
+    // Initial fetch
+    fetchAllTickets();
+    
+    // Set up interval for periodic refresh
+    const refreshInterval = setInterval(() => {
+      console.log('Auto-refreshing tickets...');
+      fetchAllTickets();
+    }, 30000); // 30 seconds
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(refreshInterval);
+  }, []);
+
   useEffect(() => {
     // If user is logged in and is a client, redirect them to client dashboard
     if (isAuthenticated && userType === 'client') {
@@ -33,8 +48,6 @@ const DeveloperDashboard = () => {
       navigate('/client-profile');
       return;
     }
-
-    fetchAllTickets();
   }, [isAuthenticated, userType, navigate]);
 
   useEffect(() => {
@@ -46,27 +59,38 @@ const DeveloperDashboard = () => {
       setIsLoading(true);
       console.log('Fetching all tickets...');
       
-      // First try to fetch directly from supabase
+      // First try direct supabase query with more robust options
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100); // Reasonable limit to prevent too much data
       
       if (error) {
-        console.error('Error fetching tickets:', error);
+        console.error('Error fetching tickets directly:', error);
         
-        // Try using the helper function as fallback
+        // Try helper function as fallback
+        console.log('Trying fallback method...');
         const response = await getAllPublicHelpRequests();
         if (response.success) {
-          console.log('Tickets fetched via helper function:', response.data);
+          console.log('Tickets fetched via helper function:', response.data.length);
           setTickets(response.data || []);
         } else {
+          console.error('Helper function also failed:', response.error);
           toast.error('Failed to load tickets. Please try again.');
-          setTickets([]);
+          // Don't clear existing tickets if we already have some
+          if (tickets.length === 0) {
+            setTickets([]);
+          }
         }
       } else {
-        console.log('Tickets fetched directly:', data);
-        setTickets(data || []);
+        console.log('Tickets fetched directly:', data?.length || 0);
+        if (data && Array.isArray(data)) {
+          setTickets(data);
+        } else {
+          console.warn('Received invalid data format:', data);
+          setTickets([]);
+        }
       }
     } catch (error) {
       console.error('Exception fetching tickets:', error);
@@ -174,7 +198,7 @@ const DeveloperDashboard = () => {
           />
         )}
 
-        {isLoading ? (
+        {isLoading && tickets.length === 0 ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <span className="ml-2 text-lg">Loading tickets...</span>

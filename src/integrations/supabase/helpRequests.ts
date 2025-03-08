@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { HelpRequest } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -116,11 +117,14 @@ export const getHelpRequestsForClient = async (clientId: string) => {
 // Function to get all public help requests for listing
 export const getAllPublicHelpRequests = async () => {
   try {
-    console.log('Fetching all public help requests...');
+    console.log('getAllPublicHelpRequests: Fetching all public help requests...');
+    
+    // Improved query with better error handling
     const { data, error } = await supabase
       .from('help_requests')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100); // Add a reasonable limit
       
     if (error) {
       console.error('Error fetching public help requests from Supabase:', error);
@@ -131,16 +135,30 @@ export const getAllPublicHelpRequests = async () => {
       };
     }
     
-    console.log('Public help requests fetched successfully:', data?.length || 0, 'records found');
+    // Validate the returned data
+    if (!data || !Array.isArray(data)) {
+      console.error('Invalid data format returned from Supabase:', data);
+      return {
+        success: false,
+        error: 'Invalid data format returned from database',
+        data: []
+      };
+    }
+    
+    console.log('Public help requests fetched successfully:', data.length, 'records found');
     return { 
       success: true, 
-      data: data || [], 
+      data: data, 
       storageMethod: 'Supabase' 
     };
     
   } catch (error) {
     console.error('Exception fetching public help requests:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error', data: [] };
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error', 
+      data: [] 
+    };
   }
 };
 
