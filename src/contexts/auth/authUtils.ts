@@ -31,6 +31,7 @@ export const logoutUser = async (): Promise<void> => {
     
     // Force page refresh to clear any cached state - with a small delay to ensure toast is visible
     setTimeout(() => {
+      // Use href to ensure complete page reload, bypassing React Router
       window.location.href = '/';
     }, 300);
     

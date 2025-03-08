@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/auth';
@@ -14,6 +14,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
   const { isAuthenticated, userId } = useAuth();
   const navigate = useNavigate();
   const { formData, isSubmitting, setIsSubmitting, resetForm } = useHelpRequest();
+  const [submissionTimer, setSubmissionTimer] = useState<NodeJS.Timeout | null>(null);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +30,15 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
     console.log('Submitting help request with clientId:', clientId, 'isAuthenticated:', isAuthenticated);
     
     setIsSubmitting(true);
+    
+    // Set a timeout to prevent the page from being stuck in a loading state
+    const timer = setTimeout(() => {
+      console.log('Submission taking longer than expected, resetting state...');
+      setIsSubmitting(false);
+      toast.error('Request is taking longer than expected. Please try again or refresh the page.');
+    }, 10000); // 10 seconds timeout
+    
+    setSubmissionTimer(timer);
     
     try {
       // Ensure estimated_duration is a number
@@ -62,12 +72,25 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       // Show success message and redirect
       toast.success('Help request submitted successfully!');
       resetForm();
+      
+      // Clear the timeout since submission was successful
+      if (submissionTimer) {
+        clearTimeout(submissionTimer);
+        setSubmissionTimer(null);
+      }
+      
       navigate('/get-help/success', { state: { requestId: result.data.id } });
       
     } catch (error: any) {
       console.error('Error in form submission:', error);
       toast.error('An unexpected error occurred: ' + error.message);
     } finally {
+      // Clear the timeout
+      if (submissionTimer) {
+        clearTimeout(submissionTimer);
+        setSubmissionTimer(null);
+      }
+      
       setIsSubmitting(false);
     }
   };

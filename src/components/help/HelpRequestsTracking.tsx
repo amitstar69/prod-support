@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
@@ -59,6 +58,7 @@ const HelpRequestsTracking: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<'database' | 'local' | 'mixed'>('database');
+  const [loadingTimer, setLoadingTimer] = useState<NodeJS.Timeout | null>(null);
 
   const isValidUUID = (uuid: string) => {
     if (!uuid) return false;
@@ -66,23 +66,18 @@ const HelpRequestsTracking: React.FC = () => {
     return uuidRegex.test(uuid);
   };
 
-  // Function to sync data from localStorage to Supabase
   const syncLocalToDatabase = async () => {
     if (!userId || !isValidUUID(userId)) return;
 
     try {
-      // Get local requests for this user
       const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]')
         .filter((req: HelpRequest) => req.client_id === userId);
       
       if (localHelpRequests.length === 0) return;
 
-      // For each local request, transfer to Supabase if it doesn't exist there
       for (const request of localHelpRequests) {
-        // Skip any that have a database-style ID (already synced)
         if (isValidUUID(request.id)) continue;
 
-        // Create a new request in Supabase without the local ID
         const { id, created_at, updated_at, ...requestData } = request;
         
         const { data, error } = await supabase
@@ -97,7 +92,6 @@ const HelpRequestsTracking: React.FC = () => {
         }
       }
 
-      // Clear local storage after successful sync
       localStorage.setItem('helpRequests', JSON.stringify(
         JSON.parse(localStorage.getItem('helpRequests') || '[]')
           .filter((req: HelpRequest) => req.client_id !== userId)
@@ -106,6 +100,7 @@ const HelpRequestsTracking: React.FC = () => {
       toast.success('Local help requests have been synced to your account');
     } catch (error) {
       console.error('Error during sync process:', error);
+      toast.error('Failed to sync local data to database');
     }
   };
 
@@ -121,7 +116,16 @@ const HelpRequestsTracking: React.FC = () => {
       try {
         console.log('Fetching help requests for user:', userId);
         
-        // Get local help requests first
+        const timer = setTimeout(() => {
+          if (isLoading) {
+            console.log('Data fetch taking too long, resetting loading state...');
+            setIsLoading(false);
+            setError('Request timed out. Please refresh the page and try again.');
+          }
+        }, 15000);
+        
+        setLoadingTimer(timer);
+        
         let localHelpRequests = [];
         try {
           localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
@@ -136,7 +140,6 @@ const HelpRequestsTracking: React.FC = () => {
         const isLocalAuth = userId.startsWith('client-');
         const isValidUserUUID = isValidUUID(userId);
         
-        // If using local auth, just use local storage
         if (isLocalAuth) {
           setHelpRequests(userLocalHelpRequests);
           setDataSource('local');
@@ -144,7 +147,6 @@ const HelpRequestsTracking: React.FC = () => {
           return;
         }
         
-        // For database users, prioritize database records
         if (isValidUserUUID) {
           try {
             const { data: sessionData } = await supabase.auth.getSession();
@@ -169,13 +171,10 @@ const HelpRequestsTracking: React.FC = () => {
               } else {
                 console.log('Help requests data from Supabase:', data);
                 
-                // If we have local requests for this authenticated user, offer to sync
                 if (userLocalHelpRequests.length > 0) {
                   setDataSource('mixed');
-                  // Sync local data to database if user has a valid session
                   await syncLocalToDatabase();
                   
-                  // Refresh from database after sync
                   const { data: refreshedData } = await supabase
                     .from('help_requests')
                     .select('*')
@@ -192,7 +191,6 @@ const HelpRequestsTracking: React.FC = () => {
                 }
               }
             } else {
-              // No active session but valid UUID - use local data
               setHelpRequests(userLocalHelpRequests);
               setDataSource('local');
               setError('No active session. Please log in again.');
@@ -204,7 +202,6 @@ const HelpRequestsTracking: React.FC = () => {
             setError('Failed to connect to database, showing local requests only');
           }
         } else {
-          // Invalid UUID format - use local data
           setHelpRequests(userLocalHelpRequests);
           setDataSource('local');
           setError('Invalid user ID format. Using local data only.');
@@ -214,11 +211,21 @@ const HelpRequestsTracking: React.FC = () => {
         setError('An unexpected error occurred');
         setHelpRequests([]);
       } finally {
+        if (loadingTimer) {
+          clearTimeout(loadingTimer);
+          setLoadingTimer(null);
+        }
         setIsLoading(false);
       }
     };
 
     fetchHelpRequests();
+    
+    return () => {
+      if (loadingTimer) {
+        clearTimeout(loadingTimer);
+      }
+    };
   }, [userId]);
 
   const formatDate = (dateString: string) => {
@@ -265,6 +272,12 @@ const HelpRequestsTracking: React.FC = () => {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-6">
           <p className="font-medium">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-2 text-sm underline"
+          >
+            Refresh page
+          </button>
         </div>
       )}
 
