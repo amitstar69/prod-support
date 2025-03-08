@@ -119,19 +119,36 @@ export const getAllPublicHelpRequests = async () => {
   try {
     console.log('getAllPublicHelpRequests: Fetching all public help requests...');
     
-    // Improved query with better error handling
+    // Attempt to fetch tickets with wider parameters to ensure we get all public tickets
+    // No filtering by user ID to ensure all tickets are visible
     const { data, error } = await supabase
       .from('help_requests')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100); // Add a reasonable limit
+      .in('status', ['pending', 'matching', 'scheduled', 'in-progress']) // Only show actionable tickets
+      .order('created_at', { ascending: false });
       
     if (error) {
       console.error('Error fetching public help requests from Supabase:', error);
-      return { 
-        success: false, 
-        error: error.message,
-        data: [] 
+      // Try a more basic query as fallback
+      const fallbackResult = await supabase
+        .from('help_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (fallbackResult.error) {
+        console.error('Fallback query also failed:', fallbackResult.error);
+        return { 
+          success: false, 
+          error: error.message,
+          data: [] 
+        };
+      }
+      
+      console.log('Public help requests fetched via fallback query:', fallbackResult.data?.length || 0);
+      return {
+        success: true,
+        data: fallbackResult.data || [],
+        storageMethod: 'Supabase (fallback query)'
       };
     }
     
@@ -146,6 +163,15 @@ export const getAllPublicHelpRequests = async () => {
     }
     
     console.log('Public help requests fetched successfully:', data.length, 'records found');
+    // Include detailed info about the data for debugging
+    if (data.length === 0) {
+      console.log('No records found in the database. Check if:');
+      console.log('1. RLS policies are allowing public access to help_requests');
+      console.log('2. There are actually records in the database');
+    } else {
+      console.log('Sample ticket data (first ticket):', data[0]);
+    }
+    
     return { 
       success: true, 
       data: data, 

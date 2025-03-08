@@ -2,7 +2,7 @@
 import React from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import TicketList from '../tickets/TicketList';
-import { ArrowDownUp } from 'lucide-react';
+import { ArrowDownUp, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/button';
 
 interface TicketListContainerProps {
@@ -25,8 +25,11 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
       <div className="bg-white p-8 rounded-lg border border-border/40 text-center">
         <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">📋</div>
         <h3 className="text-xl font-medium mb-2">No tickets found</h3>
-        <p className="text-muted-foreground">
-          There are no tickets matching your current filters. Try adjusting your filters or check back later.
+        <p className="text-muted-foreground mb-4">
+          There are no tickets matching your current filters or no help requests have been submitted yet.
+        </p>
+        <p className="text-sm text-muted-foreground mb-6">
+          New help requests will appear here automatically. You can also try refreshing the page.
         </p>
       </div>
     );

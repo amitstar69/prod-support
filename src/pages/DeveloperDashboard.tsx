@@ -59,12 +59,12 @@ const DeveloperDashboard = () => {
       setIsLoading(true);
       console.log('Fetching all tickets...');
       
-      // First try direct supabase query with more robust options
+      // First attempt: Direct Supabase query with specific options for public access
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100); // Reasonable limit to prevent too much data
+        .in('status', ['pending', 'matching', 'scheduled', 'in-progress'])
+        .order('created_at', { ascending: false });
       
       if (error) {
         console.error('Error fetching tickets directly:', error);
