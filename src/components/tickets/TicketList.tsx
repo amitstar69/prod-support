@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { ExternalLink, ArrowUpRight } from 'lucide-react';
+import { ExternalLink, ArrowUpRight, Clock, DollarSign, Zap } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -31,6 +31,7 @@ const TicketList: React.FC<TicketListProps> = ({
   const navigate = useNavigate();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<{ type: 'view' | 'claim', ticketId: string } | null>(null);
+  const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
 
   const handleLoginPrompt = () => {
     navigate('/login', { state: { returnTo: '/developer-dashboard' } });
@@ -43,6 +44,14 @@ const TicketList: React.FC<TicketListProps> = ({
   };
 
   const handleTicketClick = (ticketId: string) => {
+    if (expandedTicket === ticketId) {
+      setExpandedTicket(null);
+    } else {
+      setExpandedTicket(ticketId);
+    }
+  };
+
+  const handleViewDetails = (ticketId: string) => {
     if (isAuthenticated) {
       navigate(`/get-help/request/${ticketId}`);
     } else {
@@ -81,130 +90,165 @@ const TicketList: React.FC<TicketListProps> = ({
     }
   };
 
+  const getUrgencyIcon = (urgency: string) => {
+    switch(urgency) {
+      case 'high': return <Zap className="h-4 w-4 text-orange-500" />;
+      case 'critical': return <Zap className="h-4 w-4 text-red-500" />;
+      default: return <Clock className="h-4 w-4 text-blue-500" />;
+    }
+  };
+
+  const getBudgetIcon = (budgetRange: string) => {
+    const dollarCount = budgetRange.split('$').length - 1;
+    return (
+      <div className="flex">
+        {[...Array(Math.min(dollarCount, 3))].map((_, i) => (
+          <DollarSign key={i} className="h-4 w-4 text-green-500" />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <>
-      <div className="overflow-hidden border border-border/40 rounded-md">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium text-foreground/70">Key</th>
-              <th className="px-4 py-3 text-left font-medium text-foreground/70 w-[30%]">Title</th>
-              <th className="px-4 py-3 text-left font-medium text-foreground/70">Technical Area</th>
-              <th className="px-4 py-3 text-left font-medium text-foreground/70">Urgency</th>
-              <th className="px-4 py-3 text-left font-medium text-foreground/70">Status</th>
-              <th className="px-4 py-3 text-left font-medium text-foreground/70">Created</th>
-              <th className="px-4 py-3 text-left font-medium text-foreground/70">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tickets.map((ticket, index) => {
-              // Create a simple key from the id or index (like HELP-123)
-              const ticketKey = ticket.id ? 
-                `HELP-${ticket.id.substring(0, 3)}` : 
-                `HELP-${index + 100}`;
+      <div className="grid grid-cols-1 gap-4">
+        {tickets.map((ticket) => {
+          // Create a simple key from the id or index (like HELP-123)
+          const ticketKey = ticket.id ? 
+            `HELP-${ticket.id.substring(0, 3)}` : 
+            `HELP-${Math.floor(Math.random() * 900) + 100}`;
+            
+          const isExpanded = expandedTicket === ticket.id;
+            
+          return (
+            <div 
+              key={ticket.id} 
+              className={`bg-white border border-border/20 rounded-lg overflow-hidden transition-all duration-200 ${isExpanded ? 'shadow-md' : 'hover:shadow-sm'}`}
+            >
+              <div 
+                className="p-4 cursor-pointer"
+                onClick={() => handleTicketClick(ticket.id || '')}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">{ticketKey}</span>
+                      {ticket.urgency && (
+                        <div className="flex items-center gap-1 text-xs">
+                          {getUrgencyIcon(ticket.urgency)}
+                          <span className="capitalize">{ticket.urgency}</span>
+                        </div>
+                      )}
+                      {ticket.budget_range && (
+                        <div className="flex items-center gap-1 text-xs">
+                          {getBudgetIcon(ticket.budget_range)}
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-medium mt-1">{ticket.title}</h3>
+                  </div>
+                  <Badge 
+                    variant="outline"
+                    className={`
+                      ${ticket.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
+                        ticket.status === 'completed' ? 'bg-slate-50 text-slate-800 border-slate-200' :
+                        ticket.status === 'cancelled' ? 'bg-red-50 text-red-800 border-red-200' :
+                        'bg-yellow-50 text-yellow-800 border-yellow-200'}
+                    `}
+                  >
+                    {ticket.status || 'pending'}
+                  </Badge>
+                </div>
                 
-              return (
-                <tr 
-                  key={ticket.id || index} 
-                  className="border-t border-border/20 hover:bg-muted/30 transition-colors"
-                >
-                  <td className="px-4 py-3 font-medium">
-                    <a 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        ticket.id && handleTicketClick(ticket.id);
-                      }}
-                      href="#"
-                      className="text-primary hover:underline cursor-pointer"
-                    >
-                      {ticketKey}
-                    </a>
-                  </td>
-                  <td className="px-4 py-3 font-medium">
-                    <a 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        ticket.id && handleTicketClick(ticket.id);
-                      }}
-                      href="#"
-                      className="hover:text-primary hover:underline transition-colors cursor-pointer"
-                    >
-                      {ticket.title}
-                    </a>
-                  </td>
-                  <td className="px-4 py-3">
-                    {ticket.technical_area && ticket.technical_area.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {ticket.technical_area.slice(0, 1).map((area, i) => (
-                          <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
-                            {area}
-                          </Badge>
-                        ))}
-                        {ticket.technical_area.length > 1 && (
-                          <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">
-                            +{ticket.technical_area.length - 1}
-                          </Badge>
-                        )}
+                <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
+                  {ticket.description}
+                </p>
+                
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {ticket.technical_area && ticket.technical_area.slice(0, 3).map((area, i) => (
+                    <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
+                      {area}
+                    </Badge>
+                  ))}
+                  {ticket.technical_area && ticket.technical_area.length > 3 && (
+                    <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">
+                      +{ticket.technical_area.length - 3}
+                    </Badge>
+                  )}
+                </div>
+                
+                {isExpanded && (
+                  <div className="mt-4 pt-4 border-t border-border/20">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Details</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li className="flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            <span>Created: {formatDate(ticket.created_at)}</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Zap className="h-4 w-4" />
+                            <span>Duration: ~{ticket.estimated_duration} minutes</span>
+                          </li>
+                        </ul>
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">None</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge 
-                      variant="outline" 
-                      className={`
-                        ${ticket.urgency === 'high' ? 'bg-orange-50 text-orange-800 border-orange-200' : 
-                          ticket.urgency === 'critical' ? 'bg-red-50 text-red-800 border-red-200' :
-                          ticket.urgency === 'medium' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
-                          'bg-blue-50 text-blue-800 border-blue-200'}
-                      `}
-                    >
-                      {ticket.urgency || 'low'}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge 
-                      variant="outline"
-                      className={`
-                        ${ticket.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
-                          ticket.status === 'completed' ? 'bg-slate-50 text-slate-800 border-slate-200' :
-                          ticket.status === 'cancelled' ? 'bg-red-50 text-red-800 border-red-200' :
-                          'bg-yellow-50 text-yellow-800 border-yellow-200'}
-                      `}
-                    >
-                      {ticket.status || 'pending'}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatDate(ticket.created_at)}
-                  </td>
-                  <td className="px-4 py-3">
-                    {(ticket.status === 'pending' || ticket.status === 'matching') ? (
-                      <Button 
-                        size="sm"
-                        onClick={() => ticket.id && handleClaimClick(ticket.id)}
-                        className="h-8 px-3 bg-primary text-white hover:bg-primary/90"
-                      >
-                        Claim
-                      </Button>
-                    ) : (
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Communication</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {ticket.communication_preference && ticket.communication_preference.map((pref, i) => (
+                            <Badge key={i} variant="outline" className="bg-secondary text-foreground border-secondary/20 text-xs">
+                              {pref}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end gap-2 mt-4">
                       <Button 
                         size="sm" 
-                        disabled 
                         variant="outline"
-                        className="h-8 px-3"
+                        className="h-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          ticket.id && handleViewDetails(ticket.id);
+                        }}
                       >
-                        {ticket.status === 'in-progress' ? 'In Progress' : 
-                        ticket.status === 'completed' ? 'Completed' : 'Unavailable'}
+                        View Details
+                        <ExternalLink className="h-3.5 w-3.5 ml-1" />
                       </Button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                      
+                      {(ticket.status === 'pending' || ticket.status === 'matching') ? (
+                        <Button 
+                          size="sm"
+                          className="h-8 bg-primary text-white hover:bg-primary/90"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            ticket.id && handleClaimClick(ticket.id);
+                          }}
+                        >
+                          Claim Ticket
+                          <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          disabled 
+                          variant="outline"
+                          className="h-8"
+                        >
+                          {ticket.status === 'in-progress' ? 'In Progress' : 
+                          ticket.status === 'completed' ? 'Completed' : 'Unavailable'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Authentication Dialog */}

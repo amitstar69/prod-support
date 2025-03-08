@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
 import SearchBar from './SearchBar';
-import { Shield, Clock, Zap } from 'lucide-react';
+import { Shield, Clock, Zap, ArrowRight } from 'lucide-react';
 
 const Hero: React.FC = () => {
   const navigate = useNavigate();
@@ -29,6 +29,10 @@ const Hero: React.FC = () => {
     } finally {
       setTimeout(() => setIsLoading(false), 300);
     }
+  };
+  
+  const handleBrowseRequests = () => {
+    navigate('/developer-dashboard');
   };
 
   return (
@@ -93,12 +97,12 @@ const Hero: React.FC = () => {
             />
           </div>
           
-          {/* Help CTA button - more prominent positioning */}
-          <div className="mb-12">
+          {/* Two clear CTAs - one for clients, one for developers */}
+          <div className="flex flex-col sm:flex-row justify-center gap-5 mb-12">
             <button
               onClick={handleGetHelp}
               disabled={isLoading}
-              className={`px-8 py-4 bg-[#1E3A8A] text-white rounded-full text-lg font-medium hover:bg-[#1E3A8A]/90 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed ${isLoading ? 'animate-pulse' : ''}`}
+              className={`px-8 py-4 bg-[#1E3A8A] text-white rounded-full text-lg font-medium hover:bg-[#1E3A8A]/90 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed flex-1 sm:flex-initial ${isLoading ? 'animate-pulse' : ''}`}
             >
               {isLoading ? (
                 <span className="flex items-center">
@@ -112,6 +116,14 @@ const Hero: React.FC = () => {
               ) : (
                 'Get Developer Help Now'
               )}
+            </button>
+            
+            <button
+              onClick={handleBrowseRequests}
+              className="px-8 py-4 bg-white border-2 border-[#1E3A8A] text-[#1E3A8A] rounded-full text-lg font-medium hover:bg-gray-50 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 flex-1 sm:flex-initial flex items-center justify-center gap-2"
+            >
+              Browse Help Requests
+              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
           

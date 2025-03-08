@@ -10,8 +10,8 @@ import { getAllPublicHelpRequests } from '../integrations/supabase/helpRequests'
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import LoginPrompt from '../components/dashboard/LoginPrompt';
 import TicketFiltersContainer from '../components/dashboard/TicketFiltersContainer';
-import TicketListContainer from '../components/dashboard/TicketListContainer';
-import { Loader2 } from 'lucide-react';
+import TicketList from '../components/tickets/TicketList';
+import { Loader2, ArrowDown } from 'lucide-react';
 
 const DeveloperDashboard = () => {
   const [tickets, setTickets] = useState<HelpRequest[]>([]);
@@ -34,7 +34,7 @@ const DeveloperDashboard = () => {
     // Set up interval for periodic refresh
     const refreshInterval = setInterval(() => {
       console.log('Auto-refreshing tickets...');
-      fetchAllTickets();
+      fetchAllTickets(false); // Don't show loading indicator for auto-refresh
     }, 30000); // 30 seconds
     
     // Clean up interval on component unmount
@@ -54,9 +54,11 @@ const DeveloperDashboard = () => {
     applyFilters();
   }, [tickets, filters]);
 
-  const fetchAllTickets = async () => {
+  const fetchAllTickets = async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) {
+        setIsLoading(true);
+      }
       console.log('Fetching all tickets...');
       
       // Try multiple approaches to fetch tickets for maximum reliability
@@ -81,7 +83,9 @@ const DeveloperDashboard = () => {
         
         if (error) {
           console.error('Direct query also failed:', error);
-          toast.error('Failed to load tickets. Please try again.');
+          if (showLoading) {
+            toast.error('Failed to load tickets. Please try again.');
+          }
         } else if (data && data.length > 0) {
           console.log('Successfully fetched tickets via direct query:', data.length);
           ticketsData = data;
@@ -110,9 +114,13 @@ const DeveloperDashboard = () => {
       
     } catch (error) {
       console.error('Exception fetching tickets:', error);
-      toast.error('Unexpected error occurred. Please try again.');
+      if (showLoading) {
+        toast.error('Unexpected error occurred. Please try again.');
+      }
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -159,6 +167,8 @@ const DeveloperDashboard = () => {
     }
 
     try {
+      toast.loading('Claiming ticket...');
+      
       // First create a match record
       const { data: matchData, error: matchError } = await supabase
         .from('help_request_matches')
@@ -198,36 +208,82 @@ const DeveloperDashboard = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto py-8">
+      <div className="bg-secondary/30 py-8">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl font-bold mb-2">Developer Dashboard</h1>
+          <p className="text-muted-foreground">
+            Browse and claim help requests from clients looking for technical assistance
+          </p>
+        </div>
+      </div>
+      
+      <div className="container mx-auto py-8 px-4">
         <DashboardHeader 
           showFilters={showFilters} 
           setShowFilters={setShowFilters} 
           onRefresh={fetchAllTickets} 
         />
         
-        {!isAuthenticated && <LoginPrompt />}
+        {!isAuthenticated && (
+          <div className="mb-8">
+            <LoginPrompt />
+          </div>
+        )}
         
         {showFilters && (
-          <TicketFiltersContainer 
-            filters={filters} 
-            onFilterChange={handleFilterChange} 
-          />
+          <div className="mb-6">
+            <TicketFiltersContainer 
+              filters={filters} 
+              onFilterChange={handleFilterChange} 
+            />
+          </div>
         )}
 
-        {isLoading && tickets.length === 0 ? (
+        {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <span className="ml-2 text-lg">Loading tickets...</span>
           </div>
+        ) : filteredTickets.length > 0 ? (
+          <>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Available Help Requests</h2>
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredTickets.length} of {tickets.length} tickets
+              </div>
+            </div>
+            <TicketList 
+              tickets={filteredTickets} 
+              onClaimTicket={handleClaimTicket}
+              currentUserId={userId}
+              isAuthenticated={isAuthenticated}
+            />
+            
+            {filteredTickets.length >= 5 && (
+              <div className="flex justify-center mt-6">
+                <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors">
+                  <ArrowDown className="h-4 w-4" />
+                  Show more
+                </button>
+              </div>
+            )}
+          </>
         ) : (
-          <TicketListContainer 
-            filteredTickets={filteredTickets} 
-            totalTickets={tickets.length}
-            onClaimTicket={handleClaimTicket}
-            userId={userId}
-            isAuthenticated={isAuthenticated}
-            onRefresh={fetchAllTickets}
-          />
+          <div className="bg-white p-8 rounded-lg border border-border/40 text-center">
+            <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">📋</div>
+            <h3 className="text-xl font-medium mb-2">No help requests found</h3>
+            <p className="text-muted-foreground mb-4">
+              {tickets.length > 0 
+                ? "There are no tickets matching your current filters. Try adjusting your filters."
+                : "There are no active help requests at the moment."}
+            </p>
+            <button 
+              onClick={() => fetchAllTickets()}
+              className="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+            >
+              Refresh Requests
+            </button>
+          </div>
         )}
       </div>
     </Layout>
