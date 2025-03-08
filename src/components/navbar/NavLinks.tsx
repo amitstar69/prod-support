@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth';
 
 const NavLinks: React.FC = () => {
-  const { userDetails } = useAuth();
-  const isDeveloper = userDetails?.user_type === 'developer';
+  const { userType } = useAuth();
+  const isDeveloper = userType === 'developer';
 
   return (
     <div className="hidden md:flex items-center space-x-6">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -19,19 +18,19 @@ const DeveloperDashboard = () => {
     technicalArea: 'all',
     urgency: 'all',
   });
-  const { userId, userDetails } = useAuth();
+  const { userId, userType } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user is a developer
-    if (userDetails && userDetails.user_type !== 'developer') {
+    if (userType !== 'developer') {
       toast.error('Only developers can access the ticket dashboard');
       navigate('/');
       return;
     }
 
     fetchAllTickets();
-  }, [userDetails, navigate]);
+  }, [userType, navigate]);
 
   useEffect(() => {
     applyFilters();
