@@ -10,6 +10,7 @@ const SubmitButton: React.FC = () => {
   const { userId } = useAuth();
   
   const isLocalStorage = userId?.startsWith('client-');
+  const isAuthenticated = !!userId && !isLocalStorage;
   
   return (
     <div>
@@ -38,7 +39,7 @@ const SubmitButton: React.FC = () => {
         )}
       </Button>
       
-      {isLocalStorage && (
+      {!isAuthenticated && (
         <div className="mt-3 p-3 border border-yellow-200 bg-yellow-50 rounded-md flex items-start gap-2">
           <Info className="h-5 w-5 text-yellow-500 shrink-0 mt-0.5" />
           <p className="text-sm text-yellow-700">

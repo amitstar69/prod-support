@@ -64,8 +64,8 @@ const HelpRequestFormContent: React.FC = () => {
         estimated_duration: duration,
         budget_range: formData.budget_range,
         code_snippet: formData.code_snippet || '',
-        // Changed from 'requirements' to 'pending' to match the database constraint
-        status: 'pending',
+        status: 'pending', // Use 'pending' as the default status
+        client_id: userId,
       };
       
       // Check if using local storage authentication
@@ -79,7 +79,6 @@ const HelpRequestFormContent: React.FC = () => {
         const newRequest = {
           ...helpRequestBase,
           id: `help-${Date.now()}`,
-          client_id: userId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -103,74 +102,63 @@ const HelpRequestFormContent: React.FC = () => {
         }
         
         // For Supabase authentication, store in database
-        const helpRequest = {
-          ...helpRequestBase,
-          client_id: userId,
-        };
-        
-        console.log('Help request data for Supabase:', helpRequest);
+        console.log('Help request data for Supabase:', helpRequestBase);
         
         // Get current session to verify authentication
         const { data: sessionData } = await supabase.auth.getSession();
         console.log('Current session when submitting:', sessionData);
         
+        // Check if we have an active session
+        if (!sessionData.session) {
+          console.error('No active Supabase session found');
+          throw new Error('Authentication required');
+        }
+        
+        const { data, error } = await supabase
+          .from('help_requests')
+          .insert(helpRequestBase)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error submitting help request to Supabase:', error);
+          throw error;
+        }
+          
+        console.log('Help request submitted to Supabase successfully:', data);
+        requestId = data.id;
+        
+        // Show success message and redirect
+        toast.success('Help request submitted to database successfully!');
+        resetForm();
+        navigate('/get-help/success', { state: { requestId } });
+      }
+    } catch (error: any) {
+      console.error('Error in form submission:', error);
+      toast.error('An unexpected error occurred: ' + error.message);
+      
+      // Fall back to localStorage if Supabase fails
+      if (isValidUUID(userId)) {
         try {
-          // Check if we have an active session
-          if (!sessionData.session) {
-            console.error('No active Supabase session found');
-            throw new Error('Authentication required');
-          }
-          
-          const { data, error } = await supabase
-            .from('help_requests')
-            .insert(helpRequest)
-            .select()
-            .single();
-          
-          if (error) {
-            console.error('Error submitting help request to Supabase:', error);
-            
-            // If failed due to Supabase, fall back to localStorage
-            toast.warning('Could not save to database, storing locally instead');
-            
-            const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
-            const newRequest = {
-              ...helpRequestBase,
-              id: `help-${Date.now()}`,
-              client_id: userId,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
-            
-            localHelpRequests.push(newRequest);
-            localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
-            console.log('Help request stored locally as fallback:', newRequest);
-            requestId = newRequest.id;
-            
-            // Show success message and redirect
-            toast.success('Help request submitted successfully (stored locally)!');
-            resetForm();
-            navigate('/get-help/success', { state: { requestId } });
-          } else {
-            console.log('Help request submitted to Supabase successfully:', data);
-            requestId = data.id;
-            
-            // Show success message and redirect
-            toast.success('Help request submitted to database successfully!');
-            resetForm();
-            navigate('/get-help/success', { state: { requestId } });
-          }
-        } catch (supabaseError: any) {
-          console.error('Exception during Supabase insert:', supabaseError);
-          
-          // Fall back to localStorage
-          toast.warning('Could not save to database, storing locally instead');
+          const helpRequestBase = {
+            title: formData.title || 'Untitled Request',
+            description: formData.description || 'No description provided',
+            technical_area: formData.technical_area,
+            urgency: formData.urgency || 'medium',
+            communication_preference: formData.communication_preference,
+            estimated_duration: typeof formData.estimated_duration === 'string' 
+              ? parseInt(formData.estimated_duration, 10) 
+              : formData.estimated_duration,
+            budget_range: formData.budget_range,
+            code_snippet: formData.code_snippet || '',
+            status: 'pending',
+            client_id: userId,
+          };
           
           const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
           const newRequest = {
             ...helpRequestBase,
             id: `help-${Date.now()}`,
-            client_id: userId,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
@@ -178,19 +166,18 @@ const HelpRequestFormContent: React.FC = () => {
           localHelpRequests.push(newRequest);
           localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
           console.log('Help request stored locally as fallback:', newRequest);
-          requestId = newRequest.id;
           
-          // Show success message and redirect
-          toast.success('Help request submitted successfully (stored locally)!');
+          toast.warning('Could not save to database, stored locally instead');
           resetForm();
-          navigate('/get-help/success', { state: { requestId } });
+          navigate('/get-help/success', { state: { requestId: newRequest.id } });
+        } catch (fallbackError) {
+          setFormErrors([error.message]);
+          setIsSubmitting(false);
         }
+      } else {
+        setFormErrors([error.message]);
+        setIsSubmitting(false);
       }
-    } catch (error: any) {
-      console.error('Error in form submission:', error);
-      toast.error('An unexpected error occurred: ' + error.message);
-      setFormErrors([error.message]);
-      setIsSubmitting(false);
     }
   };
 

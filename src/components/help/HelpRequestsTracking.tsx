@@ -6,7 +6,6 @@ import { useAuth } from '../../contexts/auth';
 import { HelpRequest } from '../../types/helpRequest';
 import { toast } from 'sonner';
 import { Loader2, ExternalLink, Clock, AlertCircle, CheckCircle2, Calendar, FileEdit, Play, PauseCircle, UserCheck2, Check } from 'lucide-react';
-import DebugHelpRequestDatabase from './DebugHelpRequestDatabase';
 
 const statusColors = {
   'requirements': 'bg-purple-100 text-purple-800',
@@ -59,11 +58,55 @@ const HelpRequestsTracking: React.FC = () => {
   const [helpRequests, setHelpRequests] = useState<HelpRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<'database' | 'local' | 'mixed'>('database');
 
   const isValidUUID = (uuid: string) => {
     if (!uuid) return false;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid);
+  };
+
+  // Function to sync data from localStorage to Supabase
+  const syncLocalToDatabase = async () => {
+    if (!userId || !isValidUUID(userId)) return;
+
+    try {
+      // Get local requests for this user
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]')
+        .filter((req: HelpRequest) => req.client_id === userId);
+      
+      if (localHelpRequests.length === 0) return;
+
+      // For each local request, transfer to Supabase if it doesn't exist there
+      for (const request of localHelpRequests) {
+        // Skip any that have a database-style ID (already synced)
+        if (isValidUUID(request.id)) continue;
+
+        // Create a new request in Supabase without the local ID
+        const { id, created_at, updated_at, ...requestData } = request;
+        
+        const { data, error } = await supabase
+          .from('help_requests')
+          .insert(requestData)
+          .select();
+          
+        if (error) {
+          console.error('Error syncing local request to database:', error);
+        } else if (data) {
+          console.log('Successfully synced local request to database:', data);
+        }
+      }
+
+      // Clear local storage after successful sync
+      localStorage.setItem('helpRequests', JSON.stringify(
+        JSON.parse(localStorage.getItem('helpRequests') || '[]')
+          .filter((req: HelpRequest) => req.client_id !== userId)
+      ));
+      
+      toast.success('Local help requests have been synced to your account');
+    } catch (error) {
+      console.error('Error during sync process:', error);
+    }
   };
 
   useEffect(() => {
@@ -93,64 +136,78 @@ const HelpRequestsTracking: React.FC = () => {
         const isLocalAuth = userId.startsWith('client-');
         const isValidUserUUID = isValidUUID(userId);
         
-        // If using local auth or invalid UUID, just use local storage
-        if (isLocalAuth || !isValidUserUUID) {
+        // If using local auth, just use local storage
+        if (isLocalAuth) {
           setHelpRequests(userLocalHelpRequests);
+          setDataSource('local');
           setIsLoading(false);
           return;
         }
         
-        // Try to fetch from Supabase
-        try {
-          console.log('Fetching from Supabase with user ID:', userId);
-          
-          // Debug: Get session to verify authentication
-          const { data: sessionData } = await supabase.auth.getSession();
-          console.log('Current session:', sessionData);
-          
-          // Only try to fetch from Supabase if we have a valid session
-          if (sessionData && sessionData.session) {
-            const { data, error: supabaseError } = await supabase
-              .from('help_requests')
-              .select('*')
-              .eq('client_id', userId);
+        // For database users, prioritize database records
+        if (isValidUserUUID) {
+          try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            
+            if (sessionData && sessionData.session) {
+              const { data, error: supabaseError } = await supabase
+                .from('help_requests')
+                .select('*')
+                .eq('client_id', userId);
 
-            if (supabaseError) {
-              console.error('Error fetching help requests from Supabase:', supabaseError);
-              setError('Failed to load help requests from database');
-              setHelpRequests(userLocalHelpRequests);
-            } else {
-              console.log('Help requests data from Supabase:', data);
-              // Ensure data is an array before combining
-              const supabaseData = Array.isArray(data) ? data : [];
-              const combinedRequests = [...supabaseData, ...userLocalHelpRequests];
-              
-              const uniqueRequests = combinedRequests.reduce((acc: HelpRequest[], current: HelpRequest) => {
-                if (!current.id) return acc; // Skip items without ID
-                const existingIndex = acc.findIndex((item: HelpRequest) => item.id === current.id);
-                if (existingIndex === -1) {
-                  acc.push(current);
+              if (supabaseError) {
+                console.error('Error fetching help requests from Supabase:', supabaseError);
+                
+                if (userLocalHelpRequests.length > 0) {
+                  setHelpRequests(userLocalHelpRequests);
+                  setDataSource('local');
+                  setError('Failed to load help requests from database. Showing local requests only.');
+                } else {
+                  setHelpRequests([]);
+                  setError('Failed to load help requests from database.');
                 }
-                return acc;
-              }, []);
-              
-              uniqueRequests.sort((a: HelpRequest, b: HelpRequest) => {
-                const dateA = new Date(a.created_at || '').getTime() || 0;
-                const dateB = new Date(b.created_at || '').getTime() || 0;
-                return dateB - dateA;
-              });
-              
-              setHelpRequests(uniqueRequests);
+              } else {
+                console.log('Help requests data from Supabase:', data);
+                
+                // If we have local requests for this authenticated user, offer to sync
+                if (userLocalHelpRequests.length > 0) {
+                  setDataSource('mixed');
+                  // Sync local data to database if user has a valid session
+                  await syncLocalToDatabase();
+                  
+                  // Refresh from database after sync
+                  const { data: refreshedData } = await supabase
+                    .from('help_requests')
+                    .select('*')
+                    .eq('client_id', userId);
+                    
+                  if (refreshedData && refreshedData.length > 0) {
+                    setHelpRequests(refreshedData);
+                  } else {
+                    setHelpRequests(data || []);
+                  }
+                } else {
+                  setHelpRequests(data || []);
+                  setDataSource('database');
+                }
+              }
+            } else {
+              // No active session but valid UUID - use local data
+              setHelpRequests(userLocalHelpRequests);
+              setDataSource('local');
+              setError('No active session. Please log in again.');
             }
-          } else {
-            console.log('No active session, using local data only');
+          } catch (supabaseError) {
+            console.error('Exception fetching from Supabase:', supabaseError);
             setHelpRequests(userLocalHelpRequests);
-            setError('No active session. Please log in again.');
+            setDataSource('local');
+            setError('Failed to connect to database, showing local requests only');
           }
-        } catch (supabaseError) {
-          console.error('Exception fetching from Supabase:', supabaseError);
-          setError('Failed to connect to database, showing local requests only');
+        } else {
+          // Invalid UUID format - use local data
           setHelpRequests(userLocalHelpRequests);
+          setDataSource('local');
+          setError('Invalid user ID format. Using local data only.');
         }
       } catch (error) {
         console.error('Exception fetching help requests:', error);
@@ -208,7 +265,18 @@ const HelpRequestsTracking: React.FC = () => {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-6">
           <p className="font-medium">{error}</p>
-          <p>Showing available requests from local storage.</p>
+        </div>
+      )}
+
+      {dataSource === 'local' && isValidUUID(userId) && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg mb-6">
+          <p className="font-medium">You have local help requests that can be synchronized with your account.</p>
+          <button 
+            onClick={syncLocalToDatabase}
+            className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+          >
+            Sync to Database
+          </button>
         </div>
       )}
 
@@ -290,9 +358,6 @@ const HelpRequestsTracking: React.FC = () => {
           ))}
         </div>
       )}
-      
-      {/* Hide debug component in production */}
-      {false && <DebugHelpRequestDatabase />}
     </div>
   );
 };
