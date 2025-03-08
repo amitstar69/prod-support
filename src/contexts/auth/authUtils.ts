@@ -54,35 +54,52 @@ export const checkSupabaseSession = async (setAuthState: (state: any) => void) =
   }
   
   console.log('Checking Supabase session...');
-  const { data, error } = await supabase.auth.getSession();
   
-  console.log('Supabase session result:', { data, error });
-  if (data.session) {
-    // Get user profile from Supabase
-    console.log('User is authenticated, fetching profile for user:', data.session.user.id);
-    const { data: profileData, error: profileError } = await supabase.from('profiles')
-      .select('*')
-      .eq('id', data.session.user.id)
-      .single();
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    
+    console.log('Supabase session result:', { data, error });
+    if (data.session) {
+      // Get user profile from Supabase
+      console.log('User is authenticated, fetching profile for user:', data.session.user.id);
       
-    console.log('Profile fetch result:', { profileData, profileError });
-    if (profileData && !error) {
-      // Ensure userType is 'developer' | 'client' | null
-      const userType = profileData.user_type === 'developer' || profileData.user_type === 'client' 
-        ? profileData.user_type as 'developer' | 'client'
-        : null;
-      
-      const authState = {
-        isAuthenticated: true,
-        userType: userType,
-        userId: data.session.user.id,
-      };
-      
-      setAuthState(authState);
-      localStorage.setItem('authState', JSON.stringify(authState));
-      
-      return authState;
+      try {
+        const { data: profileData, error: profileError } = await supabase.from('profiles')
+          .select('*')
+          .eq('id', data.session.user.id)
+          .single();
+          
+        console.log('Profile fetch result:', { profileData, profileError });
+        
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          return null;
+        }
+        
+        if (profileData) {
+          // Ensure userType is 'developer' | 'client' | null
+          const userType = profileData.user_type === 'developer' || profileData.user_type === 'client' 
+            ? profileData.user_type as 'developer' | 'client'
+            : null;
+          
+          const authState = {
+            isAuthenticated: true,
+            userType: userType,
+            userId: data.session.user.id,
+          };
+          
+          setAuthState(authState);
+          localStorage.setItem('authState', JSON.stringify(authState));
+          
+          return authState;
+        }
+      } catch (profileError) {
+        console.error('Exception during profile fetch:', profileError);
+        return null;
+      }
     }
+  } catch (error) {
+    console.error('Exception during session check:', error);
   }
   
   return null;
@@ -97,26 +114,35 @@ export const setupAuthStateChangeListener = (setAuthState: (state: any) => void)
       console.log('Auth state changed:', event, 'Session:', session ? 'exists' : 'none');
       
       if (event === 'SIGNED_IN' && session) {
-        // Get user profile
-        const { data: profileData } = await supabase.from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (profileData) {
-          // Ensure userType is 'developer' | 'client' | null
-          const userType = profileData.user_type === 'developer' || profileData.user_type === 'client' 
-            ? profileData.user_type as 'developer' | 'client'
-            : null;
+        try {
+          // Get user profile
+          const { data: profileData, error: profileError } = await supabase.from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
             
-          const authState = {
-            isAuthenticated: true,
-            userType: userType,
-            userId: session.user.id,
-          };
-          
-          setAuthState(authState);
-          localStorage.setItem('authState', JSON.stringify(authState));
+          if (profileError) {
+            console.error('Error fetching profile on auth state change:', profileError);
+            return;
+          }
+            
+          if (profileData) {
+            // Ensure userType is 'developer' | 'client' | null
+            const userType = profileData.user_type === 'developer' || profileData.user_type === 'client' 
+              ? profileData.user_type as 'developer' | 'client'
+              : null;
+              
+            const authState = {
+              isAuthenticated: true,
+              userType: userType,
+              userId: session.user.id,
+            };
+            
+            setAuthState(authState);
+            localStorage.setItem('authState', JSON.stringify(authState));
+          }
+        } catch (error) {
+          console.error('Exception in auth state change handler:', error);
         }
       } else if (event === 'SIGNED_OUT') {
         setAuthState({

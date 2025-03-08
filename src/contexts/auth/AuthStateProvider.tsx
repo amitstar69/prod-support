@@ -32,44 +32,68 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     userId: null,
   });
   
+  const [authInitialized, setAuthInitialized] = useState(false);
   const [mockDevelopers, setMockDevelopers] = useState<any[]>([]);
   const [mockClients, setMockClients] = useState<any[]>([]);
   
-  // Load initial state from localStorage on mount
+  // Load initial state from localStorage on mount and set up auth state listener
   useEffect(() => {
-    const storedAuthState = localStorage.getItem('authState');
-    if (storedAuthState) {
-      setAuthState(JSON.parse(storedAuthState));
-    }
+    const initAuth = async () => {
+      try {
+        // First load from localStorage as a fast initial state
+        const storedAuthState = localStorage.getItem('authState');
+        if (storedAuthState) {
+          const parsedState = JSON.parse(storedAuthState);
+          setAuthState(parsedState);
+        }
+        
+        // Load mock data if needed
+        const storedDevelopers = localStorage.getItem('mockDevelopers');
+        if (storedDevelopers) {
+          setMockDevelopers(JSON.parse(storedDevelopers));
+        }
+        
+        const storedClients = localStorage.getItem('mockClients');
+        if (storedClients) {
+          setMockClients(JSON.parse(storedClients));
+        }
+        
+        // Then verify with Supabase (which is more reliable but slower)
+        if (supabase) {
+          await checkSupabaseSession(setAuthState);
+          
+          // Set up auth state change listener
+          setupAuthStateChangeListener(setAuthState);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        // Mark auth as initialized even if there was an error
+        setAuthInitialized(true);
+      }
+    };
     
-    const storedDevelopers = localStorage.getItem('mockDevelopers');
-    if (storedDevelopers) {
-      setMockDevelopers(JSON.parse(storedDevelopers));
-    }
+    initAuth();
     
-    const storedClients = localStorage.getItem('mockClients');
-    if (storedClients) {
-      setMockClients(JSON.parse(storedClients));
-    }
-    
-    // Check Supabase session if available
-    if (supabase) {
-      checkSupabaseSession(setAuthState);
-      
-      // Listen for auth state changes
-      const subscription = setupAuthStateChangeListener(setAuthState);
-      
-      return () => {
-        subscription.unsubscribe();
-      };
-    }
+    // Cleanup function not needed here since subscription is handled in checkSupabaseSession
   }, []);
-
+  
   // Logout function that's passed to the context
   const handleLogout = async () => {
     console.log("Logout triggered from AuthProvider");
-    await logoutUser();
-    // The state updates will be handled by the auth state change listener
+    try {
+      await logoutUser();
+      // The state updates will be handled by the auth state change listener
+    } catch (error) {
+      console.error("Error during logout:", error);
+      // Force auth state update in case the listener doesn't work
+      setAuthState({
+        isAuthenticated: false,
+        userType: null,
+        userId: null,
+      });
+      localStorage.removeItem('authState');
+    }
   };
   
   return (

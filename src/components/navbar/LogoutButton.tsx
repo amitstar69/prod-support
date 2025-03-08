@@ -1,9 +1,9 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/auth';
 import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 
 interface LogoutButtonProps {
   variant?: 'icon' | 'text' | 'full';
@@ -16,7 +16,6 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
 }) => {
   const { logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const navigate = useNavigate();
 
   const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -28,20 +27,20 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
     console.log('LogoutButton: Initiating logout...');
     
     try {
-      // Force logout regardless of any pending operations
+      // First remove auth state from localStorage to ensure UI updates immediately
       localStorage.removeItem('authState');
+      
+      // Then trigger the logout flow
       await logout();
       
-      // Force navigation to home page
+      // Redirect to home page
       window.location.href = '/';
     } catch (error) {
       console.error('LogoutButton: Error logging out:', error);
       toast.error('Failed to log out. Please try again.');
       
-      // If logout fails through the normal channel, force a refresh as fallback
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 500);
+      // Force a refresh as fallback
+      window.location.href = '/';
     } finally {
       setIsLoggingOut(false);
     }
