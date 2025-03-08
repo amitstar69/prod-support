@@ -2,7 +2,7 @@
 import React from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../contexts/auth';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
 import { createHelpRequest } from '../../../integrations/supabase/helpRequests';
 
@@ -11,7 +11,7 @@ interface FormContainerProps {
 }
 
 const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
-  const { userId } = useAuth();
+  const { isAuthenticated, userId } = useAuth();
   const navigate = useNavigate();
   const { formData, isSubmitting, setIsSubmitting, resetForm } = useHelpRequest();
   
@@ -22,12 +22,13 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       return; // Prevent multiple submissions
     }
     
-    // Proceed with submission even if userId is null (guest mode)
-    // Local storage will be used in that case
-    const clientId = userId || `client-guest-${Date.now()}`;
+    // Generate a client ID based on authentication status
+    // If authenticated, use the actual userId, otherwise create a temporary guest ID
+    const clientId = isAuthenticated && userId ? userId : `client-guest-${Date.now()}`;
+    
+    console.log('Submitting help request with clientId:', clientId, 'isAuthenticated:', isAuthenticated);
     
     setIsSubmitting(true);
-    console.log('Submitting help request with userId:', clientId);
     
     try {
       // Ensure estimated_duration is a number

@@ -2,7 +2,7 @@
 import React from 'react';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
 import { Button } from '../../ui/button';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../contexts/auth';
 import AuthWarning from './AuthWarning';
 import SubmitButtonContent from './SubmitButtonContent';
 import { toast } from 'sonner';
@@ -13,10 +13,7 @@ import { toast } from 'sonner';
  */
 const SubmitButton: React.FC = () => {
   const { isSubmitting, validateForm } = useHelpRequest();
-  const { userId } = useAuth();
-  
-  const isLocalStorage = userId?.startsWith('client-');
-  const isAuthenticated = !!userId && !isLocalStorage;
+  const { isAuthenticated, userId } = useAuth();
   
   const handleFormValidation = (e: React.MouseEvent<HTMLButtonElement>) => {
     // Only do client-side validation if button isn't already in submitting state
