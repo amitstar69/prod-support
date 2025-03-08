@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
 import SearchBar from './SearchBar';
@@ -19,7 +18,7 @@ const Hero: React.FC = () => {
       if (isAuthenticated && userType === 'client') {
         navigate('/get-help');
       } else if (isAuthenticated && userType === 'developer') {
-        navigate('/profile');
+        navigate('/developer-dashboard');
       } else {
         navigate('/register', { state: { userType: 'client' } });
       }

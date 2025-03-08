@@ -13,6 +13,52 @@ import TicketFiltersContainer from '../components/dashboard/TicketFiltersContain
 import TicketList from '../components/tickets/TicketList';
 import { Loader2, ArrowDown } from 'lucide-react';
 
+// Sample demo data to display if no tickets are found
+const DEMO_TICKETS: HelpRequest[] = [
+  {
+    id: 'demo-1',
+    client_id: 'demo-client-1',
+    title: 'Fix React Router Navigation Bug',
+    description: 'Our React application is experiencing navigation issues when using nested routes. Users cannot navigate back correctly and sometimes the URL changes but the content doesn\'t update.',
+    technical_area: ['Frontend', 'React', 'React Router'],
+    urgency: 'medium',
+    communication_preference: ['Chat', 'Video Call'],
+    estimated_duration: 45,
+    budget_range: '$50 - $100',
+    code_snippet: 'import { BrowserRouter, Routes, Route } from "react-router-dom";\n\nfunction App() {\n  return (\n    <BrowserRouter>\n      <Routes>\n        <Route path="/" element={<Home />} />\n        <Route path="dashboard/*" element={<Dashboard />} />\n      </Routes>\n    </BrowserRouter>\n  );\n}',
+    status: 'pending',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'demo-2',
+    client_id: 'demo-client-1',
+    title: 'Database Query Optimization',
+    description: 'Our PostgreSQL queries are running slow on larger datasets. Need help optimizing the query performance for our listing page that shows thousands of products.',
+    technical_area: ['Backend', 'Database', 'SQL'],
+    urgency: 'high',
+    communication_preference: ['Chat', 'Screen Sharing'],
+    estimated_duration: 60,
+    budget_range: '$100 - $200',
+    code_snippet: 'SELECT p.*, c.name as category_name, AVG(r.rating) as avg_rating\nFROM products p\nJOIN categories c ON p.category_id = c.id\nLEFT JOIN reviews r ON p.id = r.product_id\nWHERE p.is_active = true\nGROUP BY p.id, c.name\nORDER BY created_at DESC\nLIMIT 50 OFFSET 0;',
+    status: 'pending',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() // 2 hours ago
+  },
+  {
+    id: 'demo-3',
+    client_id: 'demo-client-2',
+    title: 'Implement Stripe Payment Integration',
+    description: 'Need help integrating Stripe payment processing into our React/Node.js e-commerce application. We want to accept credit cards and Apple Pay.',
+    technical_area: ['Full Stack', 'API Integration', 'Payment Processing'],
+    urgency: 'medium',
+    communication_preference: ['Video Call', 'Screen Sharing'],
+    estimated_duration: 90,
+    budget_range: '$200 - $500',
+    code_snippet: 'const stripe = require("stripe")("sk_test_...");\n\nasync function createPaymentIntent(req, res) {\n  try {\n    const paymentIntent = await stripe.paymentIntents.create({\n      amount: 1000,\n      currency: "usd"\n    });\n    res.status(200).json({ clientSecret: paymentIntent.client_secret });\n  } catch (err) {\n    res.status(500).json({ error: err.message });\n  }\n}',
+    status: 'pending',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() // 1 day ago
+  }
+];
+
 const DeveloperDashboard = () => {
   const [tickets, setTickets] = useState<HelpRequest[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<HelpRequest[]>([]);
@@ -84,7 +130,7 @@ const DeveloperDashboard = () => {
         if (error) {
           console.error('Direct query also failed:', error);
           if (showLoading) {
-            toast.error('Failed to load tickets. Please try again.');
+            toast.error('Failed to load tickets. Using demo data instead.');
           }
         } else if (data && data.length > 0) {
           console.log('Successfully fetched tickets via direct query:', data.length);
@@ -109,14 +155,28 @@ const DeveloperDashboard = () => {
         setTickets(ticketsData);
         console.log('Total tickets found across all methods:', ticketsData.length);
       } else {
-        console.log('No tickets found through any method');
+        console.log('No tickets found through any method, using demo data');
+        // Use demo data when no tickets are found
+        setTickets(DEMO_TICKETS);
+        
+        // Store demo data in localStorage for future use
+        localStorage.setItem('helpRequests', JSON.stringify(DEMO_TICKETS));
+        
+        if (showLoading) {
+          toast.info('No tickets found in database. Showing demo data.', {
+            duration: 5000
+          });
+        }
       }
       
     } catch (error) {
       console.error('Exception fetching tickets:', error);
       if (showLoading) {
-        toast.error('Unexpected error occurred. Please try again.');
+        toast.error('Unexpected error occurred. Showing demo data instead.');
       }
+      
+      // Use demo data on error
+      setTickets(DEMO_TICKETS);
     } finally {
       if (showLoading) {
         setIsLoading(false);
