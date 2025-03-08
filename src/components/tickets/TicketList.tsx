@@ -57,7 +57,6 @@ const TicketList: React.FC<TicketListProps> = ({
             <th className="px-4 py-3 text-left font-medium text-foreground/70">Technical Area</th>
             <th className="px-4 py-3 text-left font-medium text-foreground/70">Urgency</th>
             <th className="px-4 py-3 text-left font-medium text-foreground/70">Status</th>
-            <th className="px-4 py-3 text-left font-medium text-foreground/70">Linked</th>
             <th className="px-4 py-3 text-left font-medium text-foreground/70">Created</th>
             <th className="px-4 py-3 text-left font-medium text-foreground/70">Actions</th>
           </tr>
@@ -127,12 +126,6 @@ const TicketList: React.FC<TicketListProps> = ({
                   >
                     {ticket.status || 'pending'}
                   </Badge>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="text-blue-600 font-medium">
-                    {/* Fallback to 0 if related_requests is undefined */}
-                    0 requests
-                  </span>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {formatDate(ticket.created_at)}

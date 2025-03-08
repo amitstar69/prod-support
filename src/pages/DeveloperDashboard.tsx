@@ -184,7 +184,7 @@ const DeveloperDashboard = () => {
                 <p className="text-sm text-blue-700">Sign in as a developer to claim and work on tickets</p>
               </div>
               <Button 
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/login', { state: { returnTo: '/developer-dashboard' } })}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 Sign In
@@ -202,30 +202,37 @@ const DeveloperDashboard = () => {
           </div>
         )}
 
-        <div className="bg-white rounded-md shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border/30 p-3 bg-muted/20">
-            <div className="text-sm text-muted-foreground">
-              Showing {filteredTickets.length} of {tickets.length} tickets
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="text-xs flex items-center gap-1"
-              >
-                <ArrowDownUp className="h-3 w-3" />
-                Sort
-              </Button>
-            </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2 text-lg">Loading tickets...</span>
           </div>
-        
-          <TicketList 
-            tickets={filteredTickets} 
-            onClaimTicket={handleClaimTicket} 
-            currentUserId={userId || null}
-            isAuthenticated={isAuthenticated}
-          />
-        </div>
+        ) : (
+          <div className="bg-white rounded-md shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border/30 p-3 bg-muted/20">
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredTickets.length} of {tickets.length} tickets
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-xs flex items-center gap-1"
+                >
+                  <ArrowDownUp className="h-3 w-3" />
+                  Sort
+                </Button>
+              </div>
+            </div>
+          
+            <TicketList 
+              tickets={filteredTickets} 
+              onClaimTicket={handleClaimTicket} 
+              currentUserId={userId || null}
+              isAuthenticated={isAuthenticated}
+            />
+          </div>
+        )}
       </div>
     </Layout>
   );
