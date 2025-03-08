@@ -11,6 +11,7 @@ interface TicketListContainerProps {
   onClaimTicket: (ticketId: string) => void;
   userId: string | null;
   isAuthenticated: boolean;
+  onRefresh?: () => void;
 }
 
 const TicketListContainer: React.FC<TicketListContainerProps> = ({ 
@@ -18,7 +19,8 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
   totalTickets,
   onClaimTicket, 
   userId, 
-  isAuthenticated 
+  isAuthenticated,
+  onRefresh
 }) => {
   if (filteredTickets.length === 0) {
     return (
@@ -31,6 +33,12 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
         <p className="text-sm text-muted-foreground mb-6">
           New help requests will appear here automatically. You can also try refreshing the page.
         </p>
+        {onRefresh && (
+          <Button onClick={onRefresh} variant="outline" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Refresh Tickets
+          </Button>
+        )}
       </div>
     );
   }
@@ -42,6 +50,17 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
           Showing {filteredTickets.length} of {totalTickets} tickets
         </div>
         <div className="flex items-center gap-2">
+          {onRefresh && (
+            <Button 
+              onClick={onRefresh}
+              variant="ghost" 
+              size="sm"
+              className="text-xs flex items-center gap-1"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Refresh
+            </Button>
+          )}
           <Button 
             variant="ghost" 
             size="sm"

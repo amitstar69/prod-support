@@ -59,11 +59,10 @@ const DeveloperDashboard = () => {
       setIsLoading(true);
       console.log('Fetching all tickets...');
       
-      // First attempt: Direct Supabase query with specific options for public access
+      // First attempt: Direct Supabase query without any filters for maximum inclusivity
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')
-        .in('status', ['pending', 'matching', 'scheduled', 'in-progress'])
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -210,6 +209,7 @@ const DeveloperDashboard = () => {
             onClaimTicket={handleClaimTicket}
             userId={userId}
             isAuthenticated={isAuthenticated}
+            onRefresh={fetchAllTickets}
           />
         )}
       </div>

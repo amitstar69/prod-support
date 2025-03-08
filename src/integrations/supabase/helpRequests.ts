@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { HelpRequest } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -119,17 +118,15 @@ export const getAllPublicHelpRequests = async () => {
   try {
     console.log('getAllPublicHelpRequests: Fetching all public help requests...');
     
-    // Attempt to fetch tickets with wider parameters to ensure we get all public tickets
-    // No filtering by user ID to ensure all tickets are visible
+    // Attempt to fetch ALL tickets without any status filtering to ensure maximum visibility
     const { data, error } = await supabase
       .from('help_requests')
       .select('*')
-      .in('status', ['pending', 'matching', 'scheduled', 'in-progress']) // Only show actionable tickets
       .order('created_at', { ascending: false });
       
     if (error) {
       console.error('Error fetching public help requests from Supabase:', error);
-      // Try a more basic query as fallback
+      // Try a different approach with explicit public access
       const fallbackResult = await supabase
         .from('help_requests')
         .select('*')
