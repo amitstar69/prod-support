@@ -30,18 +30,14 @@ export const logoutUser = async (): Promise<void> => {
     toast.success('Successfully logged out');
     
     // Force page refresh to clear any cached state
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 500);
+    window.location.href = '/';
     
   } catch (error) {
     console.error('Exception during logout:', error);
     toast.error('An error occurred during logout');
     
     // Still force refresh on error
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 500);
+    window.location.href = '/';
   }
 };
 

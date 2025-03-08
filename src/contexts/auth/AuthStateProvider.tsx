@@ -64,6 +64,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
     }
   }, []);
+
+  // Logout function that's passed to the context
+  const handleLogout = async () => {
+    console.log("Logout triggered from AuthProvider");
+    await logoutUser();
+    // The state updates will be handled by the auth state change listener
+  };
   
   return (
     <AuthContext.Provider
@@ -71,7 +78,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ...authState,
         login: (email, password, userType) => login(email, password, userType, mockDevelopers, mockClients, setAuthState),
         register: (userData, userType) => register(userData, userType, mockDevelopers, mockClients, setMockDevelopers, setMockClients, setAuthState),
-        logout: logoutUser,
+        logout: handleLogout,
       }}
     >
       {children}
