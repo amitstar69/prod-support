@@ -59,6 +59,17 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
                 <span>Get Instant Help</span>
               </button>
             )}
+            
+            {/* Always show tickets dashboard link */}
+            <Link 
+              to="/developer-dashboard" 
+              className="button-secondary flex items-center gap-2"
+              onClick={() => setIsOpen(false)}
+            >
+              <Clock className="h-4 w-4" />
+              <span>Tickets Dashboard</span>
+            </Link>
+            
             <div className="relative group">
               <button className="button-secondary flex items-center gap-2">
                 <User className="h-4 w-4" />
@@ -102,10 +113,22 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
             </div>
           </>
         ) : (
-          <NavAuthActions 
-            handleLoginClick={handleLoginClick} 
-            handleRegisterClick={handleRegisterClick} 
-          />
+          <>
+            {/* Add Tickets Dashboard link for non-authenticated users */}
+            <Link 
+              to="/developer-dashboard" 
+              className="button-secondary flex items-center gap-2"
+              onClick={() => setIsOpen(false)}
+            >
+              <Clock className="h-4 w-4" />
+              <span>Tickets Dashboard</span>
+            </Link>
+            
+            <NavAuthActions 
+              handleLoginClick={handleLoginClick} 
+              handleRegisterClick={handleRegisterClick} 
+            />
+          </>
         )}
       </div>
     </div>

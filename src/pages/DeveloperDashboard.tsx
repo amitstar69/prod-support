@@ -21,19 +21,19 @@ const DeveloperDashboard = () => {
     urgency: 'all',
   });
   const [showFilters, setShowFilters] = useState(false);
-  const { userId, userType } = useAuth();
+  const { isAuthenticated, userId, userType } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is a developer
-    if (userType !== 'developer') {
-      toast.error('Only developers can access the ticket dashboard');
-      navigate('/');
+    // If user is logged in and is a client, redirect them to client dashboard
+    if (isAuthenticated && userType === 'client') {
+      toast('You are logged in as a client. Redirecting to client dashboard.');
+      navigate('/client-profile');
       return;
     }
 
     fetchAllTickets();
-  }, [userType, navigate]);
+  }, [isAuthenticated, userType, navigate]);
 
   useEffect(() => {
     applyFilters();
@@ -95,8 +95,14 @@ const DeveloperDashboard = () => {
   };
 
   const handleClaimTicket = async (ticketId: string) => {
-    if (!userId) {
+    if (!isAuthenticated) {
       toast.error('You must be logged in to claim a ticket');
+      navigate('/login', { state: { returnTo: '/developer-dashboard' } });
+      return;
+    }
+
+    if (userType !== 'developer') {
+      toast.error('Only developers can claim tickets');
       return;
     }
 
@@ -138,18 +144,6 @@ const DeveloperDashboard = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="container mx-auto py-8">
-          <div className="flex justify-center items-center min-h-[400px]">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout>
       <div className="container mx-auto py-8">
@@ -182,6 +176,23 @@ const DeveloperDashboard = () => {
           </div>
         </div>
         
+        {!isAuthenticated && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-blue-800">Want to claim a ticket?</h3>
+                <p className="text-sm text-blue-700">Sign in as a developer to claim and work on tickets</p>
+              </div>
+              <Button 
+                onClick={() => navigate('/login')}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Sign In
+              </Button>
+            </div>
+          </div>
+        )}
+        
         {showFilters && (
           <div className="mb-6 p-4 bg-muted/30 border border-border/30 rounded-md">
             <TicketFilters 
@@ -211,7 +222,8 @@ const DeveloperDashboard = () => {
           <TicketList 
             tickets={filteredTickets} 
             onClaimTicket={handleClaimTicket} 
-            currentUserId={userId || ''} 
+            currentUserId={userId || null}
+            isAuthenticated={isAuthenticated}
           />
         </div>
       </div>

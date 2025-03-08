@@ -5,14 +5,27 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { ExternalLink, ArrowUpRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface TicketListProps {
   tickets: HelpRequest[];
   onClaimTicket: (ticketId: string) => void;
-  currentUserId: string;
+  currentUserId: string | null;
+  isAuthenticated: boolean;
 }
 
-const TicketList: React.FC<TicketListProps> = ({ tickets, onClaimTicket, currentUserId }) => {
+const TicketList: React.FC<TicketListProps> = ({ 
+  tickets, 
+  onClaimTicket, 
+  currentUserId,
+  isAuthenticated 
+}) => {
+  const navigate = useNavigate();
+
+  const handleLoginPrompt = () => {
+    navigate('/login', { state: { returnTo: '/developer-dashboard' } });
+  };
+
   if (tickets.length === 0) {
     return (
       <div className="bg-white p-8 rounded-lg border border-border/40 text-center">
@@ -117,21 +130,32 @@ const TicketList: React.FC<TicketListProps> = ({ tickets, onClaimTicket, current
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-blue-600 font-medium">
-                    {ticket.related_requests?.length || 0} request{(ticket.related_requests?.length || 0) !== 1 ? 's' : ''}
+                    {/* Fallback to 0 if related_requests is undefined */}
+                    0 requests
                   </span>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {formatDate(ticket.created_at)}
                 </td>
                 <td className="px-4 py-3">
-                  {ticket.status === 'pending' || ticket.status === 'matching' ? (
-                    <Button 
-                      size="sm"
-                      onClick={() => ticket.id && onClaimTicket(ticket.id)}
-                      className="h-8 px-3 bg-primary text-white hover:bg-primary/90"
-                    >
-                      Claim
-                    </Button>
+                  {(ticket.status === 'pending' || ticket.status === 'matching') ? (
+                    isAuthenticated ? (
+                      <Button 
+                        size="sm"
+                        onClick={() => ticket.id && onClaimTicket(ticket.id)}
+                        className="h-8 px-3 bg-primary text-white hover:bg-primary/90"
+                      >
+                        Claim
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="sm"
+                        onClick={handleLoginPrompt}
+                        className="h-8 px-3 bg-blue-600 text-white hover:bg-blue-700"
+                      >
+                        Sign in to claim
+                      </Button>
+                    )
                   ) : (
                     <Button 
                       size="sm" 
