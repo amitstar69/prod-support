@@ -8,7 +8,6 @@ import TargetAudienceSection from '../components/TargetAudienceSection';
 import DeveloperShowcase from '../components/DeveloperShowcase';
 import CTASection from '../components/CTASection';
 import { getFeaturedDevelopers, getOnlineDevelopers } from '../data/products';
-import { toast } from 'sonner';
 
 const Index: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
