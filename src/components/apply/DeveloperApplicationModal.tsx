@@ -62,7 +62,48 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
         proposed_rate: proposedRate
       });
       
-      // Create a match record in the database
+      // Check if an application already exists for this developer and request
+      const { data: existingMatch, error: checkError } = await supabase
+        .from('help_request_matches')
+        .select('*')
+        .eq('developer_id', userId)
+        .eq('request_id', ticket.id)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error('Error checking existing application:', checkError);
+      }
+      
+      if (existingMatch) {
+        // Update existing application instead of creating a new one
+        const { data: updatedData, error: updateError } = await supabase
+          .from('help_request_matches')
+          .update({
+            proposed_message: message,
+            proposed_duration: estimatedTime,
+            proposed_rate: proposedRate,
+            match_score: 85,
+            status: 'pending'
+          })
+          .eq('id', existingMatch.id)
+          .select();
+          
+        if (updateError) {
+          console.error('Error updating application:', updateError);
+          toast.error('Failed to update your application. Please try again.');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        console.log('Application updated successfully:', updatedData);
+        toast.success('Application updated successfully!');
+        onApplicationSuccess();
+        onClose();
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Create a new match record in the database
       const { data, error } = await supabase
         .from('help_request_matches')
         .insert({
@@ -80,6 +121,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
       if (error) {
         console.error('Error submitting application:', error);
         toast.error('Failed to submit your application. Please try again.');
+        setIsSubmitting(false);
         return;
       }
 
@@ -101,11 +143,11 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
       toast.success('Application submitted successfully!');
       onApplicationSuccess();
       onClose();
+      setIsSubmitting(false);
       
     } catch (error) {
       console.error('Exception submitting application:', error);
       toast.error('An unexpected error occurred. Please try again.');
-    } finally {
       setIsSubmitting(false);
     }
   };
