@@ -142,6 +142,9 @@ export type Database = {
           developer_id: string
           id: string
           match_score: number | null
+          proposed_duration: number | null
+          proposed_message: string | null
+          proposed_rate: number | null
           request_id: string
           status: string
           updated_at: string
@@ -151,6 +154,9 @@ export type Database = {
           developer_id: string
           id?: string
           match_score?: number | null
+          proposed_duration?: number | null
+          proposed_message?: string | null
+          proposed_rate?: number | null
           request_id: string
           status?: string
           updated_at?: string
@@ -160,6 +166,9 @@ export type Database = {
           developer_id?: string
           id?: string
           match_score?: number | null
+          proposed_duration?: number | null
+          proposed_message?: string | null
+          proposed_rate?: number | null
           request_id?: string
           status?: string
           updated_at?: string

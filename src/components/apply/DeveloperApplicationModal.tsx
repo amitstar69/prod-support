@@ -52,6 +52,16 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
     try {
       setIsSubmitting(true);
       
+      console.log('Submitting application with data:', {
+        request_id: ticket.id,
+        developer_id: userId,
+        status: 'pending',
+        match_score: 85,
+        proposed_message: message,
+        proposed_duration: estimatedTime,
+        proposed_rate: proposedRate
+      });
+      
       // Create a match record in the database
       const { data, error } = await supabase
         .from('help_request_matches')
@@ -72,6 +82,8 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
         toast.error('Failed to submit your application. Please try again.');
         return;
       }
+
+      console.log('Application submitted successfully:', data);
 
       // Update the ticket status to 'matching' if it was 'pending'
       if (ticket.status === 'pending') {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -38,7 +37,6 @@ const ClientDashboard: React.FC = () => {
     if (isAuthenticated && userId) {
       fetchHelpRequests();
     } else {
-      // Not authenticated, redirect to login
       navigate('/login', { state: { returnTo: '/client-dashboard' } });
     }
   }, [userId, isAuthenticated]);
@@ -57,7 +55,6 @@ const ClientDashboard: React.FC = () => {
         return;
       }
       
-      // Sort requests into active and completed
       const active: HelpRequest[] = [];
       const completed: HelpRequest[] = [];
       
@@ -72,7 +69,6 @@ const ClientDashboard: React.FC = () => {
       setActiveRequests(active);
       setCompletedRequests(completed);
       
-      // Fetch matches for all active requests
       fetchRequestMatches(active.map(r => r.id!).filter(Boolean));
       
     } catch (error) {
@@ -87,6 +83,8 @@ const ClientDashboard: React.FC = () => {
     if (requestIds.length === 0) return;
     
     try {
+      console.log('Fetching matches for requests:', requestIds);
+      
       const { data, error } = await supabase
         .from('help_request_matches')
         .select('*')
@@ -98,7 +96,8 @@ const ClientDashboard: React.FC = () => {
         return;
       }
       
-      // Group matches by request_id
+      console.log('Matches fetched successfully:', data);
+      
       const matchesByRequest: Record<string, HelpRequestMatch[]> = {};
       
       data.forEach((match) => {
@@ -162,7 +161,7 @@ const ClientDashboard: React.FC = () => {
   };
 
   if (!isAuthenticated) {
-    return null; // Redirect will happen in useEffect
+    return null;
   }
 
   return (
