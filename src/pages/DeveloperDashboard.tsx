@@ -43,6 +43,7 @@ const DeveloperDashboard = () => {
     try {
       setIsLoading(true);
       
+      // Fetch all help requests without filtering by user ID
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')

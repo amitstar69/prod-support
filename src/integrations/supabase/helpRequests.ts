@@ -114,6 +114,35 @@ export const getHelpRequestsForClient = async (clientId: string) => {
   }
 };
 
+// Function to get all public help requests for listing
+export const getAllPublicHelpRequests = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('help_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching public help requests from Supabase:', error);
+      return { 
+        success: false, 
+        error: error.message,
+        data: [] 
+      };
+    }
+    
+    return { 
+      success: true, 
+      data: data || [], 
+      storageMethod: 'Supabase' 
+    };
+    
+  } catch (error) {
+    console.error('Exception fetching public help requests:', error);
+    return { success: false, error: error.message, data: [] };
+  }
+};
+
 // Function to get a specific help request
 export const getHelpRequest = async (requestId: string) => {
   try {
