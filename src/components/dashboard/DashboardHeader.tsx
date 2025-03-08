@@ -15,10 +15,10 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onRefresh 
 }) => {
   return (
-    <div className="flex justify-between items-center mb-6">
+    <div className="flex justify-between items-center mb-4">
       <div>
-        <h1 className="text-2xl font-bold">Developer Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-xl font-semibold">Developer Dashboard</h1>
+        <p className="text-muted-foreground text-sm">
           Browse and claim available help requests from clients
         </p>
       </div>

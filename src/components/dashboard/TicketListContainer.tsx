@@ -24,18 +24,15 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
 }) => {
   if (filteredTickets.length === 0) {
     return (
-      <div className="bg-white p-8 rounded-lg border border-border/40 text-center">
-        <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">📋</div>
-        <h3 className="text-xl font-medium mb-2">No tickets found</h3>
-        <p className="text-muted-foreground mb-4">
+      <div className="bg-white p-6 rounded-lg border border-border/40 text-center">
+        <div className="h-10 w-10 mx-auto text-muted-foreground mb-3">📋</div>
+        <h3 className="text-lg font-medium mb-2">No tickets found</h3>
+        <p className="text-muted-foreground text-sm mb-4">
           There are no help requests available at the moment. New tickets created by clients will appear here.
         </p>
-        <p className="text-sm text-muted-foreground mb-6">
-          New help requests will appear here automatically. You can also try refreshing the page.
-        </p>
         {onRefresh && (
-          <Button onClick={onRefresh} variant="outline" className="gap-2">
-            <RefreshCw className="h-4 w-4" />
+          <Button onClick={onRefresh} variant="outline" className="gap-2 text-sm" size="sm">
+            <RefreshCw className="h-3.5 w-3.5" />
             Refresh Tickets
           </Button>
         )}
@@ -45,17 +42,17 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
 
   return (
     <div className="bg-white rounded-md shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border/30 p-3 bg-muted/20">
-        <div className="text-sm text-muted-foreground">
+      <div className="flex items-center justify-between border-b border-border/30 p-2 bg-muted/20">
+        <div className="text-xs text-muted-foreground px-2">
           Showing {filteredTickets.length} of {totalTickets} tickets
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {onRefresh && (
             <Button 
               onClick={onRefresh}
               variant="ghost" 
               size="sm"
-              className="text-xs flex items-center gap-1"
+              className="text-xs h-7 px-2 flex items-center gap-1"
             >
               <RefreshCw className="h-3 w-3" />
               Refresh
@@ -64,7 +61,7 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
           <Button 
             variant="ghost" 
             size="sm"
-            className="text-xs flex items-center gap-1"
+            className="text-xs h-7 px-2 flex items-center gap-1"
           >
             <ArrowDownUp className="h-3 w-3" />
             Sort
