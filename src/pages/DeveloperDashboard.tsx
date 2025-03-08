@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import { HelpRequest } from '../types/helpRequest';
 import Layout from '../components/Layout';
-import TicketList from '../components/tickets/TicketList';
-import TicketFilters from '../components/tickets/TicketFilters';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/auth';
-import { Loader2, LayoutGrid, PlusCircle, ArrowDownUp, Filter, RefreshCw } from 'lucide-react';
-import { Button } from '../components/ui/button';
+import { getAllPublicHelpRequests } from '../integrations/supabase/helpRequests';
+import DashboardHeader from '../components/dashboard/DashboardHeader';
+import LoginPrompt from '../components/dashboard/LoginPrompt';
+import TicketFiltersContainer from '../components/dashboard/TicketFiltersContainer';
+import TicketListContainer from '../components/dashboard/TicketListContainer';
+import { Loader2 } from 'lucide-react';
 
 const DeveloperDashboard = () => {
   const [tickets, setTickets] = useState<HelpRequest[]>([]);
@@ -148,59 +150,19 @@ const DeveloperDashboard = () => {
   return (
     <Layout>
       <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Developer Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
-              Browse and claim available help requests from clients
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="h-4 w-4" />
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
-            </Button>
-            <Button 
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1"
-              onClick={fetchAllTickets}
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </Button>
-          </div>
-        </div>
+        <DashboardHeader 
+          showFilters={showFilters} 
+          setShowFilters={setShowFilters} 
+          onRefresh={fetchAllTickets} 
+        />
         
-        {!isAuthenticated && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium text-blue-800">Want to claim a ticket?</h3>
-                <p className="text-sm text-blue-700">Sign in as a developer to claim and work on tickets</p>
-              </div>
-              <Button 
-                onClick={() => navigate('/login', { state: { returnTo: '/developer-dashboard' } })}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Sign In
-              </Button>
-            </div>
-          </div>
-        )}
+        {!isAuthenticated && <LoginPrompt />}
         
         {showFilters && (
-          <div className="mb-6 p-4 bg-muted/30 border border-border/30 rounded-md">
-            <TicketFilters 
-              filters={filters} 
-              onFilterChange={handleFilterChange} 
-            />
-          </div>
+          <TicketFiltersContainer 
+            filters={filters} 
+            onFilterChange={handleFilterChange} 
+          />
         )}
 
         {isLoading ? (
@@ -209,30 +171,13 @@ const DeveloperDashboard = () => {
             <span className="ml-2 text-lg">Loading tickets...</span>
           </div>
         ) : (
-          <div className="bg-white rounded-md shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border/30 p-3 bg-muted/20">
-              <div className="text-sm text-muted-foreground">
-                Showing {filteredTickets.length} of {tickets.length} tickets
-              </div>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="text-xs flex items-center gap-1"
-                >
-                  <ArrowDownUp className="h-3 w-3" />
-                  Sort
-                </Button>
-              </div>
-            </div>
-          
-            <TicketList 
-              tickets={filteredTickets} 
-              onClaimTicket={handleClaimTicket} 
-              currentUserId={userId || null}
-              isAuthenticated={isAuthenticated}
-            />
-          </div>
+          <TicketListContainer 
+            filteredTickets={filteredTickets} 
+            totalTickets={tickets.length}
+            onClaimTicket={handleClaimTicket}
+            userId={userId}
+            isAuthenticated={isAuthenticated}
+          />
         )}
       </div>
     </Layout>
