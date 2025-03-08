@@ -75,14 +75,14 @@ const Hero: React.FC = () => {
       <div className="container mx-auto px-4">
         {/* Main content with cleaner layout */}
         <div className="max-w-4xl mx-auto text-center">
-          {/* Main headline - bold and direct, just like Upwork */}
+          {/* Updated headline - more concise and direct */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
-            We connect people to <span className="text-[#00B4D8]">bring projects to life</span>
+            On-Demand Dev Support. <span className="text-[#00B4D8]">Fast, Reliable, No Hassle.</span>
           </h1>
           
-          {/* Cleaner subheading with more whitespace */}
+          {/* Updated subheading with clearer value proposition */}
           <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Find high-quality technical talent for urgent debugging, code reviews, or quick consultations.
+            Clients get instant solutions. Developers get meaningful work.
           </p>
           
           {/* Search section with better spacing */}
