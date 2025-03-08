@@ -1,21 +1,50 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Clock, Zap } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 
 const Hero: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, userType } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Monitor for stuck loading state
+  useEffect(() => {
+    let loadingTimeoutId: NodeJS.Timeout | null = null;
+    
+    if (isLoading) {
+      loadingTimeoutId = setTimeout(() => {
+        setIsLoading(false);
+        console.warn('Hero action button was stuck in loading state');
+        toast.error('Operation timed out. Please try again.');
+      }, 5000);
+    }
+    
+    return () => {
+      if (loadingTimeoutId) clearTimeout(loadingTimeoutId);
+    };
+  }, [isLoading]);
 
   const handleGetHelp = () => {
-    if (isAuthenticated && userType === 'client') {
-      navigate('/get-help');
-    } else if (isAuthenticated && userType === 'developer') {
-      navigate('/profile');
-    } else {
-      navigate('/register', { state: { userType: 'client' } });
+    try {
+      setIsLoading(true);
+      
+      if (isAuthenticated && userType === 'client') {
+        navigate('/get-help');
+      } else if (isAuthenticated && userType === 'developer') {
+        navigate('/profile');
+      } else {
+        navigate('/register', { state: { userType: 'client' } });
+      }
+    } catch (error) {
+      console.error('Navigation error in Hero:', error);
+      toast.error('Navigation failed. Please try clicking again.');
+    } finally {
+      // Delay resetting loading state to prevent flickering for fast navigation
+      setTimeout(() => setIsLoading(false), 300);
     }
   };
 
@@ -31,6 +60,7 @@ const Hero: React.FC = () => {
             src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=300&auto=format&fit=crop" 
             alt="Developer" 
             className="w-full h-full object-cover"
+            loading="lazy"
           />
         </div>
         <div className="absolute top-[15%] right-[15%] w-20 h-20 rounded-full overflow-hidden border-2 border-white/20 shadow-lg opacity-80">
@@ -38,6 +68,7 @@ const Hero: React.FC = () => {
             src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=300&auto=format&fit=crop" 
             alt="Developer" 
             className="w-full h-full object-cover"
+            loading="lazy"
           />
         </div>
         <div className="absolute bottom-[20%] left-[20%] w-24 h-24 rounded-full overflow-hidden border-2 border-white/20 shadow-lg opacity-80">
@@ -45,6 +76,7 @@ const Hero: React.FC = () => {
             src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=300&auto=format&fit=crop" 
             alt="Developer" 
             className="w-full h-full object-cover"
+            loading="lazy"
           />
         </div>
         <div className="absolute bottom-[15%] right-[12%] w-28 h-28 rounded-full overflow-hidden border-2 border-white/20 shadow-lg opacity-90">
@@ -52,6 +84,7 @@ const Hero: React.FC = () => {
             src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop" 
             alt="Developer" 
             className="w-full h-full object-cover"
+            loading="lazy"
           />
         </div>
       </div>
@@ -100,9 +133,21 @@ const Hero: React.FC = () => {
         <div className="flex justify-center mb-8">
           <button
             onClick={handleGetHelp}
-            className="px-8 py-3 bg-[#1E3A8A] text-white rounded-lg hover:bg-[#1E3A8A]/90 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1"
+            disabled={isLoading}
+            className={`px-8 py-3 bg-[#1E3A8A] text-white rounded-lg hover:bg-[#1E3A8A]/90 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed ${isLoading ? 'animate-pulse' : ''}`}
           >
-            Get Developer Help Now
+            {isLoading ? (
+              <span className="flex items-center">
+                Connecting
+                <span className="ml-2 flex space-x-1">
+                  <span className="h-2 w-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="h-2 w-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                  <span className="h-2 w-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                </span>
+              </span>
+            ) : (
+              'Get Developer Help Now'
+            )}
           </button>
         </div>
       </div>

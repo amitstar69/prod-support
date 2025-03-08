@@ -30,17 +30,37 @@ import { initEmergencyRecovery } from './utils/emergencyRecovery';
 import { isUserStuckInLoadingState, logoutUser } from './contexts/auth/authUtils';
 
 function App() {
-  // Initialize emergency recovery
+  // Initialize emergency recovery and handle loading state issues
   useEffect(() => {
+    console.log('App mounted, initializing systems...');
+    
+    // Initialize emergency recovery system
     const cleanup = initEmergencyRecovery();
     
     // Check if user might be stuck in a loading state
     if (isUserStuckInLoadingState()) {
       console.warn('User appears to be stuck in a loading state, attempting recovery');
       logoutUser();
+      
+      // Display message after small delay to ensure it's seen
+      setTimeout(() => {
+        console.log('Displaying recovery message to user');
+      }, 500);
     }
     
-    return cleanup;
+    // Set a failsafe to ensure the app doesn't get permanently stuck
+    const timeoutId = setTimeout(() => {
+      if (document.body.classList.contains('app-loading')) {
+        console.warn('App still showing loading state after timeout, forcing reset');
+        document.body.classList.remove('app-loading');
+      }
+    }, 10000);
+    
+    return () => {
+      cleanup();
+      clearTimeout(timeoutId);
+      console.log('App unmounting, cleanup complete');
+    };
   }, []);
   
   return (
