@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -132,14 +131,14 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
       
     if (error) {
       console.error('Error fetching public help requests from Supabase:', error);
-      // Only fall back to demo data if this is a permissions error and user is not authenticated
+      
+      // If there's an error and it's specifically a permissions error for non-authenticated users
+      // only then fall back to demo data
       if (!isAuthenticated && error.message.includes('permission denied')) {
-        // Use demo data from DeveloperDashboard.tsx
-        const demoData = []; // We'll use the DEMO_TICKETS from DeveloperDashboard.tsx
-        
+        console.log('Permission denied error for non-authenticated user, using demo data');
         return {
           success: true,
-          data: demoData,
+          data: [], // We'll use the DEMO_TICKETS from DeveloperDashboard.tsx
           storageMethod: 'demoOnly'
         };
       }
@@ -151,25 +150,32 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
       };
     }
     
-    // Filter out any local requests that match database IDs to prevent duplicates
-    const dbIds = data.map(item => item.id);
+    // If we have real data from the database, use it
+    if (data && data.length > 0) {
+      console.log('Found real database data, returning it:', data.length, 'records');
+      return {
+        success: true,
+        data: data,
+        storageMethod: 'database'
+      };
+    }
     
-    // Merge valid local requests with DB requests (for testing only)
-    // Only include local requests with client_id that is NOT a UUID (meaning it's a local client)
-    const validLocalRequests = isAuthenticated ? [] : localHelpRequests.filter(req => 
-      !dbIds.includes(req.id) && 
-      req.id?.startsWith('help-') && 
-      req.client_id?.startsWith('client-') &&
-      req.status === 'pending'
-    );
+    // If no real data and no authenticated user, include demo data as fallback
+    if (!isAuthenticated && data.length === 0) {
+      console.log('No real data and not authenticated, returning empty array (will use demo data)');
+      return {
+        success: true,
+        data: [],
+        storageMethod: 'demoOnly'
+      };
+    }
     
-    const combinedRequests = [...data, ...validLocalRequests];
-    console.log('Combined requests count:', combinedRequests.length, '(DB:', data.length, ', Local:', validLocalRequests.length, ')');
-    
+    // Otherwise just return whatever we got (which might be an empty array)
+    console.log('Returning data as-is:', data.length, 'records');
     return { 
       success: true, 
-      data: combinedRequests,
-      storageMethod: combinedRequests.length > 0 ? 'combined' : 'empty'
+      data: data,
+      storageMethod: data.length > 0 ? 'database' : 'empty'
     };
   } catch (error) {
     console.error('Exception fetching public help requests:', error);

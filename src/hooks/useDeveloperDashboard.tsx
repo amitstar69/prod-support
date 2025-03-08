@@ -121,9 +121,12 @@ export const useDeveloperDashboard = () => {
         console.log('Successfully fetched tickets:', response.data.length);
         
         if (response.data.length > 0) {
+          // We have real data from the database
           setTickets(response.data);
         } else {
+          // No data from database
           if (isAuthenticated) {
+            // Authenticated users get empty state
             setTickets([]);
             
             if (showLoading) {
@@ -132,6 +135,8 @@ export const useDeveloperDashboard = () => {
               });
             }
           } else {
+            // Non-authenticated users get demo data
+            console.log('No database data for non-authenticated user, using demo data');
             setTickets(DEMO_TICKETS);
             
             if (showLoading) {
@@ -145,6 +150,7 @@ export const useDeveloperDashboard = () => {
         console.log('Fetch failed or returned no data, handling fallback');
         
         if (!isAuthenticated) {
+          // For non-authenticated users, show demo data
           setTickets(DEMO_TICKETS);
           
           if (showLoading) {
@@ -153,6 +159,7 @@ export const useDeveloperDashboard = () => {
             });
           }
         } else {
+          // For authenticated users with errors, show empty state
           setTickets([]);
           
           if (showLoading && response.error) {
