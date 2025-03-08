@@ -34,6 +34,10 @@ function App() {
   useEffect(() => {
     console.log('App mounted, initializing systems...');
     
+    // Add visual indicator for debugging
+    document.body.classList.add('app-loading');
+    console.log('Page is loading - added app-loading class');
+    
     // Initialize emergency recovery system
     const cleanup = initEmergencyRecovery();
     
@@ -53,12 +57,18 @@ function App() {
       if (document.body.classList.contains('app-loading')) {
         console.warn('App still showing loading state after timeout, forcing reset');
         document.body.classList.remove('app-loading');
+        console.log('Removed app-loading class after timeout');
       }
-    }, 10000);
+    }, 3000); // Reduced from 10s to 3s for faster feedback
+    
+    // Remove loading indicator when component is fully mounted
+    document.body.classList.remove('app-loading');
+    console.log('App fully mounted - removed app-loading class');
     
     return () => {
       cleanup();
       clearTimeout(timeoutId);
+      document.body.classList.remove('app-loading');
       console.log('App unmounting, cleanup complete');
     };
   }, []);

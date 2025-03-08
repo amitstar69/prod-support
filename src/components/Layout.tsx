@@ -14,7 +14,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEffect(() => {
     // Track page load status
     setPageReady(false);
-    const timeoutId = setTimeout(() => setPageReady(true), 100);
+    console.log('Layout mounting - setting up page');
+    
+    const timeoutId = setTimeout(() => {
+      setPageReady(true);
+      console.log('Layout ready - page fully loaded');
+    }, 100);
     
     // Setup network status monitoring
     const handleOnline = () => {
@@ -34,11 +39,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       clearTimeout(timeoutId);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      console.log('Layout unmounted');
     };
   }, []);
   
+  if (!pageReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
   return (
-    <div className={`min-h-screen flex flex-col bg-background ${pageReady ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       
       {!isOnline && (
