@@ -6,14 +6,15 @@ import { HelpRequest } from '../types/helpRequest';
 import Layout from '../components/Layout';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/auth';
-import { getAllPublicHelpRequests } from '../integrations/supabase/helpRequests';
+import { getAllPublicHelpRequests, testHelpRequestsTableAccess } from '../integrations/supabase/helpRequests';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import LoginPrompt from '../components/dashboard/LoginPrompt';
 import TicketFiltersContainer from '../components/dashboard/TicketFiltersContainer';
 import TicketList from '../components/tickets/TicketList';
-import { Loader2, ArrowDown } from 'lucide-react';
+import { Loader2, ArrowDown, RotateCw } from 'lucide-react';
+import { Button } from '../components/ui/button';
 
-// Sample demo data to display if no tickets are found
+// Sample demo data to display if no tickets are found or for non-authenticated users
 const DEMO_TICKETS: HelpRequest[] = [
   {
     id: 'demo-1',
@@ -69,6 +70,7 @@ const DeveloperDashboard = () => {
     urgency: 'all',
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const { isAuthenticated, userId, userType } = useAuth();
   const navigate = useNavigate();
 
@@ -76,6 +78,11 @@ const DeveloperDashboard = () => {
   useEffect(() => {
     // Initial fetch
     fetchAllTickets();
+    
+    // Debug the database access if we're authenticated but not seeing requests
+    if (isAuthenticated) {
+      testDatabaseAccess();
+    }
     
     // Set up interval for periodic refresh
     const refreshInterval = setInterval(() => {
@@ -91,7 +98,7 @@ const DeveloperDashboard = () => {
     // If user is logged in and is a client, redirect them to client dashboard
     if (isAuthenticated && userType === 'client') {
       toast('You are logged in as a client. Redirecting to client dashboard.');
-      navigate('/client-profile');
+      navigate('/client-dashboard');
       return;
     }
   }, [isAuthenticated, userType, navigate]);
@@ -99,6 +106,20 @@ const DeveloperDashboard = () => {
   useEffect(() => {
     applyFilters();
   }, [tickets, filters]);
+
+  const testDatabaseAccess = async () => {
+    try {
+      const result = await testHelpRequestsTableAccess();
+      console.log('Database access test result:', result);
+      setDebugInfo(result);
+      
+      if (!result.success && result.authenticated) {
+        toast.error('Database access issue detected. This may affect what tickets you can see.');
+      }
+    } catch (error) {
+      console.error('Error testing database access:', error);
+    }
+  };
 
   const fetchAllTickets = async (showLoading = true) => {
     try {
@@ -110,11 +131,34 @@ const DeveloperDashboard = () => {
       // Get help requests - pass authentication status
       const response = await getAllPublicHelpRequests(isAuthenticated);
       
-      if (response.success && response.data && response.data.length > 0) {
+      if (response.success && response.data) {
         console.log('Successfully fetched tickets:', response.data.length);
-        setTickets(response.data);
+        
+        if (response.data.length > 0) {
+          setTickets(response.data);
+        } else {
+          // For authenticated users with no tickets, show empty state
+          if (isAuthenticated) {
+            setTickets([]);
+            
+            if (showLoading) {
+              toast.info('No help requests found. New requests will appear here.', {
+                duration: 5000
+              });
+            }
+          } else {
+            // For non-authenticated users with no data, use demo tickets
+            setTickets(DEMO_TICKETS);
+            
+            if (showLoading) {
+              toast.info('Showing demo data. Sign in to see real help requests.', {
+                duration: 5000
+              });
+            }
+          }
+        }
       } else {
-        console.log('No tickets found or fetch failed, using demo data for non-authenticated users');
+        console.log('Fetch failed or returned no data, handling fallback');
         
         // Only use demo data for non-authenticated users
         if (!isAuthenticated) {
@@ -126,10 +170,14 @@ const DeveloperDashboard = () => {
             });
           }
         } else {
-          // For authenticated users with no tickets, show empty state
+          // For authenticated users with no tickets or errors, show empty state
           setTickets([]);
           
-          if (showLoading) {
+          if (showLoading && response.error) {
+            toast.error(`Error loading tickets: ${response.error}`, {
+              duration: 5000
+            });
+          } else if (showLoading) {
             toast.info('No help requests found. New requests will appear here.', {
               duration: 5000
             });
@@ -243,6 +291,13 @@ const DeveloperDashboard = () => {
     }
   };
 
+  const handleForceRefresh = () => {
+    // Clear local storage help requests to remove any stale data
+    localStorage.removeItem('helpRequests');
+    toast.success('Local cache cleared. Refreshing data...');
+    fetchAllTickets();
+  };
+
   return (
     <Layout>
       <div className="bg-secondary/30 py-8">
@@ -264,6 +319,20 @@ const DeveloperDashboard = () => {
         {!isAuthenticated && (
           <div className="mb-8">
             <LoginPrompt />
+          </div>
+        )}
+        
+        {isAuthenticated && (
+          <div className="mb-4 flex justify-end">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleForceRefresh}
+              className="flex items-center gap-1"
+            >
+              <RotateCw className="h-4 w-4" />
+              Force Refresh
+            </Button>
           </div>
         )}
         

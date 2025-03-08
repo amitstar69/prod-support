@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -118,9 +119,12 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
   try {
     console.log('getAllPublicHelpRequests: Fetching all public help requests...');
     
-    // For authenticated users, only show real database requests
+    // Get local storage requests for comparison
+    const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+    console.log('Local help requests:', localHelpRequests.length);
+    
+    // For authenticated users, show database requests and exclude any that might be duplicated in local storage
     if (isAuthenticated) {
-      // First attempt - most direct approach without any filters
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')
@@ -135,33 +139,35 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
         };
       }
       
-      console.log('Public help requests fetched successfully:', data.length, 'records found');
+      // Filter out any local requests that match database IDs to prevent duplicates
+      const dbIds = data.map(item => item.id);
+      
+      // Add any local requests that don't exist in the database (these might be test requests)
+      // Only include local requests with client_id that is NOT a UUID (meaning it's a local client)
+      const validLocalRequests = localHelpRequests.filter(req => 
+        !dbIds.includes(req.id) && 
+        req.id?.startsWith('help-') && 
+        req.client_id?.startsWith('client-')
+      );
+      
+      const combinedRequests = [...data, ...validLocalRequests];
+      console.log('Combined requests count:', combinedRequests.length, '(DB:', data.length, ', Local:', validLocalRequests.length, ')');
+      
       return { 
         success: true, 
-        data: data, 
-        storageMethod: 'Supabase' 
+        data: combinedRequests,
+        storageMethod: 'combined' 
       };
     } 
-    // For non-authenticated users, we can use local storage or demo data
+    // For non-authenticated users, only show demo data
     else {
-      // Try local storage first
-      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      // Fetch demo data from a separate location or use hardcoded data
+      const demoData = []; // We'll use the DEMO_TICKETS from DeveloperDashboard.tsx
       
-      // If we have local data, use it
-      if (localHelpRequests.length > 0) {
-        console.log('Using locally stored help requests for non-authenticated user:', localHelpRequests.length);
-        return {
-          success: true,
-          data: localHelpRequests,
-          storageMethod: 'localStorage'
-        };
-      }
-      
-      // No local data, return empty array - the component will show demo data
       return {
         success: true,
-        data: [],
-        storageMethod: 'emptyData'
+        data: demoData,
+        storageMethod: 'demoOnly'
       };
     }
   } catch (error) {
