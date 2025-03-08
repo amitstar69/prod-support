@@ -37,7 +37,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirect to appropriate dashboard if wrong user type
   if (requiredUserType && userType !== requiredUserType) {
-    return <Navigate to={userType === 'developer' ? '/developer-dashboard' : '/client-profile'} replace />;
+    const redirectPath = userType === 'developer' ? '/developer-dashboard' : '/client-dashboard';
+    return <Navigate to={redirectPath} replace />;
   }
 
   // User is authenticated and has the correct role

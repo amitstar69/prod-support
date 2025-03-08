@@ -61,13 +61,31 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
             Get Instant Help
           </Link>
           
-          <Link
-            to="/developer-dashboard"
-            className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-            onClick={() => setIsOpen(false)}
-          >
-            Browse Tickets
-          </Link>
+          {userType === 'developer' ? (
+            <Link
+              to="/developer-dashboard"
+              className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              Browse Tickets
+            </Link>
+          ) : userType === 'client' ? (
+            <Link
+              to="/client-dashboard"
+              className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              My Requests
+            </Link>
+          ) : (
+            <Link
+              to="/developer-dashboard"
+              className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              Browse Tickets
+            </Link>
+          )}
           
           {isAuthenticated && (
             <Link
