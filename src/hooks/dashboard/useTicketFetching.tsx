@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -78,19 +77,24 @@ export const useTicketFetching = (
           
           // If no tickets were found
           if (response.data.length === 0 && showLoading) {
-            toast.info('No active help requests found. Check back later.', {
+            toast.info('No active help requests found. Database returned 0 records.', {
               duration: 5000
             });
           }
         } else {
           console.error('[useTicketFetching] Error fetching tickets:', response.error);
-          console.log('[useTicketFetching] No database tickets found or fetch failed');
-          setTickets([]);
           
           if (showLoading && response.error) {
             toast.error(`Error loading tickets: ${response.error}`, {
               duration: 5000
             });
+          }
+          
+          // Keep the existing tickets state if there was an error
+          // This prevents flickering of the UI
+          if (tickets.length === 0) {
+            console.log('[useTicketFetching] No tickets found in state, setting empty array');
+            setTickets([]);
           }
         }
       }
@@ -99,7 +103,6 @@ export const useTicketFetching = (
       
       if (showLoading) {
         toast.error('Error loading tickets. Please try again later.');
-        setTickets([]);
       }
     } finally {
       if (showLoading) {

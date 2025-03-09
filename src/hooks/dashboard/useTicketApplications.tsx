@@ -28,13 +28,16 @@ export const useTicketApplications = (
       return;
     }
 
-    // Apply recommendation algorithm (simplistic for now)
-    // In a real app, this would use developer skills and preferences
-    const recommended = tickets.filter(ticket => 
-      // Only show pending or matching tickets as recommended
-      (ticket.status === 'pending' || ticket.status === 'matching')
-    );
+    console.log('[useTicketApplications] Processing tickets for recommendations:', tickets.length);
     
+    // For developers, show all available tickets as recommended
+    // Only show pending or matching tickets as recommended
+    const recommended = tickets.filter(ticket => {
+      const isAvailable = ticket.status === 'pending' || ticket.status === 'matching';
+      return isAvailable;
+    });
+    
+    console.log('[useTicketApplications] Recommended tickets after filtering:', recommended.length);
     setRecommendedTickets(recommended);
   }, [tickets, isAuthenticated, userId]);
 

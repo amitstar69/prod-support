@@ -48,7 +48,7 @@ export const useDeveloperDashboard = () => {
     }, 30000);
     
     return () => clearInterval(refreshInterval);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, userId]); // Add userId as dependency to refetch when auth changes
 
   // Update active tab when auth state changes
   useEffect(() => {

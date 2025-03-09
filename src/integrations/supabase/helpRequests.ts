@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -125,6 +124,24 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
       const { data: session } = await supabase.auth.getSession();
       console.log('[getAllPublicHelpRequests] Current session:', session?.session ? 'Active' : 'None');
       
+      if (!session?.session) {
+        console.log('[getAllPublicHelpRequests] No active session, returning empty list');
+        return { 
+          success: false, 
+          error: 'No active session', 
+          data: [] 
+        };
+      }
+      
+      // Get the user type to determine how to fetch tickets
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', session.session.user.id)
+        .single();
+      
+      console.log('[getAllPublicHelpRequests] User profile:', profileData, 'Error:', profileError);
+      
       // Debug query directly to check table access
       const { count, error: countError } = await supabase
         .from('help_requests')
@@ -132,7 +149,8 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
       
       console.log('[getAllPublicHelpRequests] Table access check - Count:', count, 'Error:', countError);
       
-      // Fetch all help requests (don't filter by status to see if we have any at all)
+      // For developers, we want to show all pending and matching tickets
+      // Fetch all help requests regardless of status to debug visibility issues
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')
