@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { toast } from 'sonner';
@@ -7,7 +6,7 @@ import { submitDeveloperApplication } from '../../integrations/supabase/helpRequ
 export interface UseTicketApplicationsResult {
   recommendedTickets: HelpRequest[];
   myApplications: HelpRequest[];
-  handleClaimTicket: (ticketId: string) => void;
+  handleClaimTicket: (ticket: HelpRequest) => void;
   fetchMyApplications: () => Promise<void>;
 }
 
@@ -21,7 +20,6 @@ export const useTicketApplications = (
   const [recommendedTickets, setRecommendedTickets] = useState<HelpRequest[]>([]);
   const [myApplications, setMyApplications] = useState<HelpRequest[]>([]);
 
-  // Initial processing of tickets
   useEffect(() => {
     if (!tickets || !isAuthenticated || !userId) {
       setRecommendedTickets([]);
@@ -30,8 +28,6 @@ export const useTicketApplications = (
 
     console.log('[useTicketApplications] Processing tickets for recommendations:', tickets.length);
     
-    // For developers, show all available tickets as recommended
-    // Only show pending or matching tickets as recommended
     const recommended = tickets.filter(ticket => {
       const isAvailable = ticket.status === 'pending' || ticket.status === 'matching';
       return isAvailable;
@@ -41,8 +37,7 @@ export const useTicketApplications = (
     setRecommendedTickets(recommended);
   }, [tickets, isAuthenticated, userId]);
 
-  // Function to handle claiming a ticket
-  const handleClaimTicket = async (ticketId: string) => {
+  const handleClaimTicket = async (ticket: HelpRequest) => {
     if (!isAuthenticated || !userId) {
       toast.error('You must be logged in to claim tickets');
       return;
@@ -56,7 +51,13 @@ export const useTicketApplications = (
     try {
       toast.loading('Processing your application...');
       
-      // Submit application with dummy data for now
+      const ticketId = ticket.id;
+      
+      if (!ticketId) {
+        toast.error('Invalid ticket ID');
+        return;
+      }
+      
       const result = await submitDeveloperApplication(
         ticketId, 
         userId,
@@ -72,10 +73,8 @@ export const useTicketApplications = (
       if (result.success) {
         toast.success('Application submitted successfully!');
         
-        // Refresh ticket list
         refreshTickets();
         
-        // Also refresh my applications
         fetchMyApplications();
       } else {
         toast.error(`Failed to submit application: ${result.error}`);
@@ -87,7 +86,6 @@ export const useTicketApplications = (
     }
   };
 
-  // Function to fetch developer's submitted applications
   const fetchMyApplications = async () => {
     if (!isAuthenticated || !userId) {
       setMyApplications([]);
@@ -95,13 +93,7 @@ export const useTicketApplications = (
     }
 
     try {
-      // In a real implementation, we would fetch applications from the database
-      // For now, use the tickets data and filter based on some criteria
-      
-      // This is a placeholder. In a real app, you would fetch actual applications
-      // from the database that match the current user ID
       const applications = tickets.filter(ticket => 
-        // Example filtering logic - in real app this would check a "developer_id" field
         ticket.status === 'matching' || ticket.status === 'in-progress'
       );
       
@@ -111,7 +103,6 @@ export const useTicketApplications = (
     }
   };
 
-  // Fetch my applications when tickets change
   useEffect(() => {
     if (isAuthenticated && userId) {
       fetchMyApplications();

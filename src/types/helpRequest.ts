@@ -1,4 +1,3 @@
-
 export interface HelpRequest {
   id?: string;
   client_id: string;
@@ -13,6 +12,9 @@ export interface HelpRequest {
   status?: string;
   created_at?: string;
   updated_at?: string;
+  // Add properties needed for applications
+  applications?: Array<any>; // Array of developers who applied to this request
+  application_status?: string; // Status of an application for a specific developer
 }
 
 export interface HelpRequestMatch {
@@ -41,6 +43,7 @@ export interface HelpSession {
   final_cost?: number;
   created_at?: string;
   updated_at?: string;
+  shared_code?: string; // Adding shared_code field
 }
 
 export const technicalAreaOptions = [

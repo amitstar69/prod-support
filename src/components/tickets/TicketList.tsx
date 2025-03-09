@@ -5,7 +5,7 @@ import { Badge } from '../ui/badge';
 import { Eye, Handshake, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ScheduleSessionButton } from '../session/ScheduleSessionButton';
+import ScheduleSessionButton from '../session/ScheduleSessionButton';
 
 interface TicketListProps {
   tickets: HelpRequest[];
