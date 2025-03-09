@@ -34,7 +34,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           console.log('[ProtectedRoute] Verifying session:', { 
             hasSession: !!data.session,
             contextAuth: isAuthenticated,
-            userType
+            userType,
+            path: location.pathname
           });
         }
         
@@ -79,6 +80,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             
             if (isMounted) {
               if (profileData && profileData.user_type === requiredUserType) {
+                console.log(`[ProtectedRoute] User is a ${requiredUserType}, access granted`);
                 setHasAccess(true);
               } else {
                 console.log(`[ProtectedRoute] User is not a ${requiredUserType}, redirecting`);
@@ -99,6 +101,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         } else {
           // Just need to be authenticated
           if (isMounted) {
+            console.log('[ProtectedRoute] User is authenticated, access granted');
             setHasAccess(true);
             setIsVerifying(false);
             setCheckComplete(true);
@@ -119,7 +122,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [isAuthenticated, userType, allowPublicAccess, requiredUserType]);
+  }, [isAuthenticated, userType, allowPublicAccess, requiredUserType, location.pathname]);
 
   // Loading state while verifying
   if (isVerifying || !checkComplete) {
@@ -140,10 +143,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirect unauthenticated users to login with current path stored
   if (!hasAccess) {
+    console.log(`[ProtectedRoute] Access denied, redirecting to login with return path: ${location.pathname}`);
     return <Navigate to="/login" state={{ returnTo: location.pathname }} replace />;
   }
 
   // User is authenticated and has the correct role
+  console.log('[ProtectedRoute] Access granted, rendering children');
   return <>{children}</>;
 };
 

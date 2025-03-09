@@ -39,11 +39,14 @@ export const checkSupabaseSession = async (
     if (!profileData) {
       console.log('No profile found for this user, creating one');
       
+      // Extract user type from user metadata if available
+      const userType = data.session.user.user_metadata?.user_type as 'client' | 'developer' || 'client';
+      
       // For safety, we'll create a simple profile with client permissions
       // The user will need to set their profile type later
       const newAuthState = { 
         isAuthenticated: true, 
-        userType: 'client' as 'client' | 'developer',
+        userType: userType,
         userId: data.session.user.id
       };
       
@@ -72,8 +75,8 @@ export const setupAuthStateChangeListener = (
 ) => {
   console.log('Setting up auth state change listener');
   
-  // The subscription object directly has the unsubscribe method
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+  // The subscription object from Supabase directly has the unsubscribe method
+  const { data } = supabase.auth.onAuthStateChange(
     async (event, session) => {
       console.log('Auth state changed:', event, session ? 'with session' : 'no session');
       
@@ -110,7 +113,7 @@ export const setupAuthStateChangeListener = (
           }
           
           if (!profileData) {
-            console.error('No profile found after auth change');
+            console.log('No profile found after auth change');
             // Try to extract user type from user metadata
             const userType = session.user.user_metadata?.user_type as 'developer' | 'client' || 'client';
             
@@ -144,7 +147,7 @@ export const setupAuthStateChangeListener = (
   );
   
   // Return the subscription which has the unsubscribe method
-  return subscription;
+  return data.subscription;
 };
 
 // Log out a user

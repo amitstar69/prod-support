@@ -46,8 +46,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const storedAuthState = localStorage.getItem('authState');
         if (storedAuthState) {
           console.log('[AuthProvider] Found stored auth state in localStorage:', storedAuthState);
-          const parsedState = JSON.parse(storedAuthState);
-          setAuthState(parsedState);
+          try {
+            const parsedState = JSON.parse(storedAuthState);
+            setAuthState(parsedState);
+          } catch (e) {
+            console.error('[AuthProvider] Error parsing stored auth state:', e);
+            localStorage.removeItem('authState');
+          }
         }
         
         // Load mock data if needed
@@ -68,13 +73,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // If Supabase indicates we're authenticated but with different info than localStorage,
         // use the Supabase information (it's more authoritative)
         if (authData?.isAuthenticated && storedAuthState) {
-          const parsedState = JSON.parse(storedAuthState);
-          if (
-            parsedState.isAuthenticated !== authData.isAuthenticated || 
-            parsedState.userId !== authData.userId ||
-            parsedState.userType !== authData.userType
-          ) {
-            console.log('[AuthProvider] Updating local auth state to match Supabase session');
+          try {
+            const parsedState = JSON.parse(storedAuthState);
+            if (
+              parsedState.isAuthenticated !== authData.isAuthenticated || 
+              parsedState.userId !== authData.userId ||
+              parsedState.userType !== authData.userType
+            ) {
+              console.log('[AuthProvider] Updating local auth state to match Supabase session');
+              localStorage.setItem('authState', JSON.stringify(authData));
+            }
+          } catch (e) {
+            console.error('[AuthProvider] Error comparing auth states:', e);
             localStorage.setItem('authState', JSON.stringify(authData));
           }
         }
@@ -82,15 +92,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // If the server indicates we're not authenticated but local storage did,
         // clear the local storage to prevent stale authentication
         if (!authData?.isAuthenticated && storedAuthState) {
-          const parsedState = JSON.parse(storedAuthState);
-          if (parsedState.isAuthenticated) {
-            console.log('[AuthProvider] Local auth state conflicts with server state. Resetting...');
+          try {
+            const parsedState = JSON.parse(storedAuthState);
+            if (parsedState.isAuthenticated) {
+              console.log('[AuthProvider] Local auth state conflicts with server state. Resetting...');
+              localStorage.removeItem('authState');
+              setAuthState({
+                isAuthenticated: false,
+                userType: null,
+                userId: null,
+              });
+            }
+          } catch (e) {
+            console.error('[AuthProvider] Error checking auth state conflict:', e);
             localStorage.removeItem('authState');
-            setAuthState({
-              isAuthenticated: false,
-              userType: null,
-              userId: null,
-            });
           }
         }
         

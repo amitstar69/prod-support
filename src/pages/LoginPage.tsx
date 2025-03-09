@@ -26,7 +26,8 @@ const LoginPage: React.FC = () => {
     handleRememberMeChange,
     handleSubmit,
     checkAuthStatus,
-    isAuthenticated
+    isAuthenticated,
+    loginSuccess
   } = useLoginForm();
   
   // Track initial auth check to prevent flickering
@@ -88,9 +89,10 @@ const LoginPage: React.FC = () => {
               // Use a timeout to avoid immediate redirect which can cause flickering
               setTimeout(() => {
                 if (isMounted) {
-                  navigate(redirectPath, { replace: true });
+                  // Use window.location for a clean navigation that forces full page reload
+                  window.location.href = redirectPath;
                 }
-              }, 200);
+              }, 500); // Slightly longer delay to ensure state updates
             } else {
               console.log('[LoginPage] No profile found for this user');
               if (isMounted) {
@@ -132,17 +134,20 @@ const LoginPage: React.FC = () => {
   
   // Handle redirect when authenticated via form submission
   useEffect(() => {
-    if (isAuthenticated && !isRedirecting && initialChecked) {
-      console.log('[LoginPage] User is authenticated via form submission, redirecting to dashboard', { userType });
+    if (loginSuccess && !isRedirecting && initialChecked) {
+      console.log('[LoginPage] Login successful via form submission, redirecting to dashboard', { userType });
       setIsRedirecting(true);
       
       const redirectPath = userType === 'developer' ? '/profile' : '/client-dashboard';
       console.log(`[LoginPage] Redirecting to ${redirectPath}`);
       
-      // Use direct navigation for a clean transition
-      window.location.href = redirectPath;
+      // Use direct navigation for a clean transition that forces a full page reload
+      // This ensures a fresh state when reaching the destination page
+      setTimeout(() => {
+        window.location.href = redirectPath;
+      }, 800); // Use a longer delay to ensure the login process completes
     }
-  }, [isAuthenticated, userType, navigate, isRedirecting, initialChecked]);
+  }, [loginSuccess, userType, navigate, isRedirecting, initialChecked]);
   
   if (!initialAuthCheckComplete) {
     return (
@@ -173,7 +178,7 @@ const LoginPage: React.FC = () => {
             email={email}
             password={password}
             userType={userType}
-            isLoading={isLoading}
+            isLoading={isLoading || isRedirecting}
             error={error}
             rememberMe={rememberMe}
             onEmailChange={handleEmailChange}

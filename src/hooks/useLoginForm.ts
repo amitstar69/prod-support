@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
@@ -41,6 +40,7 @@ export const useLoginForm = () => {
     
     setError('');
     setIsLoading(true);
+    setLoginSuccess(false); // Reset login success state
     console.log(`[useLoginForm] Attempting to login: ${email} as ${userTypeState}`);
     
     try {
@@ -127,14 +127,15 @@ export const useLoginForm = () => {
       
       toast.success('Login successful!');
       setLoginSuccess(true);
+      console.log('[useLoginForm] Login success state set to true');
       
-      // Set loading to false
-      setIsLoading(false);
+      // Keep loading true since we'll be redirecting
     } catch (error: any) {
       console.error('[useLoginForm] Login exception:', error);
       setError(error.message || 'An unexpected error occurred');
       toast.error(error.message || 'An unexpected error occurred');
       setIsLoading(false);
+      setLoginSuccess(false);
     }
   };
 
