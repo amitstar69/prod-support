@@ -72,7 +72,9 @@ export const setupAuthStateChangeListener = (
 ) => {
   console.log('Setting up auth state change listener');
   
-  const { data: subscription } = supabase.auth.onAuthStateChange(
+  // The onAuthStateChange method returns an object with a data property, which contains the subscription
+  // We want to return the subscription directly since it has the unsubscribe method
+  return supabase.auth.onAuthStateChange(
     async (event, session) => {
       console.log('Auth state changed:', event, session ? 'with session' : 'no session');
       
@@ -141,9 +143,6 @@ export const setupAuthStateChangeListener = (
       }
     }
   );
-  
-  // Return the subscription itself, which has the unsubscribe method
-  return subscription;
 };
 
 // Log out a user

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
@@ -9,27 +9,68 @@ export type UserType = 'client' | 'developer';
 
 export const useLoginForm = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, userType } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [userType, setUserType] = useState<UserType>('client');
+  const [userTypeState, setUserTypeState] = useState<UserType>('client');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value);
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value);
-  const handleUserTypeChange = (type: UserType) => setUserType(type);
+  const handleUserTypeChange = (type: UserType) => setUserTypeState(type);
   const handleRememberMeChange = () => setRememberMe(!rememberMe);
 
   const checkAuthStatus = async () => {
     try {
       const { data, error } = await supabase.auth.getSession();
       console.log('Current auth status (LoginPage):', { session: data.session, error });
+      
+      // If there's an active session, update local state
+      if (data.session) {
+        // Get user profile to confirm user type
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', data.session.user.id)
+          .maybeSingle();
+          
+        // If we retrieved the profile, use that user type
+        if (profileData) {
+          console.log('Profile found with user type:', profileData.user_type);
+          
+          // Store in localStorage to ensure persistence
+          localStorage.setItem('authState', JSON.stringify({
+            isAuthenticated: true,
+            userType: profileData.user_type,
+            userId: data.session.user.id,
+          }));
+          
+          // Wait a bit for state to update through context
+          setTimeout(() => {
+            if (!isAuthenticated) {
+              window.location.reload(); // Force a reload if auth state hasn't updated
+            }
+          }, 1000);
+        }
+      }
     } catch (error) {
       console.error('Error checking auth status:', error);
     }
   };
+
+  // Redirect based on authentication state
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('User is authenticated, redirecting to dashboard', { userType });
+      if (userType === 'developer') {
+        navigate('/profile');
+      } else {
+        navigate('/client-dashboard');
+      }
+    }
+  }, [isAuthenticated, userType, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +87,7 @@ export const useLoginForm = () => {
     
     setError('');
     setIsLoading(true);
-    console.log(`Attempting to login: ${email} as ${userType}`);
+    console.log(`Attempting to login: ${email} as ${userTypeState}`);
     
     try {
       // Direct Supabase login attempt for better error visibility
@@ -84,8 +125,7 @@ export const useLoginForm = () => {
         console.error('Error fetching profile:', profileError);
         setError('Error retrieving user profile: ' + profileError.message);
         toast.error('Error retrieving user profile');
-        // Still try to use the auth context login as fallback
-        await attemptContextLogin();
+        setIsLoading(false);
         return;
       }
       
@@ -93,10 +133,10 @@ export const useLoginForm = () => {
       if (!profileData) {
         console.log('No profile found, creating new profile');
         await createNewProfile(data.user.id);
-      } else if (profileData.user_type !== userType) {
-        console.error(`User type mismatch: account is ${profileData.user_type}, tried to login as ${userType}`);
-        setError(`You registered as a ${profileData.user_type}, but tried to log in as a ${userType}`);
-        toast.error(`You registered as a ${profileData.user_type}, but tried to log in as a ${userType}`);
+      } else if (profileData.user_type !== userTypeState) {
+        console.error(`User type mismatch: account is ${profileData.user_type}, tried to login as ${userTypeState}`);
+        setError(`You registered as a ${profileData.user_type}, but tried to log in as a ${userTypeState}`);
+        toast.error(`You registered as a ${profileData.user_type}, but tried to log in as a ${userTypeState}`);
         // Sign out the user since we logged in with the wrong type
         await supabase.auth.signOut();
         setIsLoading(false);
@@ -106,62 +146,33 @@ export const useLoginForm = () => {
       // Set auth state manually to ensure it's updated
       localStorage.setItem('authState', JSON.stringify({
         isAuthenticated: true,
-        userType: userType,
+        userType: userTypeState,
         userId: data.user.id,
       }));
       
       // Try to use context login as a formality to update global state
-      const contextLoginSuccess = await login(email, password, userType);
+      const contextLoginSuccess = await login(email, password, userTypeState);
       console.log('Context login result:', contextLoginSuccess);
       
-      // Force a reload to ensure auth state is fully updated
       toast.success('Login successful!');
-      console.log(`Navigating to ${userType === 'developer' ? '/profile' : '/client-dashboard'}...`);
+      console.log(`Navigating to ${userTypeState === 'developer' ? '/profile' : '/client-dashboard'}...`);
       
       // Short delay to allow state updates to complete
       setTimeout(() => {
-        if (userType === 'developer') {
+        if (userTypeState === 'developer') {
           navigate('/profile');
         } else {
           navigate('/client-dashboard');
         }
-      }, 300);
+        
+        // Set loading to false at the end
+        setIsLoading(false);
+      }, 500);
     } catch (error: any) {
       console.error('Login exception:', error);
       setError(error.message || 'An unexpected error occurred');
       toast.error(error.message || 'An unexpected error occurred');
       setIsLoading(false);
-    }
-  };
-
-  // Helper to attempt login via context
-  const attemptContextLogin = async () => {
-    try {
-      const loginSuccess = await login(email, password, userType);
-      
-      if (loginSuccess) {
-        console.log('Login successful through context login function');
-        toast.success('Login successful!');
-        
-        if (userType === 'developer') {
-          navigate('/profile');
-        } else {
-          navigate('/client-dashboard');
-        }
-        return true;
-      } else {
-        console.error('Context login function returned false');
-        setError('Login failed. Please check your credentials and try again.');
-        toast.error('Login failed. Please check your credentials and try again.');
-        setIsLoading(false);
-        return false;
-      }
-    } catch (error: any) {
-      console.error('Context login error:', error);
-      setError(error.message || 'An unexpected error occurred during login');
-      toast.error(error.message || 'An unexpected error occurred during login');
-      setIsLoading(false);
-      return false;
     }
   };
 
@@ -173,7 +184,7 @@ export const useLoginForm = () => {
         .from('profiles')
         .insert({
           id: userId,
-          user_type: userType,
+          user_type: userTypeState,
           email: email,
           name: email.split('@')[0], // Use part of email as temporary name
           profile_completed: false
@@ -185,7 +196,7 @@ export const useLoginForm = () => {
       }
       
       // Create type-specific profile
-      if (userType === 'developer') {
+      if (userTypeState === 'developer') {
         const { error: devProfileError } = await supabase
           .from('developer_profiles')
           .insert({
@@ -226,7 +237,7 @@ export const useLoginForm = () => {
   return {
     email,
     password,
-    userType,
+    userType: userTypeState,
     isLoading,
     error,
     rememberMe,

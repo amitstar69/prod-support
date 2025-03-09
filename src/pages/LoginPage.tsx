@@ -5,6 +5,7 @@ import Layout from '../components/Layout';
 import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
 import { useLoginForm } from '../hooks/useLoginForm';
+import { supabase } from '../integrations/supabase/client';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,8 +25,13 @@ const LoginPage: React.FC = () => {
     isAuthenticated
   } = useLoginForm();
   
+  // Check auth status when component mounts
   useEffect(() => {
-    // Check auth status when component mounts
+    // Debug: log any existing auth session
+    supabase.auth.getSession().then(({ data }) => {
+      console.log('Current Supabase session on login page load:', data.session);
+    });
+    
     checkAuthStatus();
     
     // Also set up an interval to periodically check auth status
@@ -37,9 +43,10 @@ const LoginPage: React.FC = () => {
     return () => clearInterval(intervalId);
   }, []);
   
+  // Handle redirect when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('User is authenticated, redirecting to dashboard');
+      console.log('User is authenticated, redirecting to dashboard', {userType});
       if (userType === 'developer') {
         navigate('/profile');
       } else {
