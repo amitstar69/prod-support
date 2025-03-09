@@ -76,7 +76,7 @@ export const setupAuthStateChangeListener = (
     async (event, session) => {
       console.log('Auth state changed:', event, session ? 'with session' : 'no session');
       
-      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      if (event === 'SIGNED_OUT') {
         // User signed out, clear auth state
         setAuthState({
           isAuthenticated: false,
@@ -84,7 +84,7 @@ export const setupAuthStateChangeListener = (
           userId: null,
         });
         localStorage.removeItem('authState');
-        console.log('Auth state cleared due to sign out or user deletion');
+        console.log('Auth state cleared due to sign out');
         return;
       }
       
