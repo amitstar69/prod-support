@@ -49,35 +49,110 @@ export const useLoginForm = () => {
     console.log(`Attempting to login: ${email} as ${userType}`);
     
     try {
-      // For testing, you can use these credentials:
-      // For developer: test@developer.com / password123
-      // For client: test@client.com / password123
-      
-      // Add timeout to prevent UI from being stuck indefinitely
-      const loginPromise = login(email, password, userType);
-      
-      // Set a timeout for the login process
-      const timeoutPromise = new Promise<boolean>((_, reject) => {
-        setTimeout(() => reject(new Error('Login request timed out')), 10000);
+      // Call supabase directly for more reliable login
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
       
-      // Race between login and timeout
-      const success = await Promise.race([loginPromise, timeoutPromise])
-        .catch(error => {
-          console.error('Login error or timeout:', error);
-          toast.error(error.message || 'Login timed out. Please try again.');
-          setError(error.message || 'Login timed out. Please try again.');
-          return false;
-        });
+      if (error) {
+        console.error('Supabase login error:', error);
+        setError(error.message);
+        toast.error(error.message || 'Login failed');
+        setIsLoading(false);
+        return;
+      }
       
-      console.log('Login result:', success ? 'Success' : 'Failed');
+      if (!data.user) {
+        console.error('No user data returned from Supabase');
+        setError('Login failed. No user data returned.');
+        toast.error('Login failed. Please try again.');
+        setIsLoading(false);
+        return;
+      }
       
-      if (success) {
-        console.log(`Login successful, redirecting to ${userType === 'developer' ? '/profile' : '/client-dashboard'}`);
-        // If login was successful, navigate to the appropriate dashboard
+      console.log('Supabase login successful, checking profile for user type match');
+      
+      // Get user profile to ensure user type matches
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', data.user.id)
+        .maybeSingle();
+      
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        setError('Error retrieving user profile');
+        toast.error('Error retrieving user profile');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if profile exists and if user type matches
+      if (profileData) {
+        if (profileData.user_type !== userType) {
+          console.error('User type mismatch', { expected: userType, found: profileData.user_type });
+          setError(`You registered as a ${profileData.user_type}, but tried to log in as a ${userType}.`);
+          toast.error(`You registered as a ${profileData.user_type}, but tried to log in as a ${userType}.`);
+          
+          // Sign out to clear the session
+          await supabase.auth.signOut();
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('User type matches, login successful');
+        toast.success('Login successful!');
         navigate(userType === 'developer' ? '/profile' : '/client-dashboard');
-      } else if (!error) {
-        setError('Login failed. Please check your credentials and try again.');
+      } else {
+        console.log('No profile found, creating one');
+        
+        // Create a new profile for this user
+        const { error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            user_type: userType,
+            email: email,
+            name: email.split('@')[0] // Use part of email as temporary name
+          });
+        
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          setError('Could not create user profile');
+          toast.error('Could not create user profile');
+          
+          // Sign out to clear the session
+          await supabase.auth.signOut();
+          setIsLoading(false);
+          return;
+        }
+        
+        // Create type-specific profile
+        if (userType === 'developer') {
+          await supabase
+            .from('developer_profiles')
+            .insert({
+              id: data.user.id,
+              hourly_rate: 75,
+              minute_rate: 1.25,
+              skills: ['JavaScript', 'React'],
+              availability: true
+            });
+        } else {
+          await supabase
+            .from('client_profiles')
+            .insert({
+              id: data.user.id,
+              budget_per_hour: 75,
+              preferred_help_format: ['chat'],
+              looking_for: ['web development']
+            });
+        }
+        
+        console.log('Profile created, login successful');
+        toast.success('Welcome! Your profile has been created.');
+        navigate(userType === 'developer' ? '/profile' : '/client-dashboard');
       }
     } catch (error: any) {
       console.error('Login error:', error);
