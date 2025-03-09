@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
@@ -22,7 +22,7 @@ export const useLoginForm = () => {
   const handleUserTypeChange = (type: UserType) => setUserTypeState(type);
   const handleRememberMeChange = () => setRememberMe(!rememberMe);
 
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     try {
       const { data, error } = await supabase.auth.getSession();
       console.log('Current auth status (LoginPage):', { session: data.session, error });
@@ -50,25 +50,37 @@ export const useLoginForm = () => {
           // Wait a bit for state to update through context
           setTimeout(() => {
             if (!isAuthenticated) {
+              console.log('Auth state not updated via context, forcing reload');
               window.location.reload(); // Force a reload if auth state hasn't updated
             }
           }, 1000);
+        } else {
+          console.log('No profile found for logged in user - unusual state');
         }
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
     }
-  };
+  }, [isAuthenticated]);
+
+  // Check auth status immediately on component mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
 
   // Redirect based on authentication state
   useEffect(() => {
     if (isAuthenticated) {
       console.log('User is authenticated, redirecting to dashboard', { userType });
-      if (userType === 'developer') {
-        navigate('/profile');
-      } else {
-        navigate('/client-dashboard');
-      }
+      
+      // Short delay to ensure state is fully updated
+      setTimeout(() => {
+        if (userType === 'developer') {
+          navigate('/profile');
+        } else {
+          navigate('/client-dashboard');
+        }
+      }, 500);
     }
   }, [isAuthenticated, userType, navigate]);
 
@@ -141,14 +153,19 @@ export const useLoginForm = () => {
         await supabase.auth.signOut();
         setIsLoading(false);
         return;
+      } else {
+        console.log(`Profile exists and matches selected user type: ${profileData.user_type}`);
       }
       
       // Set auth state manually to ensure it's updated
-      localStorage.setItem('authState', JSON.stringify({
+      const authState = {
         isAuthenticated: true,
         userType: userTypeState,
         userId: data.user.id,
-      }));
+      };
+      
+      localStorage.setItem('authState', JSON.stringify(authState));
+      console.log('Auth state saved to localStorage:', authState);
       
       // Try to use context login as a formality to update global state
       const contextLoginSuccess = await login(email, password, userTypeState);
@@ -157,15 +174,9 @@ export const useLoginForm = () => {
       toast.success('Login successful!');
       console.log(`Navigating to ${userTypeState === 'developer' ? '/profile' : '/client-dashboard'}...`);
       
-      // Short delay to allow state updates to complete
+      // Force reload the page to ensure all components get the updated auth state
       setTimeout(() => {
-        if (userTypeState === 'developer') {
-          navigate('/profile');
-        } else {
-          navigate('/client-dashboard');
-        }
-        
-        // Set loading to false at the end
+        window.location.href = userTypeState === 'developer' ? '/profile' : '/client-dashboard';
         setIsLoading(false);
       }, 500);
     } catch (error: any) {

@@ -1,3 +1,4 @@
+
 import { supabase } from '../../integrations/supabase/client';
 import { Dispatch, SetStateAction } from 'react';
 import { AuthState } from './types';
@@ -72,7 +73,7 @@ export const setupAuthStateChangeListener = (
   console.log('Setting up auth state change listener');
   
   // Return the subscription object directly which has the unsubscribe method
-  return supabase.auth.onAuthStateChange(
+  const { subscription } = supabase.auth.onAuthStateChange(
     async (event, session) => {
       console.log('Auth state changed:', event, session ? 'with session' : 'no session');
       
@@ -140,7 +141,9 @@ export const setupAuthStateChangeListener = (
         }
       }
     }
-  ).data.subscription; // Return the subscription directly
+  ).data;
+  
+  return subscription;
 };
 
 // Log out a user
