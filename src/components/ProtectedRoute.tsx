@@ -20,51 +20,39 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
   const [isVerifying, setIsVerifying] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
-  const [checkComplete, setCheckComplete] = useState(false);
-
+  
   useEffect(() => {
     let isMounted = true;
     
     const verifySession = async () => {
-      // Check if we have valid Supabase session
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        
+      // Allow public access routes to be viewed by anyone
+      if (allowPublicAccess) {
         if (isMounted) {
-          console.log('[ProtectedRoute] Verifying session:', { 
-            hasSession: !!data.session,
-            contextAuth: isAuthenticated,
-            userType,
-            path: location.pathname
-          });
+          setHasAccess(true);
+          setIsVerifying(false);
         }
+        return;
+      }
+      
+      try {
+        // Always verify with Supabase directly
+        const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('[ProtectedRoute] Error verifying session:', error);
           if (isMounted) {
             setHasAccess(false);
             setIsVerifying(false);
-            setCheckComplete(true);
-          }
-          return;
-        }
-        
-        // Allow public access routes to be viewed by anyone
-        if (allowPublicAccess) {
-          if (isMounted) {
-            setHasAccess(true);
-            setIsVerifying(false);
-            setCheckComplete(true);
           }
           return;
         }
         
         // No valid session = no access
         if (!data.session) {
+          console.log('[ProtectedRoute] No active session, redirecting to login');
           if (isMounted) {
             setHasAccess(false);
             setIsVerifying(false);
-            setCheckComplete(true);
           }
           return;
         }
@@ -78,24 +66,34 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
               .eq('id', data.session.user.id)
               .maybeSingle();
             
-            if (isMounted) {
-              if (profileData && profileData.user_type === requiredUserType) {
-                console.log(`[ProtectedRoute] User is a ${requiredUserType}, access granted`);
+            if (profileError) {
+              console.error('[ProtectedRoute] Error checking user type:', profileError);
+              if (isMounted) {
+                setHasAccess(false);
+                setIsVerifying(false);
+              }
+              return;
+            }
+            
+            if (profileData && profileData.user_type === requiredUserType) {
+              console.log(`[ProtectedRoute] User is a ${requiredUserType}, access granted`);
+              if (isMounted) {
                 setHasAccess(true);
-              } else {
-                console.log(`[ProtectedRoute] User is not a ${requiredUserType}, redirecting`);
+                setIsVerifying(false);
+              }
+            } else {
+              console.log(`[ProtectedRoute] User is not a ${requiredUserType}, redirecting`);
+              if (isMounted) {
                 toast.error(`This page is only accessible to ${requiredUserType}s.`);
                 setHasAccess(false);
+                setIsVerifying(false);
               }
-              setIsVerifying(false);
-              setCheckComplete(true);
             }
           } catch (err) {
             console.error('[ProtectedRoute] Error checking user type:', err);
             if (isMounted) {
               setHasAccess(false);
               setIsVerifying(false);
-              setCheckComplete(true);
             }
           }
         } else {
@@ -104,7 +102,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             console.log('[ProtectedRoute] User is authenticated, access granted');
             setHasAccess(true);
             setIsVerifying(false);
-            setCheckComplete(true);
           }
         }
       } catch (err) {
@@ -112,7 +109,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         if (isMounted) {
           setHasAccess(false);
           setIsVerifying(false);
-          setCheckComplete(true);
         }
       }
     };
@@ -125,7 +121,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }, [isAuthenticated, userType, allowPublicAccess, requiredUserType, location.pathname]);
 
   // Loading state while verifying
-  if (isVerifying || !checkComplete) {
+  if (isVerifying) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
         <div className="animate-pulse text-center">

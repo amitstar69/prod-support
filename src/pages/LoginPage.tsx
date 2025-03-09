@@ -11,13 +11,12 @@ import { toast } from 'sonner';
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  const [initialChecked, setInitialChecked] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { 
     email, 
     password, 
     userType, 
-    isLoading, 
+    isLoading: isFormLoading, 
     error, 
     rememberMe,
     handleEmailChange,
@@ -25,137 +24,90 @@ const LoginPage: React.FC = () => {
     handleUserTypeChange,
     handleRememberMeChange,
     handleSubmit,
-    checkAuthStatus,
-    isAuthenticated,
     loginSuccess
   } = useLoginForm();
   
-  // Track initial auth check to prevent flickering
-  const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
-  
-  // Check auth status when component mounts
+  // Check if already logged in on mount
   useEffect(() => {
     let isMounted = true;
     
     const checkSession = async () => {
-      console.log('[LoginPage] Checking auth status on mount...');
-      
       try {
-        // Debug: log any existing auth session
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('[LoginPage] Error checking session:', error);
-          toast.error('Error checking authentication status');
-          if (isMounted) {
-            setInitialAuthCheckComplete(true);
-            setInitialChecked(true);
-          }
+          if (isMounted) setIsLoading(false);
           return;
         }
         
-        console.log('[LoginPage] Current Supabase session on login page load:', data.session);
+        if (!data.session) {
+          console.log('[LoginPage] No active session found, showing login form');
+          if (isMounted) setIsLoading(false);
+          return;
+        }
         
-        // If we're already authenticated, redirect to the appropriate dashboard
-        if (data.session && !isRedirecting && isMounted) {
-          console.log('[LoginPage] Session found, fetching profile to determine user type...');
-          setIsRedirecting(true);
+        console.log('[LoginPage] Active session found, checking profile');
+        
+        // Get user profile to determine where to redirect
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', data.session.user.id)
+          .maybeSingle();
           
-          // Get user profile to determine user type
-          try {
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('user_type')
-              .eq('id', data.session.user.id)
-              .maybeSingle();
-              
-            if (profileError) {
-              console.error('[LoginPage] Error fetching profile data:', profileError);
-              if (isMounted) {
-                setIsRedirecting(false);
-                setInitialAuthCheckComplete(true);
-                setInitialChecked(true);
-              }
-              return;
-            }
-            
-            if (profileData && isMounted) {
-              console.log(`[LoginPage] Profile found, user type: ${profileData.user_type}`);
-              
-              // Redirect based on user type with a small delay to ensure state is updated
-              const redirectPath = profileData.user_type === 'developer' ? '/profile' : '/client-dashboard';
-              console.log(`[LoginPage] Redirecting to ${redirectPath}`);
-              
-              // Use a timeout to avoid immediate redirect which can cause flickering
-              setTimeout(() => {
-                if (isMounted) {
-                  // Use window.location for a clean navigation that forces full page reload
-                  window.location.href = redirectPath;
-                }
-              }, 500); // Slightly longer delay to ensure state updates
-            } else {
-              console.log('[LoginPage] No profile found for this user');
-              if (isMounted) {
-                setIsRedirecting(false);
-                setInitialAuthCheckComplete(true);
-                setInitialChecked(true);
-              }
-            }
-          } catch (err) {
-            console.error('[LoginPage] Error in profile check:', err);
-            if (isMounted) {
-              setIsRedirecting(false);
-              setInitialAuthCheckComplete(true);
-              setInitialChecked(true);
-            }
-          }
-        } else {
-          if (isMounted) {
-            setInitialAuthCheckComplete(true);
-            setInitialChecked(true);
-          }
+        if (profileError) {
+          console.error('[LoginPage] Error fetching profile:', profileError);
+          if (isMounted) setIsLoading(false);
+          return;
+        }
+        
+        if (!profileData) {
+          console.log('[LoginPage] No profile found, staying on login page');
+          if (isMounted) setIsLoading(false);
+          return;
+        }
+        
+        // We have a valid session and profile, redirect to appropriate dashboard
+        console.log(`[LoginPage] User is logged in as ${profileData.user_type}, redirecting`);
+        const redirectPath = profileData.user_type === 'developer' ? '/developer-dashboard' : '/client-dashboard';
+        
+        if (isMounted) {
+          // Use navigate instead of window.location to avoid page reload
+          navigate(redirectPath, { replace: true });
         }
       } catch (err) {
-        console.error('[LoginPage] Error getting session:', err);
-        if (isMounted) {
-          setInitialAuthCheckComplete(true);
-          setInitialChecked(true);
-        }
+        console.error('[LoginPage] Error in session check:', err);
+        if (isMounted) setIsLoading(false);
       }
     };
     
     checkSession();
     
-    // Cleanup function
     return () => {
       isMounted = false;
     };
-  }, [navigate, isRedirecting]);
+  }, [navigate]);
   
-  // Handle redirect when authenticated via form submission
+  // Handle redirect after successful login
   useEffect(() => {
-    if (loginSuccess && !isRedirecting && initialChecked) {
-      console.log('[LoginPage] Login successful via form submission, redirecting to dashboard', { userType });
-      setIsRedirecting(true);
+    if (loginSuccess) {
+      console.log('[LoginPage] Login successful, redirecting to dashboard');
       
-      const redirectPath = userType === 'developer' ? '/profile' : '/client-dashboard';
-      console.log(`[LoginPage] Redirecting to ${redirectPath}`);
+      const redirectPath = userType === 'developer' ? '/developer-dashboard' : '/client-dashboard';
       
-      // Use direct navigation for a clean transition that forces a full page reload
-      // This ensures a fresh state when reaching the destination page
-      setTimeout(() => {
-        window.location.href = redirectPath;
-      }, 800); // Use a longer delay to ensure the login process completes
+      // Use navigate for a clean transition
+      navigate(redirectPath, { replace: true });
     }
-  }, [loginSuccess, userType, navigate, isRedirecting, initialChecked]);
+  }, [loginSuccess, userType, navigate]);
   
-  if (!initialAuthCheckComplete) {
+  if (isLoading) {
     return (
       <Layout>
         <div className="flex justify-center items-center min-h-[60vh]">
           <div className="animate-pulse text-center">
             <h2 className="text-2xl font-semibold mb-4">Checking authentication...</h2>
-            <p className="text-gray-500">Please wait while we verify your session</p>
+            <p className="text-gray-500">Please wait</p>
           </div>
         </div>
       </Layout>
@@ -178,7 +130,7 @@ const LoginPage: React.FC = () => {
             email={email}
             password={password}
             userType={userType}
-            isLoading={isLoading || isRedirecting}
+            isLoading={isFormLoading}
             error={error}
             rememberMe={rememberMe}
             onEmailChange={handleEmailChange}

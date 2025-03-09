@@ -38,20 +38,78 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   
   // Load initial state from localStorage on mount and set up auth state listener
   useEffect(() => {
+    let isMounted = true;
+    let subscription: any = null;
+    
     const initAuth = async () => {
       try {
         console.log('[AuthProvider] Initializing auth context...');
         
-        // First load from localStorage as a fast initial state
-        const storedAuthState = localStorage.getItem('authState');
-        if (storedAuthState) {
-          console.log('[AuthProvider] Found stored auth state in localStorage:', storedAuthState);
-          try {
-            const parsedState = JSON.parse(storedAuthState);
-            setAuthState(parsedState);
-          } catch (e) {
-            console.error('[AuthProvider] Error parsing stored auth state:', e);
-            localStorage.removeItem('authState');
+        // First check Supabase session directly - this is the single source of truth
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('[AuthProvider] Error getting Supabase session:', error);
+          if (isMounted) {
+            setAuthState({
+              isAuthenticated: false,
+              userType: null,
+              userId: null,
+            });
+            setAuthInitialized(true);
+          }
+          return;
+        }
+        
+        if (data.session) {
+          console.log('[AuthProvider] Found active Supabase session:', data.session.user.id);
+          
+          // Get user profile to determine user type
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('id', data.session.user.id)
+            .maybeSingle();
+            
+          if (profileError) {
+            console.error('[AuthProvider] Error getting profile:', profileError);
+            if (isMounted) {
+              setAuthState({
+                isAuthenticated: true, // Still authenticated, just don't know the type
+                userType: null,
+                userId: data.session.user.id,
+              });
+            }
+          } else if (profileData) {
+            console.log('[AuthProvider] Found profile with user type:', profileData.user_type);
+            if (isMounted) {
+              setAuthState({
+                isAuthenticated: true,
+                userType: profileData.user_type as 'developer' | 'client',
+                userId: data.session.user.id,
+              });
+            }
+          } else {
+            // Try to extract from user metadata as fallback
+            const userType = data.session.user.user_metadata?.user_type as 'developer' | 'client' || null;
+            console.log('[AuthProvider] No profile found, using metadata user type:', userType);
+            
+            if (isMounted) {
+              setAuthState({
+                isAuthenticated: true,
+                userType: userType,
+                userId: data.session.user.id,
+              });
+            }
+          }
+        } else {
+          console.log('[AuthProvider] No active Supabase session');
+          if (isMounted) {
+            setAuthState({
+              isAuthenticated: false,
+              userType: null,
+              userId: null,
+            });
           }
         }
         
@@ -66,97 +124,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setMockClients(JSON.parse(storedClients));
         }
         
-        // Force checking Supabase session regardless of local state
-        console.log('[AuthProvider] Verifying auth state with Supabase...');
-        const authData = await checkSupabaseSession(setAuthState);
-        
-        // If Supabase indicates we're authenticated but with different info than localStorage,
-        // use the Supabase information (it's more authoritative)
-        if (authData?.isAuthenticated && storedAuthState) {
-          try {
-            const parsedState = JSON.parse(storedAuthState);
-            if (
-              parsedState.isAuthenticated !== authData.isAuthenticated || 
-              parsedState.userId !== authData.userId ||
-              parsedState.userType !== authData.userType
-            ) {
-              console.log('[AuthProvider] Updating local auth state to match Supabase session');
-              localStorage.setItem('authState', JSON.stringify(authData));
-            }
-          } catch (e) {
-            console.error('[AuthProvider] Error comparing auth states:', e);
-            localStorage.setItem('authState', JSON.stringify(authData));
-          }
+        // Set up auth state change listener - this will handle future auth changes
+        if (isMounted) {
+          subscription = setupAuthStateChangeListener(setAuthState);
+          setAuthInitialized(true);
+          console.log('[AuthProvider] Auth initialization complete');
         }
-        
-        // If the server indicates we're not authenticated but local storage did,
-        // clear the local storage to prevent stale authentication
-        if (!authData?.isAuthenticated && storedAuthState) {
-          try {
-            const parsedState = JSON.parse(storedAuthState);
-            if (parsedState.isAuthenticated) {
-              console.log('[AuthProvider] Local auth state conflicts with server state. Resetting...');
-              localStorage.removeItem('authState');
-              setAuthState({
-                isAuthenticated: false,
-                userType: null,
-                userId: null,
-              });
-            }
-          } catch (e) {
-            console.error('[AuthProvider] Error checking auth state conflict:', e);
-            localStorage.removeItem('authState');
-          }
-        }
-        
-        // Set up auth state change listener - using the fixed function that returns the correct subscription
-        console.log('[AuthProvider] Setting up auth state change listener...');
-        const subscription = setupAuthStateChangeListener(setAuthState);
-        
-        setAuthInitialized(true);
-        console.log('[AuthProvider] Auth initialization complete.');
-        
-        return () => {
-          // Clean up the subscription when the component unmounts
-          if (subscription) {
-            console.log('[AuthProvider] Cleaning up auth state change listener...');
-            subscription.unsubscribe();
-          }
-        };
       } catch (error) {
         console.error('[AuthProvider] Error initializing auth:', error);
         // Clear potentially corrupt auth state
         localStorage.removeItem('authState');
-        setAuthState({
-          isAuthenticated: false,
-          userType: null,
-          userId: null,
-        });
-        setAuthInitialized(true);
-        console.log('[AuthProvider] Auth initialization failed but marked as complete.');
-      }
-    };
-    
-    initAuth();
-  }, []);
-  
-  // Update auth state whenever localStorage changes from other tabs/windows
-  useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'authState' && event.newValue) {
-        try {
-          const newAuthState = JSON.parse(event.newValue);
-          console.log('[AuthProvider] Auth state changed in another tab/window:', newAuthState);
-          setAuthState(newAuthState);
-        } catch (error) {
-          console.error('[AuthProvider] Error parsing auth state from localStorage:', error);
+        if (isMounted) {
+          setAuthState({
+            isAuthenticated: false,
+            userType: null,
+            userId: null,
+          });
+          setAuthInitialized(true);
         }
       }
     };
     
-    window.addEventListener('storage', handleStorageChange);
+    initAuth();
+    
+    // Cleanup function
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      isMounted = false;
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
   
@@ -165,22 +161,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log("[AuthProvider] Logout triggered from AuthProvider");
     try {
       await logoutUser();
-      // Force auth state update in case the listener doesn't work
+      // Force auth state update
       setAuthState({
         isAuthenticated: false,
         userType: null,
         userId: null,
       });
-      localStorage.removeItem('authState');
     } catch (error) {
       console.error("[AuthProvider] Error during logout:", error);
-      // Force auth state update in case the listener doesn't work
+      // Force auth state update even on error
       setAuthState({
         isAuthenticated: false,
         userType: null,
         userId: null,
       });
-      localStorage.removeItem('authState');
     }
   };
   
@@ -189,6 +183,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (authState.isAuthenticated) {
       console.log('[AuthProvider] Saving auth state to localStorage:', authState);
       localStorage.setItem('authState', JSON.stringify(authState));
+    } else if (localStorage.getItem('authState')) {
+      console.log('[AuthProvider] Clearing auth state from localStorage');
+      localStorage.removeItem('authState');
     }
   }, [authState]);
   

@@ -20,12 +20,11 @@ import './App.css';
 import { Toaster } from './components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 
-// Removed the BrowserRouter as Router import and wrapper since it's already in main.tsx
-
 function App() {
   return (
     <>
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<Index />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/search" element={<SearchPage />} />
@@ -34,6 +33,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/developer-register" element={<DeveloperRegistration />} />
         
+        {/* Protected routes for any authenticated user */}
         <Route path="/profile" element={
           <ProtectedRoute>
             <ProfilePage />
@@ -46,14 +46,21 @@ function App() {
           </ProtectedRoute>
         } />
         
-        <Route path="/developer-dashboard" element={<DeveloperDashboard />} />
+        {/* Protected routes for developers */}
+        <Route path="/developer-dashboard" element={
+          <ProtectedRoute requiredUserType="developer">
+            <DeveloperDashboard />
+          </ProtectedRoute>
+        } />
         
+        {/* Protected routes for clients */}
         <Route path="/client-dashboard" element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredUserType="client">
             <ClientDashboard />
           </ProtectedRoute>
         } />
         
+        {/* Protected routes for any authenticated user */}
         <Route path="/sessions" element={
           <ProtectedRoute>
             <SessionsPage />

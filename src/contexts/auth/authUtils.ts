@@ -37,7 +37,7 @@ export const checkSupabaseSession = async (
     }
     
     if (!profileData) {
-      console.log('No profile found for this user, creating one');
+      console.log('No profile found for this user');
       
       // Extract user type from user metadata if available
       const userType = data.session.user.user_metadata?.user_type as 'client' | 'developer' || 'client';
@@ -69,13 +69,12 @@ export const checkSupabaseSession = async (
   }
 };
 
-// Set up authentication state change listener - FIXED to return the subscription with proper unsubscribe method
+// Set up authentication state change listener
 export const setupAuthStateChangeListener = (
   setAuthState: Dispatch<SetStateAction<AuthState>>
 ) => {
   console.log('Setting up auth state change listener');
   
-  // The subscription object from Supabase directly has the unsubscribe method
   const { data } = supabase.auth.onAuthStateChange(
     async (event, session) => {
       console.log('Auth state changed:', event, session ? 'with session' : 'no session');
@@ -115,9 +114,14 @@ export const setupAuthStateChangeListener = (
           if (!profileData) {
             console.log('No profile found after auth change');
             // Try to extract user type from user metadata
-            const userType = session.user.user_metadata?.user_type as 'developer' | 'client' || 'client';
+            const userType = session.user.user_metadata?.user_type as 'developer' | 'client' || null;
             
-            // Create a temporary auth state
+            if (!userType) {
+              console.error('No user type found in metadata');
+              return;
+            }
+            
+            // Create a auth state
             const tempAuthState = {
               isAuthenticated: true,
               userType: userType,
@@ -154,6 +158,9 @@ export const setupAuthStateChangeListener = (
 export const logoutUser = async (): Promise<void> => {
   console.log('Logging out user');
   try {
+    // Clear local storage auth state first for immediate UI update
+    localStorage.removeItem('authState');
+    
     const { error } = await supabase.auth.signOut();
     
     if (error) {
@@ -162,8 +169,6 @@ export const logoutUser = async (): Promise<void> => {
       throw error;
     }
     
-    // Clear local storage auth state
-    localStorage.removeItem('authState');
     console.log('User logged out and auth state cleared');
     toast.success('You have been signed out');
   } catch (error) {
