@@ -1,90 +1,32 @@
+export type HelpRequestStatus =
+  | 'pending'
+  | 'matching'
+  | 'scheduled'
+  | 'in-progress'
+  | 'completed'
+  | 'cancelled';
+
+export interface ProfileInfo {
+  id: string;
+  name: string;
+  image?: string;
+}
+
 export interface HelpRequest {
-  id?: string;
-  client_id: string;
+  id: string;
   title: string;
   description: string;
   technical_area: string[];
   urgency: string;
-  communication_preference: string[];
-  estimated_duration: number;
   budget_range: string;
-  code_snippet?: string;
-  status?: string;
-  created_at?: string;
-  updated_at?: string;
-  // Add properties needed for applications
-  applications?: Array<any>; // Array of developers who applied to this request
-  application_status?: string; // Status of an application for a specific developer
-}
-
-export interface HelpRequestMatch {
-  id?: string;
-  request_id: string;
-  developer_id: string;
-  match_score?: number;
-  status: string; // Changed from specific literals to allow any string from database
-  created_at?: string;
-  updated_at?: string;
-  proposed_message?: string;
-  proposed_duration?: number;
-  proposed_rate?: number;
-}
-
-export interface HelpSession {
-  id?: string;
-  request_id: string;
-  developer_id: string;
+  communication_preference: string[];
   client_id: string;
-  scheduled_start?: string;
-  scheduled_end?: string;
-  actual_start?: string;
-  actual_end?: string;
-  status: string; // Changed from specific literals to allow any string from database
-  final_cost?: number;
-  created_at?: string;
-  updated_at?: string;
-  shared_code?: string; // Adding shared_code field
+  estimated_duration: number;
+  code_snippet?: string | null;
+  status: HelpRequestStatus;
+  created_at: string;
+  updated_at: string;
+  client?: ProfileInfo;
+  applications?: Array<any>; // Adding applications property
+  application_status?: string; // Adding application_status property
 }
-
-export const technicalAreaOptions = [
-  'Frontend',
-  'Backend',
-  'Full Stack',
-  'Mobile Development',
-  'DevOps',
-  'Database',
-  'API Integration',
-  'Security',
-  'Performance Optimization',
-  'Debugging',
-  'Testing',
-  'UI/UX',
-  'AI/ML Integration',
-  'Cloud Services',
-  'Code Review'
-];
-
-export const communicationOptions = [
-  'Chat',
-  'Voice Call',
-  'Video Call',
-  'Screen Sharing'
-];
-
-export const budgetRangeOptions = [
-  'Under $50',
-  '$50 - $100',
-  '$100 - $200',
-  '$200 - $500',
-  '$500+'
-];
-
-// Updated to match the database constraint for help_requests_status_check
-export const requestStatusOptions = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'matching', label: 'Matching' },
-  { value: 'scheduled', label: 'Scheduled' },
-  { value: 'in-progress', label: 'In Progress' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' }
-];

@@ -8,6 +8,7 @@ import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 
 interface ChatMessage {
   id: string;
@@ -41,7 +42,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId }) => {
     
     // Subscribe to real-time messages
     const subscription = subscribeToSessionMessages(sessionId, (newMessage) => {
-      setMessages(prev => [...prev, newMessage]);
+      setMessages(prev => [...prev, newMessage as ChatMessage]);
     });
     
     // Scroll to bottom on initial load
@@ -95,7 +96,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId }) => {
           }
         ]);
       } else {
-        setMessages(fetchedMessages);
+        // Need to explicitly cast the fetched messages to the correct type
+        setMessages(fetchedMessages.map(msg => ({
+          ...msg,
+          sender_type: (msg.sender_type as 'developer' | 'client' | 'system')
+        })));
       }
     } catch (error) {
       console.error('Error fetching messages:', error);

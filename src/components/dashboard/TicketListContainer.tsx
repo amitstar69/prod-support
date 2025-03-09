@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 interface TicketListContainerProps {
   filteredTickets: HelpRequest[];
   totalTickets: number;
-  onClaimTicket: (ticketId: string) => void;
+  onClaimTicket: (ticket: HelpRequest) => void; // Updated parameter type
   userId: string | null;
   isAuthenticated: boolean;
   onRefresh?: () => void;
@@ -71,7 +71,7 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
     
       <TicketList 
         tickets={filteredTickets} 
-        onClaimTicket={onClaimTicket} 
+        onClaimTicket={onClaimTicket}
         currentUserId={userId} 
         isAuthenticated={isAuthenticated}
       />

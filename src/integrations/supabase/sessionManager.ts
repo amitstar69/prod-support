@@ -181,7 +181,10 @@ export const getSessionMessages = async (sessionId: string) => {
   try {
     const { data, error } = await supabase
       .from('session_messages')
-      .select('*')
+      .select(`
+        *,
+        sender:sender_id(name, image)
+      `)
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true });
       
@@ -190,7 +193,14 @@ export const getSessionMessages = async (sessionId: string) => {
       return [];
     }
     
-    return data;
+    // Transform the data to match our expected format
+    const messages = data.map(msg => ({
+      ...msg,
+      sender_name: msg.sender?.name,
+      sender_avatar: msg.sender?.image
+    }));
+    
+    return messages;
   } catch (error) {
     console.error('Exception fetching session messages:', error);
     return [];
@@ -292,13 +302,13 @@ export const createSessionSummary = async (
   feedback?: string
 ) => {
   try {
-    const { data: session, error: sessionError } = await supabase
+    // First fetch the session with client and developer details
+    const { data: sessionData, error: sessionError } = await supabase
       .from('help_sessions')
       .select(`
         *,
-        help_requests(*),
-        client:client_id(name),
-        developer:developer_id(name)
+        client:client_id(id, name),
+        developer:developer_id(id, name)
       `)
       .eq('id', sessionId)
       .single();
@@ -308,24 +318,30 @@ export const createSessionSummary = async (
       return null;
     }
 
+    if (!sessionData || !sessionData.client || !sessionData.developer) {
+      console.error('Missing required session data for summary creation');
+      return null;
+    }
+
     // Calculate duration in minutes
-    const startTime = new Date(session.actual_start).getTime();
-    const endTime = new Date(session.actual_end).getTime();
+    const startTime = new Date(sessionData.actual_start).getTime();
+    const endTime = new Date(sessionData.actual_end).getTime();
     const durationMs = endTime - startTime;
     const durationMinutes = Math.ceil(durationMs / (1000 * 60));
     
+    // Insert the summary
     const { data, error } = await supabase
       .from('session_summaries')
       .insert({
         session_id: sessionId,
-        developer_id: session.developer_id,
-        developer_name: session.developer.name,
-        client_id: session.client_id,
-        client_name: session.client.name,
+        developer_id: sessionData.developer.id,
+        developer_name: sessionData.developer.name,
+        client_id: sessionData.client.id,
+        client_name: sessionData.client.name,
         topics: topics,
         solution: solution,
         duration: durationMinutes,
-        cost: session.final_cost,
+        cost: sessionData.final_cost,
         rating: rating,
         feedback: feedback
       })
