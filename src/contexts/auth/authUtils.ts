@@ -110,6 +110,19 @@ export const setupAuthStateChangeListener = (
           
           if (!profileData) {
             console.error('No profile found after auth change');
+            // Try to extract user type from user metadata
+            const userType = session.user.user_metadata?.user_type as 'developer' | 'client' || 'client';
+            
+            // Create a temporary auth state
+            const tempAuthState = {
+              isAuthenticated: true,
+              userType: userType,
+              userId: session.user.id,
+            };
+            
+            console.log('Setting temporary auth state from metadata:', tempAuthState);
+            setAuthState(tempAuthState);
+            localStorage.setItem('authState', JSON.stringify(tempAuthState));
             return;
           }
           

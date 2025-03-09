@@ -49,116 +49,37 @@ export const useLoginForm = () => {
     console.log(`Attempting to login: ${email} as ${userType}`);
     
     try {
-      // Call supabase directly for more reliable login
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      // First attempt to login with our context function
+      const loginSuccess = await login(email, password, userType);
       
-      if (error) {
-        console.error('Supabase login error:', error);
-        setError(error.message);
-        toast.error(error.message || 'Login failed');
-        setIsLoading(false);
-        return;
-      }
-      
-      if (!data.user) {
-        console.error('No user data returned from Supabase');
-        setError('Login failed. No user data returned.');
-        toast.error('Login failed. Please try again.');
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log('Supabase login successful, checking profile for user type match');
-      
-      // Get user profile to ensure user type matches
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('user_type')
-        .eq('id', data.user.id)
-        .maybeSingle();
-      
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        setError('Error retrieving user profile');
-        toast.error('Error retrieving user profile');
-        setIsLoading(false);
-        return;
-      }
-      
-      // Check if profile exists and if user type matches
-      if (profileData) {
-        if (profileData.user_type !== userType) {
-          console.error('User type mismatch', { expected: userType, found: profileData.user_type });
-          setError(`You registered as a ${profileData.user_type}, but tried to log in as a ${userType}.`);
-          toast.error(`You registered as a ${profileData.user_type}, but tried to log in as a ${userType}.`);
-          
-          // Sign out to clear the session
-          await supabase.auth.signOut();
-          setIsLoading(false);
-          return;
-        }
-        
-        console.log('User type matches, login successful');
+      if (loginSuccess) {
+        console.log('Login successful through context login function');
         toast.success('Login successful!');
-        navigate(userType === 'developer' ? '/profile' : '/client-dashboard');
+        
+        // Store in localStorage as backup
+        localStorage.setItem('authState', JSON.stringify({
+          isAuthenticated: true,
+          userType: userType,
+          // The user ID will be set by the auth context
+        }));
+        
+        // Force page reload to ensure all auth state is refreshed
+        // This is a last resort to ensure auth state is properly recognized
+        setTimeout(() => {
+          window.location.href = userType === 'developer' ? '/profile' : '/client-dashboard';
+        }, 500);
+        
+        return;
       } else {
-        console.log('No profile found, creating one');
-        
-        // Create a new profile for this user
-        const { error: createError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            user_type: userType,
-            email: email,
-            name: email.split('@')[0] // Use part of email as temporary name
-          });
-        
-        if (createError) {
-          console.error('Error creating profile:', createError);
-          setError('Could not create user profile');
-          toast.error('Could not create user profile');
-          
-          // Sign out to clear the session
-          await supabase.auth.signOut();
-          setIsLoading(false);
-          return;
-        }
-        
-        // Create type-specific profile
-        if (userType === 'developer') {
-          await supabase
-            .from('developer_profiles')
-            .insert({
-              id: data.user.id,
-              hourly_rate: 75,
-              minute_rate: 1.25,
-              skills: ['JavaScript', 'React'],
-              availability: true
-            });
-        } else {
-          await supabase
-            .from('client_profiles')
-            .insert({
-              id: data.user.id,
-              budget_per_hour: 75,
-              preferred_help_format: ['chat'],
-              looking_for: ['web development']
-            });
-        }
-        
-        console.log('Profile created, login successful');
-        toast.success('Welcome! Your profile has been created.');
-        navigate(userType === 'developer' ? '/profile' : '/client-dashboard');
+        console.error('Context login function returned false');
+        setError('Login failed. Please check your credentials and try again.');
+        toast.error('Login failed. Please check your credentials and try again.');
+        setIsLoading(false);
       }
     } catch (error: any) {
       console.error('Login error:', error);
       setError(error.message || 'An unexpected error occurred during login');
       toast.error(error.message || 'Login failed. Please try again later.');
-    } finally {
       setIsLoading(false);
     }
   };

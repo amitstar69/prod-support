@@ -40,9 +40,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const initAuth = async () => {
       try {
+        console.log('Initializing auth context...');
+        
         // First load from localStorage as a fast initial state
         const storedAuthState = localStorage.getItem('authState');
         if (storedAuthState) {
+          console.log('Found stored auth state in localStorage:', storedAuthState);
           const parsedState = JSON.parse(storedAuthState);
           setAuthState(parsedState);
         }
@@ -60,6 +63,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         // Then verify with Supabase (which is more reliable but slower)
         if (supabase) {
+          console.log('Verifying auth state with Supabase...');
           const authData = await checkSupabaseSession(setAuthState);
           
           // If the server indicates we're not authenticated but local storage did,
@@ -78,7 +82,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
           
           // Set up auth state change listener
-          setupAuthStateChangeListener(setAuthState);
+          console.log('Setting up auth state change listener...');
+          const { subscription } = setupAuthStateChangeListener(setAuthState);
+          
+          return () => {
+            // Clean up the subscription when the component unmounts
+            console.log('Cleaning up auth state change listener...');
+            subscription?.unsubscribe();
+          };
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -92,12 +103,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } finally {
         // Mark auth as initialized even if there was an error
         setAuthInitialized(true);
+        console.log('Auth initialization complete.');
       }
     };
     
     initAuth();
-    
-    // Cleanup function not needed here since subscription is handled in checkSupabaseSession
   }, []);
   
   // Logout function that's passed to the context
@@ -105,7 +115,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log("Logout triggered from AuthProvider");
     try {
       await logoutUser();
-      // The state updates will be handled by the auth state change listener
+      // Force auth state update in case the listener doesn't work
+      setAuthState({
+        isAuthenticated: false,
+        userType: null,
+        userId: null,
+      });
+      localStorage.removeItem('authState');
     } catch (error) {
       console.error("Error during logout:", error);
       // Force auth state update in case the listener doesn't work
@@ -117,6 +133,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.removeItem('authState');
     }
   };
+  
+  // Update local storage whenever auth state changes
+  useEffect(() => {
+    if (authState.isAuthenticated) {
+      console.log('Saving auth state to localStorage:', authState);
+      localStorage.setItem('authState', JSON.stringify(authState));
+    }
+  }, [authState]);
   
   return (
     <AuthContext.Provider
