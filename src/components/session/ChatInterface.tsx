@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/auth';
 import { supabase } from '../../integrations/supabase/client';
+import { sendChatMessage, getSessionMessages, subscribeToSessionMessages } from '../../integrations/supabase/sessionManager';
 import { Loader2, Send, PaperclipIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
@@ -12,10 +13,13 @@ interface ChatMessage {
   id: string;
   session_id: string;
   sender_id: string;
-  sender_name: string;
+  sender_name?: string;
   sender_avatar?: string;
   content: string;
   created_at: string;
+  sender_type: 'developer' | 'client' | 'system';
+  is_code?: boolean;
+  attachment_url?: string;
 }
 
 interface ChatInterfaceProps {
@@ -28,85 +32,103 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId }) => {
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Dummy data for demo purposes
-  const dummyMessages: ChatMessage[] = [
-    {
-      id: '1',
-      session_id: sessionId,
-      sender_id: 'client-123',
-      sender_name: 'Alex Johnson',
-      sender_avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop',
-      content: 'Hi! Thanks for helping me with my React Router issue.',
-      created_at: new Date(Date.now() - 1000 * 60 * 10).toISOString() // 10 minutes ago
-    },
-    {
-      id: '2',
-      session_id: sessionId,
-      sender_id: userId || 'developer-123',
-      sender_name: 'You',
-      content: 'No problem! I took a look at your code and I think I see the issue. Can you explain what happens when you try to navigate to a nested route?',
-      created_at: new Date(Date.now() - 1000 * 60 * 9).toISOString() // 9 minutes ago
-    },
-    {
-      id: '3',
-      session_id: sessionId,
-      sender_id: 'client-123',
-      sender_name: 'Alex Johnson',
-      sender_avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop',
-      content: 'When I click on a link to "/dashboard/settings", the URL changes but the component doesn\'t update. I have to refresh the page to see the settings component.',
-      created_at: new Date(Date.now() - 1000 * 60 * 8).toISOString() // 8 minutes ago
-    }
-  ];
-
   useEffect(() => {
-    // In a real implementation, fetch messages from supabase
-    // This is using dummy data for demonstration
-    setTimeout(() => {
-      setMessages(dummyMessages);
-      setIsLoading(false);
-    }, 1000);
+    fetchMessages();
+    fetchUserProfile();
+    
+    // Subscribe to real-time messages
+    const subscription = subscribeToSessionMessages(sessionId, (newMessage) => {
+      setMessages(prev => [...prev, newMessage]);
+    });
     
     // Scroll to bottom on initial load
     scrollToBottom();
-  }, []);
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [sessionId]);
 
   useEffect(() => {
     // Scroll to bottom whenever messages change
     scrollToBottom();
   }, [messages]);
 
+  const fetchUserProfile = async () => {
+    if (!userId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching user profile:', error);
+      } else {
+        setUserProfile(data);
+      }
+    } catch (error) {
+      console.error('Exception fetching user profile:', error);
+    }
+  };
+
+  const fetchMessages = async () => {
+    try {
+      setIsLoading(true);
+      const fetchedMessages = await getSessionMessages(sessionId);
+      
+      // If we don't have any messages yet, add a welcome message
+      if (fetchedMessages.length === 0) {
+        setMessages([
+          {
+            id: 'welcome',
+            session_id: sessionId,
+            sender_id: 'system',
+            sender_type: 'system',
+            content: 'Welcome to your help session! You can start chatting with your assigned developer/client here.',
+            created_at: new Date().toISOString()
+          }
+        ]);
+      } else {
+        setMessages(fetchedMessages);
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !userId) return;
+    if (!newMessage.trim() || !userId || !userProfile) return;
     
     try {
       setIsSending(true);
       
-      // Create a new message object
-      const newMsg: ChatMessage = {
-        id: `temp-${Date.now()}`,
-        session_id: sessionId,
-        sender_id: userId,
-        sender_name: 'You', // In a real app, get this from user profile
+      // Determine user type from the profile
+      const senderType = userProfile.user_type === 'developer' ? 'developer' : 'client';
+      
+      await sendChatMessage({
+        sessionId: sessionId,
+        senderId: userId,
+        senderType: senderType,
         content: newMessage,
-        created_at: new Date().toISOString()
-      };
+        isCode: false
+      });
       
-      // Optimistically add to UI
-      setMessages(prev => [...prev, newMsg]);
       setNewMessage('');
-      
-      // In a real implementation, save to supabase
-      // For demo, just simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
     } catch (error) {
       console.error('Error sending message:', error);
+      toast.error('Failed to send message');
     } finally {
       setIsSending(false);
     }
@@ -125,6 +147,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId }) => {
     } catch (e) {
       return 'just now';
     }
+  };
+
+  const getSenderName = (message: ChatMessage) => {
+    if (message.sender_type === 'system') return 'System';
+    return message.sender_id === userId ? 'You' : message.sender_name || 'User';
   };
 
   if (isLoading) {
@@ -147,20 +174,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId }) => {
               <Avatar className="h-8 w-8">
                 <AvatarImage src={message.sender_avatar} />
                 <AvatarFallback>
-                  {message.sender_name.charAt(0)}
+                  {getSenderName(message).charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <div 
                   className={`${message.sender_id === userId ? 
                     'bg-primary text-primary-foreground' : 
+                    message.sender_type === 'system' ?
+                    'bg-secondary text-secondary-foreground' :
                     'bg-muted text-foreground'} 
-                    p-3 rounded-lg`}
+                    p-3 rounded-lg ${message.is_code ? 'font-mono text-xs' : ''}`}
                 >
                   <p className="text-sm">{message.content}</p>
                 </div>
                 <div className={`text-xs text-muted-foreground mt-1 ${message.sender_id === userId ? 'text-right' : 'text-left'}`}>
-                  {message.sender_id === userId ? 'You' : message.sender_name} • {formatTime(message.created_at)}
+                  {getSenderName(message)} • {formatTime(message.created_at)}
                 </div>
               </div>
             </div>

@@ -151,11 +151,25 @@ export const sendChatMessage = async (message: Omit<ChatMessage, 'id' | 'timesta
       timestamp: new Date().toISOString()
     };
     
-    // Note: This will only work once the session_messages table is created in the database
-    console.log('Would send chat message:', newMessage);
-    toast.info('Chat message functionality will be available after database setup');
+    const { data, error } = await supabase
+      .from('session_messages')
+      .insert({
+        session_id: message.sessionId,
+        sender_id: message.senderId,
+        sender_type: message.senderType,
+        content: message.content,
+        is_code: message.isCode || false,
+        attachment_url: message.attachmentUrl
+      })
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error sending message:', error);
+      return null;
+    }
     
-    return null;
+    return data;
   } catch (error) {
     console.error('Exception sending message:', error);
     return null;
@@ -165,9 +179,18 @@ export const sendChatMessage = async (message: Omit<ChatMessage, 'id' | 'timesta
 // Get all messages for a session
 export const getSessionMessages = async (sessionId: string) => {
   try {
-    // Note: This will only work once the session_messages table is created in the database
-    console.log('Would get messages for session:', sessionId);
-    return [];
+    const { data, error } = await supabase
+      .from('session_messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
+      
+    if (error) {
+      console.error('Error fetching session messages:', error);
+      return [];
+    }
+    
+    return data;
   } catch (error) {
     console.error('Exception fetching session messages:', error);
     return [];
@@ -177,9 +200,16 @@ export const getSessionMessages = async (sessionId: string) => {
 // Update shared code in a session
 export const updateSharedCode = async (sessionId: string, code: string) => {
   try {
-    // Since shared_code column doesn't exist yet, we'll log this intention
-    console.log('Would update shared code for session:', sessionId, code);
-    toast.info('Code sharing functionality will be available after database setup');
+    const { error } = await supabase
+      .from('help_sessions')
+      .update({ shared_code: code })
+      .eq('id', sessionId);
+      
+    if (error) {
+      console.error('Error updating shared code:', error);
+      return false;
+    }
+    
     return true;
   } catch (error) {
     console.error('Exception updating shared code:', error);
@@ -215,8 +245,22 @@ export const getUserSessions = async (userId: string, role: 'developer' | 'clien
 
 // Setup real-time chat subscription
 export const subscribeToSessionMessages = (sessionId: string, onNewMessage: (message: any) => void) => {
-  console.log('Would subscribe to session messages for:', sessionId);
-  return { unsubscribe: () => console.log('Would unsubscribe from messages') };
+  const channel = supabase
+    .channel(`session-messages-${sessionId}`)
+    .on('postgres_changes', 
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'session_messages',
+        filter: `session_id=eq.${sessionId}`
+      }, 
+      (payload) => {
+        onNewMessage(payload.new);
+      }
+    )
+    .subscribe();
+    
+  return channel;
 };
 
 // Setup real-time session updates subscription
@@ -270,18 +314,30 @@ export const createSessionSummary = async (
     const durationMs = endTime - startTime;
     const durationMinutes = Math.ceil(durationMs / (1000 * 60));
     
-    // Note: This will only work once the session_summaries table is created
-    console.log('Would create session summary:', {
-      sessionId,
-      topics,
-      solution,
-      rating,
-      feedback,
-      durationMinutes
-    });
+    const { data, error } = await supabase
+      .from('session_summaries')
+      .insert({
+        session_id: sessionId,
+        developer_id: session.developer_id,
+        developer_name: session.developer.name,
+        client_id: session.client_id,
+        client_name: session.client.name,
+        topics: topics,
+        solution: solution,
+        duration: durationMinutes,
+        cost: session.final_cost,
+        rating: rating,
+        feedback: feedback
+      })
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error creating session summary:', error);
+      return null;
+    }
     
-    toast.info('Session summary functionality will be available after database setup');
-    return null;
+    return data;
   } catch (error) {
     console.error('Exception creating session summary:', error);
     return null;
