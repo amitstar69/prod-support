@@ -10,6 +10,7 @@ import LoadingState from '../components/dashboard/LoadingState';
 import EmptyTicketState from '../components/dashboard/EmptyTicketState';
 import TicketControls from '../components/dashboard/TicketControls';
 import TicketSummary from '../components/dashboard/TicketSummary';
+import MatchingInsightsPanel from '../components/dashboard/MatchingInsightsPanel';
 import { useDeveloperDashboard } from '../hooks/dashboard/useDeveloperDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/ui/button';
@@ -21,6 +22,7 @@ const DeveloperDashboard = () => {
     filteredTickets,
     recommendedTickets,
     myApplications,
+    developers,
     isLoading,
     filters,
     showFilters,
@@ -87,6 +89,15 @@ const DeveloperDashboard = () => {
               </Button>
             </div>
           </div>
+        )}
+        
+        {/* Add Matching Insights Panel for authenticated users */}
+        {isAuthenticated && (
+          <MatchingInsightsPanel 
+            tickets={tickets} 
+            developers={developers || []} 
+            onRefresh={fetchTickets}
+          />
         )}
         
         <TicketControls 
