@@ -5,7 +5,6 @@ import { useTicketFetching } from './useTicketFetching';
 import { useTicketApplications } from './useTicketApplications';
 import { useAuth } from '../../contexts/auth';
 import { toast } from 'sonner';
-import { HelpRequest } from '../../types/helpRequest';
 
 export const useDeveloperDashboard = () => {
   const { isAuthenticated, userId, userType } = useAuth();
@@ -34,14 +33,9 @@ export const useDeveloperDashboard = () => {
   const {
     recommendedTickets,
     myApplications,
-    handleClaimTicket: originalHandleClaimTicket,
+    handleClaimTicket,
     fetchMyApplications
   } = useTicketApplications(tickets, isAuthenticated, userId, userType, fetchTickets);
-
-  // Update the handleClaimTicket function to match the expected signature
-  const handleClaimTicket = (ticket: HelpRequest) => {
-    originalHandleClaimTicket(ticket);
-  };
 
   // Initial data fetch
   useEffect(() => {

@@ -1,113 +1,71 @@
 
-export type HelpRequestStatus =
-  | 'pending'
-  | 'matching'
-  | 'scheduled'
-  | 'in-progress'
-  | 'completed'
-  | 'cancelled'
-  | 'requirements'
-  | 'todo'
-  | 'in-progress-unpaid'
-  | 'in-progress-paid'
-  | 'client-review'
-  | 'production';
-
-export interface ProfileInfo {
-  id: string;
-  name: string;
-  image?: string;
-}
-
 export interface HelpRequest {
-  id: string;
+  id?: string;
+  client_id: string;
   title: string;
   description: string;
   technical_area: string[];
   urgency: string;
-  budget_range: string;
   communication_preference: string[];
-  client_id: string;
   estimated_duration: number;
-  code_snippet?: string | null;
-  status: HelpRequestStatus;
-  created_at: string;
-  updated_at: string;
-  client?: ProfileInfo;
-  applications?: HelpRequestMatch[]; 
-  application_status?: string;
+  budget_range: string;
+  code_snippet?: string;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface HelpRequestMatch {
-  id: string;
+  id?: string;
   request_id: string;
   developer_id: string;
+  match_score?: number;
+  status: string; // Changed from specific literals to allow any string from database
+  created_at?: string;
+  updated_at?: string;
   proposed_message?: string;
   proposed_duration?: number;
   proposed_rate?: number;
-  match_score?: number;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  developer?: ProfileInfo;
 }
 
 export interface HelpSession {
-  id: string;
+  id?: string;
   request_id: string;
-  client_id: string;
   developer_id: string;
-  scheduled_start?: string | null;
-  scheduled_end?: string | null;
-  actual_start?: string | null;
-  actual_end?: string | null;
-  final_cost?: number | null;
-  status: string;
-  shared_code?: string | null;
-  created_at: string;
-  updated_at: string;
-  client?: ProfileInfo;
-  developer?: ProfileInfo;
-  request?: HelpRequest;
+  client_id: string;
+  scheduled_start?: string;
+  scheduled_end?: string;
+  actual_start?: string;
+  actual_end?: string;
+  status: string; // Changed from specific literals to allow any string from database
+  final_cost?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface ChatMessage {
-  id: string;
-  sessionId: string;
-  senderId: string;
-  senderType: 'developer' | 'client' | 'system';
-  content: string;
-  timestamp: string;
-  isCode?: boolean;
-  attachmentUrl?: string;
-}
-
-// Export the constant options
 export const technicalAreaOptions = [
   'Frontend',
   'Backend',
-  'Database',
-  'DevOps',
+  'Full Stack',
   'Mobile Development',
+  'DevOps',
+  'Database',
   'API Integration',
-  'Performance Optimization',
-  'UI/UX',
-  'Bug Fixing',
-  'Testing',
   'Security',
-  'Architecture',
+  'Performance Optimization',
+  'Debugging',
+  'Testing',
+  'UI/UX',
+  'AI/ML Integration',
   'Cloud Services',
-  'Data Analysis',
-  'Machine Learning'
+  'Code Review'
 ];
 
 export const communicationOptions = [
   'Chat',
   'Voice Call',
   'Video Call',
-  'Screen Sharing',
-  'Code Review',
-  'Pair Programming'
+  'Screen Sharing'
 ];
 
 export const budgetRangeOptions = [
@@ -115,6 +73,15 @@ export const budgetRangeOptions = [
   '$50 - $100',
   '$100 - $200',
   '$200 - $500',
-  'Over $500',
-  'To be discussed'
+  '$500+'
+];
+
+// Updated to match the database constraint for help_requests_status_check
+export const requestStatusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'matching', label: 'Matching' },
+  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'in-progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' }
 ];

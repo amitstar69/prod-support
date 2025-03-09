@@ -1,8 +1,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { HelpRequest, HelpRequestStatus, technicalAreaOptions, communicationOptions, budgetRangeOptions } from '../types/helpRequest';
+import { HelpRequest, technicalAreaOptions, communicationOptions, budgetRangeOptions } from '../types/helpRequest';
 import { toast } from 'sonner';
-import { supabase } from '../integrations/supabase/client';
 
 type HelpRequestContextType = {
   formData: Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'updated_at'>;
@@ -13,7 +12,6 @@ type HelpRequestContextType = {
   handleMultiSelectChange: (name: string, value: string) => void;
   resetForm: () => void;
   validateForm: () => boolean;
-  submitForm: (clientId: string) => Promise<{success: boolean, data?: any, error?: string}>;
 };
 
 const defaultFormData: Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'updated_at'> = {
@@ -25,7 +23,7 @@ const defaultFormData: Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'up
   estimated_duration: 30,
   budget_range: budgetRangeOptions[1],
   code_snippet: '',
-  status: 'pending' as HelpRequestStatus
+  status: 'pending' // Updated from 'pending' to match the database constraint
 };
 
 export const HelpRequestContext = createContext<HelpRequestContextType | undefined>(undefined);
@@ -37,6 +35,7 @@ export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ childre
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
+    // Special handling for estimated_duration to convert to number
     if (name === 'estimated_duration') {
       setFormData(prev => ({
         ...prev,
@@ -78,6 +77,7 @@ export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
 
   const validateForm = (): boolean => {
+    // Basic validation of required fields
     if (!formData.title.trim()) {
       toast.error("Please provide a title for your help request");
       return false;
@@ -100,50 +100,6 @@ export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ childre
     
     return true;
   };
-  
-  const submitForm = async (clientId: string) => {
-    console.log('[HelpRequestContext] Submitting form with client ID:', clientId);
-    try {
-      // Ensure duration is a number
-      const duration = typeof formData.estimated_duration === 'string' 
-        ? parseInt(formData.estimated_duration, 10) 
-        : formData.estimated_duration;
-        
-      // Create complete request object
-      const helpRequest = {
-        ...formData,
-        estimated_duration: duration,
-        client_id: clientId,
-      };
-      
-      // Insert the help request into Supabase
-      const { data, error } = await supabase
-        .from('help_requests')
-        .insert([helpRequest])
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('[HelpRequestContext] Supabase error submitting request:', error);
-        return { 
-          success: false, 
-          error: error.message 
-        };
-      }
-      
-      console.log('[HelpRequestContext] Help request submitted successfully:', data);
-      return {
-        success: true,
-        data
-      };
-    } catch (error: any) {
-      console.error('[HelpRequestContext] Exception submitting help request:', error);
-      return {
-        success: false,
-        error: error.message || 'An unexpected error occurred'
-      };
-    }
-  };
 
   return (
     <HelpRequestContext.Provider 
@@ -155,8 +111,7 @@ export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ childre
         handleInputChange, 
         handleMultiSelectChange,
         resetForm,
-        validateForm,
-        submitForm
+        validateForm 
       }}
     >
       {children}

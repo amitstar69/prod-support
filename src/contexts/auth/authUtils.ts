@@ -1,181 +1,208 @@
-
 import { supabase } from '../../integrations/supabase/client';
-import { Dispatch, SetStateAction } from 'react';
-import { AuthState } from './types';
 import { toast } from 'sonner';
 
-// Check if a user is already logged in with Supabase
-export const checkSupabaseSession = async (
-  setAuthState: Dispatch<SetStateAction<AuthState>>
-): Promise<AuthState | null> => {
+// Log out utility - extracted from AuthContext
+export const logoutUser = async (): Promise<void> => {
+  console.log('Logging out user...');
+  
   try {
-    console.log('Checking Supabase session...');
-    const { data, error } = await supabase.auth.getSession();
+    // First clear local state to ensure UI updates immediately
+    localStorage.removeItem('authState');
+    localStorage.removeItem('supabase.auth.token');
     
-    if (error) {
-      console.error('Error checking Supabase session:', error);
-      return null;
+    // Create a timeout promise to ensure we don't hang on logout
+    const timeoutPromise = new Promise<void>((_, reject) => {
+      setTimeout(() => {
+        console.warn('Supabase signout timeout reached');
+        reject(new Error('Logout timeout reached'));
+      }, 3000); // 3 second timeout for Supabase operations
+    });
+    
+    // Then attempt to sign out from Supabase
+    if (supabase) {
+      try {
+        // Race between the signout request and timeout
+        await Promise.race([
+          (async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+              throw error;
+            }
+          })(),
+          timeoutPromise
+        ]);
+        
+        console.log('Successfully signed out from Supabase');
+      } catch (supabaseError) {
+        console.error('Exception during Supabase signout:', supabaseError);
+        // Continue with logout even if Supabase fails
+      }
     }
     
-    if (!data.session) {
-      console.log('No active Supabase session');
-      return { isAuthenticated: false, userType: null, userId: null };
-    }
+    console.log('Logout completed, auth state cleared');
+    toast.success('Successfully logged out');
     
-    console.log('Active Supabase session found for user:', data.session.user.id);
+    // Force page refresh to clear any cached state - with a small delay to ensure toast is visible
+    setTimeout(() => {
+      // Use href to ensure complete page reload, bypassing React Router
+      window.location.href = '/';
+    }, 300);
     
-    // Get user profile to determine user type
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', data.session.user.id)
-      .maybeSingle();
-      
-    if (profileError) {
-      console.error('Error fetching profile:', profileError);
-      return null;
-    }
-    
-    if (!profileData) {
-      console.log('No profile found for this user');
-      
-      // Extract user type from user metadata if available
-      const userType = data.session.user.user_metadata?.user_type as 'client' | 'developer' || 'client';
-      
-      // For safety, we'll create a simple profile with client permissions
-      // The user will need to set their profile type later
-      const newAuthState = { 
-        isAuthenticated: true, 
-        userType: userType,
-        userId: data.session.user.id
-      };
-      
-      setAuthState(newAuthState);
-      return newAuthState;
-    }
-    
-    const authState = {
-      isAuthenticated: true,
-      userType: profileData.user_type as 'developer' | 'client',
-      userId: data.session.user.id,
-    };
-    
-    console.log('Setting auth state from session:', authState);
-    setAuthState(authState);
-    return authState;
   } catch (error) {
-    console.error('Exception checking Supabase session:', error);
-    return null;
+    console.error('Exception during logout:', error);
+    toast.error('An error occurred during logout');
+    
+    // Still force refresh on error after a short delay
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 300);
   }
 };
 
-// Set up authentication state change listener
-export const setupAuthStateChangeListener = (
-  setAuthState: Dispatch<SetStateAction<AuthState>>
-) => {
-  console.log('Setting up auth state change listener');
+// Check Supabase session and get user profile
+export const checkSupabaseSession = async (setAuthState: (state: any) => void) => {
+  if (!supabase) {
+    console.error('Supabase client is not available. Authentication will not work properly.');
+    return null;
+  }
   
-  const { data } = supabase.auth.onAuthStateChange(
-    async (event, session) => {
-      console.log('Auth state changed:', event, session ? 'with session' : 'no session');
+  console.log('Checking Supabase session...');
+  
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    
+    console.log('Supabase session result:', { data, error });
+    if (data.session) {
+      // Get user profile from Supabase
+      console.log('User is authenticated, fetching profile for user:', data.session.user.id);
       
-      if (event === 'SIGNED_OUT') {
-        // User signed out, clear auth state
+      try {
+        const { data: profileData, error: profileError } = await supabase.from('profiles')
+          .select('*')
+          .eq('id', data.session.user.id)
+          .single();
+          
+        console.log('Profile fetch result:', { profileData, profileError });
+        
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          return null;
+        }
+        
+        if (profileData) {
+          // Ensure userType is 'developer' | 'client' | null
+          const userType = profileData.user_type === 'developer' || profileData.user_type === 'client' 
+            ? profileData.user_type as 'developer' | 'client'
+            : null;
+          
+          const authState = {
+            isAuthenticated: true,
+            userType: userType,
+            userId: data.session.user.id,
+          };
+          
+          setAuthState(authState);
+          localStorage.setItem('authState', JSON.stringify(authState));
+          
+          return authState;
+        }
+      } catch (profileError) {
+        console.error('Exception during profile fetch:', profileError);
+        return null;
+      }
+    }
+  } catch (error) {
+    console.error('Exception during session check:', error);
+  }
+  
+  return null;
+};
+
+// Setup auth state change listener
+export const setupAuthStateChangeListener = (setAuthState: (state: any) => void) => {
+  if (!supabase) return { unsubscribe: () => {} };
+  
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    async (event, session) => {
+      console.log('Auth state changed:', event, 'Session:', session ? 'exists' : 'none');
+      
+      if (event === 'SIGNED_IN' && session) {
+        try {
+          // Get user profile
+          const { data: profileData, error: profileError } = await supabase.from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (profileError) {
+            console.error('Error fetching profile on auth state change:', profileError);
+            return;
+          }
+            
+          if (profileData) {
+            // Ensure userType is 'developer' | 'client' | null
+            const userType = profileData.user_type === 'developer' || profileData.user_type === 'client' 
+              ? profileData.user_type as 'developer' | 'client'
+              : null;
+              
+            const authState = {
+              isAuthenticated: true,
+              userType: userType,
+              userId: session.user.id,
+            };
+            
+            setAuthState(authState);
+            localStorage.setItem('authState', JSON.stringify(authState));
+          }
+        } catch (error) {
+          console.error('Exception in auth state change handler:', error);
+        }
+      } else if (event === 'SIGNED_OUT') {
         setAuthState({
           isAuthenticated: false,
           userType: null,
           userId: null,
         });
         localStorage.removeItem('authState');
-        console.log('Auth state cleared due to sign out');
-        return;
-      }
-      
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        // User signed in or token refreshed, update auth state
-        if (!session) {
-          console.error('No session available after sign in or token refresh');
-          return;
-        }
-        
-        try {
-          // Get user profile to determine user type
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-            
-          if (profileError) {
-            console.error('Error fetching profile after auth change:', profileError);
-            return;
-          }
-          
-          if (!profileData) {
-            console.log('No profile found after auth change');
-            // Try to extract user type from user metadata
-            const userType = session.user.user_metadata?.user_type as 'developer' | 'client' || null;
-            
-            if (!userType) {
-              console.error('No user type found in metadata');
-              return;
-            }
-            
-            // Create a auth state
-            const tempAuthState = {
-              isAuthenticated: true,
-              userType: userType,
-              userId: session.user.id,
-            };
-            
-            console.log('Setting temporary auth state from metadata:', tempAuthState);
-            setAuthState(tempAuthState);
-            localStorage.setItem('authState', JSON.stringify(tempAuthState));
-            return;
-          }
-          
-          const authState = {
-            isAuthenticated: true,
-            userType: profileData.user_type as 'developer' | 'client',
-            userId: session.user.id,
-          };
-          
-          console.log('Setting auth state from auth change:', authState);
-          setAuthState(authState);
-          localStorage.setItem('authState', JSON.stringify(authState));
-        } catch (error) {
-          console.error('Exception handling auth state change:', error);
-        }
       }
     }
   );
   
-  // Return the subscription which has the unsubscribe method
-  return data.subscription;
+  return subscription;
 };
 
-// Log out a user
-export const logoutUser = async (): Promise<void> => {
-  console.log('Logging out user');
-  try {
-    // Clear local storage auth state first for immediate UI update
-    localStorage.removeItem('authState');
-    
-    const { error } = await supabase.auth.signOut();
-    
-    if (error) {
-      console.error('Error during Supabase sign out:', error);
-      toast.error('Error signing out: ' + error.message);
-      throw error;
+// Add a function to check if a user is stuck in a loading state
+export const isUserStuckInLoadingState = (): boolean => {
+  // Check if there might be loading state persisted in localStorage
+  const loadingStateStr = localStorage.getItem('appLoadingState');
+  if (loadingStateStr) {
+    try {
+      const loadingState = JSON.parse(loadingStateStr);
+      const { isLoading, timestamp } = loadingState;
+      
+      if (isLoading) {
+        // If it's been loading for more than 1 minute, consider user stuck
+        const loadingDuration = Date.now() - timestamp;
+        if (loadingDuration > 60000) { // 1 minute
+          return true;
+        }
+      }
+    } catch (e) {
+      // Ignore parsing errors
     }
-    
-    console.log('User logged out and auth state cleared');
-    toast.success('You have been signed out');
-  } catch (error) {
-    console.error('Exception during logout:', error);
-    // Forcefully clear local storage auth state even if Supabase logout fails
-    localStorage.removeItem('authState');
-    toast.error('Error during sign out, but session cleared locally');
-    throw error;
+  }
+  
+  return false;
+};
+
+// Helper to set loading state in localStorage
+export const setAppLoadingState = (isLoading: boolean): void => {
+  if (isLoading) {
+    localStorage.setItem('appLoadingState', JSON.stringify({
+      isLoading: true,
+      timestamp: Date.now()
+    }));
+  } else {
+    localStorage.removeItem('appLoadingState');
   }
 };

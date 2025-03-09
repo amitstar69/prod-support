@@ -1,156 +1,270 @@
+
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { HelpRequest } from '@/types/helpRequest';
-import { useAuth } from '@/contexts/auth';
-import { submitDeveloperApplication } from '@/integrations/supabase/helpRequests';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../integrations/supabase/client';
+import { useAuth } from '../../contexts/auth';
+import { HelpRequest } from '../../types/helpRequest';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Textarea } from '../ui/textarea';
+import { Slider } from '../ui/slider';
+import { submitDeveloperApplication } from '../../integrations/supabase/helpRequests';
+import { isLocalId } from '../../integrations/supabase/helpRequestsUtils';
 
 interface DeveloperApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  helpRequest: HelpRequest;
+  ticket: HelpRequest;
+  onApplicationSuccess: () => void;
 }
 
 const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
   isOpen,
   onClose,
-  helpRequest,
+  ticket,
+  onApplicationSuccess
 }) => {
-  const { userId, isAuthenticated } = useAuth();
+  const { userId } = useAuth();
+  const navigate = useNavigate();
   const [message, setMessage] = useState('');
-  const [proposedDuration, setProposedDuration] = useState(helpRequest.estimated_duration || 60);
-  const [proposedRate, setProposedRate] = useState(75);
+  const [estimatedTime, setEstimatedTime] = useState(ticket.estimated_duration || 30);
+  const [proposedRate, setProposedRate] = useState(75); // Default hourly rate in USD
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const estimatedTotal = proposedRate * (proposedDuration / 60);
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    
-    if (!isAuthenticated || !userId) {
-      toast.error('You must be logged in to apply');
+  const handleSubmit = async () => {
+    if (!userId) {
+      toast.error('You must be logged in to apply for this request');
       return;
     }
-    
-    setIsSubmitting(true);
-    
+
+    if (!message.trim()) {
+      toast.error('Please provide a brief message to the client');
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
+      
+      console.log('Submitting application with data:', {
+        request_id: ticket.id,
+        developer_id: userId,
+        status: 'pending',
+        match_score: 85,
+        proposed_message: message,
+        proposed_duration: estimatedTime,
+        proposed_rate: proposedRate
+      });
+
+      // Check if this is a local storage ticket (starts with "help-")
+      if (isLocalId(ticket.id)) {
+        // For local storage tickets, we can't use the database
+        // Instead, we'll store the application in local storage
+        const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
+        
+        // Check if an application already exists
+        const existingIndex = localApplications.findIndex(
+          (app: any) => app.developer_id === userId && app.request_id === ticket.id
+        );
+        
+        if (existingIndex >= 0) {
+          // Update existing application
+          localApplications[existingIndex] = {
+            ...localApplications[existingIndex],
+            proposed_message: message,
+            proposed_duration: estimatedTime,
+            proposed_rate: proposedRate,
+            match_score: 85,
+            status: 'pending',
+            updated_at: new Date().toISOString()
+          };
+          
+          localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
+          toast.success('Application updated successfully!');
+          onApplicationSuccess();
+          onClose();
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Create new application
+        const newApplication = {
+          id: `app-${Date.now()}`,
+          request_id: ticket.id,
+          developer_id: userId,
+          status: 'pending',
+          match_score: 85,
+          proposed_message: message,
+          proposed_duration: estimatedTime,
+          proposed_rate: proposedRate,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        localApplications.push(newApplication);
+        localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
+        
+        // Update the ticket status to 'matching' if it was 'pending'
+        const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+        const ticketIndex = localHelpRequests.findIndex((req: HelpRequest) => req.id === ticket.id);
+        
+        if (ticketIndex >= 0 && localHelpRequests[ticketIndex].status === 'pending') {
+          localHelpRequests[ticketIndex].status = 'matching';
+          localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+        }
+        
+        toast.success('Application submitted successfully!');
+        onApplicationSuccess();
+        onClose();
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // For database tickets, use the submit function
       const result = await submitDeveloperApplication(
-        helpRequest.id,
-        userId,
+        ticket.id, 
+        userId, 
         {
           proposed_message: message,
-          proposed_duration: parseInt(proposedDuration.toString()),
-          proposed_rate: parseInt(proposedRate.toString())
+          proposed_duration: estimatedTime,
+          proposed_rate: proposedRate
         }
       );
-      
-      if (result.success) {
-        toast.success('Application submitted successfully!');
-        onClose();
-      } else {
-        toast.error(`Failed to submit: ${result.error}`);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to submit application');
       }
+
+      toast.success(result.isUpdate ? 'Application updated successfully!' : 'Application submitted successfully!');
+      onApplicationSuccess();
+      onClose();
     } catch (error) {
-      console.error('Error submitting application:', error);
-      toast.error('An error occurred while submitting your application');
+      console.error('Exception submitting application:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      toast.error(`Error: ${errorMessage}. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const formatCurrency = (value: number) => {
+    return `$${value}`;
+  };
+
+  const calculateTotalCost = () => {
+    const hourlyRate = proposedRate;
+    const hours = estimatedTime / 60;
+    return formatCurrency(Math.round(hourlyRate * hours));
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open && !isSubmitting) {
+        onClose();
+      }
+    }}>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Apply to Help</DialogTitle>
+          <DialogTitle>Apply for Help Request</DialogTitle>
           <DialogDescription>
-            Send a proposal to the client for this help request
+            Send your application to help with this request. The client will review your proposal.
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="mt-4 space-y-6">
-          <div className="bg-muted/50 p-4 rounded-lg">
-            <h3 className="font-medium text-lg">{helpRequest.title}</h3>
-            <p className="text-sm text-muted-foreground mt-2">{helpRequest.description}</p>
-            <div className="flex flex-wrap gap-2 mt-3">
-              {helpRequest.technical_area.map((area) => (
-                <span key={area} className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
-                  {area}
-                </span>
-              ))}
-            </div>
+
+        <div className="space-y-4 py-4">
+          <div>
+            <h3 className="text-lg font-medium">{ticket.title}</h3>
+            <p className="text-sm text-muted-foreground mt-1">{ticket.description}</p>
           </div>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="message">Message to Client</Label>
-              <Textarea
-                id="message"
-                placeholder="Explain why you're the best developer for this job..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                rows={5}
-                required
-              />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Your Message to Client</label>
+            <Textarea
+              placeholder="Introduce yourself and explain how you can help with this request..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={4}
+              className="resize-none"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium">Estimated Duration</label>
+              <span className="text-sm">{estimatedTime} minutes</span>
             </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="duration">Estimated Duration (minutes)</Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  min={15}
-                  step={15}
-                  value={proposedDuration}
-                  onChange={(e) => setProposedDuration(Number(e.target.value))}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="rate">Hourly Rate ($)</Label>
-                <Input
-                  id="rate"
-                  type="number"
-                  min={0}
-                  value={proposedRate}
-                  onChange={(e) => setProposedRate(Number(e.target.value))}
-                  required
-                />
-              </div>
+            <Slider
+              value={[estimatedTime]}
+              min={15}
+              max={180}
+              step={15}
+              onValueChange={(values) => setEstimatedTime(values[0])}
+              disabled={isSubmitting}
+            />
+            <p className="text-xs text-muted-foreground">
+              Client's estimate: {ticket.estimated_duration} minutes
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium">Your Hourly Rate</label>
+              <span className="text-sm">{formatCurrency(proposedRate)}/hr</span>
             </div>
-            
-            <div className="bg-muted/30 p-3 rounded-lg">
-              <p className="text-sm">Estimated Total: <span className="font-semibold">${estimatedTotal.toFixed(2)}</span></p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Based on {proposedDuration} minutes at ${proposedRate}/hour
-              </p>
+            <Slider
+              value={[proposedRate]}
+              min={25}
+              max={200}
+              step={5}
+              onValueChange={(values) => setProposedRate(values[0])}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="bg-muted p-3 rounded-lg">
+            <div className="flex justify-between items-center text-sm">
+              <span>Estimated total cost:</span>
+              <span className="font-medium">{calculateTotalCost()}</span>
             </div>
-            
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Send Application'
-                )}
-              </Button>
-            </div>
-          </form>
+            <p className="text-xs text-muted-foreground mt-1">
+              Based on {estimatedTime} minutes at {formatCurrency(proposedRate)}/hour
+            </p>
+          </div>
         </div>
+        
+        <DialogFooter>
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            disabled={isSubmitting}
+            type="button"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isSubmitting}
+            type="button"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              'Submit Application'
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

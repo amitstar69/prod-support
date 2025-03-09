@@ -1,411 +1,569 @@
 import { supabase } from './client';
-import { HelpRequest, HelpRequestMatch, HelpRequestStatus } from '../../types/helpRequest';
-import { toast } from 'sonner';
+import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
+import { isValidUUID, isLocalId } from './helpRequestsUtils';
 
-// Type definitions for response objects
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: any;
-}
-
-// Create a new help request
-export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'created_at' | 'updated_at'>): Promise<ApiResponse<HelpRequest>> => {
+// Core function to create a help request
+export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'created_at' | 'updated_at'>) => {
   try {
+    const { client_id } = helpRequest;
+    
+    // Validate client ID
+    if (!client_id) {
+      return { success: false, error: 'Client ID is required' };
+    }
+    
+    // Determine if we should use local storage or Supabase
+    const useLocalStorage = isLocalId(client_id);
+    const useSupabase = isValidUUID(client_id);
+    
+    if (!useLocalStorage && !useSupabase) {
+      return { success: false, error: 'Invalid client ID format' };
+    }
+    
+    // For local storage
+    if (useLocalStorage) {
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      const newRequest = {
+        ...helpRequest,
+        id: `help-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      localHelpRequests.push(newRequest);
+      localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+      console.log('Help request stored locally:', newRequest);
+      
+      return { success: true, data: newRequest, storageMethod: 'localStorage' };
+    }
+    
+    // For Supabase
     const { data, error } = await supabase
       .from('help_requests')
       .insert(helpRequest)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating help request:', error);
-      return { success: false, error: error.message };
-    }
-
-    // Cast the status to HelpRequestStatus to satisfy TypeScript
-    const typedData = {
-      ...data,
-      status: data.status as HelpRequestStatus
-    } as HelpRequest;
-
-    return { success: true, data: typedData };
-  } catch (error) {
-    console.error('Exception creating help request:', error);
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-};
-
-// Cancel a help request
-export const cancelHelpRequest = async (requestId: string): Promise<ApiResponse<any>> => {
-  try {
-    const { error } = await supabase
-      .from('help_requests')
-      .update({ status: 'cancelled' })
-      .eq('id', requestId);
+      .select();
       
     if (error) {
-      console.error('Error cancelling help request:', error);
+      console.error('Error creating help request in Supabase:', error);
       return { success: false, error: error.message };
     }
     
-    return { success: true, data: { id: requestId, status: 'cancelled' } };
+    console.log('Help request created successfully in Supabase:', data);
+    return { success: true, data: data[0], storageMethod: 'Supabase' };
+    
   } catch (error) {
-    console.error('Exception in cancelHelpRequest:', error);
-    return { success: false, error: String(error) };
+    console.error('Exception creating help request:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 };
 
-// Get all help requests for a client
-export const getClientHelpRequests = async (clientId: string): Promise<ApiResponse<HelpRequest[]>> => {
+// Function to fetch help requests for a client
+export const getHelpRequestsForClient = async (clientId: string) => {
   try {
-    const { data, error } = await supabase
-      .from('help_requests')
-      .select(`
-        *,
-        applications:help_request_matches(*)
-      `)
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching client help requests:', error);
-      return { success: false, error: error.message };
+    // Get local help requests
+    const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+    const filteredLocalHelpRequests = localHelpRequests.filter(
+      (request: HelpRequest) => request.client_id === clientId
+    );
+    
+    // If it's a local client ID, return only local requests
+    if (isLocalId(clientId)) {
+      return { 
+        success: true, 
+        data: filteredLocalHelpRequests, 
+        storageMethod: 'localStorage' 
+      };
     }
-
-    // Cast the status to HelpRequestStatus to satisfy TypeScript
-    const typedData = data.map(item => ({
-      ...item,
-      status: item.status as HelpRequestStatus
-    })) as HelpRequest[];
-
-    return { success: true, data: typedData };
+    
+    // For Supabase client ID, fetch from database
+    if (isValidUUID(clientId)) {
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Error fetching help requests from Supabase:', error);
+        // If there's an error with Supabase, still return local requests
+        return { 
+          success: false, 
+          error: error.message,
+          data: filteredLocalHelpRequests, 
+          storageMethod: 'fallbackToLocalStorage' 
+        };
+      }
+      
+      // Combine Supabase results with any local requests
+      const combinedResults = [...data, ...filteredLocalHelpRequests];
+      
+      return { 
+        success: true, 
+        data: combinedResults, 
+        storageMethod: 'combined' 
+      };
+    }
+    
+    // Invalid client ID format
+    return { success: false, error: 'Invalid client ID format' };
+    
   } catch (error) {
-    console.error('Exception fetching client help requests:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    console.error('Exception fetching help requests:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 };
 
-// Get a specific help request by ID
-export const getHelpRequestById = async (requestId: string): Promise<ApiResponse<HelpRequest>> => {
+// Function to get all public help requests for listing
+export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
   try {
-    const { data, error } = await supabase
-      .from('help_requests')
-      .select(`
-        *,
-        applications:help_request_matches(*, developer:developer_id(id, name, image))
-      `)
-      .eq('id', requestId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching help request:', error);
-      return { success: false, error: error.message };
+    console.log('[getAllPublicHelpRequests] Fetching tickets with auth status:', isAuthenticated);
+    
+    // For authenticated users, fetch real data from the database
+    if (isAuthenticated) {
+      // Let's explicitly check what session we have
+      const { data: session } = await supabase.auth.getSession();
+      console.log('[getAllPublicHelpRequests] Current session:', session?.session ? 'Active' : 'None');
+      
+      if (!session?.session) {
+        console.log('[getAllPublicHelpRequests] No active session, returning empty list');
+        return { 
+          success: false, 
+          error: 'No active session', 
+          data: [] 
+        };
+      }
+      
+      // Log the user ID to confirm we have valid authentication
+      console.log('[getAllPublicHelpRequests] Authenticated user ID:', session.session.user.id);
+      
+      // Check if the RLS policy should apply by getting the user type
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', session.session.user.id)
+        .single();
+      
+      console.log('[getAllPublicHelpRequests] User profile:', profileData, 'Error:', profileError);
+      
+      if (profileError) {
+        console.error('[getAllPublicHelpRequests] Error fetching user profile:', profileError);
+        toast.error('Error determining user type. Please try again.');
+      }
+      
+      // Debug query directly to check table access
+      const { count, error: countError } = await supabase
+        .from('help_requests')
+        .select('*', { count: 'exact', head: true });
+      
+      console.log('[getAllPublicHelpRequests] Table access check - Count:', count, 'Error:', countError);
+      
+      // Fetch all help requests (now using the RLS policy we added)
+      // The policy will automatically filter based on user type
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('[getAllPublicHelpRequests] Error fetching from Supabase:', error);
+        return { 
+          success: false, 
+          error: 'Failed to fetch help requests: ' + error.message,
+          data: [] 
+        };
+      }
+      
+      // If we got data from the database, use it and log all tickets for debugging
+      console.log('[getAllPublicHelpRequests] Fetched tickets from database:', data?.length);
+      if (data) {
+        data.forEach((ticket, index) => {
+          console.log(`[getAllPublicHelpRequests] DB Ticket ${index+1}:`, {
+            id: ticket.id,
+            status: ticket.status,
+            title: ticket.title,
+            client_id: ticket.client_id
+          });
+        });
+      }
+      
+      return {
+        success: true,
+        data: data || [],
+        storageMethod: 'database'
+      };
+    } 
+    // For non-authenticated users, return sample data
+    else {
+      // Get local storage requests for sample data
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      console.log('[getAllPublicHelpRequests] Local tickets for unauthenticated user:', localHelpRequests.length);
+      
+      return {
+        success: true,
+        data: localHelpRequests,
+        storageMethod: 'localStorage'
+      };
     }
+  } catch (error) {
+    console.error('[getAllPublicHelpRequests] Exception:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error', 
+      data: [] 
+    };
+  }
+};
 
-    // Cast the status to HelpRequestStatus to satisfy TypeScript
-    const typedData = {
-      ...data,
-      status: data.status as HelpRequestStatus
-    } as HelpRequest;
-
-    return { success: true, data: typedData };
+// Function to get a specific help request
+export const getHelpRequest = async (requestId: string) => {
+  try {
+    // For local help request ID
+    if (requestId.startsWith('help-')) {
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      const helpRequest = localHelpRequests.find(
+        (request: HelpRequest) => request.id === requestId
+      );
+      
+      if (!helpRequest) {
+        return { success: false, error: 'Help request not found in local storage' };
+      }
+      
+      return { success: true, data: helpRequest, storageMethod: 'localStorage' };
+    }
+    
+    // For Supabase help request ID
+    if (isValidUUID(requestId)) {
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching help request from Supabase:', error);
+        return { success: false, error: error.message };
+      }
+      
+      return { success: true, data, storageMethod: 'Supabase' };
+    }
+    
+    // Invalid request ID format
+    return { success: false, error: 'Invalid help request ID format' };
+    
   } catch (error) {
     console.error('Exception fetching help request:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 };
 
-// Update a help request
-export const updateHelpRequest = async (requestId: string, updates: Partial<HelpRequest>): Promise<ApiResponse<HelpRequest>> => {
+// Function to update a help request
+export const updateHelpRequest = async (requestId: string, updates: Partial<HelpRequest>) => {
   try {
-    const { data, error } = await supabase
-      .from('help_requests')
-      .update(updates)
-      .eq('id', requestId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating help request:', error);
-      return { success: false, error: error.message };
+    // For local help request ID
+    if (requestId.startsWith('help-')) {
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      const requestIndex = localHelpRequests.findIndex(
+        (request: HelpRequest) => request.id === requestId
+      );
+      
+      if (requestIndex === -1) {
+        return { success: false, error: 'Help request not found in local storage' };
+      }
+      
+      const updatedRequest = {
+        ...localHelpRequests[requestIndex],
+        ...updates,
+        updated_at: new Date().toISOString()
+      };
+      
+      localHelpRequests[requestIndex] = updatedRequest;
+      localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+      
+      return { success: true, data: updatedRequest, storageMethod: 'localStorage' };
     }
-
-    // Cast the status to HelpRequestStatus to satisfy TypeScript
-    const typedData = {
-      ...data,
-      status: data.status as HelpRequestStatus
-    } as HelpRequest;
-
-    return { success: true, data: typedData };
+    
+    // For Supabase help request ID
+    if (isValidUUID(requestId)) {
+      const { data, error } = await supabase
+        .from('help_requests')
+        .update(updates)
+        .eq('id', requestId)
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error updating help request in Supabase:', error);
+        return { success: false, error: error.message };
+      }
+      
+      return { success: true, data, storageMethod: 'Supabase' };
+    }
+    
+    // Invalid request ID format
+    return { success: false, error: 'Invalid help request ID format' };
+    
   } catch (error) {
     console.error('Exception updating help request:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 };
 
-// Delete a help request
-export const deleteHelpRequest = async (requestId: string): Promise<ApiResponse<null>> => {
-  try {
-    const { error } = await supabase
-      .from('help_requests')
-      .delete()
-      .eq('id', requestId);
-
-    if (error) {
-      console.error('Error deleting help request:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error('Exception deleting help request:', error);
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-};
-
-// Submit a developer application for a help request
+// Function to create or update a developer application for a help request
 export const submitDeveloperApplication = async (
   requestId: string, 
-  developerId: string,
-  applicationData?: {
-    proposed_message?: string;
-    proposed_duration?: number;
-    proposed_rate?: number;
+  developerId: string, 
+  applicationData: {
+    proposed_message: string;
+    proposed_duration: number;
+    proposed_rate: number;
   }
-): Promise<ApiResponse<HelpRequestMatch>> => {
+) => {
   try {
-    // Check if an application already exists
-    const { data: existingData, error: existingError } = await supabase
-      .from('help_request_matches')
-      .select('*')
-      .eq('request_id', requestId)
-      .eq('developer_id', developerId)
-      .maybeSingle();
-
-    if (existingError) {
-      console.error('Error checking existing application:', existingError);
-      return { success: false, error: existingError.message };
+    if (!requestId || !developerId) {
+      return { success: false, error: 'Missing required fields' };
     }
 
-    let result;
+    // Check if this is a local storage ticket (starts with "help-")
+    if (requestId.startsWith('help-') || requestId.startsWith('demo-')) {
+      // For local storage tickets, we can't use the database
+      // Instead, we'll store the application in local storage
+      const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
+      
+      // Check if an application already exists
+      const existingIndex = localApplications.findIndex(
+        (app: any) => app.developer_id === developerId && app.request_id === requestId
+      );
+      
+      if (existingIndex >= 0) {
+        // Update existing application
+        localApplications[existingIndex] = {
+          ...localApplications[existingIndex],
+          proposed_message: applicationData.proposed_message,
+          proposed_duration: applicationData.proposed_duration,
+          proposed_rate: applicationData.proposed_rate,
+          match_score: 85,
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        };
+        
+        localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
+        return { success: true, data: localApplications[existingIndex], isUpdate: true };
+      }
+      
+      // Create new application
+      const newApplication = {
+        id: `app-${Date.now()}`,
+        request_id: requestId,
+        developer_id: developerId,
+        status: 'pending',
+        match_score: 85,
+        proposed_message: applicationData.proposed_message,
+        proposed_duration: applicationData.proposed_duration,
+        proposed_rate: applicationData.proposed_rate,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      localApplications.push(newApplication);
+      localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
+      
+      // Update the ticket status to 'matching' if it was 'pending'
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      const ticketIndex = localHelpRequests.findIndex((req: any) => req.id === requestId);
+      
+      if (ticketIndex >= 0 && localHelpRequests[ticketIndex].status === 'pending') {
+        localHelpRequests[ticketIndex].status = 'matching';
+        localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+      }
+      
+      return { success: true, data: newApplication, isUpdate: false };
+    }
 
-    if (existingData) {
+    // For database tickets, proceed with Supabase operations
+    // Check if an application already exists
+    const { data: existingMatch, error: checkError } = await supabase
+      .from('help_request_matches')
+      .select('*')
+      .eq('developer_id', developerId)
+      .eq('request_id', requestId)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking existing application:', checkError);
+      return { success: false, error: checkError.message };
+    }
+
+    if (existingMatch) {
       // Update existing application
       const { data, error } = await supabase
         .from('help_request_matches')
         .update({
-          proposed_message: applicationData?.proposed_message,
-          proposed_duration: applicationData?.proposed_duration,
-          proposed_rate: applicationData?.proposed_rate,
+          proposed_message: applicationData.proposed_message,
+          proposed_duration: applicationData.proposed_duration,
+          proposed_rate: applicationData.proposed_rate,
+          match_score: 85, // This could be calculated based on skills match
+          status: 'pending',
           updated_at: new Date().toISOString()
         })
-        .eq('id', existingData.id)
-        .select()
-        .single();
+        .eq('id', existingMatch.id)
+        .select();
 
       if (error) {
         console.error('Error updating application:', error);
         return { success: false, error: error.message };
       }
 
-      result = data;
-    } else {
-      // Create new application
-      const { data, error } = await supabase
-        .from('help_request_matches')
-        .insert({
-          request_id: requestId,
-          developer_id: developerId,
-          proposed_message: applicationData?.proposed_message,
-          proposed_duration: applicationData?.proposed_duration,
-          proposed_rate: applicationData?.proposed_rate,
-          status: 'pending',
-          match_score: 0.8 // Default score for now
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating application:', error);
-        return { success: false, error: error.message };
-      }
-
-      result = data;
+      return { success: true, data, isUpdate: true };
     }
 
-    return { success: true, data: result as HelpRequestMatch };
+    // Create new application
+    const { data, error } = await supabase
+      .from('help_request_matches')
+      .insert({
+        request_id: requestId,
+        developer_id: developerId,
+        status: 'pending',
+        match_score: 85,
+        proposed_message: applicationData.proposed_message,
+        proposed_duration: applicationData.proposed_duration,
+        proposed_rate: applicationData.proposed_rate
+      })
+      .select();
+
+    if (error) {
+      console.error('Error creating application:', error);
+      return { success: false, error: error.message };
+    }
+
+    // Update the help request status to 'matching' if it was 'pending'
+    const { data: requestData, error: requestError } = await supabase
+      .from('help_requests')
+      .select('status')
+      .eq('id', requestId)
+      .single();
+
+    if (!requestError && requestData?.status === 'pending') {
+      await supabase
+        .from('help_requests')
+        .update({ status: 'matching' })
+        .eq('id', requestId);
+    }
+
+    return { success: true, data, isUpdate: false };
   } catch (error) {
-    console.error('Exception submitting application:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    console.error('Exception in submitDeveloperApplication:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
   }
 };
 
-// Get all public help requests
-export const getAllPublicHelpRequests = async (): Promise<ApiResponse<HelpRequest[]>> => {
+// Function to get developer applications for a help request
+export const getDeveloperApplicationsForRequest = async (requestId: string) => {
   try {
+    if (!requestId) {
+      return { success: false, error: 'Request ID is required' };
+    }
+
     const { data, error } = await supabase
-      .from('help_requests')
-      .select('*')
-      .eq('status', 'pending')
+      .from('help_request_matches')
+      .select(`
+        *,
+        developers:developer_id (
+          id,
+          profiles (
+            name,
+            image,
+            description
+          )
+        )
+      `)
+      .eq('request_id', requestId)
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching public help requests:', error);
+      console.error('Error fetching developer applications:', error);
       return { success: false, error: error.message };
     }
 
-    // Cast the status to HelpRequestStatus to satisfy TypeScript
-    const typedData = data.map(item => ({
-      ...item,
-      status: item.status as HelpRequestStatus
-    })) as HelpRequest[];
-
-    return { success: true, data: typedData };
+    return { success: true, data };
   } catch (error) {
-    console.error('Exception fetching public help requests:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    console.error('Exception fetching developer applications:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
   }
 };
 
-export const testDatabaseAccess = async (): Promise<ApiResponse<any>> => {
+// Add a test function to directly check database access
+export const testDatabaseAccess = async () => {
   try {
+    console.log('[testDatabaseAccess] Running test...');
+    
+    // First check authentication status
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error('[testDatabaseAccess] Auth error:', sessionError);
+      return { success: false, error: sessionError, authenticated: false };
+    }
+    
+    if (!sessionData.session) {
+      console.log('[testDatabaseAccess] No active session found');
+      return { success: false, error: 'No active session', authenticated: false };
+    }
+    
+    console.log('[testDatabaseAccess] User authenticated:', sessionData.session.user.id);
+    console.log('[testDatabaseAccess] User metadata:', sessionData.session.user.user_metadata);
+    
+    // Try to count help_requests
+    const { count, error: countError } = await supabase
+      .from('help_requests')
+      .select('*', { count: 'exact', head: true });
+    
+    if (countError) {
+      console.error('[testDatabaseAccess] Error counting help_requests:', countError);
+      return { success: false, error: countError, authenticated: true };
+    }
+    
+    console.log('[testDatabaseAccess] Help requests count:', count);
+    
+    // Try to fetch a few records
     const { data, error } = await supabase
       .from('help_requests')
-      .select('count')
-      .limit(1);
-
-    if (error) {
-      console.error('Error testing database access:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data: { count: data.length } };
-  } catch (error) {
-    console.error('Exception testing database access:', error);
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-};
-
-// Add session-related functions that are missing
-export const startHelpSession = async (sessionId: string): Promise<ApiResponse<any>> => {
-  try {
-    const { data, error } = await supabase
-      .from('help_sessions')
-      .update({ 
-        status: 'active', 
-        actual_start: new Date().toISOString() 
-      })
-      .eq('id', sessionId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error starting help session:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data };
-  } catch (error) {
-    console.error('Exception in startHelpSession:', error);
-    return { success: false, error: String(error) };
-  }
-};
-
-export const endHelpSession = async (sessionId: string): Promise<ApiResponse<any>> => {
-  try {
-    const { data, error } = await supabase
-      .from('help_sessions')
-      .update({ 
-        status: 'completed', 
-        actual_end: new Date().toISOString() 
-      })
-      .eq('id', sessionId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error ending help session:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data };
-  } catch (error) {
-    console.error('Exception in endHelpSession:', error);
-    return { success: false, error: String(error) };
-  }
-};
-
-export const getHelpSessionDetails = async (sessionId: string): Promise<ApiResponse<any>> => {
-  try {
-    const { data, error } = await supabase
-      .from('help_sessions')
       .select('*')
-      .eq('id', sessionId)
-      .single();
-
+      .limit(5);
+    
     if (error) {
-      console.error('Error fetching help session details:', error);
-      return { success: false, error: error.message };
+      console.error('[testDatabaseAccess] Error fetching help_requests:', error);
+      return { success: false, error, authenticated: true, count };
     }
-
-    return { success: true, data };
+    
+    console.log('[testDatabaseAccess] Sample help requests:', data?.length);
+    data?.forEach((item, i) => {
+      console.log(`[testDatabaseAccess] Request ${i+1}:`, {
+        id: item.id,
+        title: item.title,
+        status: item.status,
+        client_id: item.client_id
+      });
+    });
+    
+    return { 
+      success: true, 
+      count, 
+      sampleData: data?.length,
+      authenticated: true
+    };
   } catch (error) {
-    console.error('Exception in getHelpSessionDetails:', error);
-    return { success: false, error: String(error) };
+    console.error('[testDatabaseAccess] Exception:', error);
+    return { success: false, error, authenticated: false };
   }
 };
 
-export const sendMessage = async (
-  sessionId: string, 
-  content: string, 
-  senderId: string, 
-  senderType: string,
-  isCode: boolean,
-  attachmentUrl: string | null
-): Promise<ApiResponse<any>> => {
-  try {
-    const { data, error } = await supabase
-      .from('session_messages')
-      .insert({
-        session_id: sessionId,
-        sender_id: senderId,
-        sender_type: senderType,
-        content,
-        is_code: isCode,
-        attachment_url: attachmentUrl
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error sending message:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data };
-  } catch (error) {
-    console.error('Exception in sendMessage:', error);
-    return { success: false, error: String(error) };
-  }
-};
-
-export const getSessionMessages = async (sessionId: string): Promise<ApiResponse<any>> => {
-  try {
-    const { data, error } = await supabase
-      .from('session_messages')
-      .select('*')
-      .eq('session_id', sessionId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching session messages:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data };
-  } catch (error) {
-    console.error('Exception in getSessionMessages:', error);
-    return { success: false, error: String(error) };
-  }
-};
+// Export the testing functions from helpRequestsDebug module
+export * from './helpRequestsDebug';
+// Export utility functions
+export * from './helpRequestsUtils';

@@ -33,6 +33,9 @@ export const setupHelpRequestsSubscription = async () => {
   return null;
 };
 
+// Setup realtime subscription
+setupHelpRequestsSubscription();
+
 // Update the enableRealtimeForHelpRequests function to use Supabase's built-in channel functionality
 export const enableRealtimeForHelpRequests = async () => {
   try {
@@ -63,6 +66,3 @@ export const enableRealtimeForHelpRequests = async () => {
     return { success: false, error };
   }
 };
-
-// DO NOT call setupHelpRequestsSubscription here to avoid circular dependency
-// It should be called after client initialization

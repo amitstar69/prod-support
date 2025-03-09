@@ -258,7 +258,6 @@ export type Database = {
           request_id: string
           scheduled_end: string | null
           scheduled_start: string | null
-          shared_code: string | null
           status: string
           updated_at: string
         }
@@ -273,7 +272,6 @@ export type Database = {
           request_id: string
           scheduled_end?: string | null
           scheduled_start?: string | null
-          shared_code?: string | null
           status?: string
           updated_at?: string
         }
@@ -288,7 +286,6 @@ export type Database = {
           request_id?: string
           scheduled_end?: string | null
           scheduled_start?: string | null
-          shared_code?: string | null
           status?: string
           updated_at?: string
         }
@@ -360,130 +357,6 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
-      }
-      session_messages: {
-        Row: {
-          attachment_url: string | null
-          content: string
-          created_at: string
-          id: string
-          is_code: boolean | null
-          sender_id: string
-          sender_type: string
-          session_id: string
-          updated_at: string
-        }
-        Insert: {
-          attachment_url?: string | null
-          content: string
-          created_at?: string
-          id?: string
-          is_code?: boolean | null
-          sender_id: string
-          sender_type: string
-          session_id: string
-          updated_at?: string
-        }
-        Update: {
-          attachment_url?: string | null
-          content?: string
-          created_at?: string
-          id?: string
-          is_code?: boolean | null
-          sender_id?: string
-          sender_type?: string
-          session_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "session_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "session_messages_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "help_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      session_summaries: {
-        Row: {
-          client_id: string
-          client_name: string
-          cost: number | null
-          created_at: string
-          developer_id: string
-          developer_name: string
-          duration: number
-          feedback: string | null
-          id: string
-          rating: number | null
-          session_id: string
-          solution: string | null
-          topics: string[] | null
-          updated_at: string
-        }
-        Insert: {
-          client_id: string
-          client_name: string
-          cost?: number | null
-          created_at?: string
-          developer_id: string
-          developer_name: string
-          duration: number
-          feedback?: string | null
-          id?: string
-          rating?: number | null
-          session_id: string
-          solution?: string | null
-          topics?: string[] | null
-          updated_at?: string
-        }
-        Update: {
-          client_id?: string
-          client_name?: string
-          cost?: number | null
-          created_at?: string
-          developer_id?: string
-          developer_name?: string
-          duration?: number
-          feedback?: string | null
-          id?: string
-          rating?: number | null
-          session_id?: string
-          solution?: string | null
-          topics?: string[] | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "session_summaries_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "session_summaries_developer_id_fkey"
-            columns: ["developer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "session_summaries_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "help_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Views: {

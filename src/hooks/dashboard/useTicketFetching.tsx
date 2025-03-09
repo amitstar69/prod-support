@@ -1,11 +1,11 @@
+
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequest } from '../../types/helpRequest';
 import { 
   getAllPublicHelpRequests, 
-  testDatabaseAccess,
-  ApiResponse
+  testDatabaseAccess 
 } from '../../integrations/supabase/helpRequests';
 import { sampleTickets } from './sampleData';
 
@@ -58,7 +58,7 @@ export const useTicketFetching = (
       } else {
         // For authenticated users, fetch real tickets from the database
         console.log('[useTicketFetching] User authenticated as', userType, 'fetching real tickets');
-        const response = await getAllPublicHelpRequests();
+        const response = await getAllPublicHelpRequests(isAuthenticated);
         
         if (response.success && response.data) {
           console.log('[useTicketFetching] Successfully fetched tickets:', response.data.length);
@@ -123,9 +123,7 @@ export const useTicketFetching = (
     toast.dismiss();
     
     if (result.success) {
-      // Fixed the count property access
-      const count = result.data?.count || 0;
-      toast.success(`Database test successful! Found ${count} tickets.`);
+      toast.success(`Database test successful! Found ${result.count} tickets.`);
       console.log('[useTicketFetching] Database test result:', result);
       
       // After successful test, try to fetch tickets again

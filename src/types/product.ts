@@ -23,18 +23,6 @@ export interface Developer {
   preferredWorkingHours?: string;
   communicationPreferences?: string[];  // ["chat", "voice", "video"]
   profileCompleted?: boolean;
-  // New fields for enhanced profile
-  skillLevels?: {[skill: string]: number}; // Skill to proficiency level (1-5)
-  yearsOfExperience?: number;
-  portfolioLinks?: string[];
-  githubProfile?: string;
-  linkedinProfile?: string;
-  certifications?: string[];
-  specializations?: string[];
-  availability_schedule?: {
-    days: string[];
-    hours: string;
-  };
 }
 
 export interface Client {
@@ -101,58 +89,3 @@ export type AuthContextType = AuthState & {
   register: (userData: any, userType: 'developer' | 'client') => Promise<boolean>;
   logout: () => Promise<void>; // Updated to return Promise<void>
 };
-
-// Session management interfaces
-export interface SessionRequest {
-  id?: string;
-  helpRequestId: string;
-  developerId: string;
-  clientId: string;
-  requestedAt: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'completed';
-  scheduledStartTime?: string;
-  scheduledEndTime?: string;
-  message?: string;
-}
-
-export interface ActiveSession {
-  id: string;
-  helpRequestId: string;
-  developerId: string;
-  clientId: string;
-  startedAt: string;
-  endedAt?: string;
-  status: 'active' | 'paused' | 'completed' | 'terminated';
-  duration?: number; // in minutes
-  chatHistory?: ChatMessage[];
-  sharedCode?: string;
-  sessionNotes?: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  sessionId: string;
-  senderId: string;
-  senderType: 'developer' | 'client' | 'system';
-  content: string;
-  timestamp: string;
-  attachmentUrl?: string;
-  isCode?: boolean;
-}
-
-export interface SessionSummary {
-  id: string;
-  helpRequestId: string;
-  developerId: string;
-  developerName: string;
-  clientId: string;
-  clientName: string;
-  date: string;
-  duration: number; // in minutes
-  cost: number;
-  status: string;
-  rating?: number;
-  feedback?: string;
-  topics: string[];
-  solution?: string;
-}
