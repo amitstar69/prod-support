@@ -307,8 +307,8 @@ export const createSessionSummary = async (
       .from('help_sessions')
       .select(`
         *,
-        client:client_id(id, name, image),
-        developer:developer_id(id, name, image),
+        client_profile:client_id(id, name, image),
+        developer_profile:developer_id(id, name, image),
         request:request_id(*)
       `)
       .eq('id', sessionId)
@@ -324,8 +324,16 @@ export const createSessionSummary = async (
       return null;
     }
 
-    const clientData = sessionData.client || { id: 'unknown', name: 'Unknown Client' };
-    const developerData = sessionData.developer || { id: 'unknown', name: 'Unknown Developer' };
+    // Safely access nested properties with fallbacks
+    const clientData = {
+      id: sessionData.client_profile?.id || 'unknown',
+      name: sessionData.client_profile?.name || 'Unknown Client'
+    };
+    
+    const developerData = {
+      id: sessionData.developer_profile?.id || 'unknown',
+      name: sessionData.developer_profile?.name || 'Unknown Developer'
+    };
 
     // Calculate duration in minutes
     const startTime = new Date(sessionData.actual_start || '').getTime();
