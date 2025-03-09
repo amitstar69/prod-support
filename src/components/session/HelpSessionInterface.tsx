@@ -310,7 +310,7 @@ const HelpSessionInterface: React.FC<HelpSessionInterfaceProps> = () => {
               <strong>Session ID:</strong> {sessionId}
             </div>
             <div>
-              <strong>Status:</strong> <Badge variant={isSessionActive ? "success" : "secondary"}>{isSessionActive ? 'Active' : 'Inactive'}</Badge>
+              <strong>Status:</strong> <Badge variant={isSessionActive ? "default" : "secondary"}>{isSessionActive ? 'Active' : 'Inactive'}</Badge>
             </div>
             <div>
               <strong>Created At:</strong> {new Date(session.created_at).toLocaleString()}

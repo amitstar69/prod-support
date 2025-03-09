@@ -3,7 +3,7 @@ import { HelpRequest, HelpRequestMatch, HelpRequestStatus } from '../../types/he
 import { toast } from 'sonner';
 
 // Type definitions for response objects
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: any;
@@ -284,5 +284,128 @@ export const testDatabaseAccess = async (): Promise<ApiResponse<any>> => {
   } catch (error) {
     console.error('Exception testing database access:', error);
     return { success: false, error: 'An unexpected error occurred' };
+  }
+};
+
+// Add session-related functions that are missing
+export const startHelpSession = async (sessionId: string): Promise<ApiResponse<any>> => {
+  try {
+    const { data, error } = await supabase
+      .from('help_sessions')
+      .update({ 
+        status: 'active', 
+        actual_start: new Date().toISOString() 
+      })
+      .eq('id', sessionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error starting help session:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception in startHelpSession:', error);
+    return { success: false, error: String(error) };
+  }
+};
+
+export const endHelpSession = async (sessionId: string): Promise<ApiResponse<any>> => {
+  try {
+    const { data, error } = await supabase
+      .from('help_sessions')
+      .update({ 
+        status: 'completed', 
+        actual_end: new Date().toISOString() 
+      })
+      .eq('id', sessionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error ending help session:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception in endHelpSession:', error);
+    return { success: false, error: String(error) };
+  }
+};
+
+export const getHelpSessionDetails = async (sessionId: string): Promise<ApiResponse<any>> => {
+  try {
+    const { data, error } = await supabase
+      .from('help_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching help session details:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception in getHelpSessionDetails:', error);
+    return { success: false, error: String(error) };
+  }
+};
+
+export const sendMessage = async (
+  sessionId: string, 
+  content: string, 
+  senderId: string, 
+  senderType: string,
+  isCode: boolean,
+  attachmentUrl: string | null
+): Promise<ApiResponse<any>> => {
+  try {
+    const { data, error } = await supabase
+      .from('session_messages')
+      .insert({
+        session_id: sessionId,
+        sender_id: senderId,
+        sender_type: senderType,
+        content,
+        is_code: isCode,
+        attachment_url: attachmentUrl
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error sending message:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception in sendMessage:', error);
+    return { success: false, error: String(error) };
+  }
+};
+
+export const getSessionMessages = async (sessionId: string): Promise<ApiResponse<any>> => {
+  try {
+    const { data, error } = await supabase
+      .from('session_messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching session messages:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception in getSessionMessages:', error);
+    return { success: false, error: String(error) };
   }
 };

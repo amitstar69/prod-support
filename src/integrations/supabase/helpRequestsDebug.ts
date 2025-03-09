@@ -1,55 +1,62 @@
 
 import { supabase } from './client';
-import { HelpRequest } from '../../types/helpRequest';
+import { HelpRequest, HelpRequestStatus } from '../../types/helpRequest';
+import { toast } from 'sonner';
 import { ApiResponse } from './helpRequests';
 
-/**
- * Debug function to inspect all help requests in the system
- * This is for development and debugging only
- */
-export const debugInspectHelpRequests = async (): Promise<any> => {
+export const createSampleHelpRequest = async (): Promise<ApiResponse<HelpRequest>> => {
   try {
+    const sampleRequest = {
+      title: 'Sample Help Request',
+      description: 'This is a sample help request created for testing',
+      technical_area: ['Frontend', 'React'],
+      urgency: 'Medium',
+      budget_range: '$50 - $100',
+      communication_preference: ['Chat', 'Video Call'],
+      client_id: '12345',
+      estimated_duration: 60,
+      code_snippet: 'console.log("Hello World");',
+      status: 'pending' as HelpRequestStatus
+    };
+
     const { data, error } = await supabase
       .from('help_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
-      
+      .insert(sampleRequest)
+      .select()
+      .single();
+
     if (error) {
-      console.error('Error inspecting help requests:', error);
+      console.error('Error creating sample help request:', error);
       return { success: false, error: error.message };
     }
-    
-    return data;
+
+    return {
+      success: true,
+      data: {
+        ...data,
+        status: data.status as HelpRequestStatus
+      } as HelpRequest
+    };
   } catch (error) {
-    console.error('Exception in debugInspectHelpRequests:', error);
-    return { success: false, error: String(error) };
+    console.error('Exception creating sample help request:', error);
+    return { success: false, error: 'An unexpected error occurred' };
   }
 };
 
-/**
- * Create a test help request for debugging purposes
- */
-export const createTestHelpRequest = async (
-  requestData: Omit<HelpRequest, "id" | "created_at" | "updated_at">
-): Promise<ApiResponse<HelpRequest>> => {
+export const testHelpRequestStorage = async (): Promise<ApiResponse<any>> => {
   try {
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('help_requests')
-      .insert([requestData])
-      .select()
-      .single();
-      
+      .select('*', { count: 'exact', head: true });
+
     if (error) {
-      console.error('Error creating test help request:', error);
+      console.error('Error testing help request storage:', error);
       return { success: false, error: error.message };
     }
-    
-    return { 
-      success: true, 
-      data: data as HelpRequest 
-    };
+
+    return { success: true, data: { count } };
   } catch (error) {
-    console.error('Exception in createTestHelpRequest:', error);
-    return { success: false, error: String(error) };
+    console.error('Exception testing help request storage:', error);
+    return { success: false, error: 'An unexpected error occurred' };
   }
 };

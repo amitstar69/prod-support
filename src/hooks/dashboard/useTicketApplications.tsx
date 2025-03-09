@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { toast } from 'sonner';
@@ -61,12 +62,7 @@ const handleClaimTicket = async (ticket: HelpRequest) => {
     
     const result = await submitDeveloperApplication(
       ticketId, 
-      userId,
-      {
-        proposed_message: "I'd like to help with your request. I have experience in this area.",
-        proposed_duration: 60, // 1 hour
-        proposed_rate: 75 // $75/hour
-      }
+      userId
     );
     
     toast.dismiss();

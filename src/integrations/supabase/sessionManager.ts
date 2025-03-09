@@ -1,5 +1,66 @@
+
 import { supabase } from './client';
 import { ApiResponse } from './helpRequests';
+
+// Add the missing function
+export const getUserSessions = async (userId: string, userRole: 'client' | 'developer'): Promise<any[]> => {
+  try {
+    const field = userRole === 'client' ? 'client_id' : 'developer_id';
+    
+    const { data, error } = await supabase
+      .from('help_sessions')
+      .select(`
+        *,
+        help_requests(*)
+      `)
+      .eq(field, userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user sessions:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Exception in getUserSessions:', error);
+    return [];
+  }
+};
+
+export const createSessionRequest = async (sessionData: {
+  helpRequestId: string;
+  developerId: string;
+  clientId: string;
+  scheduledStartTime: string;
+  scheduledEndTime: string;
+  message?: string;
+}): Promise<any> => {
+  try {
+    const { data, error } = await supabase
+      .from('help_sessions')
+      .insert({
+        request_id: sessionData.helpRequestId,
+        developer_id: sessionData.developerId,
+        client_id: sessionData.clientId,
+        scheduled_start: sessionData.scheduledStartTime,
+        scheduled_end: sessionData.scheduledEndTime,
+        status: 'scheduled'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating session request:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Exception in createSessionRequest:', error);
+    return null;
+  }
+};
 
 /**
  * Ends a help session and updates the session status in the database.
@@ -166,6 +227,31 @@ export const finalizeHelpSession = async (sessionId: string): Promise<ApiRespons
     return { success: true, data: summaryResult.data };
   } catch (error) {
     console.error('Exception in finalizeHelpSession:', error);
+    return { success: false, error: String(error) };
+  }
+};
+
+export const sendChatMessage = async (sessionId: string, message: string, senderId: string, senderType: string): Promise<ApiResponse<any>> => {
+  try {
+    const { data, error } = await supabase
+      .from('session_messages')
+      .insert({
+        session_id: sessionId,
+        sender_id: senderId,
+        sender_type: senderType,
+        content: message
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error sending chat message:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception in sendChatMessage:', error);
     return { success: false, error: String(error) };
   }
 };
