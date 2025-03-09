@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -136,21 +135,12 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
       }
       
       // If we got data from the database, use it
-      if (data && data.length > 0) {
-        console.log('Found database data, returning it:', data.length, 'records');
-        return {
-          success: true,
-          data: data,
-          storageMethod: 'database'
-        };
-      } else {
-        console.log('No database data found for authenticated user');
-        return {
-          success: true,
-          data: [],
-          storageMethod: 'database'
-        };
-      }
+      console.log('Found database data, returning it:', data?.length, 'records');
+      return {
+        success: true,
+        data: data || [],
+        storageMethod: 'database'
+      };
     } 
     // For non-authenticated users, return sample data
     else {

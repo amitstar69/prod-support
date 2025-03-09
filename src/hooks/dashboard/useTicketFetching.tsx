@@ -68,6 +68,7 @@ export const useTicketFetching = (
             });
           }
         } else {
+          console.error('Error fetching tickets:', response.error);
           console.log('No database tickets found or fetch failed');
           setTickets([]);
           

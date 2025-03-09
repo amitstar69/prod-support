@@ -1,14 +1,13 @@
 
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../integrations/supabase/client';
 import { HelpRequest } from '../../types/helpRequest';
+import { toast } from 'sonner';
+import { submitDeveloperApplication } from '../../integrations/supabase/helpRequests';
 
 export interface UseTicketApplicationsResult {
   recommendedTickets: HelpRequest[];
   myApplications: HelpRequest[];
-  handleClaimTicket: (ticketId: string) => Promise<void>;
+  handleClaimTicket: (ticketId: string) => void;
   fetchMyApplications: () => Promise<void>;
 }
 
@@ -17,84 +16,32 @@ export const useTicketApplications = (
   isAuthenticated: boolean,
   userId: string | null,
   userType: string | null,
-  fetchTickets: () => Promise<void>
+  refreshTickets: () => void
 ): UseTicketApplicationsResult => {
   const [recommendedTickets, setRecommendedTickets] = useState<HelpRequest[]>([]);
   const [myApplications, setMyApplications] = useState<HelpRequest[]>([]);
-  const navigate = useNavigate();
 
-  // Effect to set recommended tickets and fetch applications
+  // Initial processing of tickets
   useEffect(() => {
-    if (isAuthenticated && tickets.length > 0) {
-      // Generate recommended tickets based on matching criteria
-      // For now, we'll just take the 3 most recent tickets as recommended
-      const sorted = [...tickets].sort((a, b) => {
-        return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
-      });
-      
-      setRecommendedTickets(sorted.slice(0, 3));
-      
-      // Get tickets that this developer has applied for
-      fetchMyApplications();
-    } else {
+    if (!tickets || !isAuthenticated || !userId) {
       setRecommendedTickets([]);
-      setMyApplications([]);
+      return;
     }
+
+    // Apply recommendation algorithm (simplistic for now)
+    // In a real app, this would use developer skills and preferences
+    const recommended = tickets.filter(ticket => 
+      // Only show pending or matching tickets as recommended
+      (ticket.status === 'pending' || ticket.status === 'matching')
+    );
+    
+    setRecommendedTickets(recommended);
   }, [tickets, isAuthenticated, userId]);
 
-  const fetchMyApplications = async () => {
-    if (!isAuthenticated || !userId) return;
-    
-    try {
-      // Check in localStorage first for sample data
-      const localMatches = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
-      const myLocalApplicationIds = localMatches
-        .filter((match: any) => match.developer_id === userId)
-        .map((match: any) => match.request_id);
-        
-      const myLocalApplications = tickets.filter(ticket => 
-        myLocalApplicationIds.includes(ticket.id)
-      );
-      
-      // Check in database for real applications
-      if (supabase) {
-        const { data: matchData, error } = await supabase
-          .from('help_request_matches')
-          .select('request_id, status, proposed_message, proposed_duration, proposed_rate')
-          .eq('developer_id', userId);
-          
-        if (error) {
-          console.error('Error fetching applications:', error);
-          setMyApplications(myLocalApplications);
-          return;
-        }
-        
-        if (matchData && matchData.length > 0) {
-          const databaseApplicationIds = matchData.map(match => match.request_id);
-          
-          // Find corresponding tickets
-          const myDatabaseApplications = tickets.filter(ticket => 
-            databaseApplicationIds.includes(ticket.id)
-          );
-          
-          // Combine local and database applications
-          setMyApplications([...myDatabaseApplications, ...myLocalApplications]);
-        } else {
-          setMyApplications(myLocalApplications);
-        }
-      } else {
-        setMyApplications(myLocalApplications);
-      }
-    } catch (error) {
-      console.error('Error fetching applications:', error);
-      setMyApplications([]);
-    }
-  };
-
+  // Function to handle claiming a ticket
   const handleClaimTicket = async (ticketId: string) => {
-    if (!isAuthenticated) {
-      toast.error('You must be logged in to claim a ticket');
-      navigate('/login', { state: { returnTo: '/developer-dashboard' } });
+    if (!isAuthenticated || !userId) {
+      toast.error('You must be logged in to claim tickets');
       return;
     }
 
@@ -103,49 +50,70 @@ export const useTicketApplications = (
       return;
     }
 
-    // Don't allow claiming sample tickets
-    if (ticketId.startsWith('sample-')) {
-      toast.error('This is a sample ticket. Sign in to claim real help requests.');
+    try {
+      toast.loading('Processing your application...');
+      
+      // Submit application with dummy data for now
+      const result = await submitDeveloperApplication(
+        ticketId, 
+        userId,
+        {
+          proposed_message: "I'd like to help with your request. I have experience in this area.",
+          proposed_duration: 60, // 1 hour
+          proposed_rate: 75 // $75/hour
+        }
+      );
+      
+      toast.dismiss();
+      
+      if (result.success) {
+        toast.success('Application submitted successfully!');
+        
+        // Refresh ticket list
+        refreshTickets();
+        
+        // Also refresh my applications
+        fetchMyApplications();
+      } else {
+        toast.error(`Failed to submit application: ${result.error}`);
+      }
+    } catch (error) {
+      toast.dismiss();
+      toast.error('An error occurred while processing your application');
+      console.error('Error claiming ticket:', error);
+    }
+  };
+
+  // Function to fetch developer's submitted applications
+  const fetchMyApplications = async () => {
+    if (!isAuthenticated || !userId) {
+      setMyApplications([]);
       return;
     }
 
     try {
-      toast.loading('Claiming ticket...');
+      // In a real implementation, we would fetch applications from the database
+      // For now, use the tickets data and filter based on some criteria
       
-      const { data: matchData, error: matchError } = await supabase
-        .from('help_request_matches')
-        .insert({
-          request_id: ticketId,
-          developer_id: userId,
-          status: 'accepted'
-        })
-        .select('*')
-        .single();
+      // This is a placeholder. In a real app, you would fetch actual applications
+      // from the database that match the current user ID
+      const applications = tickets.filter(ticket => 
+        // Example filtering logic - in real app this would check a "developer_id" field
+        ticket.status === 'matching' || ticket.status === 'in-progress'
+      );
       
-      if (matchError) {
-        console.error('Error claiming ticket:', matchError);
-        toast.error('Failed to claim ticket. Please try again.');
-        return;
-      }
-      
-      const { error: updateError } = await supabase
-        .from('help_requests')
-        .update({ status: 'in-progress' })
-        .eq('id', ticketId);
-      
-      if (updateError) {
-        console.error('Error updating ticket status:', updateError);
-        toast.error('Failed to update ticket status. Please try again.');
-        return;
-      }
-      
-      toast.success('Ticket claimed successfully!');
-      fetchTickets();
+      setMyApplications(applications);
     } catch (error) {
-      console.error('Exception claiming ticket:', error);
-      toast.error('An unexpected error occurred. Please try again.');
+      console.error('Error fetching my applications:', error);
     }
   };
+
+  // Fetch my applications when tickets change
+  useEffect(() => {
+    if (isAuthenticated && userId) {
+      fetchMyApplications();
+    }
+  }, [tickets, isAuthenticated, userId]);
 
   return {
     recommendedTickets,

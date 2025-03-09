@@ -37,6 +37,7 @@ export const useDeveloperDashboard = () => {
 
   // Initial data fetch
   useEffect(() => {
+    console.log('useDeveloperDashboard: Initial fetch with auth status:', isAuthenticated);
     fetchTickets();
     
     const refreshInterval = setInterval(() => {
