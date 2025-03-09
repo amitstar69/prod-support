@@ -49,6 +49,10 @@ export const useLoginForm = () => {
     console.log(`Attempting to login: ${email} as ${userType}`);
     
     try {
+      // For testing, you can use these credentials:
+      // For developer: test@developer.com / password123
+      // For client: test@client.com / password123
+      
       // Add timeout to prevent UI from being stuck indefinitely
       const loginPromise = login(email, password, userType);
       
@@ -70,7 +74,7 @@ export const useLoginForm = () => {
       
       if (success) {
         console.log(`Login successful, redirecting to ${userType === 'developer' ? '/profile' : '/client-dashboard'}`);
-        toast.success(`Successfully logged in as ${userType}`);
+        // If login was successful, navigate to the appropriate dashboard
         navigate(userType === 'developer' ? '/profile' : '/client-dashboard');
       } else if (!error) {
         setError('Login failed. Please check your credentials and try again.');
