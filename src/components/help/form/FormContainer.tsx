@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/auth';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
 import { createHelpRequest } from '../../../integrations/supabase/helpRequests';
+import { HelpRequestStatus } from '../../../types/helpRequest'; 
+import AuthWarning from './AuthWarning';
+import TitleDescriptionSection from './TitleDescriptionSection';
+import TechnicalAreaSection from './TechnicalAreaSection';
+import UrgencyDurationSection from './UrgencyDurationSection';
+import CommunicationSection from './CommunicationSection';
+import BudgetSection from './BudgetSection';
+import CodeSnippetSection from './CodeSnippetSection';
+import SubmitButton from './SubmitButton';
+import { toast } from 'sonner';
 
 interface FormContainerProps {
   children: React.ReactNode;

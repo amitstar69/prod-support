@@ -1,6 +1,7 @@
 import { supabase } from './client';
 import { toast } from 'sonner';
 import { ActiveSession, ChatMessage, SessionRequest } from '../../types/product';
+import { HelpSession } from '../../types/helpRequest';
 
 // Create a new session request
 export const createSessionRequest = async (sessionRequest: Omit<SessionRequest, 'id' | 'requestedAt' | 'status'>) => {
@@ -367,8 +368,8 @@ export const getHelpSessionsByClientId = async (clientId: string): Promise<HelpS
       .from('help_sessions')
       .select(`
         *,
-        client:client_id(id, name, image),
-        developer:developer_id(id, name, image),
+        client:client_profiles(*),
+        developer:developer_profiles(*),
         request:request_id(*)
       `)
       .eq('client_id', clientId);
@@ -378,7 +379,8 @@ export const getHelpSessionsByClientId = async (clientId: string): Promise<HelpS
       return [];
     }
 
-    return data || [];
+    // Safe casting of data to HelpSession[]
+    return (data || []) as unknown as HelpSession[];
   } catch (error) {
     console.error('Exception fetching client help sessions:', error);
     return [];
@@ -392,8 +394,8 @@ export const getHelpSessionsByDeveloperId = async (developerId: string): Promise
       .from('help_sessions')
       .select(`
         *,
-        client:client_id(id, name, image),
-        developer:developer_id(id, name, image),
+        client:client_profiles(*),
+        developer:developer_profiles(*),
         request:request_id(*)
       `)
       .eq('developer_id', developerId);
@@ -403,7 +405,8 @@ export const getHelpSessionsByDeveloperId = async (developerId: string): Promise
       return [];
     }
 
-    return data || [];
+    // Safe casting of data to HelpSession[]
+    return (data || []) as unknown as HelpSession[];
   } catch (error) {
     console.error('Exception fetching developer help sessions:', error);
     return [];

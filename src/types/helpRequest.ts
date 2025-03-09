@@ -71,7 +71,7 @@ export interface HelpSession {
   request?: HelpRequest;
 }
 
-// Add the missing constant exports
+// Export the constant options
 export const technicalAreaOptions = [
   'Frontend',
   'Backend',
