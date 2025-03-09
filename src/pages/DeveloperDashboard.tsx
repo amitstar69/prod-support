@@ -12,6 +12,8 @@ import TicketControls from '../components/dashboard/TicketControls';
 import TicketSummary from '../components/dashboard/TicketSummary';
 import { useDeveloperDashboard } from '../hooks/dashboard/useDeveloperDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Button } from '../components/ui/button';
+import { AlertCircle, Database } from 'lucide-react';
 
 const DeveloperDashboard = () => {
   const {
@@ -31,7 +33,10 @@ const DeveloperDashboard = () => {
     handleFilterChange,
     handleClaimTicket,
     handleForceRefresh,
-    fetchTickets
+    fetchTickets,
+    // Debug functions
+    debugAuthStatus,
+    runDatabaseTest
   } = useDeveloperDashboard();
 
   return (
@@ -48,6 +53,39 @@ const DeveloperDashboard = () => {
         {!isAuthenticated && (
           <div className="mb-8">
             <LoginPrompt />
+          </div>
+        )}
+        
+        {isAuthenticated && (
+          <div className="mb-4 flex flex-wrap gap-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
+            <div className="flex-1">
+              <h3 className="text-sm font-medium flex items-center gap-1 text-amber-800">
+                <AlertCircle className="h-4 w-4" />
+                Debug Tools
+              </h3>
+              <p className="text-xs text-amber-700 mt-1">
+                Having issues viewing tickets? Try these debug tools to diagnose the problem.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="h-8 border-amber-300 bg-amber-100 hover:bg-amber-200 text-amber-800"
+                onClick={debugAuthStatus}
+              >
+                Check Auth Status
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="h-8 border-amber-300 bg-amber-100 hover:bg-amber-200 text-amber-800"
+                onClick={runDatabaseTest}
+              >
+                <Database className="h-3.5 w-3.5 mr-1" />
+                Test Database
+              </Button>
+            </div>
           </div>
         )}
         

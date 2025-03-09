@@ -4,6 +4,7 @@ import { useTicketFilters } from './useTicketFilters';
 import { useTicketFetching } from './useTicketFetching';
 import { useTicketApplications } from './useTicketApplications';
 import { useAuth } from '../../contexts/auth';
+import { toast } from 'sonner';
 
 export const useDeveloperDashboard = () => {
   const { isAuthenticated, userId, userType } = useAuth();
@@ -15,7 +16,8 @@ export const useDeveloperDashboard = () => {
     isLoading,
     dataSource,
     fetchTickets,
-    handleForceRefresh
+    handleForceRefresh,
+    runDatabaseTest
   } = useTicketFetching(isAuthenticated, userType);
 
   // Get filtering functionality
@@ -37,11 +39,11 @@ export const useDeveloperDashboard = () => {
 
   // Initial data fetch
   useEffect(() => {
-    console.log('useDeveloperDashboard: Initial fetch with auth status:', isAuthenticated);
+    console.log('[useDeveloperDashboard] Initial fetch with auth status:', isAuthenticated, 'userId:', userId, 'userType:', userType);
     fetchTickets();
     
     const refreshInterval = setInterval(() => {
-      console.log('Auto-refreshing tickets...');
+      console.log('[useDeveloperDashboard] Auto-refreshing tickets...');
       fetchTickets(false);
     }, 30000);
     
@@ -52,6 +54,22 @@ export const useDeveloperDashboard = () => {
   useEffect(() => {
     setActiveTab(isAuthenticated ? 'recommended' : 'all');
   }, [isAuthenticated]);
+
+  // Add a debug function to check auth status
+  const debugAuthStatus = () => {
+    console.log('[useDeveloperDashboard] Debug Auth Status:', {
+      isAuthenticated,
+      userId,
+      userType
+    });
+    
+    // Log to UI for user feedback
+    if (isAuthenticated) {
+      toast.info(`Auth Status: Logged in as ${userType}, ID: ${userId?.substring(0, 8)}...`);
+    } else {
+      toast.info('Auth Status: Not logged in');
+    }
+  };
 
   return {
     // Ticket data states
@@ -80,7 +98,11 @@ export const useDeveloperDashboard = () => {
     handleClaimTicket,
     handleForceRefresh,
     fetchTickets,
-    fetchMyApplications
+    fetchMyApplications,
+    
+    // Debug helpers
+    debugAuthStatus,
+    runDatabaseTest
   };
 };
 

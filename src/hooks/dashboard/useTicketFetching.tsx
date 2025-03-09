@@ -3,7 +3,10 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequest } from '../../types/helpRequest';
-import { getAllPublicHelpRequests } from '../../integrations/supabase/helpRequests';
+import { 
+  getAllPublicHelpRequests, 
+  testDatabaseAccess 
+} from '../../integrations/supabase/helpRequests';
 import { sampleTickets } from './sampleData';
 
 export interface UseTicketFetchingResult {
@@ -12,6 +15,7 @@ export interface UseTicketFetchingResult {
   dataSource: string;
   fetchTickets: (showLoading?: boolean) => Promise<void>;
   handleForceRefresh: () => void;
+  runDatabaseTest: () => Promise<void>;
 }
 
 export const useTicketFetching = (
@@ -43,7 +47,7 @@ export const useTicketFetching = (
       
       // For non-authenticated users, show sample tickets
       if (!isAuthenticated) {
-        console.log('User not authenticated, showing sample tickets');
+        console.log('[useTicketFetching] User not authenticated, showing sample tickets');
         setTickets(sampleTickets);
         setDataSource('sample');
         if (showLoading) {
@@ -53,11 +57,22 @@ export const useTicketFetching = (
         }
       } else {
         // For authenticated users, fetch real tickets from the database
-        console.log('User authenticated, fetching real tickets');
+        console.log('[useTicketFetching] User authenticated, fetching real tickets');
         const response = await getAllPublicHelpRequests(isAuthenticated);
         
         if (response.success && response.data) {
-          console.log('Successfully fetched tickets:', response.data.length);
+          console.log('[useTicketFetching] Successfully fetched tickets:', response.data.length);
+          
+          // Log each ticket for debugging
+          response.data.forEach((ticket, index) => {
+            console.log(`[useTicketFetching] Ticket ${index+1}:`, {
+              id: ticket.id,
+              status: ticket.status,
+              title: ticket.title,
+              client_id: ticket.client_id
+            });
+          });
+          
           setTickets(response.data);
           setDataSource('database');
           
@@ -68,8 +83,8 @@ export const useTicketFetching = (
             });
           }
         } else {
-          console.error('Error fetching tickets:', response.error);
-          console.log('No database tickets found or fetch failed');
+          console.error('[useTicketFetching] Error fetching tickets:', response.error);
+          console.log('[useTicketFetching] No database tickets found or fetch failed');
           setTickets([]);
           
           if (showLoading && response.error) {
@@ -80,7 +95,7 @@ export const useTicketFetching = (
         }
       }
     } catch (error) {
-      console.error('Exception fetching tickets:', error);
+      console.error('[useTicketFetching] Exception fetching tickets:', error);
       
       if (showLoading) {
         toast.error('Error loading tickets. Please try again later.');
@@ -90,6 +105,25 @@ export const useTicketFetching = (
       if (showLoading) {
         setIsLoading(false);
       }
+    }
+  };
+
+  const runDatabaseTest = async () => {
+    if (!isAuthenticated) {
+      toast.info('You need to be logged in to run database tests');
+      return;
+    }
+    
+    toast.loading('Testing database connectivity...');
+    const result = await testDatabaseAccess();
+    toast.dismiss();
+    
+    if (result.success) {
+      toast.success(`Database test successful! Found ${result.count} tickets.`);
+      console.log('[useTicketFetching] Database test result:', result);
+    } else {
+      toast.error('Database test failed. See console for details.');
+      console.error('[useTicketFetching] Database test error:', result);
     }
   };
 
@@ -103,6 +137,7 @@ export const useTicketFetching = (
     isLoading,
     dataSource,
     fetchTickets,
-    handleForceRefresh
+    handleForceRefresh,
+    runDatabaseTest
   };
 };

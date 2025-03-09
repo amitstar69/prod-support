@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -53,7 +54,7 @@ export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'c
     
   } catch (error) {
     console.error('Exception creating help request:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 };
 
@@ -109,24 +110,36 @@ export const getHelpRequestsForClient = async (clientId: string) => {
     
   } catch (error) {
     console.error('Exception fetching help requests:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 };
 
 // Function to get all public help requests for listing
 export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
   try {
-    console.log('getAllPublicHelpRequests: Fetching all public help requests...');
+    console.log('[getAllPublicHelpRequests] Fetching tickets with auth status:', isAuthenticated);
     
     // For authenticated users, fetch real data from the database
     if (isAuthenticated) {
+      // Let's explicitly check what session we have
+      const { data: session } = await supabase.auth.getSession();
+      console.log('[getAllPublicHelpRequests] Current session:', session?.session ? 'Active' : 'None');
+      
+      // Debug query directly to check table access
+      const { count, error: countError } = await supabase
+        .from('help_requests')
+        .select('*', { count: 'exact', head: true });
+      
+      console.log('[getAllPublicHelpRequests] Table access check - Count:', count, 'Error:', countError);
+      
+      // Fetch all help requests (don't filter by status to see if we have any at all)
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')
         .order('created_at', { ascending: false });
         
       if (error) {
-        console.error('Error fetching public help requests from Supabase:', error);
+        console.error('[getAllPublicHelpRequests] Error fetching from Supabase:', error);
         return { 
           success: false, 
           error: 'Failed to fetch help requests: ' + error.message,
@@ -134,8 +147,19 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
         };
       }
       
-      // If we got data from the database, use it
-      console.log('Found database data, returning it:', data?.length, 'records');
+      // If we got data from the database, use it and log all tickets for debugging
+      console.log('[getAllPublicHelpRequests] Fetched tickets from database:', data?.length);
+      if (data) {
+        data.forEach((ticket, index) => {
+          console.log(`[getAllPublicHelpRequests] DB Ticket ${index+1}:`, {
+            id: ticket.id,
+            status: ticket.status,
+            title: ticket.title,
+            client_id: ticket.client_id
+          });
+        });
+      }
+      
       return {
         success: true,
         data: data || [],
@@ -146,7 +170,7 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
     else {
       // Get local storage requests for sample data
       const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
-      console.log('Local help requests for unauthenticated user:', localHelpRequests.length);
+      console.log('[getAllPublicHelpRequests] Local tickets for unauthenticated user:', localHelpRequests.length);
       
       return {
         success: true,
@@ -155,7 +179,7 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
       };
     }
   } catch (error) {
-    console.error('Exception fetching public help requests:', error);
+    console.error('[getAllPublicHelpRequests] Exception:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error', 
@@ -202,7 +226,7 @@ export const getHelpRequest = async (requestId: string) => {
     
   } catch (error) {
     console.error('Exception fetching help request:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 };
 
@@ -254,7 +278,7 @@ export const updateHelpRequest = async (requestId: string, updates: Partial<Help
     
   } catch (error) {
     console.error('Exception updating help request:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 };
 
@@ -444,6 +468,72 @@ export const getDeveloperApplicationsForRequest = async (requestId: string) => {
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
     };
+  }
+};
+
+// Add a test function to directly check database access
+export const testDatabaseAccess = async () => {
+  try {
+    console.log('[testDatabaseAccess] Running test...');
+    
+    // First check authentication status
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error('[testDatabaseAccess] Auth error:', sessionError);
+      return { success: false, error: sessionError, authenticated: false };
+    }
+    
+    if (!sessionData.session) {
+      console.log('[testDatabaseAccess] No active session found');
+      return { success: false, error: 'No active session', authenticated: false };
+    }
+    
+    console.log('[testDatabaseAccess] User authenticated:', sessionData.session.user.id);
+    console.log('[testDatabaseAccess] User metadata:', sessionData.session.user.user_metadata);
+    
+    // Try to count help_requests
+    const { count, error: countError } = await supabase
+      .from('help_requests')
+      .select('*', { count: 'exact', head: true });
+    
+    if (countError) {
+      console.error('[testDatabaseAccess] Error counting help_requests:', countError);
+      return { success: false, error: countError, authenticated: true };
+    }
+    
+    console.log('[testDatabaseAccess] Help requests count:', count);
+    
+    // Try to fetch a few records
+    const { data, error } = await supabase
+      .from('help_requests')
+      .select('*')
+      .limit(5);
+    
+    if (error) {
+      console.error('[testDatabaseAccess] Error fetching help_requests:', error);
+      return { success: false, error, authenticated: true, count };
+    }
+    
+    console.log('[testDatabaseAccess] Sample help requests:', data?.length);
+    data?.forEach((item, i) => {
+      console.log(`[testDatabaseAccess] Request ${i+1}:`, {
+        id: item.id,
+        title: item.title,
+        status: item.status,
+        client_id: item.client_id
+      });
+    });
+    
+    return { 
+      success: true, 
+      count, 
+      sampleData: data?.length,
+      authenticated: true
+    };
+  } catch (error) {
+    console.error('[testDatabaseAccess] Exception:', error);
+    return { success: false, error, authenticated: false };
   }
 };
 
