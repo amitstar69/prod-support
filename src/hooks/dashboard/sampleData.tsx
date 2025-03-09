@@ -1,5 +1,6 @@
 
 import { HelpRequest } from '../../types/helpRequest';
+import { Developer } from '../../types/product';
 
 // Sample tickets to show for non-authenticated users
 export const sampleTickets: HelpRequest[] = [
@@ -70,3 +71,72 @@ export const sampleTickets: HelpRequest[] = [
     created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() // 6 days ago
   }
 ];
+
+// Sample developers data for testing
+export const sampleDevelopers: Developer[] = [
+  {
+    id: 'dev-1',
+    name: 'Alex Johnson',
+    hourlyRate: 75,
+    minuteRate: 1.25,
+    image: '/placeholder.svg',
+    category: 'Frontend',
+    skills: ['React', 'JavaScript', 'CSS', 'Performance Optimization'],
+    experience: '5 years',
+    description: 'Frontend specialist with focus on React and performance optimization',
+    rating: 4.8,
+    availability: true,
+    online: true,
+    username: 'alexj',
+    location: 'San Francisco, CA',
+    featured: true,
+    lastActive: new Date().toISOString(),
+    communicationPreferences: ['Video Call', 'Screen Sharing']
+  },
+  {
+    id: 'dev-2',
+    name: 'Sarah Miller',
+    hourlyRate: 90,
+    minuteRate: 1.5,
+    image: '/placeholder.svg',
+    category: 'Backend',
+    skills: ['Node.js', 'Express', 'API Integration', 'Database'],
+    experience: '7 years',
+    description: 'Backend developer specialized in API integrations and database optimization',
+    rating: 4.9,
+    availability: true,
+    online: false,
+    username: 'sarahm',
+    location: 'Boston, MA',
+    featured: false,
+    lastActive: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    communicationPreferences: ['Chat', 'Voice Call']
+  },
+  {
+    id: 'dev-3',
+    name: 'Michael Chen',
+    hourlyRate: 120,
+    minuteRate: 2,
+    image: '/placeholder.svg',
+    category: 'Database',
+    skills: ['PostgreSQL', 'MySQL', 'MongoDB', 'SQL Optimization'],
+    experience: '10 years',
+    description: 'Database expert specializing in SQL optimization and performance tuning',
+    rating: 5.0,
+    availability: false,
+    online: false,
+    username: 'michaelc',
+    location: 'New York, NY',
+    featured: true,
+    lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    communicationPreferences: ['Video Call', 'Screen Sharing']
+  }
+];
+
+// Function to generate sample data for developer dashboard
+export const generateSampleDeveloperDashboardData = () => {
+  return {
+    tickets: sampleTickets,
+    developers: sampleDevelopers
+  };
+};

@@ -35,7 +35,7 @@ export const useDeveloperDashboard = () => {
     if (!isAuthenticated) {
       // For demo, use mock developers from localStorage
       const localDevs = JSON.parse(localStorage.getItem('mockDevelopers') || '[]');
-      setDevelopers(localDevs);
+      setDevelopers(localDevs.length > 0 ? localDevs : generateSampleDeveloperDashboardData().developers);
       return;
     }
     
@@ -102,7 +102,7 @@ export const useDeveloperDashboard = () => {
       setTickets(sampleData.tickets);
       setDevelopers(sampleData.developers);
       setDataSource('local');
-      return;
+      return { success: true, data: sampleData.tickets, source: 'local' };
     }
     
     // Fetch real data for authenticated users
@@ -110,16 +110,19 @@ export const useDeveloperDashboard = () => {
     
     if (result.success) {
       setTickets(result.data);
-      setDataSource(result.source);
+      setDataSource(result.source as 'local' | 'database' | 'error');
       
       // Fetch applications if authenticated
       await fetchMyApplications();
       
       // Fetch developers for matching
       await fetchDevelopers();
+      
+      return result;
     } else {
       setDataSource('error');
       toast.error(`Error loading tickets: ${result.error}`);
+      return result;
     }
   }, [isAuthenticated, userId, baseFetchTickets, fetchMyApplications, fetchDevelopers]);
   
