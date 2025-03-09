@@ -73,9 +73,7 @@ export const useTicketApplications = (
       
       if (result.success) {
         toast.success('Application submitted successfully!');
-        
         refreshTickets();
-        
         fetchMyApplications();
       } else {
         toast.error(`Failed to submit application: ${result.error}`);

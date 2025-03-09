@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/auth';
 import { 
   HelpRequest, 
-  HelpRequestStatus,
-  HelpRequestMatch 
+  HelpRequestStatus
 } from '../../types/helpRequest';
 import { 
   getClientHelpRequests, 
@@ -17,7 +16,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
 import { AlertTriangle, Clock, Check, X, Loader2 } from 'lucide-react';
-import { sampleTickets } from '../../hooks/dashboard/sampleData';
 
 const HelpRequestsTracking: React.FC = () => {
   const { userId } = useAuth();
@@ -30,8 +28,17 @@ const HelpRequestsTracking: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const requests = await getClientHelpRequests(userId);
-        setHelpRequests(requests);
+        if (!userId) {
+          setHelpRequests([]);
+          setLoading(false);
+          return;
+        }
+        const response = await getClientHelpRequests(userId);
+        if (response.success && response.data) {
+          setHelpRequests(response.data);
+        } else {
+          setError('Failed to load help requests: ' + (response.error || 'Unknown error'));
+        }
       } catch (err) {
         console.error('Error fetching help requests:', err);
         setError('Failed to load help requests.');
@@ -45,9 +52,13 @@ const HelpRequestsTracking: React.FC = () => {
 
   const handleCancelRequest = async (requestId: string) => {
     try {
-      await cancelHelpRequest(requestId);
-      setHelpRequests(prev => prev.filter(req => req.id !== requestId));
-      toast.success('Help request cancelled successfully');
+      const result = await cancelHelpRequest(requestId);
+      if (result.success) {
+        setHelpRequests(prev => prev.filter(req => req.id !== requestId));
+        toast.success('Help request cancelled successfully');
+      } else {
+        toast.error('Failed to cancel help request: ' + result.error);
+      }
     } catch (err) {
       console.error('Error cancelling help request:', err);
       toast.error('Failed to cancel help request');
@@ -81,7 +92,7 @@ const HelpRequestsTracking: React.FC = () => {
                 <CardDescription>{request.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Badge>{request.status}</Badge>
+                <Badge variant="outline">{request.status}</Badge>
                 <Button onClick={() => handleCancelRequest(request.id)} variant="destructive" className="mt-2">
                   Cancel Request
                 </Button>

@@ -18,8 +18,10 @@ const ClientDashboard: React.FC = () => {
   useEffect(() => {
     const fetchTickets = async () => {
       if (userId) {
-        const fetchedTickets = await getClientHelpRequests(userId);
-        setTickets(fetchedTickets);
+        const response = await getClientHelpRequests(userId);
+        if (response.success && response.data) {
+          setTickets(response.data);
+        }
       }
       setIsLoading(false);
     };
@@ -48,7 +50,7 @@ const ClientDashboard: React.FC = () => {
           filteredTickets={tickets}
           totalTickets={tickets.length}
           onClaimTicket={mockClaimTicket}
-          userId={userId}
+          userId={userId || ""}
           isAuthenticated={isAuthenticated}
         />
       </div>

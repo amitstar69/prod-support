@@ -307,8 +307,8 @@ export const createSessionSummary = async (
       .from('help_sessions')
       .select(`
         *,
-        client_profile:client_id(id, name, image),
-        developer_profile:developer_id(id, name, image),
+        client:client_id(id, name, image),
+        developer:developer_id(id, name, image),
         request:request_id(*)
       `)
       .eq('id', sessionId)
@@ -326,13 +326,13 @@ export const createSessionSummary = async (
 
     // Safely access nested properties with fallbacks
     const clientData = {
-      id: sessionData.client_profile?.id || 'unknown',
-      name: sessionData.client_profile?.name || 'Unknown Client'
+      id: sessionData.client?.id || 'unknown',
+      name: sessionData.client?.name || 'Unknown Client'
     };
     
     const developerData = {
-      id: sessionData.developer_profile?.id || 'unknown',
-      name: sessionData.developer_profile?.name || 'Unknown Developer'
+      id: sessionData.developer?.id || 'unknown',
+      name: sessionData.developer?.name || 'Unknown Developer'
     };
 
     // Calculate duration in minutes
@@ -379,8 +379,8 @@ export const getHelpSessionsByClientId = async (clientId: string): Promise<HelpS
       .from('help_sessions')
       .select(`
         *,
-        client_profile:client_id(id, name, image),
-        developer_profile:developer_id(id, name, image),
+        client:client_id(id, name, image),
+        developer:developer_id(id, name, image),
         request:request_id(*)
       `)
       .eq('client_id', clientId);
@@ -405,8 +405,8 @@ export const getHelpSessionsByDeveloperId = async (developerId: string): Promise
       .from('help_sessions')
       .select(`
         *,
-        client_profile:client_id(id, name, image),
-        developer_profile:developer_id(id, name, image),
+        client:client_id(id, name, image),
+        developer:developer_id(id, name, image),
         request:request_id(*)
       `)
       .eq('developer_id', developerId);

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth';
@@ -26,9 +27,15 @@ const HelpRequestDetail: React.FC = () => {
 
   useEffect(() => {
     const fetchHelpRequest = async () => {
+      if (!id) return;
+      
       try {
-        const request = await getHelpRequestById(id!);
-        setHelpRequest(request);
+        const response = await getHelpRequestById(id);
+        if (response.success && response.data) {
+          setHelpRequest(response.data);
+        } else {
+          toast.error('Failed to load help request details: ' + (response.error || 'Unknown error'));
+        }
       } catch (error) {
         console.error('Error fetching help request:', error);
         toast.error('Failed to load help request details.');
@@ -45,9 +52,13 @@ const HelpRequestDetail: React.FC = () => {
 
     setIsCancelling(true);
     try {
-      await cancelHelpRequest(helpRequest.id);
-      toast.success('Help request cancelled successfully.');
-      navigate('/client/dashboard'); // Redirect after cancellation
+      const result = await cancelHelpRequest(helpRequest.id);
+      if (result.success) {
+        toast.success('Help request cancelled successfully.');
+        navigate('/client/dashboard'); // Redirect after cancellation
+      } else {
+        toast.error('Failed to cancel help request: ' + result.error);
+      }
     } catch (error) {
       console.error('Error cancelling help request:', error);
       toast.error('Failed to cancel help request.');
@@ -82,7 +93,7 @@ const HelpRequestDetail: React.FC = () => {
       <CardContent>
         <div className="flex flex-col space-y-2">
           <div>
-            <Badge>{helpRequest.status as HelpRequestStatus}</Badge>
+            <Badge variant="outline">{helpRequest.status}</Badge>
           </div>
           <div>
             <strong>Technical Area:</strong> {helpRequest.technical_area.join(', ')}
@@ -111,7 +122,7 @@ const HelpRequestDetail: React.FC = () => {
             {isCancelling ? 'Cancelling...' : 'Cancel Help Request'}
           </Button>
         )}
-        <Button variant="outline" onClick={() => navigate(-1)}>
+        <Button variant="outline" onClick={() => navigate(-1)} className="ml-2">
           <ArrowLeft className="mr-2" />
           Back
         </Button>

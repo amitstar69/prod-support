@@ -37,8 +37,28 @@ export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'c
   }
 };
 
+// Cancel a help request (adding this missing function)
+export const cancelHelpRequest = async (requestId: string): Promise<ApiResponse<null>> => {
+  try {
+    const { error } = await supabase
+      .from('help_requests')
+      .update({ status: 'cancelled' })
+      .eq('id', requestId);
+
+    if (error) {
+      console.error('Error cancelling help request:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Exception cancelling help request:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+};
+
 // Get all help requests for a client
-export const getClientHelpRequests = async (clientId: string): Promise<HelpRequest[]> => {
+export const getClientHelpRequests = async (clientId: string): Promise<ApiResponse<HelpRequest[]>> => {
   try {
     const { data, error } = await supabase
       .from('help_requests')
@@ -51,7 +71,7 @@ export const getClientHelpRequests = async (clientId: string): Promise<HelpReque
 
     if (error) {
       console.error('Error fetching client help requests:', error);
-      return [];
+      return { success: false, error: error.message };
     }
 
     // Cast the status to HelpRequestStatus to satisfy TypeScript
@@ -60,15 +80,15 @@ export const getClientHelpRequests = async (clientId: string): Promise<HelpReque
       status: item.status as HelpRequestStatus
     })) as HelpRequest[];
 
-    return typedData;
+    return { success: true, data: typedData };
   } catch (error) {
     console.error('Exception fetching client help requests:', error);
-    return [];
+    return { success: false, error: 'An unexpected error occurred' };
   }
 };
 
 // Get a specific help request by ID
-export const getHelpRequestById = async (requestId: string): Promise<HelpRequest | null> => {
+export const getHelpRequestById = async (requestId: string): Promise<ApiResponse<HelpRequest>> => {
   try {
     const { data, error } = await supabase
       .from('help_requests')
@@ -81,7 +101,7 @@ export const getHelpRequestById = async (requestId: string): Promise<HelpRequest
 
     if (error) {
       console.error('Error fetching help request:', error);
-      return null;
+      return { success: false, error: error.message };
     }
 
     // Cast the status to HelpRequestStatus to satisfy TypeScript
@@ -90,10 +110,10 @@ export const getHelpRequestById = async (requestId: string): Promise<HelpRequest
       status: data.status as HelpRequestStatus
     } as HelpRequest;
 
-    return typedData;
+    return { success: true, data: typedData };
   } catch (error) {
     console.error('Exception fetching help request:', error);
-    return null;
+    return { success: false, error: 'An unexpected error occurred' };
   }
 };
 
@@ -146,20 +166,22 @@ export const deleteHelpRequest = async (requestId: string): Promise<ApiResponse<
 };
 
 // Submit a developer application for a help request
-export const submitDeveloperApplication = async (applicationData: {
-  request_id: string;
-  developer_id: string;
-  proposed_message?: string;
-  proposed_duration?: number;
-  proposed_rate?: number;
-}): Promise<ApiResponse<HelpRequestMatch>> => {
+export const submitDeveloperApplication = async (
+  requestId: string, 
+  developerId: string,
+  applicationData?: {
+    proposed_message?: string;
+    proposed_duration?: number;
+    proposed_rate?: number;
+  }
+): Promise<ApiResponse<HelpRequestMatch>> => {
   try {
     // Check if an application already exists
     const { data: existingData, error: existingError } = await supabase
       .from('help_request_matches')
       .select('*')
-      .eq('request_id', applicationData.request_id)
-      .eq('developer_id', applicationData.developer_id)
+      .eq('request_id', requestId)
+      .eq('developer_id', developerId)
       .maybeSingle();
 
     if (existingError) {
@@ -174,9 +196,9 @@ export const submitDeveloperApplication = async (applicationData: {
       const { data, error } = await supabase
         .from('help_request_matches')
         .update({
-          proposed_message: applicationData.proposed_message,
-          proposed_duration: applicationData.proposed_duration,
-          proposed_rate: applicationData.proposed_rate,
+          proposed_message: applicationData?.proposed_message,
+          proposed_duration: applicationData?.proposed_duration,
+          proposed_rate: applicationData?.proposed_rate,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingData.id)
@@ -194,11 +216,11 @@ export const submitDeveloperApplication = async (applicationData: {
       const { data, error } = await supabase
         .from('help_request_matches')
         .insert({
-          request_id: applicationData.request_id,
-          developer_id: applicationData.developer_id,
-          proposed_message: applicationData.proposed_message,
-          proposed_duration: applicationData.proposed_duration,
-          proposed_rate: applicationData.proposed_rate,
+          request_id: requestId,
+          developer_id: developerId,
+          proposed_message: applicationData?.proposed_message,
+          proposed_duration: applicationData?.proposed_duration,
+          proposed_rate: applicationData?.proposed_rate,
           status: 'pending',
           match_score: 0.8 // Default score for now
         })
@@ -220,8 +242,8 @@ export const submitDeveloperApplication = async (applicationData: {
   }
 };
 
-// Add any missing exported functions that are imported elsewhere
-export const getAllPublicHelpRequests = async (): Promise<HelpRequest[]> => {
+// Get all public help requests
+export const getAllPublicHelpRequests = async (): Promise<ApiResponse<HelpRequest[]>> => {
   try {
     const { data, error } = await supabase
       .from('help_requests')
@@ -231,7 +253,7 @@ export const getAllPublicHelpRequests = async (): Promise<HelpRequest[]> => {
 
     if (error) {
       console.error('Error fetching public help requests:', error);
-      return [];
+      return { success: false, error: error.message };
     }
 
     // Cast the status to HelpRequestStatus to satisfy TypeScript
@@ -240,10 +262,10 @@ export const getAllPublicHelpRequests = async (): Promise<HelpRequest[]> => {
       status: item.status as HelpRequestStatus
     })) as HelpRequest[];
 
-    return typedData;
+    return { success: true, data: typedData };
   } catch (error) {
     console.error('Exception fetching public help requests:', error);
-    return [];
+    return { success: false, error: 'An unexpected error occurred' };
   }
 };
 
@@ -259,11 +281,9 @@ export const testDatabaseAccess = async (): Promise<ApiResponse<any>> => {
       return { success: false, error: error.message };
     }
 
-    return { success: true, data };
+    return { success: true, data: { count: data.length } };
   } catch (error) {
     console.error('Exception testing database access:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
 };
-
-// Export functions used in other files to avoid import errors

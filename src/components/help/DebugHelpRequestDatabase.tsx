@@ -1,94 +1,135 @@
 
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
-import { inspectHelpRequests, createTestHelpRequest } from '@/integrations/supabase/helpRequestsDebug';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { getHelpRequestById, createHelpRequest, testDatabaseAccess } from '../../integrations/supabase/helpRequests';
 import { toast } from 'sonner';
-import { JsonView, defaultStyles } from 'react-json-view-lite';
-import 'react-json-view-lite/dist/index.css';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { HelpRequest } from '../../types/helpRequest';
 
-const DebugHelpRequestDatabase = () => {
-  const [databaseData, setDatabaseData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [createResult, setCreateResult] = useState<any>(null);
-  const [isCreating, setIsCreating] = useState(false);
+const DebugHelpRequestDatabase: React.FC = () => {
+  const [requestData, setRequestData] = useState<HelpRequest | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const inspectDatabase = async () => {
-    setIsLoading(true);
+  const handleFetchHelpRequest = async () => {
+    setLoading(true);
     try {
-      const result = await inspectHelpRequests();
-      setDatabaseData(result);
-      if (result.error) {
-        toast.error(`Error inspecting database: ${result.error}`);
+      // You would normally get this ID from a real request
+      const testRequestId = '12345';
+      const response = await getHelpRequestById(testRequestId);
+      
+      if (response.success && response.data) {
+        setRequestData(response.data);
+        toast.success('Request fetched successfully');
+      } else {
+        toast.error(`Error fetching request: ${response.error}`);
+        setRequestData(null);
       }
     } catch (error) {
-      console.error('Error inspecting database:', error);
-      toast.error('Failed to inspect database');
+      console.error('Error in debug fetch:', error);
+      toast.error('Exception occurred during fetch');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const createTestRequest = async () => {
-    setIsCreating(true);
+  const handleCreateTestRequest = async () => {
+    setLoading(true);
     try {
-      const result = await createTestHelpRequest();
-      setCreateResult(result);
-      if (result.success) {
-        toast.success('Test help request created successfully');
-      } else if (result.error) {
-        toast.error(`Error creating test request: ${result.error}`);
+      // Sample test request
+      const testRequest = {
+        title: 'Debug Test Request',
+        description: 'This is a test request created for debugging purposes',
+        technical_area: ['Frontend', 'React'],
+        urgency: 'Medium',
+        budget_range: '$100 - $200',
+        communication_preference: ['Chat', 'Video Call'],
+        client_id: 'test-client-id', // This would be a real user ID in production
+        estimated_duration: 60,
+        code_snippet: 'console.log("Test code snippet")'
+      };
+      
+      const response = await createHelpRequest(testRequest);
+      
+      if (response.success) {
+        setRequestData(response.data);
+        toast.success('Test request created successfully');
+      } else {
+        toast.error(`Error creating test request: ${response.error}`);
       }
     } catch (error) {
       console.error('Error creating test request:', error);
-      toast.error('Failed to create test request');
+      toast.error('Exception occurred during test request creation');
     } finally {
-      setIsCreating(false);
+      setLoading(false);
+    }
+  };
+
+  const handleTestDatabaseAccess = async () => {
+    setLoading(true);
+    try {
+      const response = await testDatabaseAccess();
+      
+      if (response.success) {
+        toast.success(`Database connection successful. Found ${response.data?.count || 0} records.`);
+      } else {
+        toast.error(`Database connection failed: ${response.error}`);
+      }
+    } catch (error) {
+      console.error('Error testing database access:', error);
+      toast.error('Exception occurred during database test');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-6 p-4 border rounded-lg bg-card">
-      <h2 className="text-xl font-semibold">Debug Database Tools</h2>
-      
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={inspectDatabase} disabled={isLoading} variant="secondary">
-          {isLoading ? 'Inspecting...' : 'Inspect Help Requests'}
-        </Button>
-        
-        <Button onClick={createTestRequest} disabled={isCreating} variant="secondary">
-          {isCreating ? 'Creating...' : 'Create Test Request'}
-        </Button>
-      </div>
-      
-      {createResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Test Request Creation Result</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm">
-              <p><span className="font-medium">Success:</span> {createResult.success ? 'Yes' : 'No'}</p>
-              {createResult.data && (
-                <p><span className="font-medium">ID:</span> {createResult.data.id}</p>
-              )}
-              {createResult.error && (
-                <p className="text-destructive"><span className="font-medium">Error:</span> {createResult.error}</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {databaseData && (
-        <div>
-          <h3 className="text-lg font-medium mb-2">Database Inspection Results</h3>
-          <div className="border rounded-md p-4 bg-muted/30 overflow-auto max-h-[400px]">
-            <JsonView data={databaseData} style={defaultStyles} />
+    <Card className="w-full max-w-3xl mx-auto">
+      <CardHeader>
+        <CardTitle>Help Request Database Debug</CardTitle>
+        <CardDescription>
+          Tools for debugging database access for help requests
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex space-x-4">
+            <Button 
+              onClick={handleTestDatabaseAccess} 
+              disabled={loading}
+              variant="outline"
+            >
+              Test Database Connection
+            </Button>
+            <Button 
+              onClick={handleFetchHelpRequest} 
+              disabled={loading}
+              variant="outline"
+            >
+              Fetch Test Request
+            </Button>
+            <Button 
+              onClick={handleCreateTestRequest} 
+              disabled={loading}
+              variant="outline"
+            >
+              Create Test Request
+            </Button>
           </div>
+          
+          {requestData && (
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold mb-2">Request Data:</h3>
+              <pre className="bg-muted p-4 rounded-md overflow-auto max-h-96 text-sm">
+                {JSON.stringify(requestData, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </CardContent>
+      <CardFooter className="text-sm text-muted-foreground">
+        This component is for debugging purposes only.
+      </CardFooter>
+    </Card>
   );
 };
 
