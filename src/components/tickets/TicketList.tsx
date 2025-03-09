@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { ExternalLink, ArrowUpRight, Clock, DollarSign, Zap } from 'lucide-react';
+import { ExternalLink, ArrowUpRight, Clock, DollarSign, Zap, CheckCircle, AlertCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -21,13 +21,17 @@ interface TicketListProps {
   onClaimTicket: (ticketId: string) => void;
   currentUserId: string | null;
   isAuthenticated: boolean;
+  isRecommended?: boolean;
+  isApplication?: boolean;
 }
 
 const TicketList: React.FC<TicketListProps> = ({ 
   tickets, 
   onClaimTicket, 
   currentUserId,
-  isAuthenticated 
+  isAuthenticated,
+  isRecommended = false,
+  isApplication = false
 }) => {
   const navigate = useNavigate();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
@@ -93,7 +97,11 @@ const TicketList: React.FC<TicketListProps> = ({
         <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">📋</div>
         <h3 className="text-xl font-medium mb-2">No tickets found</h3>
         <p className="text-muted-foreground">
-          There are no tickets matching your current filters. Try adjusting your filters or check back later.
+          {isApplication 
+            ? "You haven't applied to any tickets yet. Browse available tickets and start applying!" 
+            : isRecommended
+              ? "No recommended tickets found. We'll suggest tickets that match your skills as they become available."
+              : "There are no tickets matching your current filters. Try adjusting your filters or check back later."}
         </p>
       </div>
     );
@@ -137,12 +145,24 @@ const TicketList: React.FC<TicketListProps> = ({
             `HELP-${Math.floor(Math.random() * 900) + 100}`;
             
           const isExpanded = expandedTicket === ticket.id;
+          
+          // Add a recommended indicator if it's in the recommended tab
+          const isRecommendedTicket = isRecommended;
+          
+          // Check application status for tickets in My Applications tab
+          const hasApplicationStatus = isApplication;
             
           return (
             <div 
               key={ticket.id} 
-              className={`bg-white border border-border/20 rounded-lg overflow-hidden transition-all duration-200 ${isExpanded ? 'shadow-md' : 'hover:shadow-sm'}`}
+              className={`bg-white border border-border/20 rounded-lg overflow-hidden transition-all duration-200 ${isExpanded ? 'shadow-md' : 'hover:shadow-sm'} ${isRecommendedTicket ? 'ring-2 ring-primary/20' : ''}`}
             >
+              {isRecommendedTicket && (
+                <div className="bg-primary/10 text-primary text-xs py-1 px-3 text-center font-medium">
+                  Recommended for your skills
+                </div>
+              )}
+              
               <div 
                 className="p-4 cursor-pointer"
                 onClick={() => handleTicketClick(ticket.id || '')}
@@ -178,6 +198,27 @@ const TicketList: React.FC<TicketListProps> = ({
                     {ticket.status || 'pending'}
                   </Badge>
                 </div>
+                
+                {hasApplicationStatus && (
+                  <div className="flex items-center gap-2 mb-2 text-sm">
+                    <span className="font-medium">Application Status:</span>
+                    <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
+                      <span className="flex items-center gap-1">
+                        {ticket.status === 'in-progress' ? (
+                          <>
+                            <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                            Accepted
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="h-3.5 w-3.5 text-amber-600" />
+                            Pending Review
+                          </>
+                        )}
+                      </span>
+                    </Badge>
+                  </div>
+                )}
                 
                 <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
                   {ticket.description}

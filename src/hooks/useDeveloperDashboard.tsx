@@ -80,6 +80,8 @@ const sampleTickets: HelpRequest[] = [
 export const useDeveloperDashboard = () => {
   const [tickets, setTickets] = useState<HelpRequest[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<HelpRequest[]>([]);
+  const [recommendedTickets, setRecommendedTickets] = useState<HelpRequest[]>([]);
+  const [myApplications, setMyApplications] = useState<HelpRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
     status: 'all',
@@ -113,6 +115,73 @@ export const useDeveloperDashboard = () => {
   useEffect(() => {
     applyFilters();
   }, [tickets, filters]);
+
+  useEffect(() => {
+    if (isAuthenticated && tickets.length > 0) {
+      // Generate recommended tickets based on matching criteria
+      // For now, we'll just take the 3 most recent tickets as recommended
+      const sorted = [...tickets].sort((a, b) => {
+        return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
+      });
+      
+      setRecommendedTickets(sorted.slice(0, 3));
+      
+      // Get tickets that this developer has applied for
+      fetchMyApplications();
+    } else {
+      setRecommendedTickets([]);
+      setMyApplications([]);
+    }
+  }, [tickets, isAuthenticated, userId]);
+
+  const fetchMyApplications = async () => {
+    if (!isAuthenticated || !userId) return;
+    
+    try {
+      // Check in localStorage first for sample data
+      const localMatches = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
+      const myLocalApplicationIds = localMatches
+        .filter((match: any) => match.developer_id === userId)
+        .map((match: any) => match.request_id);
+        
+      const myLocalApplications = tickets.filter(ticket => 
+        myLocalApplicationIds.includes(ticket.id)
+      );
+      
+      // Check in database for real applications
+      if (supabase) {
+        const { data: matchData, error } = await supabase
+          .from('help_request_matches')
+          .select('request_id, status, proposed_message, proposed_duration, proposed_rate')
+          .eq('developer_id', userId);
+          
+        if (error) {
+          console.error('Error fetching applications:', error);
+          setMyApplications(myLocalApplications);
+          return;
+        }
+        
+        if (matchData && matchData.length > 0) {
+          const databaseApplicationIds = matchData.map(match => match.request_id);
+          
+          // Find corresponding tickets
+          const myDatabaseApplications = tickets.filter(ticket => 
+            databaseApplicationIds.includes(ticket.id)
+          );
+          
+          // Combine local and database applications
+          setMyApplications([...myDatabaseApplications, ...myLocalApplications]);
+        } else {
+          setMyApplications(myLocalApplications);
+        }
+      } else {
+        setMyApplications(myLocalApplications);
+      }
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+      setMyApplications([]);
+    }
+  };
 
   const fetchTickets = async (showLoading = true) => {
     try {
@@ -255,6 +324,8 @@ export const useDeveloperDashboard = () => {
   return {
     tickets,
     filteredTickets,
+    recommendedTickets,
+    myApplications,
     isLoading,
     filters,
     showFilters,

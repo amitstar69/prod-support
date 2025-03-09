@@ -5,17 +5,19 @@ interface TicketSummaryProps {
   filteredCount: number;
   totalCount: number;
   dataSource?: string;
+  categoryTitle?: string;
 }
 
 const TicketSummary: React.FC<TicketSummaryProps> = ({ 
   filteredCount, 
   totalCount,
-  dataSource = 'database'
+  dataSource = 'database',
+  categoryTitle = 'Available Help Requests'
 }) => {
   return (
     <div className="flex justify-between items-center mb-4">
       <h2 className="text-xl font-semibold">
-        Available Help Requests
+        {categoryTitle}
         {dataSource === 'sample' && (
           <span className="ml-2 text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded-full">
             Sample Data
