@@ -113,7 +113,7 @@ export const useDeveloperDashboard = () => {
       setDataSource(result.source as 'local' | 'database' | 'error');
       
       // Fetch applications if authenticated
-      await fetchMyApplications(userId); // Pass userId as the required argument
+      await fetchMyApplications();
       
       // Fetch developers for matching
       await fetchDevelopers();
