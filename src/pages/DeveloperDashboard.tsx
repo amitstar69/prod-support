@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
@@ -10,7 +10,7 @@ import LoadingState from '../components/dashboard/LoadingState';
 import EmptyTicketState from '../components/dashboard/EmptyTicketState';
 import TicketControls from '../components/dashboard/TicketControls';
 import TicketSummary from '../components/dashboard/TicketSummary';
-import { useDeveloperDashboard } from '../hooks/useDeveloperDashboard';
+import { useDeveloperDashboard } from '../hooks/dashboard/useDeveloperDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
 const DeveloperDashboard = () => {
@@ -25,14 +25,14 @@ const DeveloperDashboard = () => {
     setShowFilters,
     isAuthenticated,
     userId,
+    activeTab,
+    setActiveTab,
     dataSource,
     handleFilterChange,
     handleClaimTicket,
     handleForceRefresh,
     fetchTickets
   } = useDeveloperDashboard();
-
-  const [activeTab, setActiveTab] = useState<string>(isAuthenticated ? 'recommended' : 'all');
 
   return (
     <Layout>
