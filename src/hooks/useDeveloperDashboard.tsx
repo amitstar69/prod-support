@@ -4,8 +4,78 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '../integrations/supabase/client';
 import { HelpRequest } from '../types/helpRequest';
-import { getAllPublicHelpRequests, testHelpRequestsTableAccess } from '../integrations/supabase/helpRequests';
+import { getAllPublicHelpRequests } from '../integrations/supabase/helpRequests';
 import { useAuth } from '../contexts/auth';
+
+// Sample tickets to show for non-authenticated users
+const sampleTickets: HelpRequest[] = [
+  {
+    id: 'sample-1',
+    client_id: 'demo-client',
+    title: 'React Component Optimization',
+    description: 'I have a React application with performance issues. Need help identifying and fixing components that are causing re-renders.',
+    technical_area: ['Frontend', 'React', 'Performance Optimization'],
+    urgency: 'medium',
+    communication_preference: ['Video Call', 'Screen Sharing'],
+    estimated_duration: 60,
+    budget_range: '$50 - $100',
+    status: 'pending',
+    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    code_snippet: 'function MyComponent() { const [state, setState] = useState(0); // More code here }'
+  },
+  {
+    id: 'sample-2',
+    client_id: 'demo-client',
+    title: 'API Integration Help Needed',
+    description: 'Need assistance integrating a third-party payment API into my Node.js backend. Documentation is confusing.',
+    technical_area: ['Backend', 'API Integration', 'Node.js'],
+    urgency: 'high',
+    communication_preference: ['Chat', 'Voice Call'],
+    estimated_duration: 90,
+    budget_range: '$100 - $200',
+    status: 'pending',
+    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
+  },
+  {
+    id: 'sample-3',
+    client_id: 'demo-client',
+    title: 'Database Query Optimization',
+    description: 'PostgreSQL queries running slow in production. Need help optimizing and adding proper indexes.',
+    technical_area: ['Database', 'SQL', 'Performance Optimization'],
+    urgency: 'critical',
+    communication_preference: ['Video Call', 'Screen Sharing'],
+    estimated_duration: 120,
+    budget_range: '$200 - $500',
+    status: 'matching',
+    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+  },
+  {
+    id: 'sample-4',
+    client_id: 'demo-client',
+    title: 'Help with AWS Deployment',
+    description: 'Need assistance setting up CI/CD pipeline for a React application on AWS. Having issues with S3 and CloudFront configuration.',
+    technical_area: ['DevOps', 'AWS', 'CI/CD'],
+    urgency: 'medium',
+    communication_preference: ['Video Call', 'Screen Sharing'],
+    estimated_duration: 150,
+    budget_range: '$100 - $200',
+    status: 'pending',
+    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
+  },
+  {
+    id: 'sample-5',
+    client_id: 'demo-client',
+    title: 'React Native Animation Bug',
+    description: 'Having issues with complex animations in a React Native app. Need help debugging and fixing jerky animations.',
+    technical_area: ['Mobile Development', 'React Native', 'Animation'],
+    urgency: 'high',
+    communication_preference: ['Chat', 'Screen Sharing'],
+    estimated_duration: 75,
+    budget_range: '$50 - $100',
+    status: 'pending',
+    created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() // 6 days ago
+  }
+];
 
 export const useDeveloperDashboard = () => {
   const [tickets, setTickets] = useState<HelpRequest[]>([]);
@@ -17,21 +87,16 @@ export const useDeveloperDashboard = () => {
     urgency: 'all',
   });
   const [showFilters, setShowFilters] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
-  const [dataSource, setDataSource] = useState<string>('database');
+  const [dataSource, setDataSource] = useState<string>('sample');
   const { isAuthenticated, userId, userType } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchAllTickets();
-    
-    if (isAuthenticated) {
-      testDatabaseAccess();
-    }
+    fetchTickets();
     
     const refreshInterval = setInterval(() => {
       console.log('Auto-refreshing tickets...');
-      fetchAllTickets(false);
+      fetchTickets(false);
     }, 30000);
     
     return () => clearInterval(refreshInterval);
@@ -49,64 +114,40 @@ export const useDeveloperDashboard = () => {
     applyFilters();
   }, [tickets, filters]);
 
-  const testDatabaseAccess = async () => {
-    try {
-      const result = await testHelpRequestsTableAccess();
-      console.log('Database access test result:', result);
-      setDebugInfo(result);
-      
-      if (!result.success && result.authenticated) {
-        toast.error('Database access issue detected. This may affect what tickets you can see.');
-      }
-    } catch (error) {
-      console.error('Error testing database access:', error);
-    }
-  };
-
-  const fetchAllTickets = async (showLoading = true) => {
+  const fetchTickets = async (showLoading = true) => {
     try {
       if (showLoading) {
         setIsLoading(true);
       }
-      console.log('Fetching all tickets...');
       
-      const response = await getAllPublicHelpRequests(isAuthenticated);
-      
-      if (response.success && response.data) {
-        console.log('Successfully fetched tickets:', response.data.length);
+      // For non-authenticated users, show sample tickets
+      if (!isAuthenticated) {
+        console.log('User not authenticated, showing sample tickets');
+        setTickets(sampleTickets);
+        setDataSource('sample');
+        if (showLoading) {
+          toast.info('Showing sample help requests. Sign in to see real tickets.', {
+            duration: 5000
+          });
+        }
+      } else {
+        // For authenticated users, fetch real tickets from the database
+        console.log('User authenticated, fetching real tickets');
+        const response = await getAllPublicHelpRequests();
         
-        if (response.data.length > 0) {
-          // We have data
+        if (response.success && response.data && response.data.length > 0) {
+          console.log('Successfully fetched tickets:', response.data.length);
           setTickets(response.data);
-          setDataSource(response.storageMethod || 'database');
-          
-          if (showLoading && response.storageMethod === 'localStorage') {
-            toast.info('Using local help request data', {
-              duration: 3000
-            });
-          }
+          setDataSource('database');
         } else {
-          // No data
+          console.log('No database tickets found or fetch failed');
           setTickets([]);
           
-          if (showLoading) {
-            toast.info('No help requests found. New requests will appear here.', {
+          if (showLoading && response.error) {
+            toast.error(`Error loading tickets: ${response.error}`, {
               duration: 5000
             });
           }
-        }
-      } else {
-        console.log('Fetch failed or returned no data');
-        setTickets([]);
-        
-        if (showLoading && response.error) {
-          toast.error(`Error loading tickets: ${response.error}`, {
-            duration: 5000
-          });
-        } else if (showLoading) {
-          toast.info('No help requests found. New requests will appear here.', {
-            duration: 5000
-          });
         }
       }
     } catch (error) {
@@ -162,13 +203,14 @@ export const useDeveloperDashboard = () => {
       return;
     }
 
+    // Don't allow claiming sample tickets
+    if (ticketId.startsWith('sample-')) {
+      toast.error('This is a sample ticket. Sign in to claim real help requests.');
+      return;
+    }
+
     try {
       toast.loading('Claiming ticket...');
-      
-      if ((ticketId.startsWith('demo-') || ticketId.startsWith('help-')) && isAuthenticated) {
-        toast.error('Cannot claim demo tickets. Please apply to real help requests.');
-        return;
-      }
       
       const { data: matchData, error: matchError } = await supabase
         .from('help_request_matches')
@@ -198,7 +240,7 @@ export const useDeveloperDashboard = () => {
       }
       
       toast.success('Ticket claimed successfully!');
-      fetchAllTickets();
+      fetchTickets();
     } catch (error) {
       console.error('Exception claiming ticket:', error);
       toast.error('An unexpected error occurred. Please try again.');
@@ -206,9 +248,8 @@ export const useDeveloperDashboard = () => {
   };
 
   const handleForceRefresh = () => {
-    localStorage.removeItem('helpRequests');
-    toast.success('Local cache cleared. Refreshing data...');
-    fetchAllTickets();
+    toast.success('Refreshing data...');
+    fetchTickets();
   };
 
   return {
@@ -224,6 +265,6 @@ export const useDeveloperDashboard = () => {
     handleFilterChange,
     handleClaimTicket,
     handleForceRefresh,
-    fetchAllTickets
+    fetchTickets
   };
 };

@@ -26,7 +26,7 @@ const DeveloperDashboard = () => {
     handleFilterChange,
     handleClaimTicket,
     handleForceRefresh,
-    fetchAllTickets
+    fetchTickets
   } = useDeveloperDashboard();
 
   return (
@@ -37,7 +37,7 @@ const DeveloperDashboard = () => {
         <DashboardHeader 
           showFilters={showFilters} 
           setShowFilters={setShowFilters} 
-          onRefresh={fetchAllTickets} 
+          onRefresh={fetchTickets} 
         />
         
         {!isAuthenticated && (
@@ -81,7 +81,8 @@ const DeveloperDashboard = () => {
           <EmptyTicketState 
             tickets={tickets}
             isAuthenticated={isAuthenticated}
-            onRefresh={fetchAllTickets}
+            onRefresh={fetchTickets}
+            dataSource={dataSource}
           />
         )}
       </div>
