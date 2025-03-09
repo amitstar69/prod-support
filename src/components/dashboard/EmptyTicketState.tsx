@@ -9,13 +9,15 @@ interface EmptyTicketStateProps {
   isAuthenticated: boolean;
   onRefresh: () => void;
   dataSource?: string;
+  customMessage?: string;
 }
 
 const EmptyTicketState: React.FC<EmptyTicketStateProps> = ({ 
   tickets,
   isAuthenticated,
   onRefresh,
-  dataSource = 'database'
+  dataSource = 'database',
+  customMessage
 }) => {
   const navigate = useNavigate();
   
@@ -55,11 +57,11 @@ const EmptyTicketState: React.FC<EmptyTicketStateProps> = ({
       <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">📋</div>
       <h3 className="text-xl font-medium mb-2">No help requests found</h3>
       <p className="text-muted-foreground mb-4">
-        {tickets.length > 0 
+        {customMessage || (tickets.length > 0 
           ? "There are no tickets matching your current filters. Try adjusting your filters."
           : isAuthenticated 
             ? "There are no active help requests in the database at the moment. Check back later."
-            : "No tickets found. Sign in to see real help requests."}
+            : "No tickets found. Sign in to see real help requests.")}
       </p>
       <Button 
         onClick={onRefresh}
