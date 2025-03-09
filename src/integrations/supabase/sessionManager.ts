@@ -1,8 +1,7 @@
-
 import { supabase } from './client';
 import { ApiResponse } from './helpRequests';
+import { SessionMessage } from '../types/sessionMessage';
 
-// Add the missing function
 export const getUserSessions = async (userId: string, userRole: 'client' | 'developer'): Promise<any[]> => {
   try {
     const field = userRole === 'client' ? 'client_id' : 'developer_id';
@@ -231,7 +230,65 @@ export const finalizeHelpSession = async (sessionId: string): Promise<ApiRespons
   }
 };
 
-export const sendChatMessage = async (sessionId: string, message: string, senderId: string, senderType: string): Promise<ApiResponse<any>> => {
+/**
+ * Fetches all messages for a specific help session.
+ */
+export const getSessionMessages = async (sessionId: string): Promise<SessionMessage[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('session_messages')
+      .select(`
+        *,
+        profiles:sender_id(id, name, image)
+      `)
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching session messages:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Exception in getSessionMessages:', error);
+    return [];
+  }
+};
+
+/**
+ * Subscribes to real-time updates of session messages.
+ */
+export const subscribeToSessionMessages = (sessionId: string, callback: (newMessage: any) => void) => {
+  const channel = supabase
+    .channel(`session_messages:${sessionId}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'session_messages',
+      filter: `session_id=eq.${sessionId}`
+    }, (payload) => {
+      callback(payload.new);
+    })
+    .subscribe();
+
+  return {
+    unsubscribe: () => {
+      supabase.removeChannel(channel);
+    }
+  };
+};
+
+/**
+ * Sends a chat message to a help session.
+ */
+export const sendChatMessage = async (
+  sessionId: string, 
+  message: string, 
+  senderId: string, 
+  senderType: string,
+  isCode: boolean = false
+): Promise<ApiResponse<any>> => {
   try {
     const { data, error } = await supabase
       .from('session_messages')
@@ -239,7 +296,8 @@ export const sendChatMessage = async (sessionId: string, message: string, sender
         session_id: sessionId,
         sender_id: senderId,
         sender_type: senderType,
-        content: message
+        content: message,
+        is_code: isCode
       })
       .select()
       .single();

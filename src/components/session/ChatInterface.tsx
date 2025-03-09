@@ -122,13 +122,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId }) => {
       // Determine user type from the profile
       const senderType = userProfile.user_type === 'developer' ? 'developer' : 'client';
       
-      await sendChatMessage({
-        sessionId: sessionId,
-        senderId: userId,
-        senderType: senderType,
-        content: newMessage,
-        isCode: false
-      });
+      // Fix the function call to match the expected parameters
+      await sendChatMessage(
+        sessionId,
+        newMessage,
+        userId,
+        senderType
+      );
       
       setNewMessage('');
     } catch (error) {
