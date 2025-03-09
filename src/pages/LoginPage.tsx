@@ -6,6 +6,7 @@ import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
 import { useLoginForm } from '../hooks/useLoginForm';
 import { supabase } from '../integrations/supabase/client';
+import { toast } from 'sonner';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -28,8 +29,12 @@ const LoginPage: React.FC = () => {
   // Check auth status when component mounts
   useEffect(() => {
     // Debug: log any existing auth session
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data, error }) => {
       console.log('Current Supabase session on login page load:', data.session);
+      if (error) {
+        console.error('Error checking session:', error);
+        toast.error('Error checking authentication status');
+      }
     });
     
     checkAuthStatus();
@@ -47,11 +52,15 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated) {
       console.log('User is authenticated, redirecting to dashboard', {userType});
-      if (userType === 'developer') {
-        navigate('/profile');
-      } else {
-        navigate('/client-dashboard');
-      }
+      
+      // Short delay to ensure state is consistent
+      setTimeout(() => {
+        if (userType === 'developer') {
+          navigate('/profile');
+        } else {
+          navigate('/client-dashboard');
+        }
+      }, 300);
     }
   }, [isAuthenticated, userType, navigate]);
   
