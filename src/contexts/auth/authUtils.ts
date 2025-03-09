@@ -39,7 +39,7 @@ export const checkSupabaseSession = async (
     if (!profileData) {
       console.log('No profile found for this user, creating one');
       
-      // For safety, we'll create a simple profile with admin permissions
+      // For safety, we'll create a simple profile with client permissions
       // The user will need to set their profile type later
       const newAuthState = { 
         isAuthenticated: true, 

@@ -25,15 +25,28 @@ const LoginPage: React.FC = () => {
   } = useLoginForm();
   
   useEffect(() => {
+    // Check auth status when component mounts
     checkAuthStatus();
+    
+    // Also set up an interval to periodically check auth status
+    // This helps detect successful logins via Supabase auth state change
+    const intervalId = setInterval(() => {
+      checkAuthStatus();
+    }, 2000);
+    
+    return () => clearInterval(intervalId);
   }, []);
   
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('User is already authenticated, redirecting to home');
-      navigate('/');
+      console.log('User is authenticated, redirecting to dashboard');
+      if (userType === 'developer') {
+        navigate('/profile');
+      } else {
+        navigate('/client-dashboard');
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, userType, navigate]);
   
   return (
     <Layout>

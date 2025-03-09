@@ -61,36 +61,48 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setMockClients(JSON.parse(storedClients));
         }
         
-        // Then verify with Supabase (which is more reliable but slower)
-        if (supabase) {
-          console.log('Verifying auth state with Supabase...');
-          const authData = await checkSupabaseSession(setAuthState);
-          
-          // If the server indicates we're not authenticated but local storage did,
-          // clear the local storage to prevent stale authentication
-          if (!authData?.isAuthenticated && storedAuthState) {
-            const parsedState = JSON.parse(storedAuthState);
-            if (parsedState.isAuthenticated) {
-              console.log('Local auth state conflicts with server state. Resetting...');
-              localStorage.removeItem('authState');
-              setAuthState({
-                isAuthenticated: false,
-                userType: null,
-                userId: null,
-              });
-            }
+        // Force checking Supabase session regardless of local state
+        console.log('Verifying auth state with Supabase...');
+        const authData = await checkSupabaseSession(setAuthState);
+        
+        // If Supabase indicates we're authenticated but with different info than localStorage,
+        // use the Supabase information (it's more authoritative)
+        if (authData?.isAuthenticated && storedAuthState) {
+          const parsedState = JSON.parse(storedAuthState);
+          if (
+            parsedState.isAuthenticated !== authData.isAuthenticated || 
+            parsedState.userId !== authData.userId ||
+            parsedState.userType !== authData.userType
+          ) {
+            console.log('Updating local auth state to match Supabase session');
+            localStorage.setItem('authState', JSON.stringify(authData));
           }
-          
-          // Set up auth state change listener
-          console.log('Setting up auth state change listener...');
-          const { subscription } = setupAuthStateChangeListener(setAuthState);
-          
-          return () => {
-            // Clean up the subscription when the component unmounts
-            console.log('Cleaning up auth state change listener...');
-            subscription?.unsubscribe();
-          };
         }
+        
+        // If the server indicates we're not authenticated but local storage did,
+        // clear the local storage to prevent stale authentication
+        if (!authData?.isAuthenticated && storedAuthState) {
+          const parsedState = JSON.parse(storedAuthState);
+          if (parsedState.isAuthenticated) {
+            console.log('Local auth state conflicts with server state. Resetting...');
+            localStorage.removeItem('authState');
+            setAuthState({
+              isAuthenticated: false,
+              userType: null,
+              userId: null,
+            });
+          }
+        }
+        
+        // Set up auth state change listener
+        console.log('Setting up auth state change listener...');
+        const subscription = setupAuthStateChangeListener(setAuthState);
+        
+        return () => {
+          // Clean up the subscription when the component unmounts
+          console.log('Cleaning up auth state change listener...');
+          subscription?.unsubscribe();
+        };
       } catch (error) {
         console.error('Error initializing auth:', error);
         // Clear potentially corrupt auth state
@@ -108,6 +120,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     initAuth();
+  }, []);
+  
+  // Update auth state whenever localStorage changes from other tabs/windows
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'authState' && event.newValue) {
+        try {
+          const newAuthState = JSON.parse(event.newValue);
+          console.log('Auth state changed in another tab/window:', newAuthState);
+          setAuthState(newAuthState);
+        } catch (error) {
+          console.error('Error parsing auth state from localStorage:', error);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
   
   // Logout function that's passed to the context
