@@ -101,7 +101,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return () => {
           // Clean up the subscription when the component unmounts
           console.log('Cleaning up auth state change listener...');
-          subscription?.unsubscribe();
+          if (subscription) {
+            subscription.unsubscribe();
+          }
         };
       } catch (error) {
         console.error('Error initializing auth:', error);
