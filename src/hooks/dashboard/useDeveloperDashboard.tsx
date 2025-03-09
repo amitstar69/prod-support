@@ -106,7 +106,7 @@ export const useDeveloperDashboard = () => {
     }
     
     // Fetch real data for authenticated users
-    const result = await baseFetchTickets();
+    const result = await baseFetchTickets(true); // Pass true for showLoading parameter
     
     if (result.success) {
       setTickets(result.data);

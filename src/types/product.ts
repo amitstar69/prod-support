@@ -23,6 +23,7 @@ export interface Developer {
   preferredWorkingHours?: string;
   communicationPreferences?: string[];  // ["chat", "voice", "video"]
   profileCompleted?: boolean;
+  username?: string;    // Adding username property to fix the error
 }
 
 export interface Client {

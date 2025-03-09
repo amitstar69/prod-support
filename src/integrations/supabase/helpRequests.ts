@@ -1,6 +1,7 @@
 import { supabase } from './client';
-import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
-import { isValidUUID, isLocalId } from './helpRequestsUtils';
+import { v4 as uuidv4 } from 'uuid';
+import { HelpRequest } from '../../types/helpRequest';
+import { Developer } from '../../types/product';
 import { toast } from 'sonner';
 
 // Core function to create a help request
