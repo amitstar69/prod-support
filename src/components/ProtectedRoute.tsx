@@ -20,72 +20,109 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
   const [isVerifying, setIsVerifying] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
+  const [checkComplete, setCheckComplete] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const verifySession = async () => {
       // Check if we have valid Supabase session
-      const { data, error } = await supabase.auth.getSession();
-      
-      console.log('[ProtectedRoute] Verifying session:', { 
-        hasSession: !!data.session,
-        contextAuth: isAuthenticated,
-        userType
-      });
-      
-      if (error) {
-        console.error('[ProtectedRoute] Error verifying session:', error);
-        setHasAccess(false);
-        setIsVerifying(false);
-        return;
-      }
-      
-      // Allow public access routes to be viewed by anyone
-      if (allowPublicAccess) {
-        setHasAccess(true);
-        setIsVerifying(false);
-        return;
-      }
-      
-      // No valid session = no access
-      if (!data.session) {
-        setHasAccess(false);
-        setIsVerifying(false);
-        return;
-      }
-      
-      // If required user type is specified, check if current user has that type
-      if (requiredUserType) {
-        try {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('user_type')
-            .eq('id', data.session.user.id)
-            .maybeSingle();
-          
-          if (profileData && profileData.user_type === requiredUserType) {
-            setHasAccess(true);
-          } else {
-            console.log(`[ProtectedRoute] User is not a ${requiredUserType}, redirecting`);
-            toast.error(`This page is only accessible to ${requiredUserType}s.`);
-            setHasAccess(false);
-          }
-        } catch (err) {
-          console.error('[ProtectedRoute] Error checking user type:', err);
-          setHasAccess(false);
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (isMounted) {
+          console.log('[ProtectedRoute] Verifying session:', { 
+            hasSession: !!data.session,
+            contextAuth: isAuthenticated,
+            userType
+          });
         }
-      } else {
-        // Just need to be authenticated
-        setHasAccess(true);
+        
+        if (error) {
+          console.error('[ProtectedRoute] Error verifying session:', error);
+          if (isMounted) {
+            setHasAccess(false);
+            setIsVerifying(false);
+            setCheckComplete(true);
+          }
+          return;
+        }
+        
+        // Allow public access routes to be viewed by anyone
+        if (allowPublicAccess) {
+          if (isMounted) {
+            setHasAccess(true);
+            setIsVerifying(false);
+            setCheckComplete(true);
+          }
+          return;
+        }
+        
+        // No valid session = no access
+        if (!data.session) {
+          if (isMounted) {
+            setHasAccess(false);
+            setIsVerifying(false);
+            setCheckComplete(true);
+          }
+          return;
+        }
+        
+        // If required user type is specified, check if current user has that type
+        if (requiredUserType) {
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('user_type')
+              .eq('id', data.session.user.id)
+              .maybeSingle();
+            
+            if (isMounted) {
+              if (profileData && profileData.user_type === requiredUserType) {
+                setHasAccess(true);
+              } else {
+                console.log(`[ProtectedRoute] User is not a ${requiredUserType}, redirecting`);
+                toast.error(`This page is only accessible to ${requiredUserType}s.`);
+                setHasAccess(false);
+              }
+              setIsVerifying(false);
+              setCheckComplete(true);
+            }
+          } catch (err) {
+            console.error('[ProtectedRoute] Error checking user type:', err);
+            if (isMounted) {
+              setHasAccess(false);
+              setIsVerifying(false);
+              setCheckComplete(true);
+            }
+          }
+        } else {
+          // Just need to be authenticated
+          if (isMounted) {
+            setHasAccess(true);
+            setIsVerifying(false);
+            setCheckComplete(true);
+          }
+        }
+      } catch (err) {
+        console.error('[ProtectedRoute] Exception during verification:', err);
+        if (isMounted) {
+          setHasAccess(false);
+          setIsVerifying(false);
+          setCheckComplete(true);
+        }
       }
-      
-      setIsVerifying(false);
     };
     
     verifySession();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [isAuthenticated, userType, allowPublicAccess, requiredUserType]);
 
   // Loading state while verifying
-  if (isVerifying) {
+  if (isVerifying || !checkComplete) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
         <div className="animate-pulse text-center">
@@ -101,7 +138,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <>{children}</>;
   }
 
-  // Redirect unauthenticated users to login
+  // Redirect unauthenticated users to login with current path stored
   if (!hasAccess) {
     return <Navigate to="/login" state={{ returnTo: location.pathname }} replace />;
   }

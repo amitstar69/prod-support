@@ -12,6 +12,7 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [initialChecked, setInitialChecked] = useState(false);
   const { 
     email, 
     password, 
@@ -33,39 +34,51 @@ const LoginPage: React.FC = () => {
   
   // Check auth status when component mounts
   useEffect(() => {
-    console.log('[LoginPage] Checking auth status on mount...');
+    let isMounted = true;
     
-    // Debug: log any existing auth session
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (error) {
-        console.error('[LoginPage] Error checking session:', error);
-        toast.error('Error checking authentication status');
-        setInitialAuthCheckComplete(true);
-        return;
-      }
+    const checkSession = async () => {
+      console.log('[LoginPage] Checking auth status on mount...');
       
-      console.log('[LoginPage] Current Supabase session on login page load:', data.session);
-      
-      // If we're already authenticated, redirect to the appropriate dashboard
-      if (data.session && !isRedirecting) {
-        console.log('[LoginPage] Session found, fetching profile to determine user type...');
-        setIsRedirecting(true);
+      try {
+        // Debug: log any existing auth session
+        const { data, error } = await supabase.auth.getSession();
         
-        // Get user profile to determine user type
-        supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('id', data.session.user.id)
-          .maybeSingle()
-          .then(({ data: profileData, error: profileError }) => {
+        if (error) {
+          console.error('[LoginPage] Error checking session:', error);
+          toast.error('Error checking authentication status');
+          if (isMounted) {
+            setInitialAuthCheckComplete(true);
+            setInitialChecked(true);
+          }
+          return;
+        }
+        
+        console.log('[LoginPage] Current Supabase session on login page load:', data.session);
+        
+        // If we're already authenticated, redirect to the appropriate dashboard
+        if (data.session && !isRedirecting && isMounted) {
+          console.log('[LoginPage] Session found, fetching profile to determine user type...');
+          setIsRedirecting(true);
+          
+          // Get user profile to determine user type
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('user_type')
+              .eq('id', data.session.user.id)
+              .maybeSingle();
+              
             if (profileError) {
               console.error('[LoginPage] Error fetching profile data:', profileError);
-              setIsRedirecting(false);
-              setInitialAuthCheckComplete(true);
+              if (isMounted) {
+                setIsRedirecting(false);
+                setInitialAuthCheckComplete(true);
+                setInitialChecked(true);
+              }
               return;
             }
             
-            if (profileData) {
+            if (profileData && isMounted) {
               console.log(`[LoginPage] Profile found, user type: ${profileData.user_type}`);
               
               // Redirect based on user type with a small delay to ensure state is updated
@@ -74,46 +87,62 @@ const LoginPage: React.FC = () => {
               
               // Use a timeout to avoid immediate redirect which can cause flickering
               setTimeout(() => {
-                navigate(redirectPath, { replace: true });
-              }, 100);
+                if (isMounted) {
+                  navigate(redirectPath, { replace: true });
+                }
+              }, 200);
             } else {
               console.log('[LoginPage] No profile found for this user');
+              if (isMounted) {
+                setIsRedirecting(false);
+                setInitialAuthCheckComplete(true);
+                setInitialChecked(true);
+              }
+            }
+          } catch (err) {
+            console.error('[LoginPage] Error in profile check:', err);
+            if (isMounted) {
               setIsRedirecting(false);
               setInitialAuthCheckComplete(true);
+              setInitialChecked(true);
             }
-          })
-          .catch(err => {
-            console.error('[LoginPage] Error fetching profile data:', err);
-            setIsRedirecting(false);
+          }
+        } else {
+          if (isMounted) {
             setInitialAuthCheckComplete(true);
-          });
-      } else {
-        setInitialAuthCheckComplete(true);
+            setInitialChecked(true);
+          }
+        }
+      } catch (err) {
+        console.error('[LoginPage] Error getting session:', err);
+        if (isMounted) {
+          setInitialAuthCheckComplete(true);
+          setInitialChecked(true);
+        }
       }
-    }).catch(err => {
-      console.error('[LoginPage] Error getting session:', err);
-      setInitialAuthCheckComplete(true);
-    });
+    };
     
-    // Only run once on component mount
-  }, [navigate]);
+    checkSession();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate, isRedirecting]);
   
   // Handle redirect when authenticated via form submission
   useEffect(() => {
-    if (isAuthenticated && !isRedirecting) {
+    if (isAuthenticated && !isRedirecting && initialChecked) {
       console.log('[LoginPage] User is authenticated via form submission, redirecting to dashboard', { userType });
       setIsRedirecting(true);
       
       const redirectPath = userType === 'developer' ? '/profile' : '/client-dashboard';
       console.log(`[LoginPage] Redirecting to ${redirectPath}`);
       
-      // Use window.location for a full page navigation to avoid React Router issues
+      // Use direct navigation for a clean transition
       window.location.href = redirectPath;
     }
-  }, [isAuthenticated, userType, navigate, isRedirecting]);
-  
-  // Check for returnTo parameter in location state
-  const returnTo = location.state?.returnTo || '/';
+  }, [isAuthenticated, userType, navigate, isRedirecting, initialChecked]);
   
   if (!initialAuthCheckComplete) {
     return (

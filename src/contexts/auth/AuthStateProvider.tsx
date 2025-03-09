@@ -94,7 +94,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
         
-        // Set up auth state change listener - FIXED to handle the subscription correctly
+        // Set up auth state change listener - using the fixed function that returns the correct subscription
         console.log('[AuthProvider] Setting up auth state change listener...');
         const subscription = setupAuthStateChangeListener(setAuthState);
         
@@ -103,8 +103,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         return () => {
           // Clean up the subscription when the component unmounts
-          console.log('[AuthProvider] Cleaning up auth state change listener...');
           if (subscription) {
+            console.log('[AuthProvider] Cleaning up auth state change listener...');
             subscription.unsubscribe();
           }
         };
