@@ -202,12 +202,19 @@ export const useDeveloperDashboard = () => {
       } else {
         // For authenticated users, fetch real tickets from the database
         console.log('User authenticated, fetching real tickets');
-        const response = await getAllPublicHelpRequests();
+        const response = await getAllPublicHelpRequests(isAuthenticated);
         
-        if (response.success && response.data && response.data.length > 0) {
+        if (response.success && response.data) {
           console.log('Successfully fetched tickets:', response.data.length);
           setTickets(response.data);
           setDataSource('database');
+          
+          // If no tickets were found
+          if (response.data.length === 0 && showLoading) {
+            toast.info('No active help requests found. Check back later.', {
+              duration: 5000
+            });
+          }
         } else {
           console.log('No database tickets found or fetch failed');
           setTickets([]);

@@ -119,37 +119,45 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
   try {
     console.log('getAllPublicHelpRequests: Fetching all public help requests...');
     
-    // Get local storage requests for comparison
-    const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
-    console.log('Local help requests:', localHelpRequests.length);
-    
-    // Fetch data from the database for both authenticated and non-authenticated users
-    // Important: We remove the 'status=eq.pending' filter to see all help requests regardless of status
-    const { data, error } = await supabase
-      .from('help_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // For authenticated users, fetch real data from the database
+    if (isAuthenticated) {
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Error fetching public help requests from Supabase:', error);
+        return { 
+          success: false, 
+          error: 'Failed to fetch help requests: ' + error.message,
+          data: [] 
+        };
+      }
       
-    if (error) {
-      console.error('Error fetching public help requests from Supabase:', error);
-      return { 
-        success: false, 
-        error: 'Failed to fetch help requests: ' + error.message,
-        data: localHelpRequests 
-      };
-    }
-    
-    // If we got data from the database, use it
-    if (data && data.length > 0) {
-      console.log('Found database data, returning it:', data.length, 'records');
-      return {
-        success: true,
-        data: data,
-        storageMethod: 'database'
-      };
-    } else {
-      // If no data from database, fall back to local storage
-      console.log('No database data found, returning local help requests:', localHelpRequests.length);
+      // If we got data from the database, use it
+      if (data && data.length > 0) {
+        console.log('Found database data, returning it:', data.length, 'records');
+        return {
+          success: true,
+          data: data,
+          storageMethod: 'database'
+        };
+      } else {
+        console.log('No database data found for authenticated user');
+        return {
+          success: true,
+          data: [],
+          storageMethod: 'database'
+        };
+      }
+    } 
+    // For non-authenticated users, return sample data
+    else {
+      // Get local storage requests for sample data
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      console.log('Local help requests for unauthenticated user:', localHelpRequests.length);
+      
       return {
         success: true,
         data: localHelpRequests,
