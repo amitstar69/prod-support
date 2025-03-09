@@ -1,6 +1,6 @@
 import { supabase } from './client';
 import { ApiResponse } from './helpRequests';
-import { SessionMessage } from '../types/sessionMessage';
+import { SessionMessage } from '../../types/sessionMessage';
 
 export const getUserSessions = async (userId: string, userRole: 'client' | 'developer'): Promise<any[]> => {
   try {
