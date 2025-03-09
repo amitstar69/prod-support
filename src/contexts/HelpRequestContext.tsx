@@ -1,6 +1,8 @@
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { HelpRequest, HelpRequestStatus, technicalAreaOptions, communicationOptions, budgetRangeOptions } from '../types/helpRequest';
 import { toast } from 'sonner';
+import { supabase } from '../integrations/supabase/client';
 
 type HelpRequestContextType = {
   formData: Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'updated_at'>;
@@ -11,6 +13,7 @@ type HelpRequestContextType = {
   handleMultiSelectChange: (name: string, value: string) => void;
   resetForm: () => void;
   validateForm: () => boolean;
+  submitForm: (clientId: string) => Promise<{success: boolean, data?: any, error?: string}>;
 };
 
 const defaultFormData: Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'updated_at'> = {
@@ -97,6 +100,50 @@ export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ childre
     
     return true;
   };
+  
+  const submitForm = async (clientId: string) => {
+    console.log('[HelpRequestContext] Submitting form with client ID:', clientId);
+    try {
+      // Ensure duration is a number
+      const duration = typeof formData.estimated_duration === 'string' 
+        ? parseInt(formData.estimated_duration, 10) 
+        : formData.estimated_duration;
+        
+      // Create complete request object
+      const helpRequest = {
+        ...formData,
+        estimated_duration: duration,
+        client_id: clientId,
+      };
+      
+      // Insert the help request into Supabase
+      const { data, error } = await supabase
+        .from('help_requests')
+        .insert([helpRequest])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('[HelpRequestContext] Supabase error submitting request:', error);
+        return { 
+          success: false, 
+          error: error.message 
+        };
+      }
+      
+      console.log('[HelpRequestContext] Help request submitted successfully:', data);
+      return {
+        success: true,
+        data
+      };
+    } catch (error: any) {
+      console.error('[HelpRequestContext] Exception submitting help request:', error);
+      return {
+        success: false,
+        error: error.message || 'An unexpected error occurred'
+      };
+    }
+  };
 
   return (
     <HelpRequestContext.Provider 
@@ -108,7 +155,8 @@ export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ childre
         handleInputChange, 
         handleMultiSelectChange,
         resetForm,
-        validateForm 
+        validateForm,
+        submitForm
       }}
     >
       {children}

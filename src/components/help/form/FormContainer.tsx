@@ -1,18 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/auth';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
-import { createHelpRequest } from '../../../integrations/supabase/helpRequests';
-import { HelpRequestStatus } from '../../../types/helpRequest'; 
-import AuthWarning from './AuthWarning';
-import TitleDescriptionSection from './TitleDescriptionSection';
-import TechnicalAreaSection from './TechnicalAreaSection';
-import UrgencyDurationSection from './UrgencyDurationSection';
-import CommunicationSection from './CommunicationSection';
-import BudgetSection from './BudgetSection';
-import CodeSnippetSection from './CodeSnippetSection';
-import SubmitButton from './SubmitButton';
 import { toast } from 'sonner';
 
 interface FormContainerProps {
@@ -22,8 +12,7 @@ interface FormContainerProps {
 const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
   const { isAuthenticated, userId } = useAuth();
   const navigate = useNavigate();
-  const { formData, isSubmitting, setIsSubmitting, resetForm } = useHelpRequest();
-  const [submissionTimer, setSubmissionTimer] = useState<NodeJS.Timeout | null>(null);
+  const { formData, isSubmitting, setIsSubmitting, validateForm, submitForm } = useHelpRequest();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,74 +21,37 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       return; // Prevent multiple submissions
     }
     
+    // Validate the form first
+    if (!validateForm()) {
+      return;
+    }
+    
     // Generate a client ID based on authentication status
     // If authenticated, use the actual userId, otherwise create a temporary guest ID
-    const clientId = isAuthenticated && userId ? userId : `client-guest-${Date.now()}`;
+    const clientId = isAuthenticated && userId ? userId : `guest-${Date.now()}`;
     
-    console.log('Submitting help request with clientId:', clientId, 'isAuthenticated:', isAuthenticated);
+    console.log('[FormContainer] Submitting help request, isAuthenticated:', isAuthenticated, 'clientId:', clientId);
     
     setIsSubmitting(true);
-    
-    // Set a timeout to prevent the page from being stuck in a loading state
-    const timer = setTimeout(() => {
-      console.log('Submission taking longer than expected, resetting state...');
-      setIsSubmitting(false);
-      toast.error('Request is taking longer than expected. Please try again or refresh the page.');
-    }, 10000); // 10 seconds timeout
-    
-    setSubmissionTimer(timer);
+    toast.loading('Submitting your request...');
     
     try {
-      // Ensure estimated_duration is a number
-      const duration = typeof formData.estimated_duration === 'string' 
-        ? parseInt(formData.estimated_duration, 10) 
-        : formData.estimated_duration;
-      
-      // Create base request object with appropriate typing for status
-      const helpRequestBase = {
-        title: formData.title || 'Untitled Request',
-        description: formData.description || 'No description provided',
-        technical_area: formData.technical_area,
-        urgency: formData.urgency || 'medium',
-        communication_preference: formData.communication_preference,
-        estimated_duration: duration,
-        budget_range: formData.budget_range,
-        code_snippet: formData.code_snippet || '',
-        status: 'pending' as HelpRequestStatus,
-        client_id: clientId,
-      };
-      
-      // Use the createHelpRequest utility function
-      const result = await createHelpRequest(helpRequestBase);
+      const result = await submitForm(clientId);
       
       if (!result.success) {
         throw new Error(result.error);
       }
       
-      console.log('Help request created successfully:', result);
-      
-      // Show success message and redirect
+      toast.dismiss();
       toast.success('Help request submitted successfully!');
-      resetForm();
       
-      // Clear the timeout since submission was successful
-      if (submissionTimer) {
-        clearTimeout(submissionTimer);
-        setSubmissionTimer(null);
-      }
-      
+      // Navigate to success page
       navigate('/get-help/success', { state: { requestId: result.data.id } });
-      
     } catch (error: any) {
-      console.error('Error in form submission:', error);
-      toast.error('An unexpected error occurred: ' + error.message);
+      toast.dismiss();
+      console.error('[FormContainer] Error submitting form:', error);
+      toast.error('Failed to submit request: ' + (error.message || 'Unknown error'));
     } finally {
-      // Clear the timeout
-      if (submissionTimer) {
-        clearTimeout(submissionTimer);
-        setSubmissionTimer(null);
-      }
-      
       setIsSubmitting(false);
     }
   };

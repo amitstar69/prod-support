@@ -96,12 +96,15 @@ const LoginPage: React.FC = () => {
       
       // Get the return path from location state or default to the dashboard
       const state = location.state as { returnTo?: string } | null;
-      const returnPath = state?.returnTo || (userType === 'developer' ? '/developer-dashboard' : '/client-dashboard');
+      const redirectPath = state?.returnTo || (userType === 'developer' ? '/developer-dashboard' : '/client-dashboard');
       
-      // Add a small delay to ensure state is properly updated
-      setTimeout(() => {
-        navigate(returnPath, { replace: true });
-      }, 100);
+      console.log(`[LoginPage] Redirecting to: ${redirectPath}`);
+      
+      // Clear any previous toasts
+      toast.dismiss();
+      
+      // Force the redirect using window.location for a full refresh
+      window.location.href = redirectPath;
     }
   }, [loginSuccess, userType, navigate, location.state]);
   

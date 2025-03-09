@@ -12,9 +12,9 @@ const LoginPrompt: React.FC = () => {
       <div className="flex items-start gap-3">
         <Info className="h-5 w-5 text-blue-600 mt-0.5" />
         <div className="flex-1">
-          <h3 className="font-medium text-blue-800 text-sm mb-1">You're viewing sample help requests</h3>
+          <h3 className="font-medium text-blue-800 text-sm mb-1">You're viewing sample data</h3>
           <p className="text-sm text-blue-700 mb-3">
-            Sign in as a developer to see real help requests and start claiming tickets
+            Sign in to see real requests and start using the full platform features
           </p>
           <div className="flex gap-3">
             <Button 
