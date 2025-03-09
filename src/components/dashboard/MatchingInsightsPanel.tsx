@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useTicketMatching } from '../../hooks/useTicketMatching';
 import { HelpRequest } from '../../types/helpRequest';
@@ -8,7 +7,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { 
   Card, 
-  CardContent, A
+  CardContent, 
   CardDescription, 
   CardFooter, 
   CardHeader, 
