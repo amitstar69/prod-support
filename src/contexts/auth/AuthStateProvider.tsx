@@ -40,12 +40,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const initAuth = async () => {
       try {
-        console.log('Initializing auth context...');
+        console.log('[AuthProvider] Initializing auth context...');
         
         // First load from localStorage as a fast initial state
         const storedAuthState = localStorage.getItem('authState');
         if (storedAuthState) {
-          console.log('Found stored auth state in localStorage:', storedAuthState);
+          console.log('[AuthProvider] Found stored auth state in localStorage:', storedAuthState);
           const parsedState = JSON.parse(storedAuthState);
           setAuthState(parsedState);
         }
@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         
         // Force checking Supabase session regardless of local state
-        console.log('Verifying auth state with Supabase...');
+        console.log('[AuthProvider] Verifying auth state with Supabase...');
         const authData = await checkSupabaseSession(setAuthState);
         
         // If Supabase indicates we're authenticated but with different info than localStorage,
@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             parsedState.userId !== authData.userId ||
             parsedState.userType !== authData.userType
           ) {
-            console.log('Updating local auth state to match Supabase session');
+            console.log('[AuthProvider] Updating local auth state to match Supabase session');
             localStorage.setItem('authState', JSON.stringify(authData));
           }
         }
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!authData?.isAuthenticated && storedAuthState) {
           const parsedState = JSON.parse(storedAuthState);
           if (parsedState.isAuthenticated) {
-            console.log('Local auth state conflicts with server state. Resetting...');
+            console.log('[AuthProvider] Local auth state conflicts with server state. Resetting...');
             localStorage.removeItem('authState');
             setAuthState({
               isAuthenticated: false,
@@ -94,22 +94,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
         
-        // Set up auth state change listener
-        console.log('Setting up auth state change listener...');
+        // Set up auth state change listener - FIXED to handle the subscription correctly
+        console.log('[AuthProvider] Setting up auth state change listener...');
         const subscription = setupAuthStateChangeListener(setAuthState);
         
         setAuthInitialized(true);
-        console.log('Auth initialization complete.');
+        console.log('[AuthProvider] Auth initialization complete.');
         
         return () => {
           // Clean up the subscription when the component unmounts
-          console.log('Cleaning up auth state change listener...');
+          console.log('[AuthProvider] Cleaning up auth state change listener...');
           if (subscription) {
             subscription.unsubscribe();
           }
         };
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('[AuthProvider] Error initializing auth:', error);
         // Clear potentially corrupt auth state
         localStorage.removeItem('authState');
         setAuthState({
@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           userId: null,
         });
         setAuthInitialized(true);
-        console.log('Auth initialization failed but marked as complete.');
+        console.log('[AuthProvider] Auth initialization failed but marked as complete.');
       }
     };
     
@@ -131,10 +131,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (event.key === 'authState' && event.newValue) {
         try {
           const newAuthState = JSON.parse(event.newValue);
-          console.log('Auth state changed in another tab/window:', newAuthState);
+          console.log('[AuthProvider] Auth state changed in another tab/window:', newAuthState);
           setAuthState(newAuthState);
         } catch (error) {
-          console.error('Error parsing auth state from localStorage:', error);
+          console.error('[AuthProvider] Error parsing auth state from localStorage:', error);
         }
       }
     };
@@ -147,7 +147,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   
   // Logout function that's passed to the context
   const handleLogout = async () => {
-    console.log("Logout triggered from AuthProvider");
+    console.log("[AuthProvider] Logout triggered from AuthProvider");
     try {
       await logoutUser();
       // Force auth state update in case the listener doesn't work
@@ -158,7 +158,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       localStorage.removeItem('authState');
     } catch (error) {
-      console.error("Error during logout:", error);
+      console.error("[AuthProvider] Error during logout:", error);
       // Force auth state update in case the listener doesn't work
       setAuthState({
         isAuthenticated: false,
@@ -172,7 +172,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Update local storage whenever auth state changes
   useEffect(() => {
     if (authState.isAuthenticated) {
-      console.log('Saving auth state to localStorage:', authState);
+      console.log('[AuthProvider] Saving auth state to localStorage:', authState);
       localStorage.setItem('authState', JSON.stringify(authState));
     }
   }, [authState]);

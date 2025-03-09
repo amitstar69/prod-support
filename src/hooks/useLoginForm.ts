@@ -1,6 +1,5 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
 import { supabase } from '../integrations/supabase/client';
@@ -8,7 +7,6 @@ import { supabase } from '../integrations/supabase/client';
 export type UserType = 'client' | 'developer';
 
 export const useLoginForm = () => {
-  const navigate = useNavigate();
   const { login, isAuthenticated, userType } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,6 +14,7 @@ export const useLoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value);
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value);
@@ -23,7 +22,7 @@ export const useLoginForm = () => {
   const handleRememberMeChange = () => setRememberMe(!rememberMe);
 
   const checkAuthStatus = useCallback(async () => {
-    // We'll skip this as we now handle session checking in LoginPage.tsx
+    // Skip this as we now handle session checking in LoginPage.tsx
     return;
   }, []);
 
@@ -42,17 +41,17 @@ export const useLoginForm = () => {
     
     setError('');
     setIsLoading(true);
-    console.log(`Attempting to login: ${email} as ${userTypeState}`);
+    console.log(`[useLoginForm] Attempting to login: ${email} as ${userTypeState}`);
     
     try {
-      // Direct Supabase login attempt for better error visibility
+      // Direct Supabase login attempt
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) {
-        console.error('Supabase login error:', error);
+        console.error('[useLoginForm] Supabase login error:', error);
         setError(error.message);
         toast.error('Login failed: ' + error.message);
         setIsLoading(false);
@@ -60,14 +59,14 @@ export const useLoginForm = () => {
       }
       
       if (!data.user) {
-        console.error('No user data returned from Supabase');
+        console.error('[useLoginForm] No user data returned from Supabase');
         setError('Login failed: No user data returned');
         toast.error('Login failed: No user data returned');
         setIsLoading(false);
         return;
       }
       
-      console.log('Supabase login successful, checking profile...');
+      console.log('[useLoginForm] Supabase login successful, checking profile...');
       
       // Check if profile exists and matches user type
       const { data: profileData, error: profileError } = await supabase
@@ -77,7 +76,7 @@ export const useLoginForm = () => {
         .maybeSingle();
         
       if (profileError) {
-        console.error('Error fetching profile:', profileError);
+        console.error('[useLoginForm] Error fetching profile:', profileError);
         setError('Error retrieving user profile: ' + profileError.message);
         toast.error('Error retrieving user profile');
         setIsLoading(false);
@@ -86,18 +85,18 @@ export const useLoginForm = () => {
       
       // If no profile exists, create one
       if (!profileData) {
-        console.log('No profile found, creating new profile');
+        console.log('[useLoginForm] No profile found, creating new profile');
         const profileCreated = await createNewProfile(data.user.id);
         
         if (!profileCreated) {
-          console.error('Failed to create profile');
+          console.error('[useLoginForm] Failed to create profile');
           setError('Failed to create user profile');
           toast.error('Failed to create user profile');
           setIsLoading(false);
           return;
         }
       } else if (profileData.user_type !== userTypeState) {
-        console.error(`User type mismatch: account is ${profileData.user_type}, tried to login as ${userTypeState}`);
+        console.error(`[useLoginForm] User type mismatch: account is ${profileData.user_type}, tried to login as ${userTypeState}`);
         setError(`You registered as a ${profileData.user_type}, but tried to log in as a ${userTypeState}`);
         toast.error(`You registered as a ${profileData.user_type}, but tried to log in as a ${userTypeState}`);
         // Sign out the user since we logged in with the wrong type
@@ -105,7 +104,7 @@ export const useLoginForm = () => {
         setIsLoading(false);
         return;
       } else {
-        console.log(`Profile exists and matches selected user type: ${profileData.user_type}`);
+        console.log(`[useLoginForm] Profile exists and matches selected user type: ${profileData.user_type}`);
       }
       
       // Set auth state manually to ensure it's updated
@@ -116,22 +115,23 @@ export const useLoginForm = () => {
       };
       
       localStorage.setItem('authState', JSON.stringify(authState));
-      console.log('Auth state saved to localStorage:', authState);
+      console.log('[useLoginForm] Auth state saved to localStorage:', authState);
       
       // Try to use context login as a formality to update global state
-      await login(email, password, userTypeState);
+      try {
+        await login(email, password, userTypeState);
+      } catch (loginError) {
+        console.warn('[useLoginForm] Context login failed, but Supabase auth was successful:', loginError);
+        // Continue anyway since we have already authenticated with Supabase
+      }
       
       toast.success('Login successful!');
+      setLoginSuccess(true);
       
       // Set loading to false
       setIsLoading(false);
-      
-      // Navigate to the appropriate dashboard - use direct navigation to avoid flickering
-      const redirectPath = userTypeState === 'developer' ? '/profile' : '/client-dashboard';
-      console.log(`Redirecting to ${redirectPath}`);
-      window.location.href = redirectPath;
     } catch (error: any) {
-      console.error('Login exception:', error);
+      console.error('[useLoginForm] Login exception:', error);
       setError(error.message || 'An unexpected error occurred');
       toast.error(error.message || 'An unexpected error occurred');
       setIsLoading(false);
@@ -153,7 +153,7 @@ export const useLoginForm = () => {
         });
         
       if (createError) {
-        console.error('Error creating profile:', createError);
+        console.error('[useLoginForm] Error creating profile:', createError);
         throw createError;
       }
       
@@ -170,7 +170,7 @@ export const useLoginForm = () => {
           });
           
         if (devProfileError) {
-          console.error('Error creating developer profile:', devProfileError);
+          console.error('[useLoginForm] Error creating developer profile:', devProfileError);
           // Continue anyway as the base profile was created
         }
       } else {
@@ -184,14 +184,14 @@ export const useLoginForm = () => {
           });
           
         if (clientProfileError) {
-          console.error('Error creating client profile:', clientProfileError);
+          console.error('[useLoginForm] Error creating client profile:', clientProfileError);
           // Continue anyway as the base profile was created
         }
       }
       
       return true;
     } catch (error) {
-      console.error('Error in createNewProfile:', error);
+      console.error('[useLoginForm] Error in createNewProfile:', error);
       return false;
     }
   };
@@ -203,6 +203,7 @@ export const useLoginForm = () => {
     isLoading,
     error,
     rememberMe,
+    loginSuccess,
     handleEmailChange,
     handlePasswordChange,
     handleUserTypeChange,
