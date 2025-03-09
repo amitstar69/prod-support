@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { HelpRequest } from '../../types/helpRequest';
 import { Developer } from '../../types/product';
 import { toast } from 'sonner';
+import { isValidUUID, isLocalId } from './helpRequestsUtils';
 
 // Core function to create a help request
 export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'created_at' | 'updated_at'>) => {
