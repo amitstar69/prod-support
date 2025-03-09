@@ -1,134 +1,120 @@
 
 import React, { useState } from 'react';
-import { Button } from '../ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
-import { getHelpRequestById, createHelpRequest, testDatabaseAccess } from '../../integrations/supabase/helpRequests';
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { debugInspectHelpRequests, createTestHelpRequest } from '../../integrations/supabase/helpRequestsDebug';
+import { getClientHelpRequests } from '../../integrations/supabase/helpRequests';
+import { JsonView } from 'react-json-view-lite';
+import 'react-json-view-lite/dist/index.css';
 import { toast } from 'sonner';
-import { HelpRequest } from '../../types/helpRequest';
 
-const DebugHelpRequestDatabase: React.FC = () => {
-  const [requestData, setRequestData] = useState<HelpRequest | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleFetchHelpRequest = async () => {
-    setLoading(true);
+const DebugHelpRequestDatabase = () => {
+  const [results, setResults] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const handleInspectRequests = async () => {
+    setIsLoading(true);
     try {
-      // You would normally get this ID from a real request
-      const testRequestId = '12345';
-      const response = await getHelpRequestById(testRequestId);
-      
-      if (response.success && response.data) {
-        setRequestData(response.data);
-        toast.success('Request fetched successfully');
-      } else {
-        toast.error(`Error fetching request: ${response.error}`);
-        setRequestData(null);
-      }
+      const data = await debugInspectHelpRequests();
+      setResults(data);
+      toast.success(`Found ${data?.length || 0} records`);
     } catch (error) {
-      console.error('Error in debug fetch:', error);
-      toast.error('Exception occurred during fetch');
+      console.error('Error inspecting help requests:', error);
+      toast.error('Failed to inspect help requests');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
-
+  
   const handleCreateTestRequest = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
-      // Sample test request
-      const testRequest = {
-        title: 'Debug Test Request',
-        description: 'This is a test request created for debugging purposes',
-        technical_area: ['Frontend', 'React'],
-        urgency: 'Medium',
-        budget_range: '$100 - $200',
-        communication_preference: ['Chat', 'Video Call'],
-        client_id: 'test-client-id', // This would be a real user ID in production
+      // Create a test help request with sample data
+      const testData = {
+        title: "Test Help Request",
+        description: "This is a test help request created for debugging purposes.",
+        technical_area: ["React", "TypeScript"],
+        urgency: "medium",
+        budget_range: "$50-100",
+        communication_preference: ["chat"],
+        client_id: "3aa56eec-b5d2-43b0-bc86-690d7e2ceead", // Example user ID
         estimated_duration: 60,
-        code_snippet: 'console.log("Test code snippet")'
+        code_snippet: "console.log('Hello, world!');",
+        status: "pending" // Added the required status field
       };
       
-      const response = await createHelpRequest(testRequest);
+      const result = await createTestHelpRequest(testData);
       
-      if (response.success) {
-        setRequestData(response.data);
-        toast.success('Test request created successfully');
+      if (result.success) {
+        toast.success('Test help request created successfully!');
+        setResults(result.data);
       } else {
-        toast.error(`Error creating test request: ${response.error}`);
+        toast.error(`Failed to create test request: ${result.error}`);
+        setResults({ error: result.error });
       }
     } catch (error) {
-      console.error('Error creating test request:', error);
-      toast.error('Exception occurred during test request creation');
+      console.error('Error creating test help request:', error);
+      toast.error('Failed to create test help request');
+      setResults({ error: String(error) });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
-
-  const handleTestDatabaseAccess = async () => {
-    setLoading(true);
+  
+  const fetchMyRequests = async () => {
+    setIsLoading(true);
     try {
-      const response = await testDatabaseAccess();
+      const clientId = "3aa56eec-b5d2-43b0-bc86-690d7e2ceead"; // Example user ID
+      const result = await getClientHelpRequests(clientId);
       
-      if (response.success) {
-        toast.success(`Database connection successful. Found ${response.data?.count || 0} records.`);
-      } else {
-        toast.error(`Database connection failed: ${response.error}`);
-      }
+      setResults(result);
+      toast.success(`Found ${result.data?.length || 0} requests for this client`);
     } catch (error) {
-      console.error('Error testing database access:', error);
-      toast.error('Exception occurred during database test');
+      console.error('Error fetching client help requests:', error);
+      toast.error('Failed to fetch client help requests');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
-
+  
   return (
-    <Card className="w-full max-w-3xl mx-auto">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Help Request Database Debug</CardTitle>
-        <CardDescription>
-          Tools for debugging database access for help requests
-        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div className="flex space-x-4">
-            <Button 
-              onClick={handleTestDatabaseAccess} 
-              disabled={loading}
-              variant="outline"
-            >
-              Test Database Connection
-            </Button>
-            <Button 
-              onClick={handleFetchHelpRequest} 
-              disabled={loading}
-              variant="outline"
-            >
-              Fetch Test Request
-            </Button>
-            <Button 
-              onClick={handleCreateTestRequest} 
-              disabled={loading}
-              variant="outline"
-            >
-              Create Test Request
-            </Button>
-          </div>
-          
-          {requestData && (
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">Request Data:</h3>
-              <pre className="bg-muted p-4 rounded-md overflow-auto max-h-96 text-sm">
-                {JSON.stringify(requestData, null, 2)}
-              </pre>
-            </div>
-          )}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <Button 
+            variant="outline" 
+            onClick={handleInspectRequests}
+            disabled={isLoading}
+          >
+            Inspect Help Requests
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={handleCreateTestRequest}
+            disabled={isLoading}
+          >
+            Create Test Request
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={fetchMyRequests}
+            disabled={isLoading}
+          >
+            Fetch My Requests
+          </Button>
         </div>
+        
+        {isLoading && <div className="text-center py-4">Loading...</div>}
+        
+        {!isLoading && results && (
+          <div className="border rounded-md p-4 mt-4 bg-gray-50 max-h-96 overflow-auto">
+            <JsonView data={results} />
+          </div>
+        )}
       </CardContent>
-      <CardFooter className="text-sm text-muted-foreground">
-        This component is for debugging purposes only.
-      </CardFooter>
     </Card>
   );
 };

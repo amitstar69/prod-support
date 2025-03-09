@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
   onClose,
   helpRequest,
 }) => {
-  const { userId } = useAuth();
+  const { userId, isAuthenticated } = useAuth();
   const [message, setMessage] = useState('');
   const [proposedDuration, setProposedDuration] = useState(helpRequest.estimated_duration || 60);
   const [proposedRate, setProposedRate] = useState(75);
@@ -30,41 +29,36 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
 
   const estimatedTotal = proposedRate * (proposedDuration / 60);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     
-    if (!userId) {
-      toast.error('You must be logged in to apply for help requests');
+    if (!isAuthenticated || !userId) {
+      toast.error('You must be logged in to apply');
       return;
     }
-
-    if (!message.trim()) {
-      toast.error('Please provide a message to the client');
-      return;
-    }
-
+    
     setIsSubmitting(true);
-
+    
     try {
-      const applicationData = {
-        request_id: helpRequest.id,
-        developer_id: userId,
-        proposed_message: message,
-        proposed_duration: proposedDuration,
-        proposed_rate: proposedRate,
-      };
-
-      const result = await submitDeveloperApplication(applicationData);
+      const result = await submitDeveloperApplication(
+        helpRequest.id,
+        userId,
+        {
+          proposed_message: message,
+          proposed_duration: parseInt(proposedDuration.toString()),
+          proposed_rate: parseInt(proposedRate.toString())
+        }
+      );
       
       if (result.success) {
-        toast.success('Application submitted successfully');
+        toast.success('Application submitted successfully!');
         onClose();
       } else {
-        toast.error(result.error || 'Failed to submit application');
+        toast.error(`Failed to submit: ${result.error}`);
       }
     } catch (error) {
       console.error('Error submitting application:', error);
-      toast.error('An unexpected error occurred');
+      toast.error('An error occurred while submitting your application');
     } finally {
       setIsSubmitting(false);
     }

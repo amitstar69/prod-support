@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
 import ProductDetail from './pages/ProductDetail';
 import GetHelpPage from './pages/GetHelpPage';
@@ -20,9 +20,11 @@ import './App.css';
 import { Toaster } from './components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 
+// Removed the BrowserRouter as Router import and wrapper since it's already in main.tsx
+
 function App() {
   return (
-    <Router>
+    <>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/product/:id" element={<ProductDetail />} />
@@ -74,7 +76,7 @@ function App() {
       </Routes>
       <Toaster />
       <SonnerToaster position="top-right" />
-    </Router>
+    </>
   );
 }
 

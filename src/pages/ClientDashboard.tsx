@@ -51,7 +51,7 @@ const ClientDashboard: React.FC = () => {
           totalTickets={tickets.length}
           onClaimTicket={mockClaimTicket}
           userId={userId || ""}
-          isAuthenticated={isAuthenticated}
+          isAuthenticated={isAuthenticated || false}
         />
       </div>
     </Layout>

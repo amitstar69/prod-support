@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { HelpRequest, HelpRequestMatch, HelpRequestStatus } from '../../types/helpRequest';
 import { toast } from 'sonner';
@@ -37,23 +36,23 @@ export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'c
   }
 };
 
-// Cancel a help request (adding this missing function)
-export const cancelHelpRequest = async (requestId: string): Promise<ApiResponse<null>> => {
+// Cancel a help request
+export const cancelHelpRequest = async (requestId: string): Promise<ApiResponse<any>> => {
   try {
     const { error } = await supabase
       .from('help_requests')
       .update({ status: 'cancelled' })
       .eq('id', requestId);
-
+      
     if (error) {
       console.error('Error cancelling help request:', error);
       return { success: false, error: error.message };
     }
-
-    return { success: true };
+    
+    return { success: true, data: { id: requestId, status: 'cancelled' } };
   } catch (error) {
-    console.error('Exception cancelling help request:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    console.error('Exception in cancelHelpRequest:', error);
+    return { success: false, error: String(error) };
   }
 };
 

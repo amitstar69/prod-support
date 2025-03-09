@@ -1,425 +1,171 @@
-
 import { supabase } from './client';
-import { toast } from 'sonner';
-import { HelpSession } from '../../types/helpRequest';
+import { ApiResponse } from './helpRequests';
 
-// Create a new session request
-export const createSessionRequest = async (sessionRequest: any) => {
+/**
+ * Ends a help session and updates the session status in the database.
+ */
+export const endHelpSession = async (sessionId: string): Promise<ApiResponse<any>> => {
   try {
-    const newSessionRequest = {
-      ...sessionRequest,
-      requestedAt: new Date().toISOString(),
-      status: 'pending' as const
+    const { data, error } = await supabase
+      .from('help_sessions')
+      .update({ status: 'completed', actual_end: new Date().toISOString() })
+      .eq('id', sessionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error ending help session:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception in endHelpSession:', error);
+    return { success: false, error: String(error) };
+  }
+};
+
+/**
+ * Calculates the duration of a help session in minutes.
+ */
+const calculateSessionDuration = (start: string, end: string): number => {
+  const startTime = new Date(start).getTime();
+  const endTime = new Date(end).getTime();
+  return Math.round((endTime - startTime) / (1000 * 60));
+};
+
+/**
+ * Extracts topics discussed from session messages.
+ */
+const getTopicsFromMessages = (messages: any[]): string[] => {
+  // Basic implementation: Extract the first few words from each message
+  return messages.map(msg => msg.content.split(' ').slice(0, 5).join(' '));
+};
+
+/**
+ * Extracts the solution provided from session messages.
+ */
+const getSolutionFromMessages = (messages: any[]): string | null => {
+  // Basic implementation: Return the last message as the solution
+  if (messages.length > 0) {
+    return messages[messages.length - 1].content;
+  }
+  return null;
+};
+
+/**
+ * Creates a summary of the help session, including topics discussed,
+ * solution provided, and cost.
+ */
+const createSummary = async (
+  session: any,
+  client: any,
+  developer: any,
+  duration: number,
+  messages: any[]
+): Promise<ApiResponse<any>> => {
+  try {
+    // Extract relevant information for the summary
+    const summaryData = {
+      session_id: session.id,
+      client_id: client?.id || 'unknown',
+      client_name: client?.name || 'Unknown Client',
+      developer_id: developer?.id || 'unknown',
+      developer_name: developer?.name || 'Unknown Developer',
+      duration,
+      topics: getTopicsFromMessages(messages),
+      solution: getSolutionFromMessages(messages),
     };
 
+    // Insert the summary into the database
     const { data, error } = await supabase
-      .from('help_sessions')
-      .insert({
-        request_id: sessionRequest.helpRequestId,
-        developer_id: sessionRequest.developerId,
-        client_id: sessionRequest.clientId,
-        scheduled_start: sessionRequest.scheduledStartTime,
-        scheduled_end: sessionRequest.scheduledEndTime,
-        status: 'scheduled'
-      })
+      .from('session_summaries')
+      .insert([summaryData])
       .select()
       .single();
 
     if (error) {
-      console.error('Error creating session request:', error);
-      toast.error('Failed to create session request');
-      return null;
+      console.error('Error creating session summary:', error);
+      return { success: false, error: error.message };
     }
 
-    // Update help request status to show it's scheduled
-    await supabase
-      .from('help_requests')
-      .update({ status: 'scheduled' })
-      .eq('id', sessionRequest.helpRequestId);
-
-    return data;
+    return { success: true, data };
   } catch (error) {
-    console.error('Exception creating session request:', error);
-    toast.error('An unexpected error occurred');
-    return null;
+    console.error('Exception in createSummary:', error);
+    return { success: false, error: String(error) };
   }
 };
 
-// Accept a session request
-export const acceptSessionRequest = async (sessionId: string) => {
+/**
+ * Finalizes a help session by ending the session, calculating the cost,
+ * and creating a session summary.
+ */
+export const finalizeHelpSession = async (sessionId: string): Promise<ApiResponse<any>> => {
   try {
-    const { data, error } = await supabase
-      .from('help_sessions')
-      .update({ status: 'accepted' })
-      .eq('id', sessionId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error accepting session request:', error);
-      toast.error('Failed to accept session request');
-      return null;
-    }
-
-    toast.success('Session request accepted');
-    return data;
-  } catch (error) {
-    console.error('Exception accepting session request:', error);
-    toast.error('An unexpected error occurred');
-    return null;
-  }
-};
-
-// Start an active session
-export const startSession = async (sessionId: string) => {
-  try {
-    const now = new Date().toISOString();
-    
-    const { data, error } = await supabase
-      .from('help_sessions')
-      .update({
-        status: 'in-progress',
-        actual_start: now
-      })
-      .eq('id', sessionId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error starting session:', error);
-      toast.error('Failed to start session');
-      return null;
-    }
-
-    // Also update the help request status
-    await supabase
-      .from('help_requests')
-      .update({ status: 'in-progress' })
-      .eq('id', data.request_id);
-
-    toast.success('Session started successfully');
-    return data;
-  } catch (error) {
-    console.error('Exception starting session:', error);
-    toast.error('An unexpected error occurred');
-    return null;
-  }
-};
-
-// End an active session
-export const endSession = async (sessionId: string, finalCost?: number) => {
-  try {
-    const now = new Date().toISOString();
-    
-    const { data, error } = await supabase
-      .from('help_sessions')
-      .update({
-        status: 'completed',
-        actual_end: now,
-        final_cost: finalCost
-      })
-      .eq('id', sessionId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error ending session:', error);
-      toast.error('Failed to end session');
-      return null;
-    }
-
-    // Also update the help request status
-    await supabase
-      .from('help_requests')
-      .update({ status: 'completed' })
-      .eq('id', data.request_id);
-
-    toast.success('Session completed successfully');
-    return data;
-  } catch (error) {
-    console.error('Exception ending session:', error);
-    toast.error('An unexpected error occurred');
-    return null;
-  }
-};
-
-// Send a chat message
-export const sendChatMessage = async (message: any) => {
-  try {
-    const newMessage = {
-      ...message,
-      timestamp: new Date().toISOString()
-    };
-    
-    const { data, error } = await supabase
-      .from('session_messages')
-      .insert({
-        session_id: message.sessionId,
-        sender_id: message.senderId,
-        sender_type: message.senderType,
-        content: message.content,
-        is_code: message.isCode || false,
-        attachment_url: message.attachmentUrl
-      })
-      .select()
-      .single();
-      
-    if (error) {
-      console.error('Error sending message:', error);
-      return null;
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Exception sending message:', error);
-    return null;
-  }
-};
-
-// Get all messages for a session
-export const getSessionMessages = async (sessionId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('session_messages')
-      .select(`
-        *,
-        sender:sender_id(name, image)
-      `)
-      .eq('session_id', sessionId)
-      .order('created_at', { ascending: true });
-      
-    if (error) {
-      console.error('Error fetching session messages:', error);
-      return [];
-    }
-    
-    // Transform the data to match our expected format
-    const messages = data.map(msg => ({
-      ...msg,
-      sender_name: msg.sender?.name,
-      sender_avatar: msg.sender?.image
-    }));
-    
-    return messages;
-  } catch (error) {
-    console.error('Exception fetching session messages:', error);
-    return [];
-  }
-};
-
-// Update shared code in a session
-export const updateSharedCode = async (sessionId: string, code: string) => {
-  try {
-    const { error } = await supabase
-      .from('help_sessions')
-      .update({ shared_code: code })
-      .eq('id', sessionId);
-      
-    if (error) {
-      console.error('Error updating shared code:', error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Exception updating shared code:', error);
-    return false;
-  }
-};
-
-// Get all sessions for a user (either as developer or client)
-export const getUserSessions = async (userId: string, role: 'developer' | 'client') => {
-  try {
-    const column = role === 'developer' ? 'developer_id' : 'client_id';
-    
-    const { data, error } = await supabase
-      .from('help_sessions')
-      .select(`
-        *,
-        help_requests(*)
-      `)
-      .eq(column, userId)
-      .order('created_at', { ascending: false });
-      
-    if (error) {
-      console.error('Error fetching user sessions:', error);
-      return [];
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Exception fetching user sessions:', error);
-    return [];
-  }
-};
-
-// Setup real-time chat subscription
-export const subscribeToSessionMessages = (sessionId: string, onNewMessage: (message: any) => void) => {
-  const channel = supabase
-    .channel(`session-messages-${sessionId}`)
-    .on('postgres_changes', 
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'session_messages',
-        filter: `session_id=eq.${sessionId}`
-      }, 
-      (payload) => {
-        onNewMessage(payload.new);
-      }
-    )
-    .subscribe();
-    
-  return channel;
-};
-
-// Setup real-time session updates subscription
-export const subscribeToSessionUpdates = (sessionId: string, onUpdate: (session: any) => void) => {
-  const channel = supabase
-    .channel(`session-updates-${sessionId}`)
-    .on('postgres_changes', 
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'help_sessions',
-        filter: `id=eq.${sessionId}`
-      }, 
-      (payload) => {
-        onUpdate(payload.new);
-      }
-    )
-    .subscribe();
-    
-  return channel;
-};
-
-// Create a session summary
-export const createSessionSummary = async (
-  sessionId: string, 
-  topics: string[], 
-  solution: string, 
-  rating?: number, 
-  feedback?: string
-) => {
-  try {
-    // First fetch the session with client and developer details
+    // Retrieve the session details
     const { data: sessionData, error: sessionError } = await supabase
       .from('help_sessions')
-      .select(`
-        *,
-        client:client_id(id, name, image),
-        developer:developer_id(id, name, image),
-        request:request_id(*)
-      `)
+      .select('*')
       .eq('id', sessionId)
       .single();
-      
+
     if (sessionError) {
-      console.error('Error fetching session for summary:', sessionError.message);
-      return null;
+      console.error('Error fetching session details:', sessionError);
+      return { success: false, error: sessionError.message };
     }
 
     if (!sessionData) {
-      console.error('Missing required session data for summary creation');
-      return null;
+      return { success: false, error: 'Session not found' };
     }
 
-    // Safely access nested properties with fallbacks
-    const clientData = {
-      id: sessionData.client?.id || 'unknown',
-      name: sessionData.client?.name || 'Unknown Client'
-    };
-    
-    const developerData = {
-      id: sessionData.developer?.id || 'unknown',
-      name: sessionData.developer?.name || 'Unknown Developer'
-    };
+    // End the help session
+    const endSessionResult = await endHelpSession(sessionId);
+    if (!endSessionResult.success) {
+      return endSessionResult;
+    }
 
-    // Calculate duration in minutes
-    const startTime = new Date(sessionData.actual_start || '').getTime();
-    const endTime = new Date(sessionData.actual_end || '').getTime();
-    const durationMs = endTime - startTime;
-    const durationMinutes = Math.ceil(durationMs / (1000 * 60));
-    
-    // Insert the summary
-    const { data, error } = await supabase
-      .from('session_summaries')
-      .insert({
-        session_id: sessionId,
-        developer_id: developerData.id,
-        developer_name: developerData.name,
-        client_id: clientData.id,
-        client_name: clientData.name,
-        topics: topics,
-        solution: solution,
-        duration: durationMinutes,
-        cost: sessionData.final_cost,
-        rating: rating,
-        feedback: feedback
-      })
-      .select()
+    // Retrieve client and developer profiles
+    const { data: clientData, error: clientError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', sessionData.client_id)
       .single();
-      
-    if (error) {
-      console.error('Error creating session summary:', error);
-      return null;
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Exception creating session summary:', error);
-    return null;
-  }
-};
 
-// Get all client help sessions
-export const getHelpSessionsByClientId = async (clientId: string): Promise<HelpSession[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('help_sessions')
-      .select(`
-        *,
-        client:client_id(id, name, image),
-        developer:developer_id(id, name, image),
-        request:request_id(*)
-      `)
-      .eq('client_id', clientId);
+    const { data: developerData, error: developerError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', sessionData.developer_id)
+      .single();
 
-    if (error) {
-      console.error('Error fetching client help sessions:', error.message);
-      return [];
+    if (clientError || developerError) {
+      console.error('Error fetching profiles:', clientError, developerError);
+      return { success: false, error: 'Failed to fetch user profiles' };
     }
 
-    // Safe casting of data to HelpSession[]
-    return (data || []) as unknown as HelpSession[];
-  } catch (error) {
-    console.error('Exception fetching client help sessions:', error);
-    return [];
-  }
-};
+    // Calculate session duration
+    const duration = calculateSessionDuration(sessionData.created_at, new Date().toISOString());
 
-// Get all developer help sessions
-export const getHelpSessionsByDeveloperId = async (developerId: string): Promise<HelpSession[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('help_sessions')
-      .select(`
-        *,
-        client:client_id(id, name, image),
-        developer:developer_id(id, name, image),
-        request:request_id(*)
-      `)
-      .eq('developer_id', developerId);
+    // Fetch all messages from the session
+     const { data: messages, error: messagesError } = await supabase
+       .from('session_messages')
+       .select('*')
+       .eq('session_id', sessionId)
+       .order('created_at', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching developer help sessions:', error.message);
-      return [];
+     if (messagesError) {
+       console.error('Error fetching session messages:', messagesError);
+       return { success: false, error: 'Failed to fetch session messages' };
+     }
+
+    // Create a session summary
+    const summaryResult = await createSummary(sessionData, clientData, developerData, duration, messages || []);
+    if (!summaryResult.success) {
+      return summaryResult;
     }
 
-    // Safe casting of data to HelpSession[]
-    return (data || []) as unknown as HelpSession[];
+    return { success: true, data: summaryResult.data };
   } catch (error) {
-    console.error('Exception fetching developer help sessions:', error);
-    return [];
+    console.error('Exception in finalizeHelpSession:', error);
+    return { success: false, error: String(error) };
   }
 };

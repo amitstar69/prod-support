@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { toast } from 'sonner';
@@ -38,52 +37,53 @@ export const useTicketApplications = (
     setRecommendedTickets(recommended);
   }, [tickets, isAuthenticated, userId]);
 
-  const handleClaimTicket = async (ticket: HelpRequest) => {
-    if (!isAuthenticated || !userId) {
-      toast.error('You must be logged in to claim tickets');
+// Update the handleClaimTicket function
+const handleClaimTicket = async (ticket: HelpRequest) => {
+  if (!isAuthenticated || !userId) {
+    toast.error('You must be logged in to claim tickets');
+    return;
+  }
+
+  if (userType !== 'developer') {
+    toast.error('Only developers can claim tickets');
+    return;
+  }
+
+  try {
+    toast.loading('Processing your application...');
+    
+    const ticketId = ticket.id;
+    
+    if (!ticketId) {
+      toast.error('Invalid ticket ID');
       return;
     }
-
-    if (userType !== 'developer') {
-      toast.error('Only developers can claim tickets');
-      return;
-    }
-
-    try {
-      toast.loading('Processing your application...');
-      
-      const ticketId = ticket.id;
-      
-      if (!ticketId) {
-        toast.error('Invalid ticket ID');
-        return;
+    
+    const result = await submitDeveloperApplication(
+      ticketId, 
+      userId,
+      {
+        proposed_message: "I'd like to help with your request. I have experience in this area.",
+        proposed_duration: 60, // 1 hour
+        proposed_rate: 75 // $75/hour
       }
-      
-      const result = await submitDeveloperApplication(
-        ticketId, 
-        userId,
-        {
-          proposed_message: "I'd like to help with your request. I have experience in this area.",
-          proposed_duration: 60, // 1 hour
-          proposed_rate: 75 // $75/hour
-        }
-      );
-      
-      toast.dismiss();
-      
-      if (result.success) {
-        toast.success('Application submitted successfully!');
-        refreshTickets();
-        fetchMyApplications();
-      } else {
-        toast.error(`Failed to submit application: ${result.error}`);
-      }
-    } catch (error) {
-      toast.dismiss();
-      toast.error('An error occurred while processing your application');
-      console.error('Error claiming ticket:', error);
+    );
+    
+    toast.dismiss();
+    
+    if (result.success) {
+      toast.success('Application submitted successfully!');
+      refreshTickets();
+      fetchMyApplications();
+    } else {
+      toast.error(`Failed to submit application: ${result.error}`);
     }
-  };
+  } catch (error) {
+    toast.dismiss();
+    toast.error('An error occurred while processing your application');
+    console.error('Error claiming ticket:', error);
+  }
+};
 
   const fetchMyApplications = async () => {
     if (!isAuthenticated || !userId) {

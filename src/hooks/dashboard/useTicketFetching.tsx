@@ -1,10 +1,12 @@
+
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequest } from '../../types/helpRequest';
 import { 
   getAllPublicHelpRequests, 
-  testDatabaseAccess 
+  testDatabaseAccess,
+  ApiResponse
 } from '../../integrations/supabase/helpRequests';
 import { sampleTickets } from './sampleData';
 
@@ -122,6 +124,7 @@ export const useTicketFetching = (
     toast.dismiss();
     
     if (result.success) {
+      // Fixed the count property access
       const count = result.data?.count || 0;
       toast.success(`Database test successful! Found ${count} tickets.`);
       console.log('[useTicketFetching] Database test result:', result);

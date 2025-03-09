@@ -1,64 +1,41 @@
 
 import { supabase } from './client';
-import { HelpRequest, HelpRequestStatus } from '../../types/helpRequest';
-import { toast } from 'sonner';
+import { HelpRequest } from '../../types/helpRequest';
+import { ApiResponse } from './helpRequests';
 
-// Type definitions for response objects
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: any;
-}
-
-// Debug function to inspect help requests
-export const inspectHelpRequests = async (): Promise<any> => {
+/**
+ * Debug function to inspect all help requests in the system
+ * This is for development and debugging only
+ */
+export const debugInspectHelpRequests = async (): Promise<any> => {
   try {
     const { data, error } = await supabase
       .from('help_requests')
-      .select(`
-        *,
-        applications:help_request_matches(*)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
-
+      
     if (error) {
       console.error('Error inspecting help requests:', error);
       return { success: false, error: error.message };
     }
-
-    return { success: true, data };
+    
+    return data;
   } catch (error) {
-    console.error('Exception inspecting help requests:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    console.error('Exception in debugInspectHelpRequests:', error);
+    return { success: false, error: String(error) };
   }
 };
 
-// Create a test help request for debugging
-export const createTestHelpRequest = async (): Promise<ApiResponse<HelpRequest>> => {
+/**
+ * Create a test help request for debugging purposes
+ */
+export const createTestHelpRequest = async (
+  requestData: Omit<HelpRequest, "id" | "created_at" | "updated_at">
+): Promise<ApiResponse<HelpRequest>> => {
   try {
-    // Get the authenticated user ID
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-    
-    const testRequest = {
-      client_id: user.id,
-      title: `Test Request ${new Date().toLocaleTimeString()}`,
-      description: 'This is an automatically generated test request for debugging purposes.',
-      technical_area: ['Testing', 'Debugging'],
-      urgency: 'medium',
-      communication_preference: ['Chat'],
-      estimated_duration: 30,
-      budget_range: 'Under $50',
-      code_snippet: '// Test code snippet\nconsole.log("Hello world!");',
-      status: 'pending' as HelpRequestStatus
-    };
-    
     const { data, error } = await supabase
       .from('help_requests')
-      .insert(testRequest)
+      .insert([requestData])
       .select()
       .single();
       
@@ -67,15 +44,12 @@ export const createTestHelpRequest = async (): Promise<ApiResponse<HelpRequest>>
       return { success: false, error: error.message };
     }
     
-    // Cast the status to HelpRequestStatus to satisfy TypeScript
-    const typedData = {
-      ...data,
-      status: data.status as HelpRequestStatus
-    } as HelpRequest;
-    
-    return { success: true, data: typedData };
+    return { 
+      success: true, 
+      data: data as HelpRequest 
+    };
   } catch (error) {
-    console.error('Exception creating test help request:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    console.error('Exception in createTestHelpRequest:', error);
+    return { success: false, error: String(error) };
   }
 };
