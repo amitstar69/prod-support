@@ -48,7 +48,7 @@ export const useDeveloperDashboard = () => {
     }, 30000);
     
     return () => clearInterval(refreshInterval);
-  }, [isAuthenticated, userId]); // Add userId as dependency to refetch when auth changes
+  }, [isAuthenticated, userId, userType]); // Add userType as dependency to refetch when auth state changes
 
   // Update active tab when auth state changes
   useEffect(() => {
@@ -69,6 +69,9 @@ export const useDeveloperDashboard = () => {
     } else {
       toast.info('Auth Status: Not logged in');
     }
+    
+    // Force a refresh of tickets when debugging
+    fetchTickets(true);
   };
 
   return {

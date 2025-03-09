@@ -133,7 +133,10 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
         };
       }
       
-      // Get the user type to determine how to fetch tickets
+      // Log the user ID to confirm we have valid authentication
+      console.log('[getAllPublicHelpRequests] Authenticated user ID:', session.session.user.id);
+      
+      // Check if the RLS policy should apply by getting the user type
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('user_type')
@@ -142,6 +145,11 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
       
       console.log('[getAllPublicHelpRequests] User profile:', profileData, 'Error:', profileError);
       
+      if (profileError) {
+        console.error('[getAllPublicHelpRequests] Error fetching user profile:', profileError);
+        toast.error('Error determining user type. Please try again.');
+      }
+      
       // Debug query directly to check table access
       const { count, error: countError } = await supabase
         .from('help_requests')
@@ -149,8 +157,8 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
       
       console.log('[getAllPublicHelpRequests] Table access check - Count:', count, 'Error:', countError);
       
-      // For developers, we want to show all pending and matching tickets
-      // Fetch all help requests regardless of status to debug visibility issues
+      // Fetch all help requests (now using the RLS policy we added)
+      // The policy will automatically filter based on user type
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')

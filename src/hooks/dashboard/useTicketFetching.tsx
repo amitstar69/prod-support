@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -56,7 +57,7 @@ export const useTicketFetching = (
         }
       } else {
         // For authenticated users, fetch real tickets from the database
-        console.log('[useTicketFetching] User authenticated, fetching real tickets');
+        console.log('[useTicketFetching] User authenticated as', userType, 'fetching real tickets');
         const response = await getAllPublicHelpRequests(isAuthenticated);
         
         if (response.success && response.data) {
@@ -124,6 +125,9 @@ export const useTicketFetching = (
     if (result.success) {
       toast.success(`Database test successful! Found ${result.count} tickets.`);
       console.log('[useTicketFetching] Database test result:', result);
+      
+      // After successful test, try to fetch tickets again
+      fetchTickets();
     } else {
       toast.error('Database test failed. See console for details.');
       console.error('[useTicketFetching] Database test error:', result);
