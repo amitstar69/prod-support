@@ -35,32 +35,45 @@ const LoginPage: React.FC = () => {
         console.error('Error checking session:', error);
         toast.error('Error checking authentication status');
       }
+      
+      // If we're already authenticated, redirect to the appropriate dashboard
+      if (data.session) {
+        console.log('Session found, fetching profile to determine user type...');
+        
+        // Get user profile to determine user type
+        supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', data.session.user.id)
+          .maybeSingle()
+          .then(({ data: profileData }) => {
+            if (profileData) {
+              console.log(`Profile found, user type: ${profileData.user_type}`);
+              // Redirect based on user type
+              const redirectPath = profileData.user_type === 'developer' ? '/profile' : '/client-dashboard';
+              console.log(`Redirecting to ${redirectPath}`);
+              navigate(redirectPath);
+            } else {
+              console.log('No profile found for this user');
+            }
+          })
+          .catch(err => {
+            console.error('Error fetching profile data:', err);
+          });
+      }
     });
     
-    checkAuthStatus();
-    
-    // Also set up an interval to periodically check auth status
-    // This helps detect successful logins via Supabase auth state change
-    const intervalId = setInterval(() => {
-      checkAuthStatus();
-    }, 2000);
-    
-    return () => clearInterval(intervalId);
-  }, []);
+    // Only run once on component mount
+  }, [navigate]);
   
-  // Handle redirect when authenticated
+  // Handle redirect when authenticated via form submission
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('User is authenticated, redirecting to dashboard', {userType});
+      console.log('User is authenticated via form submission, redirecting to dashboard', { userType });
       
-      // Short delay to ensure state is consistent
-      setTimeout(() => {
-        if (userType === 'developer') {
-          navigate('/profile');
-        } else {
-          navigate('/client-dashboard');
-        }
-      }, 300);
+      const redirectPath = userType === 'developer' ? '/profile' : '/client-dashboard';
+      console.log(`Redirecting to ${redirectPath}`);
+      navigate(redirectPath);
     }
   }, [isAuthenticated, userType, navigate]);
   

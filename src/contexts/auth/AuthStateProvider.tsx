@@ -98,6 +98,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log('Setting up auth state change listener...');
         const subscription = setupAuthStateChangeListener(setAuthState);
         
+        setAuthInitialized(true);
+        console.log('Auth initialization complete.');
+        
         return () => {
           // Clean up the subscription when the component unmounts
           console.log('Cleaning up auth state change listener...');
@@ -114,10 +117,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           userType: null,
           userId: null,
         });
-      } finally {
-        // Mark auth as initialized even if there was an error
         setAuthInitialized(true);
-        console.log('Auth initialization complete.');
+        console.log('Auth initialization failed but marked as complete.');
       }
     };
     

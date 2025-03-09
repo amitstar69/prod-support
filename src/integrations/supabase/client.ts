@@ -33,7 +33,10 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
         signal: options?.signal || AbortSignal.timeout(15000),
       }).catch(error => {
         console.error('Supabase fetch error:', error);
-        toast.error('Network error. Please check your connection.');
+        // Only show toast for client-side network errors
+        if (typeof window !== 'undefined') {
+          toast.error('Network error. Please check your connection.');
+        }
         throw error;
       });
     }
@@ -48,7 +51,10 @@ console.log('Initializing with key starting with:', SUPABASE_ANON_KEY.substring(
 supabase.auth.getSession().then(({ data, error }) => {
   if (error) {
     console.error('Error checking Supabase session:', error);
-    toast.error('Unable to connect to the database. Please try again later.');
+    // Only show toast in the browser
+    if (typeof window !== 'undefined') {
+      toast.error('Unable to connect to the database. Please try again later.');
+    }
   } else {
     console.log('Supabase session check successful:', data.session ? 'Active session' : 'No active session');
     
@@ -60,14 +66,19 @@ supabase.auth.getSession().then(({ data, error }) => {
   }
 }).catch(err => {
   console.error('Fatal error checking session:', err);
-  toast.error('Critical connection error. Please reload the application.');
+  // Only show toast in the browser
+  if (typeof window !== 'undefined') {
+    toast.error('Critical connection error. Please reload the application.');
+  }
 });
 
 // Add listener for connection issues
-window.addEventListener('online', () => {
-  console.log('Network connection restored, refreshing Supabase connection');
-  supabase.auth.refreshSession();
-});
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    console.log('Network connection restored, refreshing Supabase connection');
+    supabase.auth.refreshSession();
+  });
+}
 
 // Export everything from the other modules
 export * from './realtime';

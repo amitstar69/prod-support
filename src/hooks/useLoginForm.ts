@@ -23,66 +23,9 @@ export const useLoginForm = () => {
   const handleRememberMeChange = () => setRememberMe(!rememberMe);
 
   const checkAuthStatus = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.auth.getSession();
-      console.log('Current auth status (LoginPage):', { session: data.session, error });
-      
-      // If there's an active session, update local state
-      if (data.session) {
-        // Get user profile to confirm user type
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('id', data.session.user.id)
-          .maybeSingle();
-          
-        // If we retrieved the profile, use that user type
-        if (profileData) {
-          console.log('Profile found with user type:', profileData.user_type);
-          
-          // Store in localStorage to ensure persistence
-          localStorage.setItem('authState', JSON.stringify({
-            isAuthenticated: true,
-            userType: profileData.user_type,
-            userId: data.session.user.id,
-          }));
-          
-          // Wait a bit for state to update through context
-          setTimeout(() => {
-            if (!isAuthenticated) {
-              console.log('Auth state not updated via context, forcing reload');
-              window.location.reload(); // Force a reload if auth state hasn't updated
-            }
-          }, 1000);
-        } else {
-          console.log('No profile found for logged in user - unusual state');
-        }
-      }
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-    }
-  }, [isAuthenticated]);
-
-  // Check auth status immediately on component mount
-  useEffect(() => {
-    checkAuthStatus();
-  }, [checkAuthStatus]);
-
-  // Redirect based on authentication state
-  useEffect(() => {
-    if (isAuthenticated) {
-      console.log('User is authenticated, redirecting to dashboard', { userType });
-      
-      // Short delay to ensure state is fully updated
-      setTimeout(() => {
-        if (userType === 'developer') {
-          navigate('/profile');
-        } else {
-          navigate('/client-dashboard');
-        }
-      }, 500);
-    }
-  }, [isAuthenticated, userType, navigate]);
+    // We'll skip this as we now handle session checking in LoginPage.tsx
+    return;
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,7 +87,15 @@ export const useLoginForm = () => {
       // If no profile exists, create one
       if (!profileData) {
         console.log('No profile found, creating new profile');
-        await createNewProfile(data.user.id);
+        const profileCreated = await createNewProfile(data.user.id);
+        
+        if (!profileCreated) {
+          console.error('Failed to create profile');
+          setError('Failed to create user profile');
+          toast.error('Failed to create user profile');
+          setIsLoading(false);
+          return;
+        }
       } else if (profileData.user_type !== userTypeState) {
         console.error(`User type mismatch: account is ${profileData.user_type}, tried to login as ${userTypeState}`);
         setError(`You registered as a ${profileData.user_type}, but tried to log in as a ${userTypeState}`);
@@ -168,17 +119,17 @@ export const useLoginForm = () => {
       console.log('Auth state saved to localStorage:', authState);
       
       // Try to use context login as a formality to update global state
-      const contextLoginSuccess = await login(email, password, userTypeState);
-      console.log('Context login result:', contextLoginSuccess);
+      await login(email, password, userTypeState);
       
       toast.success('Login successful!');
-      console.log(`Navigating to ${userTypeState === 'developer' ? '/profile' : '/client-dashboard'}...`);
       
-      // Force reload the page to ensure all components get the updated auth state
-      setTimeout(() => {
-        window.location.href = userTypeState === 'developer' ? '/profile' : '/client-dashboard';
-        setIsLoading(false);
-      }, 500);
+      // Set loading to false
+      setIsLoading(false);
+      
+      // Navigate to the appropriate dashboard - use direct navigation to avoid flickering
+      const redirectPath = userTypeState === 'developer' ? '/profile' : '/client-dashboard';
+      console.log(`Redirecting to ${redirectPath}`);
+      window.location.href = redirectPath;
     } catch (error: any) {
       console.error('Login exception:', error);
       setError(error.message || 'An unexpected error occurred');
