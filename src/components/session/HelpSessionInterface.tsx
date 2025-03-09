@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth';
@@ -10,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
-import { Clock, Play, Stop, Save, Code, MessageSquare, Users } from 'lucide-react';
+import { Clock, Play, Square, Save, Code, MessageSquare, Users } from 'lucide-react';
 import ChatInterface from './ChatInterface';
 import CodeEditor from './CodeEditor';
 import useSessionInterface from '@/hooks/useSessionInterface';
@@ -125,7 +126,7 @@ const HelpSessionInterface: React.FC = () => {
           <ChatInterface sessionId={sessionId} />
         </TabsContent>
         <TabsContent value="code">
-          <CodeEditor />
+          <CodeEditor initialCode="// Add your code here" />
         </TabsContent>
       </Tabs>
     </div>

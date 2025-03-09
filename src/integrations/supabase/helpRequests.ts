@@ -1,4 +1,5 @@
-import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
+
+import { HelpRequest, HelpRequestMatch, HelpRequestStatus } from '../../types/helpRequest';
 import { supabase } from './client';
 import { toast } from 'sonner';
 
@@ -18,15 +19,15 @@ export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'c
     if (error) {
       console.error('Error creating help request:', error);
       toast.error('Failed to create help request');
-      return null;
+      return { success: false, error: error.message };
     }
 
     toast.success('Help request created successfully');
-    return data;
-  } catch (error) {
+    return { success: true, data: data as HelpRequest };
+  } catch (error: any) {
     console.error('Exception creating help request:', error);
     toast.error('An unexpected error occurred');
-    return null;
+    return { success: false, error: error.message };
   }
 };
 
@@ -43,7 +44,7 @@ export const getClientHelpRequests = async (clientId: string): Promise<HelpReque
       return [];
     }
 
-    return data || [];
+    return (data || []) as HelpRequest[];
   } catch (error) {
     console.error('Exception fetching client help requests:', error);
     return [];
@@ -64,7 +65,7 @@ export const getHelpRequestById = async (id: string): Promise<HelpRequest | null
       return null;
     }
 
-    return data;
+    return data as HelpRequest;
   } catch (error) {
     console.error('Exception fetching help request:', error);
     return null;
@@ -91,7 +92,7 @@ export const updateHelpRequest = async (id: string, updates: Partial<HelpRequest
     }
 
     toast.success('Help request updated successfully');
-    return data;
+    return data as HelpRequest;
   } catch (error) {
     console.error('Exception updating help request:', error);
     toast.error('An unexpected error occurred');
@@ -104,7 +105,7 @@ export const cancelHelpRequest = async (id: string) => {
   try {
     const { error } = await supabase
       .from('help_requests')
-      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .update({ status: 'cancelled' as HelpRequestStatus, updated_at: new Date().toISOString() })
       .eq('id', id);
 
     if (error) {
@@ -168,4 +169,130 @@ export const createHelpRequestMatch = async (match: Omit<HelpRequestMatch, 'id' 
     toast.error('An unexpected error occurred');
     return null;
   }
+};
+
+// Added missing functions for useTicketApplications and useTicketFetching
+export const submitDeveloperApplication = async (
+  requestId: string,
+  developerId: string,
+  applicationData: {
+    proposed_message?: string;
+    proposed_duration?: number;
+    proposed_rate?: number;
+  }
+) => {
+  try {
+    const { data, error } = await supabase
+      .from('help_request_matches')
+      .insert({
+        request_id: requestId,
+        developer_id: developerId,
+        proposed_message: applicationData.proposed_message || '',
+        proposed_duration: applicationData.proposed_duration || 0,
+        proposed_rate: applicationData.proposed_rate || 0,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error submitting developer application:', error);
+      return { success: false, error: error.message };
+    }
+
+    // Update the help request status to "matching"
+    await supabase
+      .from('help_requests')
+      .update({ 
+        status: 'matching' as HelpRequestStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Exception submitting developer application:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Testing functions for debugging
+export const getAllPublicHelpRequests = async (isAuthenticated: boolean) => {
+  try {
+    // For authenticated users, fetch real data
+    if (isAuthenticated) {
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*, client:client_id(id, name, image), applications:help_request_matches(*)')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching help requests:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: data as HelpRequest[] };
+    } else {
+      // For non-authenticated users, return a safe error
+      return { success: false, error: 'Authentication required' };
+    }
+  } catch (error: any) {
+    console.error('Exception fetching help requests:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const testDatabaseAccess = async () => {
+  try {
+    const { count, error } = await supabase
+      .from('help_requests')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, count };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+};
+
+// Debug functions for DebugHelpRequestDatabase component
+export const debugInspectHelpRequests = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('help_requests')
+      .select('*')
+      .limit(10);
+
+    if (error) {
+      console.error('Error inspecting help requests:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+
+    return { success: true, data: data as HelpRequest[], count: data.length };
+  } catch (error: any) {
+    console.error('Exception inspecting help requests:', error);
+    return { success: false, error: error.message, data: [] };
+  }
+};
+
+export const createTestHelpRequest = async () => {
+  const testRequest = {
+    title: 'Test Help Request',
+    description: 'This is a test help request created for debugging purposes.',
+    technical_area: ['Frontend', 'Backend'],
+    urgency: 'medium',
+    communication_preference: ['Chat', 'Video Call'],
+    estimated_duration: 60,
+    budget_range: '$50 - $100',
+    status: 'pending' as HelpRequestStatus,
+    client_id: 'test-client-id',
+    code_snippet: 'console.log("This is a test code snippet");'
+  };
+
+  return await createHelpRequest(testRequest);
 };

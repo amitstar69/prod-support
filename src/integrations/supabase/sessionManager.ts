@@ -1,10 +1,10 @@
+
 import { supabase } from './client';
 import { toast } from 'sonner';
-import { ActiveSession, ChatMessage, SessionRequest } from '../../types/product';
 import { HelpSession } from '../../types/helpRequest';
 
 // Create a new session request
-export const createSessionRequest = async (sessionRequest: Omit<SessionRequest, 'id' | 'requestedAt' | 'status'>) => {
+export const createSessionRequest = async (sessionRequest: any) => {
   try {
     const newSessionRequest = {
       ...sessionRequest,
@@ -144,7 +144,7 @@ export const endSession = async (sessionId: string, finalCost?: number) => {
 };
 
 // Send a chat message
-export const sendChatMessage = async (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
+export const sendChatMessage = async (message: any) => {
   try {
     const newMessage = {
       ...message,
@@ -319,14 +319,17 @@ export const createSessionSummary = async (
       return null;
     }
 
-    if (!sessionData || !sessionData.client || !sessionData.developer) {
+    if (!sessionData) {
       console.error('Missing required session data for summary creation');
       return null;
     }
 
+    const clientData = sessionData.client || { id: 'unknown', name: 'Unknown Client' };
+    const developerData = sessionData.developer || { id: 'unknown', name: 'Unknown Developer' };
+
     // Calculate duration in minutes
-    const startTime = new Date(sessionData.actual_start).getTime();
-    const endTime = new Date(sessionData.actual_end).getTime();
+    const startTime = new Date(sessionData.actual_start || '').getTime();
+    const endTime = new Date(sessionData.actual_end || '').getTime();
     const durationMs = endTime - startTime;
     const durationMinutes = Math.ceil(durationMs / (1000 * 60));
     
@@ -335,10 +338,10 @@ export const createSessionSummary = async (
       .from('session_summaries')
       .insert({
         session_id: sessionId,
-        developer_id: sessionData.developer.id,
-        developer_name: sessionData.developer.name,
-        client_id: sessionData.client.id,
-        client_name: sessionData.client.name,
+        developer_id: developerData.id,
+        developer_name: developerData.name,
+        client_id: clientData.id,
+        client_name: clientData.name,
         topics: topics,
         solution: solution,
         duration: durationMinutes,
@@ -368,8 +371,8 @@ export const getHelpSessionsByClientId = async (clientId: string): Promise<HelpS
       .from('help_sessions')
       .select(`
         *,
-        client:client_profiles(*),
-        developer:developer_profiles(*),
+        client_profile:client_id(id, name, image),
+        developer_profile:developer_id(id, name, image),
         request:request_id(*)
       `)
       .eq('client_id', clientId);
@@ -394,8 +397,8 @@ export const getHelpSessionsByDeveloperId = async (developerId: string): Promise
       .from('help_sessions')
       .select(`
         *,
-        client:client_profiles(*),
-        developer:developer_profiles(*),
+        client_profile:client_id(id, name, image),
+        developer_profile:developer_id(id, name, image),
         request:request_id(*)
       `)
       .eq('developer_id', developerId);

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/auth';
 import { 
@@ -98,7 +99,7 @@ const HelpRequestsTracking: React.FC = () => {
                 <CardDescription>{request.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Badge variant="success">{request.status}</Badge>
+                <Badge variant="outline">{request.status}</Badge>
               </CardContent>
             </Card>
           ))}

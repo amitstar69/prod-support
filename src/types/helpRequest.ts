@@ -71,6 +71,17 @@ export interface HelpSession {
   request?: HelpRequest;
 }
 
+export interface ChatMessage {
+  id: string;
+  sessionId: string;
+  senderId: string;
+  senderType: 'developer' | 'client' | 'system';
+  content: string;
+  timestamp: string;
+  isCode?: boolean;
+  attachmentUrl?: string;
+}
+
 // Export the constant options
 export const technicalAreaOptions = [
   'Frontend',
