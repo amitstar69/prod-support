@@ -94,12 +94,16 @@ const LoginPage: React.FC = () => {
     if (loginSuccess) {
       console.log('[LoginPage] Login successful, redirecting to dashboard');
       
-      const redirectPath = userType === 'developer' ? '/developer-dashboard' : '/client-dashboard';
+      // Get the return path from location state or default to the dashboard
+      const state = location.state as { returnTo?: string } | null;
+      const returnPath = state?.returnTo || (userType === 'developer' ? '/developer-dashboard' : '/client-dashboard');
       
-      // Use navigate for a clean transition
-      navigate(redirectPath, { replace: true });
+      // Add a small delay to ensure state is properly updated
+      setTimeout(() => {
+        navigate(returnPath, { replace: true });
+      }, 100);
     }
-  }, [loginSuccess, userType, navigate]);
+  }, [loginSuccess, userType, navigate, location.state]);
   
   if (isLoading) {
     return (

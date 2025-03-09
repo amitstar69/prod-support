@@ -16,7 +16,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredUserType,
   allowPublicAccess = false
 }) => {
-  const { isAuthenticated, userType } = useAuth();
+  const { isAuthenticated, userType, userId } = useAuth();
   const location = useLocation();
   const [isVerifying, setIsVerifying] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
@@ -35,6 +35,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       }
       
       try {
+        console.log('[ProtectedRoute] Verifying session, current auth state:', { isAuthenticated, userType, userId });
+        
         // Always verify with Supabase directly
         const { data, error } = await supabase.auth.getSession();
         
@@ -75,6 +77,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
               return;
             }
             
+            console.log('[ProtectedRoute] Profile data:', profileData);
+            
             if (profileData && profileData.user_type === requiredUserType) {
               console.log(`[ProtectedRoute] User is a ${requiredUserType}, access granted`);
               if (isMounted) {
@@ -82,7 +86,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
                 setIsVerifying(false);
               }
             } else {
-              console.log(`[ProtectedRoute] User is not a ${requiredUserType}, redirecting`);
+              console.log(`[ProtectedRoute] User is not a ${requiredUserType}, access denied`);
               if (isMounted) {
                 toast.error(`This page is only accessible to ${requiredUserType}s.`);
                 setHasAccess(false);
@@ -118,7 +122,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [isAuthenticated, userType, allowPublicAccess, requiredUserType, location.pathname]);
+  }, [isAuthenticated, userType, allowPublicAccess, requiredUserType, location.pathname, userId]);
 
   // Loading state while verifying
   if (isVerifying) {

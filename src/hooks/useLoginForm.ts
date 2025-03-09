@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
@@ -126,6 +127,8 @@ export const useLoginForm = () => {
       }
       
       toast.success('Login successful!');
+      
+      // Set login success flag to trigger redirect in parent component
       setLoginSuccess(true);
       console.log('[useLoginForm] Login success state set to true');
       
