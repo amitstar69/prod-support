@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
@@ -70,7 +69,6 @@ const HelpRequestDetail: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Function to validate UUID format
   const isValidUUID = (uuid: string) => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid);
@@ -86,7 +84,6 @@ const HelpRequestDetail: React.FC = () => {
       try {
         console.log('Fetching help request details for:', requestId);
         
-        // Check for help request in localStorage
         const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
         const localRequest = localHelpRequests.find((req: HelpRequest) => 
           req.id === requestId && req.client_id === userId
@@ -94,12 +91,14 @@ const HelpRequestDetail: React.FC = () => {
         
         if (localRequest) {
           console.log('Found request in local storage:', localRequest);
-          setRequest(localRequest);
+          setRequest({
+            ...localRequest,
+            status: localRequest.status as HelpRequestStatus
+          });
           setIsLoading(false);
           return;
         }
         
-        // If not found in localStorage and the user ID is not a valid UUID, show error
         const isValidUserUUID = isValidUUID(userId);
         if (!isValidUserUUID) {
           console.error('Invalid UUID format for Supabase query:', userId);
@@ -108,7 +107,6 @@ const HelpRequestDetail: React.FC = () => {
           return;
         }
         
-        // Try to fetch from Supabase if not found locally and userId is valid UUID
         try {
           const { data, error } = await supabase
             .from('help_requests')
@@ -125,7 +123,10 @@ const HelpRequestDetail: React.FC = () => {
           }
 
           console.log('Help request detail data from Supabase:', data);
-          setRequest(data);
+          setRequest({
+            ...data,
+            status: data.status as HelpRequestStatus
+          });
         } catch (supabaseError) {
           console.error('Exception fetching from Supabase:', supabaseError);
           setError('Error connecting to database');
@@ -177,7 +178,6 @@ const HelpRequestDetail: React.FC = () => {
     );
   }
 
-  // Get current status index
   const currentStepIndex = workflowSteps.findIndex(step => step.id === request.status);
   const normalizedStepIndex = currentStepIndex === -1 ? 0 : currentStepIndex;
 
@@ -200,7 +200,6 @@ const HelpRequestDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* Workflow Status Bar */}
         <div className="mb-8">
           <h3 className="text-lg font-medium mb-4">Request Status</h3>
           <div className="relative">

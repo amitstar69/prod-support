@@ -104,121 +104,153 @@ const HelpRequestsTracking: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchHelpRequests = async () => {
-      if (!userId) {
-        console.error('No user ID found');
+  const fetchHelpRequests = async () => {
+    if (!userId) {
+      console.error('No user ID found');
+      setIsLoading(false);
+      setError('User not authenticated. Please log in again.');
+      return;
+    }
+
+    try {
+      console.log('Fetching help requests for user:', userId);
+      
+      const timer = setTimeout(() => {
+        if (isLoading) {
+          console.log('Data fetch taking too long, resetting loading state...');
+          setIsLoading(false);
+          setError('Request timed out. Please refresh the page and try again.');
+        }
+      }, 15000);
+      
+      setLoadingTimer(timer);
+      
+      let localHelpRequests = [];
+      try {
+        localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      } catch (e) {
+        console.error('Error parsing local help requests:', e);
+        localHelpRequests = [];
+      }
+      
+      const userLocalHelpRequests = localHelpRequests.filter((req: HelpRequest) => req.client_id === userId);
+      console.log('Local help requests for user:', userLocalHelpRequests);
+      
+      const isLocalAuth = userId.startsWith('client-');
+      const isValidUserUUID = isValidUUID(userId);
+      
+      if (isLocalAuth) {
+        const typedRequests = userLocalHelpRequests.map((req: any) => ({
+          ...req,
+          status: req.status as HelpRequestStatus
+        }));
+        setHelpRequests(typedRequests);
+        setDataSource('local');
         setIsLoading(false);
-        setError('User not authenticated. Please log in again.');
         return;
       }
-
-      try {
-        console.log('Fetching help requests for user:', userId);
-        
-        const timer = setTimeout(() => {
-          if (isLoading) {
-            console.log('Data fetch taking too long, resetting loading state...');
-            setIsLoading(false);
-            setError('Request timed out. Please refresh the page and try again.');
-          }
-        }, 15000);
-        
-        setLoadingTimer(timer);
-        
-        let localHelpRequests = [];
+      
+      if (isValidUserUUID) {
         try {
-          localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
-        } catch (e) {
-          console.error('Error parsing local help requests:', e);
-          localHelpRequests = [];
-        }
-        
-        const userLocalHelpRequests = localHelpRequests.filter((req: HelpRequest) => req.client_id === userId);
-        console.log('Local help requests for user:', userLocalHelpRequests);
-        
-        const isLocalAuth = userId.startsWith('client-');
-        const isValidUserUUID = isValidUUID(userId);
-        
-        if (isLocalAuth) {
-          setHelpRequests(userLocalHelpRequests);
-          setDataSource('local');
-          setIsLoading(false);
-          return;
-        }
-        
-        if (isValidUserUUID) {
-          try {
-            const { data: sessionData } = await supabase.auth.getSession();
-            
-            if (sessionData && sessionData.session) {
-              const { data, error: supabaseError } = await supabase
-                .from('help_requests')
-                .select('*')
-                .eq('client_id', userId);
+          const { data: sessionData } = await supabase.auth.getSession();
+          
+          if (sessionData && sessionData.session) {
+            const { data, error: supabaseError } = await supabase
+              .from('help_requests')
+              .select('*')
+              .eq('client_id', userId);
 
-              if (supabaseError) {
-                console.error('Error fetching help requests from Supabase:', supabaseError);
-                
-                if (userLocalHelpRequests.length > 0) {
-                  setHelpRequests(userLocalHelpRequests);
-                  setDataSource('local');
-                  setError('Failed to load help requests from database. Showing local requests only.');
-                } else {
-                  setHelpRequests([]);
-                  setError('Failed to load help requests from database.');
-                }
+            if (supabaseError) {
+              console.error('Error fetching help requests from Supabase:', supabaseError);
+              
+              if (userLocalHelpRequests.length > 0) {
+                const typedRequests = userLocalHelpRequests.map((req: any) => ({
+                  ...req,
+                  status: req.status as HelpRequestStatus
+                }));
+                setHelpRequests(typedRequests);
+                setDataSource('local');
+                setError('Failed to load help requests from database. Showing local requests only.');
               } else {
-                console.log('Help requests data from Supabase:', data);
-                
-                if (userLocalHelpRequests.length > 0) {
-                  setDataSource('mixed');
-                  await syncLocalToDatabase();
-                  
-                  const { data: refreshedData } = await supabase
-                    .from('help_requests')
-                    .select('*')
-                    .eq('client_id', userId);
-                    
-                  if (refreshedData && refreshedData.length > 0) {
-                    setHelpRequests(refreshedData);
-                  } else {
-                    setHelpRequests(data || []);
-                  }
-                } else {
-                  setHelpRequests(data || []);
-                  setDataSource('database');
-                }
+                setHelpRequests([]);
+                setError('Failed to load help requests from database.');
               }
             } else {
-              setHelpRequests(userLocalHelpRequests);
-              setDataSource('local');
-              setError('No active session. Please log in again.');
+              console.log('Help requests data from Supabase:', data);
+              
+              if (userLocalHelpRequests.length > 0) {
+                setDataSource('mixed');
+                await syncLocalToDatabase();
+                
+                const { data: refreshedData } = await supabase
+                  .from('help_requests')
+                  .select('*')
+                  .eq('client_id', userId);
+                  
+                if (refreshedData && refreshedData.length > 0) {
+                  const typedRequests = refreshedData.map((req: any) => ({
+                    ...req,
+                    status: req.status as HelpRequestStatus
+                  }));
+                  setHelpRequests(typedRequests);
+                } else if (data) {
+                  const typedRequests = data.map((req: any) => ({
+                    ...req,
+                    status: req.status as HelpRequestStatus
+                  }));
+                  setHelpRequests(typedRequests);
+                }
+              } else if (data) {
+                const typedRequests = data.map((req: any) => ({
+                  ...req,
+                  status: req.status as HelpRequestStatus
+                }));
+                setHelpRequests(typedRequests);
+                setDataSource('database');
+              }
             }
-          } catch (supabaseError) {
-            console.error('Exception fetching from Supabase:', supabaseError);
-            setHelpRequests(userLocalHelpRequests);
+          } else {
+            const typedRequests = userLocalHelpRequests.map((req: any) => ({
+              ...req,
+              status: req.status as HelpRequestStatus
+            }));
+            setHelpRequests(typedRequests);
             setDataSource('local');
-            setError('Failed to connect to database, showing local requests only');
+            setError('No active session. Please log in again.');
           }
-        } else {
-          setHelpRequests(userLocalHelpRequests);
+        } catch (supabaseError) {
+          console.error('Exception fetching from Supabase:', supabaseError);
+          const typedRequests = userLocalHelpRequests.map((req: any) => ({
+            ...req,
+            status: req.status as HelpRequestStatus
+          }));
+          setHelpRequests(typedRequests);
           setDataSource('local');
-          setError('Invalid user ID format. Using local data only.');
+          setError('Failed to connect to database, showing local requests only');
         }
-      } catch (error) {
-        console.error('Exception fetching help requests:', error);
-        setError('An unexpected error occurred');
-        setHelpRequests([]);
-      } finally {
-        if (loadingTimer) {
-          clearTimeout(loadingTimer);
-          setLoadingTimer(null);
-        }
-        setIsLoading(false);
+      } else {
+        const typedRequests = userLocalHelpRequests.map((req: any) => ({
+          ...req,
+          status: req.status as HelpRequestStatus
+        }));
+        setHelpRequests(typedRequests);
+        setDataSource('local');
+        setError('Invalid user ID format. Using local data only.');
       }
-    };
+    } catch (error) {
+      console.error('Exception fetching help requests:', error);
+      setError('An unexpected error occurred');
+      setHelpRequests([]);
+    } finally {
+      if (loadingTimer) {
+        clearTimeout(loadingTimer);
+        setLoadingTimer(null);
+      }
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchHelpRequests();
     
     return () => {

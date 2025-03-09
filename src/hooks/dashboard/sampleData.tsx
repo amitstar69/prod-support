@@ -15,6 +15,7 @@ export const sampleTickets: HelpRequest[] = [
     budget_range: '$50 - $100',
     status: 'pending',
     created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
     code_snippet: 'function MyComponent() { const [state, setState] = useState(0); // More code here }'
   },
   {
@@ -28,7 +29,8 @@ export const sampleTickets: HelpRequest[] = [
     estimated_duration: 90,
     budget_range: '$100 - $200',
     status: 'pending',
-    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
+    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+    updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
   },
   {
     id: 'sample-3',
@@ -41,7 +43,8 @@ export const sampleTickets: HelpRequest[] = [
     estimated_duration: 120,
     budget_range: '$200 - $500',
     status: 'matching',
-    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
   },
   {
     id: 'sample-4',
@@ -54,7 +57,8 @@ export const sampleTickets: HelpRequest[] = [
     estimated_duration: 150,
     budget_range: '$100 - $200',
     status: 'pending',
-    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
+    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+    updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
   },
   {
     id: 'sample-5',
@@ -67,6 +71,7 @@ export const sampleTickets: HelpRequest[] = [
     estimated_duration: 75,
     budget_range: '$50 - $100',
     status: 'pending',
-    created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() // 6 days ago
+    created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(), // 6 days ago
+    updated_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() // 6 days ago
   }
 ];

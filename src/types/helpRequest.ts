@@ -1,10 +1,17 @@
+
 export type HelpRequestStatus =
   | 'pending'
   | 'matching'
   | 'scheduled'
   | 'in-progress'
   | 'completed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'requirements'
+  | 'todo'
+  | 'in-progress-unpaid'
+  | 'in-progress-paid'
+  | 'client-review'
+  | 'production';
 
 export interface ProfileInfo {
   id: string;
@@ -27,6 +34,76 @@ export interface HelpRequest {
   created_at: string;
   updated_at: string;
   client?: ProfileInfo;
-  applications?: Array<any>; // Adding applications property
-  application_status?: string; // Adding application_status property
+  applications?: HelpRequestMatch[]; 
+  application_status?: string;
 }
+
+export interface HelpRequestMatch {
+  id: string;
+  request_id: string;
+  developer_id: string;
+  proposed_message?: string;
+  proposed_duration?: number;
+  proposed_rate?: number;
+  match_score?: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  developer?: ProfileInfo;
+}
+
+export interface HelpSession {
+  id: string;
+  request_id: string;
+  client_id: string;
+  developer_id: string;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
+  actual_start?: string | null;
+  actual_end?: string | null;
+  final_cost?: number | null;
+  status: string;
+  shared_code?: string | null;
+  created_at: string;
+  updated_at: string;
+  client?: ProfileInfo;
+  developer?: ProfileInfo;
+  request?: HelpRequest;
+}
+
+// Add the missing constant exports
+export const technicalAreaOptions = [
+  'Frontend',
+  'Backend',
+  'Database',
+  'DevOps',
+  'Mobile Development',
+  'API Integration',
+  'Performance Optimization',
+  'UI/UX',
+  'Bug Fixing',
+  'Testing',
+  'Security',
+  'Architecture',
+  'Cloud Services',
+  'Data Analysis',
+  'Machine Learning'
+];
+
+export const communicationOptions = [
+  'Chat',
+  'Voice Call',
+  'Video Call',
+  'Screen Sharing',
+  'Code Review',
+  'Pair Programming'
+];
+
+export const budgetRangeOptions = [
+  'Under $50',
+  '$50 - $100',
+  '$100 - $200',
+  '$200 - $500',
+  'Over $500',
+  'To be discussed'
+];

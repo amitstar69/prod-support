@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
 import { useAuth } from '../../contexts/auth';
-import { HelpSession, HelpRequest } from '../../types/helpRequest';
+import { HelpRequest, HelpSession } from '../../types/helpRequest';
 import { toast } from 'sonner';
 import {
   Clock,
@@ -41,7 +40,6 @@ const HelpSessionInterface: React.FC = () => {
     fetchSessionData();
   }, [sessionId]);
 
-  // Timer effect for tracking session duration
   useEffect(() => {
     let intervalId: number;
     
@@ -62,7 +60,6 @@ const HelpSessionInterface: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Fetch the session data
       const { data: sessionData, error: sessionError } = await supabase
         .from('help_sessions')
         .select('*')
@@ -78,7 +75,6 @@ const HelpSessionInterface: React.FC = () => {
       
       setSession(sessionData);
       
-      // Fetch the associated help request
       const { data: requestData, error: requestError } = await supabase
         .from('help_requests')
         .select('*')
@@ -89,10 +85,12 @@ const HelpSessionInterface: React.FC = () => {
         console.error('Error fetching help request:', requestError);
         toast.error('Failed to load request details');
       } else {
-        setHelpRequest(requestData);
+        setHelpRequest({
+          ...requestData,
+          status: requestData.status as HelpRequestStatus
+        });
       }
       
-      // Calculate elapsed time if session is already in progress
       if (sessionData.actual_start && !sessionData.actual_end) {
         const startTime = new Date(sessionData.actual_start).getTime();
         const currentTime = new Date().getTime();
@@ -131,7 +129,6 @@ const HelpSessionInterface: React.FC = () => {
         return;
       }
       
-      // Also update the help request status
       await supabase
         .from('help_requests')
         .update({
@@ -169,11 +166,8 @@ const HelpSessionInterface: React.FC = () => {
       
       const now = new Date().toISOString();
       
-      // Calculate final cost based on elapsed time and rate
-      // This is a simple calculation, in reality you might want to use the
-      // developer's rate from their profile
       const minutesElapsed = Math.ceil(elapsedTime / 60);
-      const hourlyRate = 75; // Default rate in USD
+      const hourlyRate = 75;
       const finalCost = (hourlyRate / 60) * minutesElapsed;
       
       const { error } = await supabase
@@ -191,7 +185,6 @@ const HelpSessionInterface: React.FC = () => {
         return;
       }
       
-      // Also update the help request status
       await supabase
         .from('help_requests')
         .update({
@@ -209,7 +202,6 @@ const HelpSessionInterface: React.FC = () => {
       setIsSessionRunning(false);
       toast.success('Session completed successfully!');
       
-      // Navigate to a summary page or back to dashboard
       setTimeout(() => {
         navigate('/session-summary/' + session.id);
       }, 2000);
@@ -274,7 +266,6 @@ const HelpSessionInterface: React.FC = () => {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Main workspace - takes 3/4 of the space on large screens */}
         <div className="lg:col-span-3">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
@@ -316,7 +307,6 @@ const HelpSessionInterface: React.FC = () => {
           </Tabs>
         </div>
         
-        {/* Sidebar - takes 1/4 of the space on large screens */}
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-2">

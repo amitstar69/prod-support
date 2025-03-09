@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -46,7 +45,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
         ? parseInt(formData.estimated_duration, 10) 
         : formData.estimated_duration;
       
-      // Create base request object
+      // Create base request object with appropriate typing for status
       const helpRequestBase = {
         title: formData.title || 'Untitled Request',
         description: formData.description || 'No description provided',
@@ -56,7 +55,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
         estimated_duration: duration,
         budget_range: formData.budget_range,
         code_snippet: formData.code_snippet || '',
-        status: 'pending',
+        status: 'pending' as HelpRequestStatus,
         client_id: clientId,
       };
       

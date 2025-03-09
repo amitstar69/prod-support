@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { toast } from 'sonner';
 import { ActiveSession, ChatMessage, SessionRequest } from '../../types/product';
@@ -307,14 +306,15 @@ export const createSessionSummary = async (
       .from('help_sessions')
       .select(`
         *,
-        client:client_id(id, name),
-        developer:developer_id(id, name)
+        client:client_id(id, name, image),
+        developer:developer_id(id, name, image),
+        request:request_id(*)
       `)
       .eq('id', sessionId)
       .single();
       
     if (sessionError) {
-      console.error('Error fetching session for summary:', sessionError);
+      console.error('Error fetching session for summary:', sessionError.message);
       return null;
     }
 
@@ -357,5 +357,55 @@ export const createSessionSummary = async (
   } catch (error) {
     console.error('Exception creating session summary:', error);
     return null;
+  }
+};
+
+// Get all client help sessions
+export const getHelpSessionsByClientId = async (clientId: string): Promise<HelpSession[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('help_sessions')
+      .select(`
+        *,
+        client:client_id(id, name, image),
+        developer:developer_id(id, name, image),
+        request:request_id(*)
+      `)
+      .eq('client_id', clientId);
+
+    if (error) {
+      console.error('Error fetching client help sessions:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Exception fetching client help sessions:', error);
+    return [];
+  }
+};
+
+// Get all developer help sessions
+export const getHelpSessionsByDeveloperId = async (developerId: string): Promise<HelpSession[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('help_sessions')
+      .select(`
+        *,
+        client:client_id(id, name, image),
+        developer:developer_id(id, name, image),
+        request:request_id(*)
+      `)
+      .eq('developer_id', developerId);
+
+    if (error) {
+      console.error('Error fetching developer help sessions:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Exception fetching developer help sessions:', error);
+    return [];
   }
 };

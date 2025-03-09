@@ -1,4 +1,5 @@
-import { supabase } from './client';
+
+// Update the import to use HelpRequestMatch
 import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
 import { toast } from 'sonner';

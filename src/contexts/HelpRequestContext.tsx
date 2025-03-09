@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { HelpRequest, technicalAreaOptions, communicationOptions, budgetRangeOptions } from '../types/helpRequest';
+import { HelpRequest, HelpRequestStatus, technicalAreaOptions, communicationOptions, budgetRangeOptions } from '../types/helpRequest';
 import { toast } from 'sonner';
 
 type HelpRequestContextType = {
@@ -23,7 +22,7 @@ const defaultFormData: Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'up
   estimated_duration: 30,
   budget_range: budgetRangeOptions[1],
   code_snippet: '',
-  status: 'pending' // Updated from 'pending' to match the database constraint
+  status: 'pending' as HelpRequestStatus
 };
 
 export const HelpRequestContext = createContext<HelpRequestContextType | undefined>(undefined);
@@ -35,7 +34,6 @@ export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ childre
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Special handling for estimated_duration to convert to number
     if (name === 'estimated_duration') {
       setFormData(prev => ({
         ...prev,
@@ -77,7 +75,6 @@ export const HelpRequestProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
 
   const validateForm = (): boolean => {
-    // Basic validation of required fields
     if (!formData.title.trim()) {
       toast.error("Please provide a title for your help request");
       return false;
