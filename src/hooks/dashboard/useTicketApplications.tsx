@@ -20,6 +20,7 @@ export const useTicketApplications = (userId: string | null) => {
   };
   
   // Function to fetch developer's submitted applications
+  // This function uses the userId from closure instead of requiring it as a parameter
   const fetchMyApplications = async () => {
     if (!userId) {
       setMyApplications([]);
