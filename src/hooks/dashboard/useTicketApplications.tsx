@@ -7,7 +7,7 @@ import { submitDeveloperApplication } from '../../integrations/supabase/helpRequ
 export interface UseTicketApplicationsResult {
   myApplications: HelpRequest[];
   checkIfApplied: (ticketId: string) => boolean;
-  fetchMyApplications: () => Promise<void>;
+  fetchMyApplications: (userId?: string) => Promise<void>; // Updated to accept an optional userId parameter
 }
 
 export const useTicketApplications = (userId: string | null) => {
@@ -20,9 +20,12 @@ export const useTicketApplications = (userId: string | null) => {
   };
   
   // Function to fetch developer's submitted applications
-  // This function uses the userId from closure instead of requiring it as a parameter
-  const fetchMyApplications = async () => {
-    if (!userId) {
+  // This function uses the userId from closure but can also accept an override userId
+  const fetchMyApplications = async (userIdOverride?: string) => {
+    // Use the provided userId parameter if available, otherwise fall back to the one from closure
+    const effectiveUserId = userIdOverride || userId;
+    
+    if (!effectiveUserId) {
       setMyApplications([]);
       return;
     }
@@ -31,7 +34,7 @@ export const useTicketApplications = (userId: string | null) => {
       // In a real implementation, we would fetch applications from the database
       // For local storage version, check for local applications
       const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
-      const myApps = localApplications.filter((app: any) => app.developer_id === userId);
+      const myApps = localApplications.filter((app: any) => app.developer_id === effectiveUserId);
       
       if (myApps.length) {
         // Get the corresponding tickets for these applications

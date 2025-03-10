@@ -113,7 +113,7 @@ export const useDeveloperDashboard = () => {
       setDataSource(result.source as 'local' | 'database' | 'error');
       
       // Fetch applications if authenticated
-      await fetchMyApplications(); // No argument needed, since it uses userId from closure
+      await fetchMyApplications(); // Now this passes no arguments, using the userId from the hook's closure
       
       // Fetch developers for matching
       await fetchDevelopers();
