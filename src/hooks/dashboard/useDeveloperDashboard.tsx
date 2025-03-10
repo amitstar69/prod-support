@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { useAuth } from '../../contexts/auth';
@@ -112,8 +111,8 @@ export const useDeveloperDashboard = () => {
       setTickets(result.data);
       setDataSource(result.source as 'local' | 'database' | 'error');
       
-      // Fetch applications if authenticated
-      await fetchMyApplications(); // Now this passes no arguments, using the userId from the hook's closure
+      // Fetch applications if authenticated - pass the userId explicitly to match the updated signature
+      await fetchMyApplications(userId);
       
       // Fetch developers for matching
       await fetchDevelopers();
