@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { useAuth } from '../../contexts/auth';
@@ -131,7 +132,7 @@ export const useDeveloperDashboard = () => {
       console.error('[DeveloperDashboard] Exception in fetchTickets:', error);
       setDataSource('error');
       toast.error('Failed to load tickets. Please try again.');
-      return { success: false, data: [], source: 'error', error: String(error) };
+      return { success: false, data: tickets, source: 'error', error: String(error) };
     }
   }, [isAuthenticated, userId, baseFetchTickets, fetchMyApplications, fetchDevelopers]);
   
@@ -230,4 +231,3 @@ export const useDeveloperDashboard = () => {
     runDatabaseTest
   };
 };
-
