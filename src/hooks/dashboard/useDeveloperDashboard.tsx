@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { useAuth } from '../../contexts/auth';
@@ -21,7 +20,7 @@ export const useDeveloperDashboard = () => {
   const [isLoadingDevelopers, setIsLoadingDevelopers] = useState(false);
   
   const { filters, handleFilterChange, applyFilters } = useTicketFilters();
-  const { myApplications, checkIfApplied, fetchMyApplications } = useTicketApplications(userId);
+  const { myApplications, checkIfApplied, fetchMyApplications } = useTicketApplications(userId || '');
   const { 
     isLoading,
     errorMessage,
@@ -115,15 +114,13 @@ export const useDeveloperDashboard = () => {
         if (userId) {
           console.log('[DeveloperDashboard] Fetching applications for user:', userId);
           await fetchMyApplications(userId);
-        } else {
-          console.warn('[DeveloperDashboard] No userId available for fetching applications');
         }
         
         await fetchDevelopers();
         
         return result;
       } else {
-        console.error('[DeveloperDashboard] Error in fetch result:', result.error);
+        console.error('[DeveloperDashboard] Error in fetch result:', result);
         setDataSource('error');
         toast.error(`Error loading tickets: ${result.error}`);
         return result;
@@ -145,9 +142,8 @@ export const useDeveloperDashboard = () => {
   }, [fetchTickets]);
   
   const filteredTickets = Array.isArray(tickets) ? applyFilters(tickets) : [];
-  
   const recommendedTickets = Array.isArray(tickets) ? recommendTickets(tickets, userId) : [];
-  
+
   const handleClaimTicket = async (ticketId: string) => {
     if (!isAuthenticated) {
       toast.error('You must be logged in to claim tickets');
