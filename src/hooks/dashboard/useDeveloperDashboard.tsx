@@ -143,9 +143,9 @@ export const useDeveloperDashboard = () => {
     });
   }, [fetchTickets]);
   
-  const filteredTickets = applyFilters(tickets);
+  const filteredTickets = Array.isArray(tickets) ? applyFilters(tickets) : [];
   
-  const recommendedTickets = recommendTickets(tickets, userId);
+  const recommendedTickets = Array.isArray(tickets) ? recommendTickets(tickets, userId) : [];
   
   const handleClaimTicket = async (ticketId: string) => {
     if (!isAuthenticated) {
@@ -230,3 +230,4 @@ export const useDeveloperDashboard = () => {
     runDatabaseTest
   };
 };
+

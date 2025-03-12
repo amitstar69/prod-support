@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -72,7 +73,7 @@ export const useTicketFetching = (
   };
 
   const recommendTickets = (ticketsToFilter: HelpRequest[], currentUserId: string | null): HelpRequest[] => {
-    if (!currentUserId) return [];
+    if (!currentUserId || !Array.isArray(ticketsToFilter)) return [];
     
     return ticketsToFilter.filter(ticket => 
       ticket.status === 'pending' || ticket.status === 'matching'
