@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { useAuth } from '../../contexts/auth';
@@ -20,7 +19,6 @@ export const useDeveloperDashboard = () => {
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [isLoadingDevelopers, setIsLoadingDevelopers] = useState(false);
   
-  // Use custom hooks for ticket filtering, applications, and fetching
   const { filters, handleFilterChange, applyFilters } = useTicketFilters();
   const { myApplications, checkIfApplied, fetchMyApplications } = useTicketApplications(userId);
   const { 
@@ -30,10 +28,8 @@ export const useDeveloperDashboard = () => {
     recommendTickets
   } = useTicketFetching(isAuthenticated, userId);
   
-  // Fetch developers data for matching
   const fetchDevelopers = useCallback(async () => {
     if (!isAuthenticated) {
-      // For demo, use mock developers from localStorage
       const localDevs = JSON.parse(localStorage.getItem('mockDevelopers') || '[]');
       setDevelopers(localDevs.length > 0 ? localDevs : generateSampleDeveloperDashboardData().developers);
       return;
@@ -62,7 +58,6 @@ export const useDeveloperDashboard = () => {
         return;
       }
       
-      // Transform data to match Developer interface
       const formattedDevelopers: Developer[] = data.map((dev: any) => ({
         id: dev.id,
         name: dev.profiles?.name || 'Unknown Developer',
@@ -93,11 +88,12 @@ export const useDeveloperDashboard = () => {
     }
   }, [isAuthenticated]);
   
-  // Enhanced fetch tickets method that also fetches applications and developers
   const fetchTickets = useCallback(async () => {
+    console.log('[DeveloperDashboard] Starting fetchTickets...');
+    console.log('[DeveloperDashboard] Auth state:', { isAuthenticated, userId, userType });
+    
     if (!isAuthenticated) {
-      // Use sample data for non-authenticated users
-      console.log('Using sample data for non-authenticated user');
+      console.log('[DeveloperDashboard] Using sample data for non-authenticated user');
       const sampleData = generateSampleDeveloperDashboardData();
       setTickets(sampleData.tickets);
       setDevelopers(sampleData.developers);
@@ -105,41 +101,52 @@ export const useDeveloperDashboard = () => {
       return { success: true, data: sampleData.tickets, source: 'local' };
     }
     
-    // Fetch real data for authenticated users
-    const result = await baseFetchTickets(true); // Pass true for showLoading parameter
-    
-    if (result.success) {
-      setTickets(result.data);
-      setDataSource(result.source as 'local' | 'database' | 'error');
+    try {
+      console.log('[DeveloperDashboard] Fetching real data for authenticated user');
+      const result = await baseFetchTickets(true);
       
-      // Fetch applications if authenticated - pass the userId explicitly
-      if (userId) {
-        await fetchMyApplications(userId);
+      console.log('[DeveloperDashboard] Fetch result:', result);
+      
+      if (result.success) {
+        setTickets(result.data);
+        setDataSource(result.source as 'local' | 'database' | 'error');
+        
+        if (userId) {
+          console.log('[DeveloperDashboard] Fetching applications for user:', userId);
+          await fetchMyApplications(userId);
+        } else {
+          console.warn('[DeveloperDashboard] No userId available for fetching applications');
+        }
+        
+        await fetchDevelopers();
+        
+        return result;
+      } else {
+        console.error('[DeveloperDashboard] Error in fetch result:', result.error);
+        setDataSource('error');
+        toast.error(`Error loading tickets: ${result.error}`);
+        return result;
       }
-      
-      // Fetch developers for matching
-      await fetchDevelopers();
-      
-      return result;
-    } else {
+    } catch (error) {
+      console.error('[DeveloperDashboard] Exception in fetchTickets:', error);
       setDataSource('error');
-      toast.error(`Error loading tickets: ${result.error}`);
-      return result;
+      toast.error('Failed to load tickets. Please try again.');
+      return { success: false, data: [], source: 'error', error: String(error) };
     }
   }, [isAuthenticated, userId, baseFetchTickets, fetchMyApplications, fetchDevelopers]);
   
-  // Run on initial load
   useEffect(() => {
-    fetchTickets();
+    console.log('[DeveloperDashboard] Initial load effect triggered');
+    fetchTickets().catch(error => {
+      console.error('[DeveloperDashboard] Error in initial load:', error);
+      toast.error('Failed to initialize dashboard');
+    });
   }, [fetchTickets]);
   
-  // Apply filters to tickets
   const filteredTickets = applyFilters(tickets);
   
-  // Get recommended tickets for the current user
   const recommendedTickets = recommendTickets(tickets, userId);
   
-  // Handle claiming a ticket
   const handleClaimTicket = async (ticketId: string) => {
     if (!isAuthenticated) {
       toast.error('You must be logged in to claim tickets');
@@ -151,24 +158,20 @@ export const useDeveloperDashboard = () => {
       return;
     }
     
-    // Check if already applied
     const hasApplied = checkIfApplied(ticketId);
     if (hasApplied) {
       toast.info('You have already applied to this ticket');
       return;
     }
     
-    // Navigate to ticket details page
     window.location.href = `/get-help/request/${ticketId}`;
   };
   
-  // Force refresh data
   const handleForceRefresh = async () => {
     await fetchTickets();
     toast.success('Data refreshed');
   };
   
-  // Debug functions
   const debugAuthStatus = () => {
     const authState = JSON.parse(localStorage.getItem('authState') || '{}');
     const sessionData = JSON.parse(sessionStorage.getItem('sessionData') || '{}');
@@ -182,7 +185,6 @@ export const useDeveloperDashboard = () => {
       console.log('Current user type:', userType);
     }
     
-    // Check if user ID looks valid
     if (userId) {
       if (isLocalId(userId)) {
         toast.info('You are using a local demo user ID');
@@ -192,7 +194,6 @@ export const useDeveloperDashboard = () => {
     }
   };
   
-  // Test database access directly
   const runDatabaseTest = async () => {
     toast.info('Testing database access...');
     const result = await testDatabaseAccess();
@@ -225,7 +226,6 @@ export const useDeveloperDashboard = () => {
     handleClaimTicket,
     handleForceRefresh,
     fetchTickets,
-    // Debug functions
     debugAuthStatus,
     runDatabaseTest
   };
