@@ -1,151 +1,82 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/auth';
-import { toast } from 'sonner';
-import { Button } from './ui/button';
+
+import React from 'react';
+import { Shield, Clock, Zap } from 'lucide-react';
 import SearchBar from './SearchBar';
-import { Shield, Clock, Zap, ArrowRight } from 'lucide-react';
 
 const Hero: React.FC = () => {
-  const navigate = useNavigate();
-  const { isAuthenticated, userType } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleGetHelp = () => {
-    try {
-      setIsLoading(true);
-      
-      if (isAuthenticated && userType === 'client') {
-        navigate('/client-dashboard');
-      } else if (isAuthenticated && userType === 'developer') {
-        navigate('/developer-dashboard');
-      } else {
-        navigate('/register', { state: { userType: 'client' } });
-      }
-    } catch (error) {
-      console.error('Navigation error in Hero:', error);
-      toast.error('Navigation failed. Please try clicking again.');
-    } finally {
-      setTimeout(() => setIsLoading(false), 300);
-    }
-  };
-  
-  const handleBrowseRequests = () => {
-    navigate('/developer-dashboard');
-  };
-
   return (
-    <section className="relative py-16 md:py-24 overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_50%,rgba(0,180,216,0.08),transparent_70%)]"></div>
+    <section className="relative pt-20 pb-16 md:pt-24 md:pb-20 overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_50%,rgba(0,180,216,0.15),transparent_70%)]"></div>
       
-      <div className="hidden md:block absolute inset-0 overflow-hidden -z-5">
-        <div className="absolute left-[5%] top-1/4 w-24 h-24 rounded-xl overflow-hidden shadow-md opacity-90 transform rotate-3">
+      {/* Developer profile images in background */}
+      <div className="absolute inset-0 overflow-hidden -z-5">
+        <div className="absolute top-[10%] left-[10%] w-24 h-24 rounded-full overflow-hidden border-2 border-white/20 shadow-lg opacity-90">
           <img 
             src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=300&auto=format&fit=crop" 
-            alt="Developer profile" 
+            alt="Developer" 
             className="w-full h-full object-cover"
-            loading="lazy"
           />
         </div>
-        <div className="absolute right-[5%] top-1/3 w-24 h-24 rounded-xl overflow-hidden shadow-md opacity-90 transform -rotate-3">
+        <div className="absolute top-[15%] right-[15%] w-20 h-20 rounded-full overflow-hidden border-2 border-white/20 shadow-lg opacity-80">
           <img 
             src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=300&auto=format&fit=crop" 
-            alt="Developer profile" 
+            alt="Developer" 
             className="w-full h-full object-cover"
-            loading="lazy"
           />
         </div>
-        <div className="absolute left-[8%] bottom-1/4 w-24 h-24 rounded-xl overflow-hidden shadow-md opacity-90 transform -rotate-3">
+        <div className="absolute bottom-[20%] left-[20%] w-24 h-24 rounded-full overflow-hidden border-2 border-white/20 shadow-lg opacity-80">
           <img 
             src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=300&auto=format&fit=crop" 
-            alt="Developer profile" 
+            alt="Developer" 
             className="w-full h-full object-cover"
-            loading="lazy"
           />
         </div>
-        <div className="absolute right-[8%] bottom-1/3 w-24 h-24 rounded-xl overflow-hidden shadow-md opacity-90 transform rotate-3">
+        <div className="absolute bottom-[15%] right-[12%] w-28 h-28 rounded-full overflow-hidden border-2 border-white/20 shadow-lg opacity-90">
           <img 
             src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop" 
-            alt="Developer profile" 
+            alt="Developer" 
             className="w-full h-full object-cover"
-            loading="lazy"
           />
         </div>
       </div>
       
       <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
-            On-Demand Dev Support. <span className="text-[#00B4D8]">Fast, Reliable, No Hassle.</span>
+        {/* Centered content */}
+        <div className="max-w-4xl mx-auto text-center mb-12">
+          <div className="mb-4 inline-block">
+            <span className="inline-flex items-center rounded-full bg-[#00B4D8]/10 px-3 py-1 text-sm font-medium text-[#00B4D8]">
+              Developer Support Platform
+            </span>
+          </div>
+          <h1 className="heading-1 mb-6">
+            Scale your professional <span className="text-[#00B4D8]">workforce</span> with freelancers
           </h1>
-          
-          <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Clients get instant solutions. Developers get meaningful work.
+          <p className="body-text mb-10 max-w-2xl mx-auto">
+            Connect with specialized developers in minutes for urgent debugging, code reviews, or quick consultations. Get the help you need without the hassle of hiring.
           </p>
+        </div>
+        
+        {/* Centered search bar */}
+        <div className="max-w-2xl mx-auto mb-16">
+          <SearchBar 
+            className="shadow-lg" 
+            placeholder="Search for any service..." 
+          />
           
-          <div className="max-w-2xl mx-auto mb-10">
-            <SearchBar 
-              className="shadow-md" 
-              placeholder="Search for any development service..."
-            />
-          </div>
-          
-          <div className="flex flex-col sm:flex-row justify-center gap-5 mb-12">
-            <button
-              onClick={handleGetHelp}
-              disabled={isLoading}
-              className={`px-8 py-4 bg-[#1E3A8A] text-white rounded-full text-lg font-medium hover:bg-[#1E3A8A]/90 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed flex-1 sm:flex-initial ${isLoading ? 'animate-pulse' : ''}`}
-            >
-              {isLoading ? (
-                <span className="flex items-center">
-                  Connecting
-                  <span className="ml-2 flex space-x-1">
-                    <span className="h-2 w-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                    <span className="h-2 w-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                    <span className="h-2 w-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                  </span>
-                </span>
-              ) : (
-                isAuthenticated && userType === 'client' ? 'View Your Dashboard' : 'Get Developer Help Now'
-              )}
-            </button>
-            
-            <button
-              onClick={handleBrowseRequests}
-              className="px-8 py-4 bg-white border-2 border-[#1E3A8A] text-[#1E3A8A] rounded-full text-lg font-medium hover:bg-gray-50 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 flex-1 sm:flex-initial flex items-center justify-center gap-2"
-            >
-              Browse Help Requests
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-8 mt-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="h-5 w-5 text-[#FF8800]" />
-              <span>Match in 5 minutes</span>
+          {/* Features below search */}
+          <div className="flex flex-wrap justify-center gap-4 mt-4">
+            <div className="flex items-center space-x-2 text-sm">
+              <Clock className="h-4 w-4 text-[#FF8800]" />
+              <span>Match with experts in 5 minutes</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Shield className="h-5 w-5 text-[#FF8800]" />
+            <div className="flex items-center space-x-2 text-sm">
+              <Shield className="h-4 w-4 text-[#FF8800]" />
               <span>100% vetted professionals</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Zap className="h-5 w-5 text-[#FF8800]" />
-              <span>Instant solutions</span>
-            </div>
-          </div>
-          
-          <div className="mt-16">
-            <p className="text-sm text-muted-foreground uppercase tracking-wider mb-4">Trusted by</p>
-            <div className="flex justify-center items-center gap-8 opacity-70">
-              <div className="h-8">
-                <img src="https://miro.medium.com/v2/resize:fit:8000/1*UzPNplj4B-x2BLnc-Grjmw.png" alt="Google" className="h-full object-contain" />
-              </div>
-              <div className="h-8">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/IBM_logo.svg/2560px-IBM_logo.svg.png" alt="IBM" className="h-full object-contain" />
-              </div>
-              <div className="h-8">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/2048px-Microsoft_logo.svg.png" alt="Microsoft" className="h-full object-contain" />
-              </div>
+            <div className="flex items-center space-x-2 text-sm">
+              <Zap className="h-4 w-4 text-[#FF8800]" />
+              <span>Instant technical solutions</span>
             </div>
           </div>
         </div>

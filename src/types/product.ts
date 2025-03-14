@@ -1,3 +1,4 @@
+
 export interface Developer {
   id: string;
   name: string;
@@ -23,7 +24,6 @@ export interface Developer {
   preferredWorkingHours?: string;
   communicationPreferences?: string[];  // ["chat", "voice", "video"]
   profileCompleted?: boolean;
-  username?: string;    // Adding username property to fix the error
 }
 
 export interface Client {
@@ -79,14 +79,14 @@ export interface Category {
 export type Product = Developer;
 
 // Auth-related interfaces
-export type AuthState = {
+export interface AuthState {
   isAuthenticated: boolean;
   userType: 'developer' | 'client' | null;
   userId: string | null;
-};
+}
 
-export type AuthContextType = AuthState & {
+export interface AuthContextType extends AuthState {
   login: (email: string, password: string, userType: 'developer' | 'client') => Promise<boolean>;
-  register: (userData: any, userType: 'developer' | 'client') => Promise<boolean>;
-  logout: () => Promise<void>; // Updated to return Promise<void>
-};
+  register: (userData: Partial<Developer | Client>, userType: 'developer' | 'client') => Promise<boolean>;
+  logout: () => void;
+}

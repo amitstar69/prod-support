@@ -27,14 +27,20 @@ const SearchBar: React.FC<SearchBarProps> = ({
   return (
     <form onSubmit={handleSearch} className={`relative ${className}`}>
       <div className="relative flex items-center">
-        <Search className="absolute left-3 h-4 w-4 text-muted-foreground pointer-events-none" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
-          className="w-full pl-10 pr-4 py-2 h-9 rounded-md border border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/10 bg-background transition-colors text-sm"
+          className="w-full pl-5 pr-16 py-4 rounded-xl border border-border/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 bg-white/95 backdrop-blur-sm shadow-sm transition-all text-base"
         />
+        <button 
+          type="submit" 
+          className="absolute right-2 p-2 rounded-lg bg-[#1E3A8A] text-white hover:bg-[#1E3A8A]/90 transition-colors"
+          aria-label="Search"
+        >
+          <Search className="h-5 w-5" />
+        </button>
       </div>
     </form>
   );
