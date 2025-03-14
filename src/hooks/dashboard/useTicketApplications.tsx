@@ -8,7 +8,7 @@ export interface UseTicketApplicationsResult {
   recommendedTickets: HelpRequest[];
   myApplications: HelpRequest[];
   handleClaimTicket: (ticketId: string) => void;
-  fetchMyApplications: () => Promise<void>;
+  fetchMyApplications: (userId: string | null) => Promise<void>;
 }
 
 export const useTicketApplications = (
@@ -76,7 +76,9 @@ export const useTicketApplications = (
         refreshTickets();
         
         // Also refresh my applications
-        fetchMyApplications();
+        if (userId) {
+          await fetchMyApplications(userId);
+        }
       } else {
         toast.error(`Failed to submit application: ${result.error}`);
       }
@@ -88,8 +90,8 @@ export const useTicketApplications = (
   };
 
   // Function to fetch developer's submitted applications
-  const fetchMyApplications = async () => {
-    if (!isAuthenticated || !userId) {
+  const fetchMyApplications = async (currentUserId: string | null) => {
+    if (!isAuthenticated || !currentUserId) {
       setMyApplications([]);
       return;
     }
@@ -114,7 +116,7 @@ export const useTicketApplications = (
   // Fetch my applications when tickets change
   useEffect(() => {
     if (isAuthenticated && userId) {
-      fetchMyApplications();
+      fetchMyApplications(userId);
     }
   }, [tickets, isAuthenticated, userId]);
 
