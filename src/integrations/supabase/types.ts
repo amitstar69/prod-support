@@ -136,6 +136,183 @@ export type Database = {
           },
         ]
       }
+      help_request_matches: {
+        Row: {
+          created_at: string
+          developer_id: string
+          id: string
+          match_score: number | null
+          proposed_duration: number | null
+          proposed_message: string | null
+          proposed_rate: number | null
+          request_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          developer_id: string
+          id?: string
+          match_score?: number | null
+          proposed_duration?: number | null
+          proposed_message?: string | null
+          proposed_rate?: number | null
+          request_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          developer_id?: string
+          id?: string
+          match_score?: number | null
+          proposed_duration?: number | null
+          proposed_message?: string | null
+          proposed_rate?: number | null
+          request_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_request_matches_developer_id_fkey"
+            columns: ["developer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "help_request_matches_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "help_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_requests: {
+        Row: {
+          budget_range: string
+          client_id: string
+          code_snippet: string | null
+          communication_preference: string[]
+          created_at: string
+          description: string
+          estimated_duration: number
+          id: string
+          status: string
+          technical_area: string[]
+          title: string
+          updated_at: string
+          urgency: string
+        }
+        Insert: {
+          budget_range: string
+          client_id: string
+          code_snippet?: string | null
+          communication_preference: string[]
+          created_at?: string
+          description: string
+          estimated_duration: number
+          id?: string
+          status?: string
+          technical_area: string[]
+          title: string
+          updated_at?: string
+          urgency: string
+        }
+        Update: {
+          budget_range?: string
+          client_id?: string
+          code_snippet?: string | null
+          communication_preference?: string[]
+          created_at?: string
+          description?: string
+          estimated_duration?: number
+          id?: string
+          status?: string
+          technical_area?: string[]
+          title?: string
+          updated_at?: string
+          urgency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_sessions: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          client_id: string
+          created_at: string
+          developer_id: string
+          final_cost: number | null
+          id: string
+          request_id: string
+          scheduled_end: string | null
+          scheduled_start: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          client_id: string
+          created_at?: string
+          developer_id: string
+          final_cost?: number | null
+          id?: string
+          request_id: string
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          client_id?: string
+          created_at?: string
+          developer_id?: string
+          final_cost?: number | null
+          id?: string
+          request_id?: string
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "help_sessions_developer_id_fkey"
+            columns: ["developer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "help_sessions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "help_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           description: string | null
@@ -186,7 +363,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_auth_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_table_info: {
+        Args: {
+          table_name: string
+        }
+        Returns: Json
+      }
+      is_owner_of_help_request: {
+        Args: {
+          record_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,4 +1,3 @@
-
 export interface Developer {
   id: string;
   name: string;
@@ -79,14 +78,14 @@ export interface Category {
 export type Product = Developer;
 
 // Auth-related interfaces
-export interface AuthState {
+export type AuthState = {
   isAuthenticated: boolean;
   userType: 'developer' | 'client' | null;
   userId: string | null;
-}
+};
 
-export interface AuthContextType extends AuthState {
+export type AuthContextType = AuthState & {
   login: (email: string, password: string, userType: 'developer' | 'client') => Promise<boolean>;
-  register: (userData: Partial<Developer | Client>, userType: 'developer' | 'client') => Promise<boolean>;
-  logout: () => void;
-}
+  register: (userData: any, userType: 'developer' | 'client') => Promise<boolean>;
+  logout: () => Promise<void>; // Updated to return Promise<void>
+};

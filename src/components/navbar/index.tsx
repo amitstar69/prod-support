@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { DesktopNav } from './DesktopNav';
 import { MobileNav } from './MobileNav';
@@ -17,11 +18,11 @@ const Navbar: React.FC = () => {
     <header className="bg-background border-b border-border/40 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo - kept in both mobile and desktop views */}
+          {/* Logo */}
           <div className="flex-shrink-0">
-            <a href="/" className="text-xl font-bold">
-              DevConnect
-            </a>
+            <Link to="/" className="text-xl font-bold">
+              ProdSupport
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
@@ -33,11 +34,12 @@ const Navbar: React.FC = () => {
               <button
                 className="inline-flex items-center justify-center p-2 rounded-md hover:bg-secondary transition-colors"
                 onClick={toggleMenu}
+                aria-label={isOpen ? "Close menu" : "Open menu"}
               >
                 {isOpen ? (
-                  <X className="h-6 w-6" />
+                  <X className="h-5 w-5" />
                 ) : (
-                  <Menu className="h-6 w-6" />
+                  <Menu className="h-5 w-5" />
                 )}
               </button>
             </div>

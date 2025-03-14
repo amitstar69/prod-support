@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { User, CreditCard, LogOut, Settings, Video, MessageSquare, Save } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth, getCurrentUserData, updateUserData } from '../contexts/AuthContext';
+import { useAuth, getCurrentUserData, updateUserData } from '../contexts/auth';
 import { Developer } from '../types/product';
 import { useNavigate } from 'react-router-dom';
 
@@ -56,7 +55,6 @@ const Profile: React.FC = () => {
       const success = await updateUserData(updatedData);
       
       if (success) {
-        // Refresh developer data
         const userData = await getCurrentUserData();
         if (userData) {
           setDeveloper(userData as Developer);
@@ -73,9 +71,14 @@ const Profile: React.FC = () => {
     }
   };
   
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Failed to log out properly. Please try again.');
+    }
   };
   
   if (isLoading) {
@@ -99,7 +102,6 @@ const Profile: React.FC = () => {
     );
   }
   
-  // Split the name into first and last name
   const nameParts = developer.name ? developer.name.split(' ') : ['', ''];
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
@@ -115,7 +117,6 @@ const Profile: React.FC = () => {
       
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-10">
-          {/* Sidebar */}
           <aside>
             <div className="flex flex-col gap-1">
               <button className="flex items-center gap-3 px-4 py-2 rounded-md bg-primary/10 text-primary font-medium">
@@ -153,7 +154,6 @@ const Profile: React.FC = () => {
             </div>
           </aside>
           
-          {/* Main Content */}
           <div>
             <form onSubmit={handleSaveChanges}>
               <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden">
@@ -161,7 +161,6 @@ const Profile: React.FC = () => {
                   <h2 className="text-xl font-semibold mb-6">Developer Information</h2>
                   
                   <div className="flex flex-col md:flex-row gap-8">
-                    {/* Profile Image */}
                     <div className="flex flex-col items-center md:items-start gap-4">
                       <div className="relative">
                         <div className="h-20 w-20 md:h-24 md:w-24 rounded-full bg-muted flex items-center justify-center">
@@ -178,7 +177,6 @@ const Profile: React.FC = () => {
                       </button>
                     </div>
                     
-                    {/* Form */}
                     <div className="flex-1 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>

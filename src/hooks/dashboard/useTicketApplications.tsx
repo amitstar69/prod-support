@@ -1,0 +1,127 @@
+
+import { useState, useEffect } from 'react';
+import { HelpRequest } from '../../types/helpRequest';
+import { toast } from 'sonner';
+import { submitDeveloperApplication } from '../../integrations/supabase/helpRequests';
+
+export interface UseTicketApplicationsResult {
+  recommendedTickets: HelpRequest[];
+  myApplications: HelpRequest[];
+  handleClaimTicket: (ticketId: string) => void;
+  fetchMyApplications: () => Promise<void>;
+}
+
+export const useTicketApplications = (
+  tickets: HelpRequest[],
+  isAuthenticated: boolean,
+  userId: string | null,
+  userType: string | null,
+  refreshTickets: () => void
+): UseTicketApplicationsResult => {
+  const [recommendedTickets, setRecommendedTickets] = useState<HelpRequest[]>([]);
+  const [myApplications, setMyApplications] = useState<HelpRequest[]>([]);
+
+  // Initial processing of tickets
+  useEffect(() => {
+    if (!tickets || !isAuthenticated || !userId) {
+      setRecommendedTickets([]);
+      return;
+    }
+
+    console.log('[useTicketApplications] Processing tickets for recommendations:', tickets.length);
+    
+    // For developers, show all available tickets as recommended
+    // Only show pending or matching tickets as recommended
+    const recommended = tickets.filter(ticket => {
+      const isAvailable = ticket.status === 'pending' || ticket.status === 'matching';
+      return isAvailable;
+    });
+    
+    console.log('[useTicketApplications] Recommended tickets after filtering:', recommended.length);
+    setRecommendedTickets(recommended);
+  }, [tickets, isAuthenticated, userId]);
+
+  // Function to handle claiming a ticket
+  const handleClaimTicket = async (ticketId: string) => {
+    if (!isAuthenticated || !userId) {
+      toast.error('You must be logged in to claim tickets');
+      return;
+    }
+
+    if (userType !== 'developer') {
+      toast.error('Only developers can claim tickets');
+      return;
+    }
+
+    try {
+      toast.loading('Processing your application...');
+      
+      // Submit application with dummy data for now
+      const result = await submitDeveloperApplication(
+        ticketId, 
+        userId,
+        {
+          proposed_message: "I'd like to help with your request. I have experience in this area.",
+          proposed_duration: 60, // 1 hour
+          proposed_rate: 75 // $75/hour
+        }
+      );
+      
+      toast.dismiss();
+      
+      if (result.success) {
+        toast.success('Application submitted successfully!');
+        
+        // Refresh ticket list
+        refreshTickets();
+        
+        // Also refresh my applications
+        fetchMyApplications();
+      } else {
+        toast.error(`Failed to submit application: ${result.error}`);
+      }
+    } catch (error) {
+      toast.dismiss();
+      toast.error('An error occurred while processing your application');
+      console.error('Error claiming ticket:', error);
+    }
+  };
+
+  // Function to fetch developer's submitted applications
+  const fetchMyApplications = async () => {
+    if (!isAuthenticated || !userId) {
+      setMyApplications([]);
+      return;
+    }
+
+    try {
+      // In a real implementation, we would fetch applications from the database
+      // For now, use the tickets data and filter based on some criteria
+      
+      // This is a placeholder. In a real app, you would fetch actual applications
+      // from the database that match the current user ID
+      const applications = tickets.filter(ticket => 
+        // Example filtering logic - in real app this would check a "developer_id" field
+        ticket.status === 'matching' || ticket.status === 'in-progress'
+      );
+      
+      setMyApplications(applications);
+    } catch (error) {
+      console.error('Error fetching my applications:', error);
+    }
+  };
+
+  // Fetch my applications when tickets change
+  useEffect(() => {
+    if (isAuthenticated && userId) {
+      fetchMyApplications();
+    }
+  }, [tickets, isAuthenticated, userId]);
+
+  return {
+    recommendedTickets,
+    myApplications,
+    handleClaimTicket,
+    fetchMyApplications
+  };
+};
