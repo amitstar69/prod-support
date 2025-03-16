@@ -15,6 +15,7 @@ export interface HelpRequest {
   complexity_level?: string;
   preferred_developer_experience?: string;
   attachments?: any;
+  ticket_number?: number;
 }
 
 export interface HelpRequestMatch {
@@ -86,12 +87,15 @@ export const budgetRangeOptions = [
   '$500+'
 ];
 
-// Updated to match the database constraint for help_requests_status_check
+// Updated to match the new database constraint for help_requests_status_check
 export const requestStatusOptions = [
+  { value: 'open', label: 'Open' },
+  { value: 'claimed', label: 'Claimed' },
+  { value: 'in-progress', label: 'In Progress' },
+  { value: 'resolved', label: 'Resolved' },
   { value: 'pending', label: 'Pending' },
   { value: 'matching', label: 'Matching' },
   { value: 'scheduled', label: 'Scheduled' },
-  { value: 'in-progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' }
 ];

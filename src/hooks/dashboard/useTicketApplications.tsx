@@ -31,9 +31,9 @@ export const useTicketApplications = (
     console.log('[useTicketApplications] Processing tickets for recommendations:', tickets.length);
     
     // For developers, show all available tickets as recommended
-    // Only show pending or matching tickets as recommended
+    // Only show open or claimed tickets as recommended
     const recommended = tickets.filter(ticket => {
-      const isAvailable = ticket.status === 'pending' || ticket.status === 'matching';
+      const isAvailable = ticket.status === 'open' || ticket.status === 'claimed';
       return isAvailable;
     });
     
@@ -107,7 +107,7 @@ export const useTicketApplications = (
       // from the database that match the current user ID
       const applications = tickets.filter(ticket => 
         // Example filtering logic - in real app this would check a "developer_id" field
-        ticket.status === 'matching' || ticket.status === 'in-progress'
+        ticket.status === 'claimed' || ticket.status === 'in-progress'
       );
       
       setMyApplications(applications);

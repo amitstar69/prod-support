@@ -134,13 +134,28 @@ const TicketList: React.FC<TicketListProps> = ({
     );
   };
 
+  const getStatusClass = (status?: string) => {
+    switch(status) {
+      case 'open': return 'bg-green-50 text-green-800 border-green-200';
+      case 'claimed': return 'bg-blue-50 text-blue-800 border-blue-200';
+      case 'in-progress': return 'bg-yellow-50 text-yellow-800 border-yellow-200';
+      case 'resolved': return 'bg-purple-50 text-purple-800 border-purple-200';
+      case 'completed': return 'bg-slate-50 text-slate-800 border-slate-200';
+      case 'cancelled': return 'bg-red-50 text-red-800 border-red-200';
+      case 'matching': return 'bg-blue-50 text-blue-800 border-blue-200';
+      case 'pending': return 'bg-yellow-50 text-yellow-800 border-yellow-200';
+      case 'scheduled': return 'bg-purple-50 text-purple-800 border-purple-200';
+      default: return 'bg-gray-50 text-gray-800 border-gray-200';
+    }
+  };
+
   return (
     <>
       <div className="grid grid-cols-1 gap-4">
         {tickets.map((ticket) => {
-          const ticketKey = ticket.id ? 
-            `HELP-${ticket.id.substring(0, 3)}` : 
-            `HELP-${Math.floor(Math.random() * 900) + 100}`;
+          const ticketKey = ticket.ticket_number ? 
+            `TICKET-${ticket.ticket_number}` : 
+            `TICKET-${Math.floor(Math.random() * 900) + 100}`;
             
           const isExpanded = expandedTicket === ticket.id;
           
@@ -183,15 +198,9 @@ const TicketList: React.FC<TicketListProps> = ({
                   </div>
                   <Badge 
                     variant="outline"
-                    className={`
-                      ${ticket.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
-                        ticket.status === 'completed' ? 'bg-slate-50 text-slate-800 border-slate-200' :
-                        ticket.status === 'cancelled' ? 'bg-red-50 text-red-800 border-red-200' :
-                        ticket.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
-                        'bg-yellow-50 text-yellow-800 border-yellow-200'}
-                    `}
+                    className={getStatusClass(ticket.status)}
                   >
-                    {ticket.status || 'pending'}
+                    {ticket.status || 'open'}
                   </Badge>
                 </div>
                 
@@ -243,7 +252,7 @@ const TicketList: React.FC<TicketListProps> = ({
                             <Clock className="h-4 w-4" />
                             <span>Created: {formatDate(ticket.created_at)}</span>
                           </li>
-                          <li className="flex items-center gap-2">
+                          <li className="flex items-center gap-1">
                             <Zap className="h-4 w-4" />
                             <span>Duration: ~{ticket.estimated_duration} minutes</span>
                           </li>
@@ -275,7 +284,7 @@ const TicketList: React.FC<TicketListProps> = ({
                         <ExternalLink className="h-3.5 w-3.5 ml-1" />
                       </Button>
                       
-                      {(ticket.status === 'pending') ? (
+                      {(ticket.status === 'open') ? (
                         <Button 
                           size="sm"
                           className="h-8 bg-primary text-white hover:bg-primary/90"
@@ -287,7 +296,7 @@ const TicketList: React.FC<TicketListProps> = ({
                           Apply
                           <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
                         </Button>
-                      ) : ticket.status === 'matching' ? (
+                      ) : ticket.status === 'claimed' ? (
                         <Button 
                           size="sm"
                           className="h-8 bg-primary text-white hover:bg-primary/90"
@@ -296,7 +305,7 @@ const TicketList: React.FC<TicketListProps> = ({
                             ticket.id && handleClaimClick(ticket.id);
                           }}
                         >
-                          Claim Ticket
+                          Start Work
                           <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
                         </Button>
                       ) : (
@@ -307,6 +316,7 @@ const TicketList: React.FC<TicketListProps> = ({
                           className="h-8"
                         >
                           {ticket.status === 'in-progress' ? 'In Progress' : 
+                          ticket.status === 'resolved' ? 'Resolved' :
                           ticket.status === 'completed' ? 'Completed' : 'Unavailable'}
                         </Button>
                       )}

@@ -24,11 +24,21 @@ export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'c
     // For local storage
     if (useLocalStorage) {
       const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      
+      // Generate a ticket number for local storage (simulating the DB sequence)
+      const existingNumbers = localHelpRequests.map((req: HelpRequest) => 
+        req.ticket_number || 0
+      );
+      const maxNumber = Math.max(0, ...existingNumbers);
+      const newTicketNumber = maxNumber >= 1000 ? maxNumber + 1 : 1000;
+      
       const newRequest = {
         ...helpRequest,
         id: `help-${Date.now()}`,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        status: 'open',
+        ticket_number: newTicketNumber
       };
       
       localHelpRequests.push(newRequest);
@@ -41,7 +51,10 @@ export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'c
     // For Supabase
     const { data, error } = await supabase
       .from('help_requests')
-      .insert(helpRequest)
+      .insert({
+        ...helpRequest,
+        status: 'open' // Set default status to 'open'
+      })
       .select();
       
     if (error) {
@@ -55,6 +68,184 @@ export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'c
   } catch (error) {
     console.error('Exception creating help request:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+};
+
+// Function to submit a developer application for a help request
+export const submitDeveloperApplication = async (
+  requestId: string,
+  developerId: string,
+  applicationData: {
+    proposed_message?: string;
+    proposed_duration?: number;
+    proposed_rate?: number;
+  }
+) => {
+  try {
+    console.log('[submitDeveloperApplication] Submitting application with data:', { 
+      requestId, 
+      developerId, 
+      applicationData 
+    });
+    
+    // Ensure the rate is properly formatted
+    let formattedRate = applicationData.proposed_rate;
+    if (formattedRate !== undefined) {
+      // Make sure the rate is a valid numeric with two decimal places and within database limits
+      formattedRate = Math.min(Math.max(0, parseFloat(formattedRate.toFixed(2))), 999.99);
+    }
+    
+    // Check for local storage request
+    if (isLocalId(requestId)) {
+      const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
+      
+      // Check if an application already exists
+      const existingIndex = localApplications.findIndex(
+        (app: any) => app.developer_id === developerId && app.request_id === requestId
+      );
+      
+      if (existingIndex >= 0) {
+        // Update existing application
+        localApplications[existingIndex] = {
+          ...localApplications[existingIndex],
+          proposed_message: applicationData.proposed_message,
+          proposed_duration: applicationData.proposed_duration,
+          proposed_rate: formattedRate,
+          match_score: 85,
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        };
+        
+        localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
+        
+        // Update the ticket status to 'claimed' if it was 'open'
+        const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+        const ticketIndex = localHelpRequests.findIndex((req: HelpRequest) => req.id === requestId);
+        
+        if (ticketIndex >= 0 && localHelpRequests[ticketIndex].status === 'open') {
+          localHelpRequests[ticketIndex].status = 'claimed';
+          localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+        }
+        
+        return { success: true, isUpdate: true };
+      }
+      
+      // Create new application
+      const newApplication = {
+        id: `app-${Date.now()}`,
+        request_id: requestId,
+        developer_id: developerId,
+        status: 'pending',
+        match_score: 85,
+        proposed_message: applicationData.proposed_message,
+        proposed_duration: applicationData.proposed_duration,
+        proposed_rate: formattedRate,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      localApplications.push(newApplication);
+      localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
+      
+      // Update the ticket status to 'claimed' if it was 'open'
+      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+      const ticketIndex = localHelpRequests.findIndex((req: HelpRequest) => req.id === requestId);
+      
+      if (ticketIndex >= 0 && localHelpRequests[ticketIndex].status === 'open') {
+        localHelpRequests[ticketIndex].status = 'claimed';
+        localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+      }
+      
+      return { success: true, isUpdate: false };
+    }
+    
+    // For Supabase help requests
+    if (isValidUUID(requestId)) {
+      // Check if there's an existing application
+      const { data: existing, error: existingError } = await supabase
+        .from('help_request_matches')
+        .select('id, status')
+        .eq('request_id', requestId)
+        .eq('developer_id', developerId)
+        .maybeSingle();
+      
+      console.log('[submitDeveloperApplication] Existing application check:', { existing, existingError });
+      
+      if (existingError) {
+        console.error('Error checking for existing application:', existingError);
+        throw new Error('Failed to check for existing application');
+      }
+      
+      // If application exists, update it
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from('help_request_matches')
+          .update({
+            proposed_message: applicationData.proposed_message,
+            proposed_duration: applicationData.proposed_duration,
+            proposed_rate: formattedRate,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+        
+        if (updateError) {
+          console.error('Error updating application:', updateError);
+          throw new Error('Failed to update application');
+        }
+        
+        // If application was accepted, update the ticket status to 'claimed'
+        if (existing.status === 'accepted') {
+          await supabase
+            .from('help_requests')
+            .update({ status: 'claimed' })
+            .eq('id', requestId)
+            .eq('status', 'open');
+        }
+        
+        return { success: true, isUpdate: true };
+      }
+      
+      // Create new application
+      const { error: insertError } = await supabase
+        .from('help_request_matches')
+        .insert({
+          request_id: requestId,
+          developer_id: developerId,
+          status: 'pending',
+          match_score: 85,
+          proposed_message: applicationData.proposed_message,
+          proposed_duration: applicationData.proposed_duration,
+          proposed_rate: formattedRate
+        });
+      
+      if (insertError) {
+        console.error('Error creating application:', insertError);
+        throw new Error('Failed to create application: ' + insertError.message);
+      }
+      
+      // Update the ticket status to 'claimed'
+      const { error: updateTicketError } = await supabase
+        .from('help_requests')
+        .update({ status: 'claimed' })
+        .eq('id', requestId)
+        .eq('status', 'open');
+      
+      if (updateTicketError) {
+        console.error('Error updating ticket status:', updateTicketError);
+        // Don't throw here, the application was created successfully
+      }
+      
+      return { success: true, isUpdate: false };
+    }
+    
+    return { success: false, error: 'Invalid request ID format' };
+    
+  } catch (error) {
+    console.error('Exception submitting application:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
   }
 };
 
@@ -306,97 +497,6 @@ export const updateHelpRequest = async (requestId: string, updates: Partial<Help
   } catch (error) {
     console.error('Exception updating help request:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-  }
-};
-
-/**
- * Submit a developer application for a help request
- * @param requestId The ID of the help request
- * @param developerId The ID of the developer
- * @param application The application details
- * @returns Success status and data or error message
- */
-export const submitDeveloperApplication = async (
-  requestId: string,
-  developerId: string,
-  application: {
-    proposed_message: string;
-    proposed_duration: number;
-    proposed_rate: number;
-  }
-) => {
-  try {
-    console.log('submitDeveloperApplication', { requestId, developerId, application });
-    
-    // Check if an application already exists
-    const { data: existingMatch, error: checkError } = await supabase
-      .from('help_request_matches')
-      .select('id, status')
-      .eq('request_id', requestId)
-      .eq('developer_id', developerId)
-      .maybeSingle();
-    
-    if (checkError) {
-      console.error('Error checking for existing application:', checkError);
-      return { success: false, error: checkError.message };
-    }
-    
-    // Format numeric values to ensure they don't exceed database limits
-    // For numeric(5,2) we need to ensure values are between 0 and 999.99
-    const formattedRate = Math.min(
-      Math.max(0, parseFloat(parseFloat(application.proposed_rate.toString()).toFixed(2))), 
-      999.99
-    );
-    
-    console.log('Formatted rate:', formattedRate);
-    
-    if (existingMatch) {
-      // Update existing application
-      const { data, error } = await supabase
-        .from('help_request_matches')
-        .update({
-          proposed_message: application.proposed_message,
-          proposed_duration: application.proposed_duration,
-          proposed_rate: formattedRate,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existingMatch.id)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error updating application:', error);
-        return { success: false, error: error.message };
-      }
-      
-      return { success: true, data, isUpdate: true };
-    } else {
-      // Create new application
-      const { data, error } = await supabase
-        .from('help_request_matches')
-        .insert({
-          request_id: requestId,
-          developer_id: developerId,
-          status: 'pending',
-          match_score: 85, // Default match score
-          proposed_message: application.proposed_message,
-          proposed_duration: application.proposed_duration,
-          proposed_rate: formattedRate,
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error creating application:', error);
-        return { success: false, error: error.message };
-      }
-      
-      return { success: true, data, isUpdate: false };
-    }
-  } catch (error) {
-    console.error('Exception in submitDeveloperApplication:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-    return { success: false, error: errorMessage };
   }
 };
 

@@ -246,6 +246,7 @@ export type Database = {
           preferred_developer_experience: string | null
           status: string
           technical_area: string[]
+          ticket_number: number
           title: string
           updated_at: string
           urgency: string
@@ -264,6 +265,7 @@ export type Database = {
           preferred_developer_experience?: string | null
           status?: string
           technical_area: string[]
+          ticket_number?: never
           title: string
           updated_at?: string
           urgency: string
@@ -282,6 +284,7 @@ export type Database = {
           preferred_developer_experience?: string | null
           status?: string
           technical_area?: string[]
+          ticket_number?: never
           title?: string
           updated_at?: string
           urgency?: string
@@ -579,6 +582,10 @@ export type Database = {
       get_auth_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_next_ticket_number: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       get_table_info: {
         Args: {
