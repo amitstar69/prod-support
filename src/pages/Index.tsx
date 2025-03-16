@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Hero from '../components/Hero';
+import DeveloperHero from '../components/DeveloperHero';
 import PainPointsSection from '../components/PainPointsSection';
 import HowItWorksSection from '../components/HowItWorksSection';
 import TargetAudienceSection from '../components/TargetAudienceSection';
@@ -128,11 +129,12 @@ const Index: React.FC = () => {
     <Layout>
       {isDeveloper ? (
         <>
+          <DeveloperHero />
           <div className="container mx-auto py-10 px-4">
             <div className="mb-8 text-center">
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">Developer Dashboard</h1>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Available Help Requests</h2>
               <p className="text-lg text-muted-foreground">
-                Find and apply for help requests that match your skills
+                Browse and apply for help requests that match your expertise
               </p>
             </div>
             
@@ -162,7 +164,6 @@ const Index: React.FC = () => {
             </div>
             
             <div className="bg-muted/20 p-6 rounded-lg border border-border/30 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Available Help Requests</h2>
               <TicketListContainer
                 filteredTickets={searchQuery ? searchedTickets : (recommendedTickets.length > 0 ? recommendedTickets : filteredTickets.slice(0, 5))}
                 totalTickets={tickets.length}
