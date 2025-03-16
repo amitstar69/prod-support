@@ -56,6 +56,9 @@ export const useTicketApplications = (
     try {
       toast.loading('Processing your application...');
       
+      // Make sure the rate is properly formatted for the database
+      const formattedRate = Math.min(Math.max(0, parseFloat((75).toFixed(2))), 999.99);
+      
       // Submit application with dummy data for now
       const result = await submitDeveloperApplication(
         ticketId, 
@@ -63,7 +66,7 @@ export const useTicketApplications = (
         {
           proposed_message: "I'd like to help with your request. I have experience in this area.",
           proposed_duration: 60, // 1 hour
-          proposed_rate: 75 // $75/hour
+          proposed_rate: formattedRate // $75/hour properly formatted
         }
       );
       
