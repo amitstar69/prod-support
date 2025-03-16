@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Badge } from '../ui/badge';
@@ -308,7 +307,7 @@ const TicketList: React.FC<TicketListProps> = ({
                           className="h-8 bg-primary text-white hover:bg-primary/90"
                           onClick={(e) => {
                             e.stopPropagation();
-                            ticket.id && handleClaimTicket(ticket.id);
+                            ticket.id && handleClaimClick(ticket.id);
                           }}
                         >
                           Start Work

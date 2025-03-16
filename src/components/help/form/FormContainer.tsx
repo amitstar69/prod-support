@@ -46,7 +46,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
         ? parseInt(formData.estimated_duration, 10) 
         : formData.estimated_duration;
       
-      // Create base request object
+      // Create base request object - omit ticket_number as it's auto-generated
       const helpRequestBase = {
         title: formData.title || 'Untitled Request',
         description: formData.description || 'No description provided',
