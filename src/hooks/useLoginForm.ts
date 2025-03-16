@@ -69,9 +69,10 @@ export const useLoginForm = () => {
       console.log('Login result:', success ? 'Success' : 'Failed');
       
       if (success) {
-        console.log(`Login successful, redirecting to ${userType === 'developer' ? '/profile' : '/client-dashboard'}`);
+        console.log(`Login successful, redirecting to home page`);
         toast.success(`Successfully logged in as ${userType}`);
-        navigate(userType === 'developer' ? '/profile' : '/client-dashboard');
+        // Redirect all users to the home page after login
+        navigate('/');
       } else if (!error) {
         setError('Login failed. Please check your credentials and try again.');
       }
