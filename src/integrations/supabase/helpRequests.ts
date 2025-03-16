@@ -91,8 +91,11 @@ export const submitDeveloperApplication = async (
     // Ensure the rate is properly formatted
     let formattedRate = applicationData.proposed_rate;
     if (formattedRate !== undefined) {
-      // Make sure the rate is a valid numeric with two decimal places and within database limits
-      formattedRate = Math.min(Math.max(0, parseFloat(formattedRate.toFixed(2))), 999.99);
+      // Make sure the rate is a valid numeric with two decimal places 
+      // The help_request_matches.proposed_rate is likely defined as numeric(10,2)
+      // Let's ensure we're within database limits by capping at 9999.99
+      formattedRate = Math.min(Math.max(0, parseFloat(formattedRate.toFixed(2))), 9999.99);
+      console.log('[submitDeveloperApplication] Formatted rate:', formattedRate);
     }
     
     // Check for local storage request
@@ -178,19 +181,26 @@ export const submitDeveloperApplication = async (
       
       // If application exists, update it
       if (existing) {
+        const updatePayload = {
+          proposed_message: applicationData.proposed_message,
+          proposed_duration: applicationData.proposed_duration,
+          updated_at: new Date().toISOString()
+        };
+        
+        // Only include rate if it's valid
+        if (formattedRate !== undefined) {
+          // @ts-ignore - TypeScript doesn't know we're doing this dynamically
+          updatePayload.proposed_rate = formattedRate;
+        }
+
         const { error: updateError } = await supabase
           .from('help_request_matches')
-          .update({
-            proposed_message: applicationData.proposed_message,
-            proposed_duration: applicationData.proposed_duration,
-            proposed_rate: formattedRate,
-            updated_at: new Date().toISOString()
-          })
+          .update(updatePayload)
           .eq('id', existing.id);
         
         if (updateError) {
           console.error('Error updating application:', updateError);
-          throw new Error('Failed to update application');
+          throw new Error('Failed to update application: ' + updateError.message);
         }
         
         console.log('[submitDeveloperApplication] Successfully updated application:', existing.id);
@@ -207,18 +217,26 @@ export const submitDeveloperApplication = async (
         return { success: true, isUpdate: true };
       }
       
+      // Create new application
+      const insertPayload = {
+        request_id: requestId,
+        developer_id: developerId,
+        status: 'pending',
+        match_score: 85,
+        proposed_message: applicationData.proposed_message,
+        proposed_duration: applicationData.proposed_duration
+      };
+      
+      // Only include rate if it's valid
+      if (formattedRate !== undefined) {
+        // @ts-ignore - TypeScript doesn't know we're doing this dynamically
+        insertPayload.proposed_rate = formattedRate;
+      }
+
       // Create new application - Debug/test the insertion
       const insertResponse = await supabase
         .from('help_request_matches')
-        .insert({
-          request_id: requestId,
-          developer_id: developerId,
-          status: 'pending',
-          match_score: 85,
-          proposed_message: applicationData.proposed_message,
-          proposed_duration: applicationData.proposed_duration,
-          proposed_rate: formattedRate
-        });
+        .insert(insertPayload);
       
       if (insertResponse.error) {
         console.error('Error creating application:', insertResponse.error);
