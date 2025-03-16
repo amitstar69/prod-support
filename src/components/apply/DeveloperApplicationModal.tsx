@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
@@ -54,6 +53,9 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
     try {
       setIsSubmitting(true);
       
+      // Ensure the rate is properly formatted to avoid numeric overflow
+      const formattedRate = Math.min(parseFloat(proposedRate.toFixed(2)), 999.99);
+      
       console.log('Submitting application with data:', {
         request_id: ticket.id,
         developer_id: userId,
@@ -61,13 +63,12 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
         match_score: 85,
         proposed_message: message,
         proposed_duration: estimatedTime,
-        proposed_rate: proposedRate
+        proposed_rate: formattedRate
       });
 
       // Check if this is a local storage ticket (starts with "help-")
       if (isLocalId(ticket.id)) {
-        // For local storage tickets, we can't use the database
-        // Instead, we'll store the application in local storage
+        // ... keep existing code (local storage handling)
         const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
         
         // Check if an application already exists
@@ -81,7 +82,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
             ...localApplications[existingIndex],
             proposed_message: message,
             proposed_duration: estimatedTime,
-            proposed_rate: proposedRate,
+            proposed_rate: formattedRate,
             match_score: 85,
             status: 'pending',
             updated_at: new Date().toISOString()
@@ -104,7 +105,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
           match_score: 85,
           proposed_message: message,
           proposed_duration: estimatedTime,
-          proposed_rate: proposedRate,
+          proposed_rate: formattedRate,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -128,14 +129,14 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
         return;
       }
       
-      // For database tickets, use the submit function
+      // For database tickets, use the submit function with formatted values
       const result = await submitDeveloperApplication(
         ticket.id, 
         userId, 
         {
           proposed_message: message,
           proposed_duration: estimatedTime,
-          proposed_rate: proposedRate
+          proposed_rate: formattedRate
         }
       );
 
@@ -156,13 +157,13 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
   };
 
   const formatCurrency = (value: number) => {
-    return `$${value}`;
+    return `$${value.toFixed(2)}`;
   };
 
   const calculateTotalCost = () => {
     const hourlyRate = proposedRate;
     const hours = estimatedTime / 60;
-    return formatCurrency(Math.round(hourlyRate * hours));
+    return formatCurrency(Math.round(hourlyRate * hours * 100) / 100);
   };
 
   return (

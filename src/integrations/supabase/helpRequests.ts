@@ -309,154 +309,89 @@ export const updateHelpRequest = async (requestId: string, updates: Partial<Help
   }
 };
 
-// Function to create or update a developer application for a help request
+/**
+ * Submit a developer application for a help request
+ * @param requestId The ID of the help request
+ * @param developerId The ID of the developer
+ * @param application The application details
+ * @returns Success status and data or error message
+ */
 export const submitDeveloperApplication = async (
-  requestId: string, 
-  developerId: string, 
-  applicationData: {
+  requestId: string,
+  developerId: string,
+  application: {
     proposed_message: string;
     proposed_duration: number;
     proposed_rate: number;
   }
 ) => {
   try {
-    if (!requestId || !developerId) {
-      return { success: false, error: 'Missing required fields' };
-    }
-
-    // Check if this is a local storage ticket (starts with "help-")
-    if (requestId.startsWith('help-') || requestId.startsWith('demo-')) {
-      // For local storage tickets, we can't use the database
-      // Instead, we'll store the application in local storage
-      const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
-      
-      // Check if an application already exists
-      const existingIndex = localApplications.findIndex(
-        (app: any) => app.developer_id === developerId && app.request_id === requestId
-      );
-      
-      if (existingIndex >= 0) {
-        // Update existing application
-        localApplications[existingIndex] = {
-          ...localApplications[existingIndex],
-          proposed_message: applicationData.proposed_message,
-          proposed_duration: applicationData.proposed_duration,
-          proposed_rate: applicationData.proposed_rate,
-          match_score: 85,
-          status: 'pending',
-          updated_at: new Date().toISOString()
-        };
-        
-        localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
-        return { success: true, data: localApplications[existingIndex], isUpdate: true };
-      }
-      
-      // Create new application
-      const newApplication = {
-        id: `app-${Date.now()}`,
-        request_id: requestId,
-        developer_id: developerId,
-        status: 'pending',
-        match_score: 85,
-        proposed_message: applicationData.proposed_message,
-        proposed_duration: applicationData.proposed_duration,
-        proposed_rate: applicationData.proposed_rate,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      localApplications.push(newApplication);
-      localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
-      
-      // Update the ticket status to 'matching' if it was 'pending'
-      const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
-      const ticketIndex = localHelpRequests.findIndex((req: any) => req.id === requestId);
-      
-      if (ticketIndex >= 0 && localHelpRequests[ticketIndex].status === 'pending') {
-        localHelpRequests[ticketIndex].status = 'matching';
-        localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
-      }
-      
-      return { success: true, data: newApplication, isUpdate: false };
-    }
-
-    // For database tickets, proceed with Supabase operations
+    console.log('submitDeveloperApplication', { requestId, developerId, application });
+    
     // Check if an application already exists
     const { data: existingMatch, error: checkError } = await supabase
       .from('help_request_matches')
-      .select('*')
-      .eq('developer_id', developerId)
+      .select('id, status')
       .eq('request_id', requestId)
+      .eq('developer_id', developerId)
       .maybeSingle();
-
+    
     if (checkError) {
-      console.error('Error checking existing application:', checkError);
+      console.error('Error checking for existing application:', checkError);
       return { success: false, error: checkError.message };
     }
-
+    
+    // Format numeric values to ensure they don't exceed database limits
+    // Convert to string first, then to number with fixed precision
+    const formattedRate = parseFloat(parseFloat(application.proposed_rate.toString()).toFixed(2));
+    
     if (existingMatch) {
       // Update existing application
       const { data, error } = await supabase
         .from('help_request_matches')
         .update({
-          proposed_message: applicationData.proposed_message,
-          proposed_duration: applicationData.proposed_duration,
-          proposed_rate: applicationData.proposed_rate,
-          match_score: 85, // This could be calculated based on skills match
-          status: 'pending',
-          updated_at: new Date().toISOString()
+          proposed_message: application.proposed_message,
+          proposed_duration: application.proposed_duration,
+          proposed_rate: formattedRate,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', existingMatch.id)
-        .select();
-
+        .select()
+        .single();
+      
       if (error) {
         console.error('Error updating application:', error);
         return { success: false, error: error.message };
       }
-
+      
       return { success: true, data, isUpdate: true };
+    } else {
+      // Create new application
+      const { data, error } = await supabase
+        .from('help_request_matches')
+        .insert({
+          request_id: requestId,
+          developer_id: developerId,
+          status: 'pending',
+          match_score: 85, // Default match score
+          proposed_message: application.proposed_message,
+          proposed_duration: application.proposed_duration,
+          proposed_rate: formattedRate,
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating application:', error);
+        return { success: false, error: error.message };
+      }
+      
+      return { success: true, data, isUpdate: false };
     }
-
-    // Create new application
-    const { data, error } = await supabase
-      .from('help_request_matches')
-      .insert({
-        request_id: requestId,
-        developer_id: developerId,
-        status: 'pending',
-        match_score: 85,
-        proposed_message: applicationData.proposed_message,
-        proposed_duration: applicationData.proposed_duration,
-        proposed_rate: applicationData.proposed_rate
-      })
-      .select();
-
-    if (error) {
-      console.error('Error creating application:', error);
-      return { success: false, error: error.message };
-    }
-
-    // Update the help request status to 'matching' if it was 'pending'
-    const { data: requestData, error: requestError } = await supabase
-      .from('help_requests')
-      .select('status')
-      .eq('id', requestId)
-      .single();
-
-    if (!requestError && requestData?.status === 'pending') {
-      await supabase
-        .from('help_requests')
-        .update({ status: 'matching' })
-        .eq('id', requestId);
-    }
-
-    return { success: true, data, isUpdate: false };
   } catch (error) {
     console.error('Exception in submitDeveloperApplication:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    };
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    return { success: false, error: errorMessage };
   }
 };
 
@@ -686,3 +621,4 @@ export const testDatabaseAccess = async () => {
 export * from './helpRequestsDebug';
 // Export utility functions
 export * from './helpRequestsUtils';
+
