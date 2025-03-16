@@ -69,8 +69,4 @@ window.addEventListener('online', () => {
   supabase.auth.refreshSession();
 });
 
-// Export everything from the other modules
-export * from './realtime';
-export * from './profiles';
-export * from './helpRequests';
-export * from './testing';
+// Fix circular dependency issues by not importing from other modules at the end

@@ -1,68 +1,47 @@
 
 import { supabase } from './client';
+import { toast } from 'sonner';
 
-// Add real-time subscription to help_requests table
-export const setupHelpRequestsSubscription = async () => {
-  const { data: authData } = await supabase.auth.getSession();
+// Setup realtime subscription for help requests
+export const setupHelpRequestsSubscription = (callback: (payload: any) => void) => {
+  console.log('Setting up help requests subscription');
   
-  if (authData.session) {
-    const userId = authData.session.user.id;
-    
-    try {
-      const channel = supabase
-        .channel('help_requests_changes')
-        .on('postgres_changes', {
+  try {
+    const channel = supabase
+      .channel('help_requests_changes')
+      .on(
+        'postgres_changes',
+        {
           event: '*',
           schema: 'public',
-          table: 'help_requests',
-          filter: `client_id=eq.${userId}`
-        }, (payload) => {
-          console.log('Real-time update received for help_requests:', payload);
-        })
-        .subscribe((status) => {
-          console.log('Help requests subscription status:', status);
-        });
-      
-      console.log('Real-time subscription to help_requests set up for user:', userId);
-      return channel;
-    } catch (error) {
-      console.error('Error setting up real-time subscription:', error);
-      return null;
-    }
-  }
-  return null;
-};
-
-// Setup realtime subscription
-setupHelpRequestsSubscription();
-
-// Update the enableRealtimeForHelpRequests function to use Supabase's built-in channel functionality
-export const enableRealtimeForHelpRequests = async () => {
-  try {
-    console.log('Setting up real-time channel for help_requests table...');
-    
-    const channel = supabase
-      .channel('help_requests_realtime')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'help_requests'
-      }, (payload) => {
-        console.log('Real-time update received:', payload);
-      })
+          table: 'help_requests'
+        },
+        (payload) => {
+          console.log('Help request change received:', payload);
+          callback(payload);
+        }
+      )
       .subscribe((status) => {
-        console.log('Real-time subscription status:', status);
+        console.log('Help requests subscription status:', status);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to help requests');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Error subscribing to help requests');
+          toast.error('Could not connect to real-time updates. Please refresh.');
+        }
       });
-
-    if (channel) {
-      console.log('Real-time enabled for help_requests table successfully');
-      return { success: true, channel };
-    } else {
-      console.error('Failed to create channel');
-      return { success: false, error: 'Failed to create channel' };
-    }
+      
+    // Return the subscription for cleanup
+    return () => {
+      console.log('Cleaning up help requests subscription');
+      supabase.removeChannel(channel);
+    };
   } catch (error) {
-    console.error('Exception enabling real-time:', error);
-    return { success: false, error };
+    console.error('Exception setting up help requests subscription:', error);
+    toast.error('Real-time connection failed. Some features may not work.');
+    return () => {}; // Return empty cleanup function
   }
 };
+
+// Additional realtime handlers can be defined here

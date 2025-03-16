@@ -17,7 +17,7 @@ import DeveloperDashboard from './pages/DeveloperDashboard';
 import ClientDashboard from './pages/ClientDashboard';
 import DeveloperRegistration from './pages/DeveloperRegistration';
 import SessionHistory from './pages/SessionHistory';
-import DeveloperTicketDetail from './pages/DeveloperTicketDetail'; // New import
+import DeveloperTicketDetail from './pages/DeveloperTicketDetail';
 
 import { AuthProvider } from './contexts/auth';
 import { HelpRequestProvider } from './contexts/HelpRequestContext';
@@ -90,7 +90,7 @@ function App() {
               } 
             />
             
-            {/* New route for developer ticket details */}
+            {/* Route for developer ticket details */}
             <Route 
               path="/developer/tickets/:ticketId" 
               element={
