@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Badge } from '../ui/badge';
@@ -60,7 +59,7 @@ const TicketList: React.FC<TicketListProps> = ({
 
   const handleViewDetails = (ticketId: string) => {
     if (isAuthenticated) {
-      navigate(`/get-help/request/${ticketId}`);
+      navigate(`/developer/tickets/${ticketId}`);
     } else {
       setPendingAction({ type: 'view', ticketId });
       setShowAuthDialog(true);
@@ -139,17 +138,14 @@ const TicketList: React.FC<TicketListProps> = ({
     <>
       <div className="grid grid-cols-1 gap-4">
         {tickets.map((ticket) => {
-          // Create a simple key from the id or index (like HELP-123)
           const ticketKey = ticket.id ? 
             `HELP-${ticket.id.substring(0, 3)}` : 
             `HELP-${Math.floor(Math.random() * 900) + 100}`;
             
           const isExpanded = expandedTicket === ticket.id;
           
-          // Add a recommended indicator if it's in the recommended tab
           const isRecommendedTicket = isRecommended;
           
-          // Check application status for tickets in My Applications tab
           const hasApplicationStatus = isApplication;
             
           return (
@@ -323,7 +319,6 @@ const TicketList: React.FC<TicketListProps> = ({
         })}
       </div>
 
-      {/* Authentication Dialog */}
       <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -357,7 +352,6 @@ const TicketList: React.FC<TicketListProps> = ({
         </DialogContent>
       </Dialog>
       
-      {/* Developer Application Modal */}
       {selectedTicket && (
         <DeveloperApplicationModal 
           isOpen={showApplicationModal}

@@ -1,148 +1,118 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
 
-import { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import './App.css';
-
-// Pages
 import Index from './pages/Index';
-import GetHelpPage from './pages/GetHelpPage';
-import SearchPage from './pages/Search';
-import NotFound from './pages/NotFound';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import Search from './pages/Search';
+import ProductDetail from './pages/ProductDetail';
+import ProtectedRoute from './components/ProtectedRoute';
 import Profile from './pages/Profile';
 import ClientProfile from './pages/ClientProfile';
-import ProductDetail from './pages/ProductDetail';
-import DeveloperRegistration from './pages/DeveloperRegistration';
-import SessionHistory from './pages/SessionHistory';
+import GetHelpPage from './pages/GetHelpPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import NotFound from './pages/NotFound';
 import DeveloperDashboard from './pages/DeveloperDashboard';
 import ClientDashboard from './pages/ClientDashboard';
-import HelpSessionInterface from './components/session/HelpSessionInterface';
+import DeveloperRegistration from './pages/DeveloperRegistration';
+import SessionHistory from './pages/SessionHistory';
+import DeveloperTicketDetail from './pages/DeveloperTicketDetail'; // New import
 
-// Components
-import ProtectedRoute from './components/ProtectedRoute';
-import { Toaster } from './components/ui/toaster';
-import { Toaster as SonnerToaster } from 'sonner';
-
-// Contexts
+import { AuthStateProvider } from './contexts/auth';
 import { HelpRequestProvider } from './contexts/HelpRequestContext';
-import { AuthProvider } from './contexts/auth';
 
-// Recovery utilities
-import { initEmergencyRecovery } from './utils/emergencyRecovery';
-import { isUserStuckInLoadingState, logoutUser } from './contexts/auth/authUtils';
+import './App.css';
 
 function App() {
-  // Initialize emergency recovery and handle loading state issues
-  useEffect(() => {
-    console.log('App mounted, initializing systems...');
-    
-    // Add visual indicator for debugging
-    document.body.classList.add('app-loading');
-    console.log('Page is loading - added app-loading class');
-    
-    // Initialize emergency recovery system
-    const cleanup = initEmergencyRecovery();
-    
-    // Check if user might be stuck in a loading state
-    if (isUserStuckInLoadingState()) {
-      console.warn('User appears to be stuck in a loading state, attempting recovery');
-      logoutUser();
-      
-      // Display message after small delay to ensure it's seen
-      setTimeout(() => {
-        console.log('Displaying recovery message to user');
-      }, 500);
+  // Check if dark mode is enabled
+  const [darkMode, setDarkMode] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
     }
-    
-    // Set a failsafe to ensure the app doesn't get permanently stuck
-    const timeoutId = setTimeout(() => {
-      if (document.body.classList.contains('app-loading')) {
-        console.warn('App still showing loading state after timeout, forcing reset');
-        document.body.classList.remove('app-loading');
-        console.log('Removed app-loading class after timeout');
-      }
-    }, 3000); // Reduced from 10s to 3s for faster feedback
-    
-    // Remove loading indicator when component is fully mounted
-    document.body.classList.remove('app-loading');
-    console.log('App fully mounted - removed app-loading class');
-    
-    return () => {
-      cleanup();
-      clearTimeout(timeoutId);
-      document.body.classList.remove('app-loading');
-      console.log('App unmounting, cleanup complete');
-    };
-  }, []);
-  
+    return false;
+  });
+
+  React.useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    }
+  }, [darkMode]);
+
   return (
-    <>
-      <AuthProvider>
-        <HelpRequestProvider>
+    <AuthStateProvider>
+      <HelpRequestProvider>
+        <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            <Route path="/developer-registration" element={<DeveloperRegistration />} />
+            <Route path="/developer" element={<DeveloperRegistration />} />
+            <Route path="/search" element={<Search />} />
             <Route path="/product/:id" element={<ProductDetail />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/get-help/*" element={<GetHelpPage />} />
-            <Route path="/session-history" element={<SessionHistory />} />
-            
             <Route 
               path="/profile" 
               element={
-                <ProtectedRoute requiredUserType="developer">
+                <ProtectedRoute>
                   <Profile />
                 </ProtectedRoute>
               } 
             />
-            
             <Route 
               path="/client-profile" 
               element={
-                <ProtectedRoute requiredUserType="client">
+                <ProtectedRoute>
                   <ClientProfile />
                 </ProtectedRoute>
               } 
             />
-            
+            <Route path="/get-help" element={<GetHelpPage />} />
+            <Route path="/get-help/request/:requestId" element={<GetHelpPage />} />
             <Route 
               path="/client-dashboard" 
               element={
-                <ProtectedRoute requiredUserType="client">
+                <ProtectedRoute userType="client">
                   <ClientDashboard />
                 </ProtectedRoute>
               } 
             />
-            
             <Route 
               path="/developer-dashboard" 
               element={
-                <ProtectedRoute allowPublicAccess={true}>
+                <ProtectedRoute userType="developer">
                   <DeveloperDashboard />
                 </ProtectedRoute>
               } 
             />
             
+            {/* New route for developer ticket details */}
             <Route 
-              path="/help-session/:sessionId" 
+              path="/developer/tickets/:ticketId" 
               element={
-                <ProtectedRoute allowPublicAccess={false}>
-                  <HelpSessionInterface />
+                <ProtectedRoute userType="developer">
+                  <DeveloperTicketDetail />
                 </ProtectedRoute>
               } 
             />
             
+            <Route 
+              path="/session-history" 
+              element={
+                <ProtectedRoute>
+                  <SessionHistory />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </HelpRequestProvider>
-      </AuthProvider>
-      
-      <Toaster />
-      <SonnerToaster position="top-right" expand={false} richColors closeButton />
-    </>
+          <Toaster />
+        </BrowserRouter>
+      </HelpRequestProvider>
+    </AuthStateProvider>
   );
 }
 

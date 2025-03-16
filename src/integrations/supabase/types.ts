@@ -192,14 +192,17 @@ export type Database = {
       }
       help_requests: {
         Row: {
+          attachments: Json | null
           budget_range: string
           client_id: string
           code_snippet: string | null
           communication_preference: string[]
+          complexity_level: string | null
           created_at: string
           description: string
           estimated_duration: number
           id: string
+          preferred_developer_experience: string | null
           status: string
           technical_area: string[]
           title: string
@@ -207,14 +210,17 @@ export type Database = {
           urgency: string
         }
         Insert: {
+          attachments?: Json | null
           budget_range: string
           client_id: string
           code_snippet?: string | null
           communication_preference: string[]
+          complexity_level?: string | null
           created_at?: string
           description: string
           estimated_duration: number
           id?: string
+          preferred_developer_experience?: string | null
           status?: string
           technical_area: string[]
           title: string
@@ -222,14 +228,17 @@ export type Database = {
           urgency: string
         }
         Update: {
+          attachments?: Json | null
           budget_range?: string
           client_id?: string
           code_snippet?: string | null
           communication_preference?: string[]
+          complexity_level?: string | null
           created_at?: string
           description?: string
           estimated_duration?: number
           id?: string
+          preferred_developer_experience?: string | null
           status?: string
           technical_area?: string[]
           title?: string
