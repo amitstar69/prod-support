@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
@@ -54,7 +55,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
       setIsSubmitting(true);
       
       // Ensure the rate is properly formatted and within database limits (numeric(5,2))
-      // This means values between -999.99 and 999.99
+      // This means values between 0 and 999.99
       const formattedRate = Math.min(Math.max(0, parseFloat(proposedRate.toFixed(2))), 999.99);
       
       console.log('Submitting application with data:', {

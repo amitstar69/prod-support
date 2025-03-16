@@ -342,8 +342,7 @@ export const submitDeveloperApplication = async (
     }
     
     // Format numeric values to ensure they don't exceed database limits
-    // Convert to string first, then to number with fixed precision
-    // For numeric(5,2) we need to ensure values are between -999.99 and 999.99
+    // For numeric(5,2) we need to ensure values are between 0 and 999.99
     const formattedRate = Math.min(
       Math.max(0, parseFloat(parseFloat(application.proposed_rate.toString()).toFixed(2))), 
       999.99
