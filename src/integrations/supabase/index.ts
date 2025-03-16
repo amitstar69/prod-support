@@ -8,3 +8,4 @@ export * from './helpRequestsDebug';
 export * from './testing';
 export * from './notifications';
 export * from './chat';
+export * from './setupRealtime';

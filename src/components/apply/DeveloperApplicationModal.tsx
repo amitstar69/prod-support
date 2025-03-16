@@ -18,6 +18,7 @@ import { Textarea } from '../ui/textarea';
 import { Slider } from '../ui/slider';
 import { submitDeveloperApplication } from '../../integrations/supabase/helpRequests';
 import { isLocalId } from '../../integrations/supabase/helpRequestsUtils';
+import { enableRealtimeForTable } from '../../integrations/supabase/setupRealtime';
 
 interface DeveloperApplicationModalProps {
   isOpen: boolean;
@@ -53,9 +54,9 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
     try {
       setIsSubmitting(true);
       
-      // Ensure the rate is properly formatted and within database limits (numeric(5,2))
-      // This means values between 0 and 999.99
-      const formattedRate = Math.min(Math.max(0, parseFloat(proposedRate.toFixed(2))), 999.99);
+      // Ensure the rate is properly formatted and within database limits (numeric(3,2))
+      // This means values between 0 and 9.99
+      const formattedRate = Math.min(Math.max(0, parseFloat(proposedRate.toFixed(2))), 9.99);
       
       console.log('Submitting application with data:', {
         request_id: ticket.id,
@@ -150,10 +151,8 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
       if (result.success && !result.isUpdate) {
         try {
           // Enable realtime for notifications table if needed
-          import('../integrations/supabase/setupRealtime').then(async ({ enableRealtimeForTable }) => {
-            const realtimeSetup = await enableRealtimeForTable('notifications');
-            console.log('Realtime setup result:', realtimeSetup);
-          });
+          const realtimeSetup = await enableRealtimeForTable('notifications');
+          console.log('Realtime setup result:', realtimeSetup);
         } catch (rtError) {
           console.error('Error setting up realtime:', rtError);
           // Don't block the main flow

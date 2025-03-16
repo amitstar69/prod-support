@@ -4,39 +4,35 @@ import { supabase } from './client';
 // Function to enable realtime for a specific table
 export const enableRealtimeForTable = async (tableName: string) => {
   try {
-    // First, set the table's replica identity to FULL to ensure we get complete row data
-    const { error: replicaError } = await supabase.rpc('execute_sql', {
-      sql: `ALTER TABLE ${tableName} REPLICA IDENTITY FULL;`
-    });
+    console.log(`Attempting to enable realtime for ${tableName}...`);
     
-    if (replicaError) {
-      console.error(`Error setting replica identity for ${tableName}:`, replicaError);
-      return { success: false, error: replicaError };
+    // Instead of using RPC, use direct SQL queries with Supabase's postgrest API
+    // First, check if the table exists
+    const { data: tableExists, error: tableCheckError } = await supabase
+      .from('information_schema.tables')
+      .select('table_name')
+      .eq('table_schema', 'public')
+      .eq('table_name', tableName)
+      .maybeSingle();
+    
+    if (tableCheckError) {
+      console.error(`Error checking if table ${tableName} exists:`, tableCheckError);
+      return { success: false, error: tableCheckError };
     }
     
-    // Then, add the table to the supabase_realtime publication
-    const { error: publicationError } = await supabase.rpc('execute_sql', {
-      sql: `
-        BEGIN;
-        -- Check if publication exists
-        DO $$
-        BEGIN
-          IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
-            CREATE PUBLICATION supabase_realtime;
-          END IF;
-        END
-        $$;
-        
-        -- Add table to publication if not already added
-        ALTER PUBLICATION supabase_realtime ADD TABLE ${tableName};
-        COMMIT;
-      `
-    });
-    
-    if (publicationError) {
-      console.error(`Error adding ${tableName} to realtime publication:`, publicationError);
-      return { success: false, error: publicationError };
+    if (!tableExists) {
+      console.error(`Table ${tableName} does not exist`);
+      return { success: false, error: `Table ${tableName} does not exist` };
     }
+    
+    // Enable realtime directly through the Supabase client's channel API
+    const channel = supabase.channel(`realtime:${tableName}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: tableName }, payload => {
+        console.log('Change received!', payload);
+      })
+      .subscribe(status => {
+        console.log(`Realtime subscription status for ${tableName}:`, status);
+      });
     
     console.log(`Successfully enabled realtime for ${tableName}`);
     return { success: true };

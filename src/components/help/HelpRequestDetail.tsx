@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
@@ -68,11 +69,47 @@ const HelpRequestDetail: React.FC = () => {
   const [request, setRequest] = useState<HelpRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [applications, setApplications] = useState([]);
 
   // Function to validate UUID format
   const isValidUUID = (uuid: string) => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid);
+  };
+
+  // Function to fetch applications for this request
+  const fetchApplications = async () => {
+    if (!requestId || !userId) return;
+    
+    try {
+      console.log('Fetching applications for request:', requestId);
+      
+      // Check for applications in localStorage
+      const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
+      const localMatches = localApplications.filter((app: any) => app.request_id === requestId);
+      
+      if (localMatches.length > 0) {
+        console.log('Found applications in local storage:', localMatches);
+        setApplications(localMatches);
+        return;
+      }
+      
+      // Try to fetch from Supabase
+      const { data, error } = await supabase
+        .from('help_request_matches')
+        .select('*, developers:developer_id(id, profiles(name, image, description))')
+        .eq('request_id', requestId);
+      
+      if (error) {
+        console.error('Error fetching applications:', error);
+        return;
+      }
+      
+      console.log('Applications from database:', data);
+      setApplications(data || []);
+    } catch (error) {
+      console.error('Exception fetching applications:', error);
+    }
   };
 
   useEffect(() => {
@@ -168,6 +205,9 @@ const HelpRequestDetail: React.FC = () => {
         console.log('Notification subscription status:', status);
       });
       
+    // Load initial applications data
+    fetchApplications();
+    
     // Return cleanup function
     return () => {
       supabase.removeChannel(channel);
