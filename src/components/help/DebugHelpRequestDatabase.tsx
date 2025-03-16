@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { debugInspectHelpRequests, createTestHelpRequest } from '../../integrations/supabase/client';
+import { debugInspectHelpRequests, createTestHelpRequest } from '../../integrations/supabase/helpRequestsDebug';
 import { useAuth } from '../../contexts/auth';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';

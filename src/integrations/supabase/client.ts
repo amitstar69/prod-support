@@ -69,4 +69,4 @@ window.addEventListener('online', () => {
   supabase.auth.refreshSession();
 });
 
-// Fix circular dependency issues by not importing from other modules at the end
+// No imports at the end to prevent circular dependencies

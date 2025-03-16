@@ -1,5 +1,6 @@
 
-import { supabase, debugCheckProfileExists } from '../../integrations/supabase/client';
+import { supabase } from '../../integrations/supabase/client';
+import { debugCheckProfileExists } from '../../integrations/supabase/profiles';
 import { toast } from 'sonner';
 import { Developer, Client } from '../../types/product';
 import { Dispatch, SetStateAction } from 'react';

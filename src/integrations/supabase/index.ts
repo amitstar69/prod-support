@@ -4,4 +4,5 @@ export * from './client';
 export * from './realtime';
 export * from './profiles';
 export * from './helpRequests';
+export * from './helpRequestsDebug';
 export * from './testing';
