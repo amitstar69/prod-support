@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Badge } from '../ui/badge';
@@ -162,6 +163,11 @@ const TicketList: React.FC<TicketListProps> = ({
           const isRecommendedTicket = isRecommended;
           
           const hasApplicationStatus = isApplication;
+          
+          // Check if the ticket is available for apply/claim actions
+          const isOpen = ticket.status === 'open';
+          const isClaimed = ticket.status === 'claimed';
+          const isActionable = isOpen || isClaimed;
             
           return (
             <div 
@@ -284,7 +290,7 @@ const TicketList: React.FC<TicketListProps> = ({
                         <ExternalLink className="h-3.5 w-3.5 ml-1" />
                       </Button>
                       
-                      {(ticket.status === 'open') ? (
+                      {isOpen ? (
                         <Button 
                           size="sm"
                           className="h-8 bg-primary text-white hover:bg-primary/90"
@@ -296,13 +302,13 @@ const TicketList: React.FC<TicketListProps> = ({
                           Apply
                           <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
                         </Button>
-                      ) : ticket.status === 'claimed' ? (
+                      ) : isClaimed ? (
                         <Button 
                           size="sm"
                           className="h-8 bg-primary text-white hover:bg-primary/90"
                           onClick={(e) => {
                             e.stopPropagation();
-                            ticket.id && handleClaimClick(ticket.id);
+                            ticket.id && handleClaimTicket(ticket.id);
                           }}
                         >
                           Start Work
@@ -316,8 +322,8 @@ const TicketList: React.FC<TicketListProps> = ({
                           className="h-8"
                         >
                           {ticket.status === 'in-progress' ? 'In Progress' : 
-                          ticket.status === 'resolved' ? 'Resolved' :
-                          ticket.status === 'completed' ? 'Completed' : 'Unavailable'}
+                           ticket.status === 'resolved' ? 'Resolved' :
+                           ticket.status === 'completed' ? 'Completed' : 'Unavailable'}
                         </Button>
                       )}
                     </div>
