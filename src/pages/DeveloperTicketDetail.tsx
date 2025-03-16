@@ -353,9 +353,9 @@ const DeveloperTicketDetail: React.FC = () => {
                   <Button 
                     className="w-full" 
                     onClick={handleApplyClick}
-                    disabled={ticket.status !== 'pending'}
+                    disabled={ticket.status !== 'open' && ticket.status !== 'pending'}
                   >
-                    {ticket.status === 'pending' ? 'Apply Now' : 'Unavailable'}
+                    {ticket.status === 'open' || ticket.status === 'pending' ? 'Apply Now' : 'Unavailable'}
                   </Button>
                 )}
               </CardContent>

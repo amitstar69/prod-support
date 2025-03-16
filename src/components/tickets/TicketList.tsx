@@ -164,7 +164,7 @@ const TicketList: React.FC<TicketListProps> = ({
           const hasApplicationStatus = isApplication;
           
           // Check if the ticket is available for apply/claim actions
-          const isOpen = ticket.status === 'open';
+          const isOpen = ticket.status === 'open' || ticket.status === 'pending';
           const isClaimed = ticket.status === 'claimed';
           const isActionable = isOpen || isClaimed;
             

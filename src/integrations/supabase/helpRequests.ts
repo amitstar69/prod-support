@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -194,6 +193,8 @@ export const submitDeveloperApplication = async (
           throw new Error('Failed to update application');
         }
         
+        console.log('[submitDeveloperApplication] Successfully updated application:', existing.id);
+        
         // If application was accepted, update the ticket status to 'claimed'
         if (existing.status === 'accepted') {
           await supabase
@@ -206,8 +207,8 @@ export const submitDeveloperApplication = async (
         return { success: true, isUpdate: true };
       }
       
-      // Create new application
-      const { error: insertError } = await supabase
+      // Create new application - Debug/test the insertion
+      const insertResponse = await supabase
         .from('help_request_matches')
         .insert({
           request_id: requestId,
@@ -219,12 +220,49 @@ export const submitDeveloperApplication = async (
           proposed_rate: formattedRate
         });
       
-      if (insertError) {
-        console.error('Error creating application:', insertError);
-        throw new Error('Failed to create application: ' + insertError.message);
+      if (insertResponse.error) {
+        console.error('Error creating application:', insertResponse.error);
+        throw new Error('Failed to create application: ' + insertResponse.error.message);
       }
       
-      // Update the ticket status to 'claimed'
+      console.log('[submitDeveloperApplication] Application created successfully:', insertResponse.data);
+      
+      // Manually create notification if trigger doesn't work
+      try {
+        // Get help request details for notification
+        const { data: requestData } = await supabase
+          .from('help_requests')
+          .select('client_id, title')
+          .eq('id', requestId)
+          .single();
+          
+        // Get developer profile for notification
+        const { data: developerData } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', developerId)
+          .single();
+          
+        if (requestData && developerData) {
+          // Create notification for client
+          const notificationResponse = await supabase
+            .from('notifications')
+            .insert({
+              user_id: requestData.client_id,
+              related_entity_id: requestId,
+              entity_type: 'application',
+              title: 'New Developer Application',
+              message: `Developer ${developerData.name} has applied to help with your request: ${requestData.title}`
+            });
+            
+          console.log('[submitDeveloperApplication] Notification created:', notificationResponse);
+        }
+      } catch (notifError) {
+        console.error('Error creating notification manually:', notifError);
+        // Don't fail the whole application process if notification fails
+      }
+      
+      // Update the ticket status to 'claimed' from 'open'
       const { error: updateTicketError } = await supabase
         .from('help_requests')
         .update({ status: 'claimed' })
@@ -234,6 +272,8 @@ export const submitDeveloperApplication = async (
       if (updateTicketError) {
         console.error('Error updating ticket status:', updateTicketError);
         // Don't throw here, the application was created successfully
+      } else {
+        console.log('[submitDeveloperApplication] Updated ticket status to claimed');
       }
       
       return { success: true, isUpdate: false };

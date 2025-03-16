@@ -144,6 +144,22 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
         throw new Error(result.error || 'Failed to submit application');
       }
 
+      console.log('Application submission response:', result);
+
+      // Check if we need to trigger realtime notifications manually
+      if (result.success && !result.isUpdate) {
+        try {
+          // Enable realtime for notifications table if needed
+          import('../integrations/supabase/setupRealtime').then(async ({ enableRealtimeForTable }) => {
+            const realtimeSetup = await enableRealtimeForTable('notifications');
+            console.log('Realtime setup result:', realtimeSetup);
+          });
+        } catch (rtError) {
+          console.error('Error setting up realtime:', rtError);
+          // Don't block the main flow
+        }
+      }
+
       toast.success(result.isUpdate ? 'Application updated successfully!' : 'Application submitted successfully!');
       onApplicationSuccess();
       onClose();

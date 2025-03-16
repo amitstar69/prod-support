@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
@@ -64,7 +63,7 @@ const workflowSteps = [
 
 const HelpRequestDetail: React.FC = () => {
   const { requestId } = useParams<{ requestId: string }>();
-  const { userId } = useAuth();
+  const { userId, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [request, setRequest] = useState<HelpRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,6 +139,40 @@ const HelpRequestDetail: React.FC = () => {
 
     fetchHelpRequest();
   }, [userId, requestId, navigate]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !userId) return;
+    
+    console.log('Setting up notification subscription for help request:', requestId);
+    
+    const channel = supabase
+      .channel('help_request_notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('New notification received:', payload);
+          toast.success(payload.new.title, {
+            description: payload.new.message,
+          });
+          // Refresh applications or request data as needed
+          fetchApplications();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Notification subscription status:', status);
+      });
+      
+    // Return cleanup function
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAuthenticated, userId, requestId]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
