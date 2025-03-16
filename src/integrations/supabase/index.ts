@@ -6,3 +6,5 @@ export * from './profiles';
 export * from './helpRequests';
 export * from './helpRequestsDebug';
 export * from './testing';
+export * from './notifications';
+export * from './chat';

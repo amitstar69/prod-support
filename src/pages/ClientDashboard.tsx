@@ -22,6 +22,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { getHelpRequestsForClient } from '../integrations/supabase/helpRequests';
+import DeveloperApplications from '../components/dashboard/DeveloperApplications';
+import ChatDialog from '../components/chat/ChatDialog';
+import { getDeveloperApplicationsForRequest } from '../integrations/supabase/helpRequests';
 
 const ClientDashboard: React.FC = () => {
   const { userId, isAuthenticated } = useAuth();
@@ -32,6 +35,12 @@ const ClientDashboard: React.FC = () => {
   const [completedRequests, setCompletedRequests] = useState<HelpRequest[]>([]);
   const [requestMatches, setRequestMatches] = useState<Record<string, HelpRequestMatch[]>>({});
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+  const [selectedRequestApplications, setSelectedRequestApplications] = useState<any[]>([]);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatDeveloperId, setChatDeveloperId] = useState('');
+  const [chatDeveloperName, setChatDeveloperName] = useState('Developer');
   
   useEffect(() => {
     if (isAuthenticated && userId) {
@@ -114,6 +123,24 @@ const ClientDashboard: React.FC = () => {
     }
   };
 
+  const fetchApplicationsForRequest = async (requestId: string) => {
+    if (!userId || !requestId) return;
+    
+    try {
+      const response = await getDeveloperApplicationsForRequest(requestId);
+      
+      if (response.success) {
+        setSelectedRequestApplications(response.data || []);
+      } else {
+        console.error('Error fetching applications:', response.error);
+        toast.error('Failed to load developer applications');
+      }
+    } catch (error) {
+      console.error('Exception fetching applications:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
   const handleCreateRequest = () => {
     navigate('/get-help');
   };
@@ -157,7 +184,32 @@ const ClientDashboard: React.FC = () => {
   };
 
   const handleViewRequest = (requestId: string) => {
+    setSelectedRequestId(requestId);
+    fetchApplicationsForRequest(requestId);
     navigate(`/get-help/request/${requestId}`);
+  };
+
+  const handleOpenChat = (developerId: string, applicationId: string) => {
+    try {
+      if (!selectedRequestId) return;
+      
+      const application = selectedRequestApplications.find(app => app.id === applicationId);
+      const developerName = application?.developers?.profiles?.name || 'Developer';
+      
+      setChatDeveloperId(developerId);
+      setChatDeveloperName(developerName);
+      setIsChatOpen(true);
+    } catch (error) {
+      console.error('Error opening chat:', error);
+      toast.error('Failed to open chat');
+    }
+  };
+
+  const handleApplicationUpdate = () => {
+    if (selectedRequestId) {
+      fetchApplicationsForRequest(selectedRequestId);
+      fetchHelpRequests();
+    }
   };
 
   if (!isAuthenticated) {
@@ -202,6 +254,33 @@ const ClientDashboard: React.FC = () => {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <span className="ml-2 text-lg">Loading your requests...</span>
               </div>
+            ) : selectedRequestId ? (
+              <>
+                <div className="mb-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setSelectedRequestId(null)}
+                    className="mb-4"
+                  >
+                    ← Back to all requests
+                  </Button>
+                  
+                  <h2 className="text-xl font-semibold mb-2">
+                    Developer Applications
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Review and respond to developers who have applied to help with your request
+                  </p>
+                  
+                  <DeveloperApplications 
+                    applications={selectedRequestApplications}
+                    requestId={selectedRequestId}
+                    clientId={userId || ''}
+                    onApplicationUpdate={handleApplicationUpdate}
+                    onOpenChat={handleOpenChat}
+                  />
+                </div>
+              </>
             ) : activeRequests.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {activeRequests.map((request) => (
@@ -364,6 +443,14 @@ const ClientDashboard: React.FC = () => {
             )}
           </TabsContent>
         </Tabs>
+        
+        <ChatDialog 
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          helpRequestId={selectedRequestId || ''}
+          otherId={chatDeveloperId}
+          otherName={chatDeveloperName}
+        />
       </div>
     </Layout>
   );

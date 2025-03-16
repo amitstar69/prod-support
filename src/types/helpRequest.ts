@@ -1,4 +1,3 @@
-
 export interface HelpRequest {
   id?: string;
   client_id: string;
@@ -29,6 +28,14 @@ export interface HelpRequestMatch {
   proposed_message?: string;
   proposed_duration?: number;
   proposed_rate?: number;
+  developers?: {
+    id: string;
+    profiles: {
+      name: string;
+      image: string;
+      description: string;
+    }
+  };
 }
 
 export interface HelpSession {

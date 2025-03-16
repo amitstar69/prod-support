@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -468,6 +467,17 @@ export const getDeveloperApplicationsForRequest = async (requestId: string) => {
       return { success: false, error: 'Request ID is required' };
     }
 
+    // For local storage help requests
+    if (isLocalId(requestId)) {
+      const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
+      const matchingApplications = localApplications.filter(
+        (app: any) => app.request_id === requestId
+      );
+      
+      return { success: true, data: matchingApplications };
+    }
+
+    // For database help requests
     const { data, error } = await supabase
       .from('help_request_matches')
       .select(`
@@ -492,6 +502,113 @@ export const getDeveloperApplicationsForRequest = async (requestId: string) => {
     return { success: true, data };
   } catch (error) {
     console.error('Exception fetching developer applications:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+};
+
+// Function to approve or reject a developer application
+export const updateApplicationStatus = async (
+  applicationId: string, 
+  status: 'approved' | 'rejected' | 'completed',
+  clientId: string
+) => {
+  try {
+    if (!applicationId || !status || !clientId) {
+      return { success: false, error: 'Missing required fields' };
+    }
+
+    // For local storage applications
+    if (applicationId.startsWith('app-')) {
+      const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
+      const applicationIndex = localApplications.findIndex((app: any) => app.id === applicationId);
+      
+      if (applicationIndex === -1) {
+        return { success: false, error: 'Application not found' };
+      }
+      
+      // Update the application status
+      localApplications[applicationIndex].status = status;
+      localApplications[applicationIndex].updated_at = new Date().toISOString();
+      
+      localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
+      
+      // If approved, also update the help request status
+      if (status === 'approved') {
+        const requestId = localApplications[applicationIndex].request_id;
+        const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
+        const requestIndex = localHelpRequests.findIndex((req: any) => req.id === requestId);
+        
+        if (requestIndex >= 0) {
+          localHelpRequests[requestIndex].status = 'in-progress';
+          localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+        }
+      }
+      
+      return { success: true, data: localApplications[applicationIndex] };
+    }
+
+    // For database applications
+    const { data: applicationData, error: applicationError } = await supabase
+      .from('help_request_matches')
+      .select('request_id, developer_id')
+      .eq('id', applicationId)
+      .single();
+      
+    if (applicationError) {
+      console.error('Error getting application:', applicationError);
+      return { success: false, error: applicationError.message };
+    }
+    
+    // Check if the user is the client for this help request
+    const { data: requestData, error: requestError } = await supabase
+      .from('help_requests')
+      .select('client_id')
+      .eq('id', applicationData.request_id)
+      .single();
+      
+    if (requestError) {
+      console.error('Error getting help request:', requestError);
+      return { success: false, error: requestError.message };
+    }
+    
+    if (requestData.client_id !== clientId) {
+      return { success: false, error: 'You are not authorized to update this application' };
+    }
+    
+    // Update the application status
+    const { data, error } = await supabase
+      .from('help_request_matches')
+      .update({ status })
+      .eq('id', applicationId)
+      .select();
+
+    if (error) {
+      console.error('Error updating application status:', error);
+      return { success: false, error: error.message };
+    }
+    
+    // If approved, also update the help request status and reject other applications
+    if (status === 'approved') {
+      // Update help request status
+      await supabase
+        .from('help_requests')
+        .update({ status: 'in-progress' })
+        .eq('id', applicationData.request_id);
+        
+      // Reject other applications for this request
+      await supabase
+        .from('help_request_matches')
+        .update({ status: 'rejected' })
+        .eq('request_id', applicationData.request_id)
+        .neq('id', applicationId);
+    }
+
+    return { success: true, data: data[0] };
+  } catch (error) {
+    console.error('Exception updating application status:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
