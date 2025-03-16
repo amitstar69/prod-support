@@ -13,6 +13,9 @@ export interface HelpRequest {
   status?: string;
   created_at?: string;
   updated_at?: string;
+  complexity_level?: string;
+  preferred_developer_experience?: string;
+  attachments?: any;
 }
 
 export interface HelpRequestMatch {

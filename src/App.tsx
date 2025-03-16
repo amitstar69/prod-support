@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
@@ -18,7 +19,7 @@ import DeveloperRegistration from './pages/DeveloperRegistration';
 import SessionHistory from './pages/SessionHistory';
 import DeveloperTicketDetail from './pages/DeveloperTicketDetail'; // New import
 
-import { AuthStateProvider } from './contexts/auth';
+import { AuthProvider } from './contexts/auth';
 import { HelpRequestProvider } from './contexts/HelpRequestContext';
 
 import './App.css';
@@ -44,7 +45,7 @@ function App() {
   }, [darkMode]);
 
   return (
-    <AuthStateProvider>
+    <AuthProvider>
       <HelpRequestProvider>
         <BrowserRouter>
           <Routes>
@@ -75,7 +76,7 @@ function App() {
             <Route 
               path="/client-dashboard" 
               element={
-                <ProtectedRoute userType="client">
+                <ProtectedRoute requiredUserType="client">
                   <ClientDashboard />
                 </ProtectedRoute>
               } 
@@ -83,7 +84,7 @@ function App() {
             <Route 
               path="/developer-dashboard" 
               element={
-                <ProtectedRoute userType="developer">
+                <ProtectedRoute requiredUserType="developer">
                   <DeveloperDashboard />
                 </ProtectedRoute>
               } 
@@ -93,7 +94,7 @@ function App() {
             <Route 
               path="/developer/tickets/:ticketId" 
               element={
-                <ProtectedRoute userType="developer">
+                <ProtectedRoute requiredUserType="developer">
                   <DeveloperTicketDetail />
                 </ProtectedRoute>
               } 
@@ -112,7 +113,7 @@ function App() {
           <Toaster />
         </BrowserRouter>
       </HelpRequestProvider>
-    </AuthStateProvider>
+    </AuthProvider>
   );
 }
 
