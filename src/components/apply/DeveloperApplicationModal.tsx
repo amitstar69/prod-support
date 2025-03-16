@@ -53,8 +53,9 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
     try {
       setIsSubmitting(true);
       
-      // Ensure the rate is properly formatted to avoid numeric overflow
-      const formattedRate = Math.min(parseFloat(proposedRate.toFixed(2)), 999.99);
+      // Ensure the rate is properly formatted and within database limits (numeric(5,2))
+      // This means values between -999.99 and 999.99
+      const formattedRate = Math.min(Math.max(0, parseFloat(proposedRate.toFixed(2))), 999.99);
       
       console.log('Submitting application with data:', {
         request_id: ticket.id,
@@ -68,7 +69,6 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
 
       // Check if this is a local storage ticket (starts with "help-")
       if (isLocalId(ticket.id)) {
-        // ... keep existing code (local storage handling)
         const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
         
         // Check if an application already exists
