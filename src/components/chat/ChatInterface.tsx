@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/auth';
 import { ChatMessage, fetchChatMessages, sendChatMessage, setupChatMessagesSubscription } from '../../integrations/supabase/chat';
-import { Loader2, Send, PaperclipIcon } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -24,7 +24,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   otherAvatar = '/placeholder.svg',
   onClose
 }) => {
-  const { userId, userName } = useAuth();
+  const { userId } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -146,7 +146,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <Avatar className="h-8 w-8">
                 <AvatarImage src={message.sender_id === userId ? undefined : otherAvatar} />
                 <AvatarFallback>
-                  {message.sender_id === userId ? userName?.charAt(0) || 'U' : otherName.charAt(0)}
+                  {message.sender_id === userId ? 'Me' : otherName.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div>
