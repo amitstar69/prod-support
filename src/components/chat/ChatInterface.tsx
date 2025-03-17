@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/auth';
-import { ChatMessage, fetchChatMessages, sendChatMessage, setupChatMessagesSubscription } from '../../integrations/supabase/chat';
+import { ChatMessage, fetchChatMessages, sendChatMessage, setupChatMessagesSubscription, markMessagesAsRead } from '../../integrations/supabase/chat';
 import { Loader2, Send } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
@@ -52,7 +52,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   useEffect(() => {
     // Scroll to bottom whenever messages change
     scrollToBottom();
-  }, [messages]);
+    
+    // Mark messages as read when viewed
+    if (userId && helpRequestId && messages.length > 0) {
+      markMessagesAsRead(helpRequestId, userId);
+    }
+  }, [messages, userId, helpRequestId]);
 
   const loadChatMessages = async () => {
     if (!userId || !helpRequestId) return;
@@ -64,6 +69,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       if (result.success) {
         setMessages(result.data);
+        
+        // Mark messages as read
+        await markMessagesAsRead(helpRequestId, userId);
       } else {
         console.error('Error loading chat messages:', result.error);
         toast.error('Failed to load messages');

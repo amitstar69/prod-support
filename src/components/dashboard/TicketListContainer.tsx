@@ -4,6 +4,7 @@ import { HelpRequest } from '../../types/helpRequest';
 import TicketList from '../tickets/TicketList';
 import { ArrowDownUp, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/button';
+import ChatDialog from '../chat/ChatDialog';
 
 interface TicketListContainerProps {
   filteredTickets: HelpRequest[];
@@ -22,6 +23,22 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
   isAuthenticated,
   onRefresh
 }) => {
+  const [chatDialogOpen, setChatDialogOpen] = React.useState(false);
+  const [currentChat, setCurrentChat] = React.useState<{
+    helpRequestId: string;
+    otherId: string;
+    otherName?: string;
+  } | null>(null);
+
+  const handleOpenChat = (helpRequestId: string, clientId: string, clientName?: string) => {
+    setCurrentChat({
+      helpRequestId,
+      otherId: clientId,
+      otherName: clientName || 'Client'
+    });
+    setChatDialogOpen(true);
+  };
+
   if (filteredTickets.length === 0) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border border-border/40 text-center">
@@ -74,7 +91,18 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
         onClaimTicket={onClaimTicket} 
         currentUserId={userId} 
         isAuthenticated={isAuthenticated}
+        onOpenChat={handleOpenChat}
       />
+
+      {currentChat && (
+        <ChatDialog 
+          isOpen={chatDialogOpen}
+          onClose={() => setChatDialogOpen(false)}
+          helpRequestId={currentChat.helpRequestId}
+          otherId={currentChat.otherId}
+          otherName={currentChat.otherName}
+        />
+      )}
     </div>
   );
 };

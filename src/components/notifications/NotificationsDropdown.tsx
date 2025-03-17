@@ -134,7 +134,15 @@ const NotificationsDropdown: React.FC = () => {
         navigate(`/developer-dashboard?tab=myApplications`);
         break;
       case 'message':
-        navigate(`/help-session/${notification.related_entity_id}`);
+        // For messages, go to profile messages tab
+        navigate(`/profile`);
+        setTimeout(() => {
+          // Use CustomEvent to switch to the messages tab
+          const switchToMessagesEvent = new CustomEvent('switchToMessages', { 
+            detail: { helpRequestId: notification.related_entity_id } 
+          });
+          window.dispatchEvent(switchToMessagesEvent);
+        }, 100);
         break;
       default:
         navigate('/client-dashboard');
