@@ -1,6 +1,8 @@
+
 export interface HelpRequest {
   id?: string;
   client_id: string;
+  client_name?: string;  // Added this line to fix the type error
   title: string;
   description: string;
   technical_area: string[];
