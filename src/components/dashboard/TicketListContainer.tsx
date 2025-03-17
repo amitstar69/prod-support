@@ -24,7 +24,7 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
 }) => {
   if (filteredTickets.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-lg border border-border/40 text-center">
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-border/40 text-center">
         <div className="h-10 w-10 mx-auto text-muted-foreground mb-3">📋</div>
         <h3 className="text-lg font-medium mb-2">No tickets found</h3>
         <p className="text-muted-foreground text-sm mb-4">
@@ -41,7 +41,7 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-md shadow-sm overflow-hidden">
+    <div className="bg-white rounded-md shadow-sm border border-border/10 overflow-hidden">
       <div className="flex items-center justify-between border-b border-border/30 p-2 bg-muted/20">
         <div className="text-xs text-muted-foreground px-2">
           Showing {filteredTickets.length} of {totalTickets} tickets
