@@ -10,6 +10,7 @@ import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
 import { Clock, Hourglass, DollarSign, MessageCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 
 interface DeveloperProfile {
   id: string;
@@ -37,6 +38,8 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
 }) => {
   const navigate = useNavigate();
   const [processingApplicationIds, setProcessingApplicationIds] = useState<string[]>([]);
+  const [approvedApplication, setApprovedApplication] = useState<any>(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   
   const handleApprove = async (applicationId: string) => {
     try {
@@ -50,6 +53,14 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       
       if (result.success) {
         toast.success('Application approved successfully!');
+        
+        // Find the approved application to display in the success dialog
+        const approved = applications.find(app => app.id === applicationId);
+        if (approved) {
+          setApprovedApplication(approved);
+          setShowSuccessDialog(true);
+        }
+        
         onApplicationUpdate();
       } else {
         toast.error(`Failed to approve application: ${result.error}`);
@@ -88,6 +99,11 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       // Remove from processing list
       setProcessingApplicationIds(prev => prev.filter(id => id !== applicationId));
     }
+  };
+  
+  const handleStartChat = (developerId: string, applicationId: string) => {
+    onOpenChat(developerId, applicationId);
+    setShowSuccessDialog(false);
   };
   
   const formatCurrency = (value: number) => {
@@ -133,112 +149,166 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {applications.map((application) => (
-        <Card key={application.id} className="overflow-hidden">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage src={getDeveloperImage(application)} alt={getDeveloperName(application)} />
-                  <AvatarFallback>{getDeveloperName(application).charAt(0)}</AvatarFallback>
-                </Avatar>
-                <CardTitle className="text-lg">{getDeveloperName(application)}</CardTitle>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {applications.map((application) => (
+          <Card key={application.id} className="overflow-hidden">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarImage src={getDeveloperImage(application)} alt={getDeveloperName(application)} />
+                    <AvatarFallback>{getDeveloperName(application).charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <CardTitle className="text-lg">{getDeveloperName(application)}</CardTitle>
+                </div>
+                <Badge 
+                  variant="outline"
+                  className={`
+                    ${application.status === 'approved' ? 'bg-green-50 text-green-800 border-green-200' : 
+                     application.status === 'rejected' ? 'bg-red-50 text-red-800 border-red-200' :
+                     'bg-blue-50 text-blue-800 border-blue-200'}
+                  `}
+                >
+                  {application.status}
+                </Badge>
               </div>
-              <Badge 
-                variant="outline"
-                className={`
-                  ${application.status === 'approved' ? 'bg-green-50 text-green-800 border-green-200' : 
-                   application.status === 'rejected' ? 'bg-red-50 text-red-800 border-red-200' :
-                   'bg-blue-50 text-blue-800 border-blue-200'}
-                `}
-              >
-                {application.status}
-              </Badge>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-3">
-            {application.proposed_message && (
-              <div className="bg-muted p-3 rounded text-sm">
-                <p>{application.proposed_message}</p>
-              </div>
-            )}
+            </CardHeader>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                <Hourglass className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">
-                  {application.proposed_duration} minutes
-                </span>
+            <CardContent className="space-y-3">
+              {application.proposed_message && (
+                <div className="bg-muted p-3 rounded text-sm">
+                  <p>{application.proposed_message}</p>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <Hourglass className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">
+                    {application.proposed_duration} minutes
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">
+                    {formatCurrency(application.proposed_rate)}/hr
+                  </span>
+                </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">
-                  {formatCurrency(application.proposed_rate)}/hr
-                </span>
+              <div className="bg-muted/50 p-3 rounded">
+                <div className="flex justify-between items-center text-sm">
+                  <span>Estimated total cost:</span>
+                  <span className="font-medium">
+                    {formatCurrency(Math.round(application.proposed_rate * (application.proposed_duration / 60)))}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Based on {application.proposed_duration} minutes at {formatCurrency(application.proposed_rate)}/hour
+                </p>
               </div>
-            </div>
+            </CardContent>
             
-            <div className="bg-muted/50 p-3 rounded">
-              <div className="flex justify-between items-center text-sm">
-                <span>Estimated total cost:</span>
-                <span className="font-medium">
-                  {formatCurrency(Math.round(application.proposed_rate * (application.proposed_duration / 60)))}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Based on {application.proposed_duration} minutes at {formatCurrency(application.proposed_rate)}/hour
-              </p>
-            </div>
-          </CardContent>
+            <CardFooter className="gap-3 flex flex-wrap">
+              {application.status === 'pending' && (
+                <>
+                  <Button 
+                    className="flex-1"
+                    onClick={() => handleApprove(application.id)}
+                    disabled={isProcessing(application.id)}
+                  >
+                    {isProcessing(application.id) ? (
+                      <span className="flex items-center">
+                        <span className="animate-spin mr-2">◌</span>
+                        Processing...
+                      </span>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Approve
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    className="flex-1"
+                    variant="outline"
+                    onClick={() => handleReject(application.id)}
+                    disabled={isProcessing(application.id)}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                </>
+              )}
+              
+              <Button 
+                className={application.status === 'pending' ? 'w-full mt-2' : 'flex-1'}
+                variant={application.status === 'pending' ? 'outline' : 'default'}
+                onClick={() => onOpenChat(application.developer_id, application.id)}
+                disabled={isProcessing(application.id)}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Message
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
+              Application Approved!
+            </DialogTitle>
+            <DialogDescription>
+              You've approved a developer to work on your request.
+            </DialogDescription>
+          </DialogHeader>
           
-          <CardFooter className="gap-3 flex flex-wrap">
-            {application.status === 'pending' && (
-              <>
-                <Button 
-                  className="flex-1"
-                  onClick={() => handleApprove(application.id)}
-                  disabled={isProcessing(application.id)}
-                >
-                  {isProcessing(application.id) ? (
-                    <span className="flex items-center">
-                      <span className="animate-spin mr-2">◌</span>
-                      Processing...
-                    </span>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Approve
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  className="flex-1"
-                  variant="outline"
-                  onClick={() => handleReject(application.id)}
-                  disabled={isProcessing(application.id)}
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Reject
-                </Button>
-              </>
-            )}
-            
+          {approvedApplication && (
+            <div className="space-y-4 my-4">
+              <div className="flex items-center gap-3 mb-2">
+                <Avatar className="h-12 w-12 border border-border">
+                  <AvatarImage src={getDeveloperImage(approvedApplication)} alt={getDeveloperName(approvedApplication)} />
+                  <AvatarFallback>{getDeveloperName(approvedApplication).charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <h4 className="font-medium">{getDeveloperName(approvedApplication)}</h4>
+                  <p className="text-sm text-muted-foreground">Ready to help with your request</p>
+                </div>
+              </div>
+              
+              <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+                <AlertDescription>
+                  Start chatting with {getDeveloperName(approvedApplication)} to discuss your request and get started.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+          
+          <DialogFooter className="flex sm:justify-between gap-3">
             <Button 
-              className={application.status === 'pending' ? 'w-full mt-2' : 'flex-1'}
-              variant={application.status === 'pending' ? 'outline' : 'default'}
-              onClick={() => onOpenChat(application.developer_id, application.id)}
-              disabled={isProcessing(application.id)}
+              variant="outline" 
+              onClick={() => setShowSuccessDialog(false)}
             >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Message
+              Close
             </Button>
-          </CardFooter>
-        </Card>
-      ))}
-    </div>
+            <Button 
+              className="flex gap-2"
+              onClick={() => approvedApplication && handleStartChat(approvedApplication.developer_id, approvedApplication.id)}
+            >
+              <MessageCircle className="h-4 w-4" />
+              Start Chatting
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

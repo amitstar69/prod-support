@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { toast } from 'sonner';
-import { submitDeveloperApplication } from '../../integrations/supabase/helpRequests';
+import { submitDeveloperApplication, getDeveloperApplicationsForRequest } from '../../integrations/supabase/helpRequests';
+import { setupApplicationsSubscription } from '../../integrations/supabase/realtime';
 
 // Constants to prevent numeric overflow
 const MAX_RATE = 9.99; // Maximum rate in USD (precision 3, scale 2)
@@ -11,6 +13,7 @@ export interface UseTicketApplicationsResult {
   myApplications: HelpRequest[];
   handleClaimTicket: (ticketId: string) => void;
   fetchMyApplications: (userId: string | null) => Promise<void>;
+  checkApplicationStatus: (ticketId: string, userId: string) => Promise<string | null>;
 }
 
 export const useTicketApplications = (
@@ -22,6 +25,7 @@ export const useTicketApplications = (
 ): UseTicketApplicationsResult => {
   const [recommendedTickets, setRecommendedTickets] = useState<HelpRequest[]>([]);
   const [myApplications, setMyApplications] = useState<HelpRequest[]>([]);
+  const [applicationStatuses, setApplicationStatuses] = useState<Record<string, string>>({});
 
   // Initial processing of tickets
   useEffect(() => {
@@ -99,6 +103,23 @@ export const useTicketApplications = (
     }
   };
 
+  // Function to fetch application status for a specific ticket
+  const checkApplicationStatus = async (ticketId: string, developerId: string): Promise<string | null> => {
+    try {
+      const result = await getDeveloperApplicationsForRequest(ticketId);
+      
+      if (result.success && result.data) {
+        const myApplication = result.data.find(app => app.developer_id === developerId);
+        return myApplication ? myApplication.status : null;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error checking application status:', error);
+      return null;
+    }
+  };
+
   // Function to fetch developer's submitted applications
   const fetchMyApplications = async (currentUserId: string | null) => {
     if (!isAuthenticated || !currentUserId) {
@@ -123,6 +144,53 @@ export const useTicketApplications = (
     }
   };
 
+  // Set up realtime subscriptions for application status updates
+  useEffect(() => {
+    if (!isAuthenticated || !userId || userType !== 'developer') return;
+    
+    const subscriptions = recommendedTickets.map(ticket => {
+      if (!ticket.id) return null;
+      
+      return setupApplicationsSubscription(ticket.id, (payload) => {
+        if (payload.new && payload.new.developer_id === userId) {
+          // Update local application status cache
+          setApplicationStatuses(prev => ({
+            ...prev,
+            [ticket.id || '']: payload.new.status
+          }));
+          
+          // Show toast for important status updates
+          if (payload.new.status === 'approved') {
+            toast.success('Your application has been approved!', {
+              description: `Your application for "${ticket.title}" has been approved.`,
+              action: {
+                label: 'View Details',
+                onClick: () => {
+                  // Trigger event to switch to application details
+                  window.dispatchEvent(new CustomEvent('viewMyApplication', {
+                    detail: { ticketId: ticket.id }
+                  }));
+                }
+              }
+            });
+          } else if (payload.new.status === 'rejected') {
+            toast('Your application has been rejected', {
+              description: `Your application for "${ticket.title}" was not accepted.`
+            });
+          }
+          
+          // Refresh applications list
+          fetchMyApplications(userId);
+        }
+      });
+    }).filter(Boolean);
+    
+    // Clean up subscriptions
+    return () => {
+      subscriptions.forEach(cleanup => cleanup && cleanup());
+    };
+  }, [recommendedTickets, isAuthenticated, userId, userType]);
+
   // Fetch my applications when tickets change
   useEffect(() => {
     if (isAuthenticated && userId) {
@@ -134,6 +202,7 @@ export const useTicketApplications = (
     recommendedTickets,
     myApplications,
     handleClaimTicket,
-    fetchMyApplications
+    fetchMyApplications,
+    checkApplicationStatus
   };
 };

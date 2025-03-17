@@ -44,4 +44,80 @@ export const setupHelpRequestsSubscription = (callback: (payload: any) => void) 
   }
 };
 
-// Additional realtime handlers can be defined here
+// Setup realtime subscription for help request applications
+export const setupApplicationsSubscription = (requestId: string, callback: (payload: any) => void) => {
+  console.log('Setting up applications subscription for request:', requestId);
+  
+  try {
+    const channel = supabase
+      .channel(`applications_changes_${requestId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'help_request_matches',
+          filter: `request_id=eq.${requestId}`
+        },
+        (payload) => {
+          console.log('Application change received:', payload);
+          callback(payload);
+        }
+      )
+      .subscribe((status) => {
+        console.log('Applications subscription status:', status);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to applications');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Error subscribing to applications');
+          toast.error('Could not connect to application updates. Please refresh.');
+        }
+      });
+      
+    // Return the subscription for cleanup
+    return () => {
+      console.log('Cleaning up applications subscription');
+      supabase.removeChannel(channel);
+    };
+  } catch (error) {
+    console.error('Exception setting up applications subscription:', error);
+    toast.error('Real-time connection failed. Some features may not work.');
+    return () => {}; // Return empty cleanup function
+  }
+};
+
+// Setup realtime subscription for notifications
+export const setupNotificationsSubscription = (userId: string, callback: (payload: any) => void) => {
+  console.log('Setting up notifications subscription for user:', userId);
+  
+  try {
+    const channel = supabase
+      .channel(`notifications_for_${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('Notification received:', payload);
+          callback(payload.new);
+        }
+      )
+      .subscribe((status) => {
+        console.log('Notifications subscription status:', status);
+      });
+      
+    // Return the subscription for cleanup
+    return () => {
+      console.log('Cleaning up notifications subscription');
+      supabase.removeChannel(channel);
+    };
+  } catch (error) {
+    console.error('Exception setting up notifications subscription:', error);
+    return () => {}; // Return empty cleanup function
+  }
+};
