@@ -309,14 +309,14 @@ export const getDeveloperApplicationsForRequest = async (requestId: string) => {
       return { success: true, data: matchingApplications };
     }
 
-    // For database help requests
+    // For database help requests - fix the join relationship
     const { data, error } = await supabase
       .from('help_request_matches')
       .select(`
         *,
-        developers:developer_id (
+        developer:developer_id (
           id,
-          profiles (
+          profile:id (
             name,
             image,
             description
@@ -331,7 +331,21 @@ export const getDeveloperApplicationsForRequest = async (requestId: string) => {
       return { success: false, error: error.message };
     }
 
-    return { success: true, data };
+    // Transform the data to maintain compatibility with existing code
+    const transformedData = data.map(app => {
+      if (app.developer && app.developer.profile) {
+        return {
+          ...app,
+          developers: {
+            id: app.developer_id,
+            profiles: app.developer.profile
+          }
+        };
+      }
+      return app;
+    });
+
+    return { success: true, data: transformedData };
   } catch (error) {
     console.error('Exception fetching developer applications:', error);
     return { 

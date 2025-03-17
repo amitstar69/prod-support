@@ -95,15 +95,23 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
   };
 
   const getDeveloperName = (application: any) => {
+    // Handle both original and transformed data structure
     if (application.developers?.profiles?.name) {
       return application.developers.profiles.name;
+    }
+    if (application.developer?.profile?.name) {
+      return application.developer.profile.name;
     }
     return 'Developer';
   };
   
   const getDeveloperImage = (application: any) => {
+    // Handle both original and transformed data structure
     if (application.developers?.profiles?.image) {
       return application.developers.profiles.image;
+    }
+    if (application.developer?.profile?.image) {
+      return application.developer.profile.image;
     }
     return '/placeholder.svg';
   };

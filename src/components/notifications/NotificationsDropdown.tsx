@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth';
@@ -88,7 +87,47 @@ const NotificationsDropdown: React.FC = () => {
     // Navigate based on notification type
     switch (notification.entity_type) {
       case 'application':
-        navigate(`/get-help/request/${notification.related_entity_id.split('-')[0]}`);
+        // Get the request ID directly from the related_entity_id if it's a request ID
+        // or fetch it from the application if it's an application ID
+        if (notification.related_entity_id.includes('-')) {
+          try {
+            // If it's an application ID, get the request ID from the application
+            const { data, error } = await supabase
+              .from('help_request_matches')
+              .select('request_id')
+              .eq('id', notification.related_entity_id)
+              .single();
+              
+            if (error) {
+              console.error('Error fetching application details:', error);
+              toast.error('Failed to load application details');
+              return;
+            }
+            
+            if (data && data.request_id) {
+              navigate(`/client-dashboard`);
+              // Give the dashboard a chance to load before viewing the request
+              setTimeout(() => {
+                const viewRequestEvent = new CustomEvent('viewRequest', { 
+                  detail: { requestId: data.request_id } 
+                });
+                window.dispatchEvent(viewRequestEvent);
+              }, 100);
+            }
+          } catch (err) {
+            console.error('Error handling notification click:', err);
+            toast.error('Failed to process notification');
+          }
+        } else {
+          // If the related_entity_id is the request ID itself
+          navigate(`/client-dashboard`);
+          setTimeout(() => {
+            const viewRequestEvent = new CustomEvent('viewRequest', { 
+              detail: { requestId: notification.related_entity_id } 
+            });
+            window.dispatchEvent(viewRequestEvent);
+          }, 100);
+        }
         break;
       case 'application_status':
         navigate(`/developer-dashboard?tab=myApplications`);

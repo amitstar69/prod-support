@@ -49,7 +49,6 @@ const ClientDashboard: React.FC = () => {
     if (isAuthenticated && userId) {
       fetchHelpRequests();
       
-      // Set up realtime subscription to help_request_matches
       const matchesChannel = supabase
         .channel('public:help_request_matches')
         .on('postgres_changes', {
@@ -57,7 +56,6 @@ const ClientDashboard: React.FC = () => {
           schema: 'public',
           table: 'help_request_matches'
         }, (payload) => {
-          // Check if this match is for one of our requests
           const match = payload.new as HelpRequestMatch;
           if (activeRequests.some(r => r.id === match.request_id)) {
             toast.info('New developer application received!', {
@@ -67,21 +65,29 @@ const ClientDashboard: React.FC = () => {
               }
             });
             
-            // Refresh help requests to update counts
             fetchHelpRequests();
           }
         })
         .subscribe();
         
+      const handleViewRequest = (event: CustomEvent) => {
+        const { requestId } = event.detail;
+        if (requestId) {
+          handleViewRequest(requestId);
+        }
+      };
+      
+      window.addEventListener('viewRequest', handleViewRequest as EventListener);
+      
       return () => {
         supabase.removeChannel(matchesChannel);
+        window.removeEventListener('viewRequest', handleViewRequest as EventListener);
       };
     } else {
       navigate('/login', { state: { returnTo: '/client-dashboard' } });
     }
   }, [userId, isAuthenticated]);
 
-  // Fetch application-related notifications
   useEffect(() => {
     if (isAuthenticated && userId) {
       const fetchApplicationNotifications = async () => {
@@ -107,7 +113,6 @@ const ClientDashboard: React.FC = () => {
       
       fetchApplicationNotifications();
       
-      // Set up subscription for new notifications
       const notificationChannel = supabase
         .channel('public:notifications')
         .on('postgres_changes', {
@@ -119,13 +124,11 @@ const ClientDashboard: React.FC = () => {
           const newNotification = payload.new as Notification;
           setApplicationNotifications(prev => [newNotification, ...prev]);
           
-          // Show toast notification
           toast.info(newNotification.title, {
             description: newNotification.message,
             action: {
               label: 'View',
               onClick: () => {
-                // Extract request_id from related_entity_id (which is the application_id)
                 handleViewApplication(newNotification.related_entity_id);
               }
             }
@@ -216,24 +219,26 @@ const ClientDashboard: React.FC = () => {
     if (!userId || !requestId) return;
     
     try {
+      toast.loading('Loading developer applications...');
       const response = await getDeveloperApplicationsForRequest(requestId);
+      toast.dismiss();
       
       if (response.success) {
+        console.log('Applications loaded successfully:', response.data);
         setSelectedRequestApplications(response.data || []);
       } else {
         console.error('Error fetching applications:', response.error);
-        toast.error('Failed to load developer applications');
+        toast.error('Failed to load developer applications: ' + response.error);
       }
     } catch (error) {
+      toast.dismiss();
       console.error('Exception fetching applications:', error);
-      toast.error('An unexpected error occurred');
+      toast.error('An unexpected error occurred while loading applications');
     }
   };
 
-  // New function to handle viewing an application from notification
   const handleViewApplication = async (applicationId: string) => {
     try {
-      // First fetch the application to get the request_id
       const { data, error } = await supabase
         .from('help_request_matches')
         .select('request_id')
@@ -247,18 +252,15 @@ const ClientDashboard: React.FC = () => {
       }
       
       if (data && data.request_id) {
-        // Mark related notification as read
         await supabase
           .from('notifications')
           .update({ is_read: true })
           .eq('related_entity_id', applicationId);
           
-        // Remove from local state
         setApplicationNotifications(prev => 
           prev.filter(notif => notif.related_entity_id !== applicationId)
         );
         
-        // Now view the request with this application
         handleViewRequest(data.request_id);
       }
     } catch (error) {
@@ -431,7 +433,6 @@ const ClientDashboard: React.FC = () => {
                 {activeRequests.map((request) => (
                   <Card key={request.id} className={`overflow-hidden ${
                     applicationNotifications.some(n => {
-                      // Extract request_id from the application id
                       const appData = selectedRequestApplications.find(app => app.id === n.related_entity_id);
                       return appData && appData.request_id === request.id;
                     }) ? 'ring-2 ring-primary' : ''
