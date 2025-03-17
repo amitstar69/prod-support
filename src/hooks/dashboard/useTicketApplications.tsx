@@ -4,6 +4,9 @@ import { HelpRequest } from '../../types/helpRequest';
 import { toast } from 'sonner';
 import { submitDeveloperApplication } from '../../integrations/supabase/helpRequests';
 
+// Constants to prevent numeric overflow
+const MAX_RATE = 999.99; // Maximum rate in USD
+
 export interface UseTicketApplicationsResult {
   recommendedTickets: HelpRequest[];
   myApplications: HelpRequest[];
@@ -57,16 +60,21 @@ export const useTicketApplications = (
       toast.loading('Processing your application...');
       
       // Make sure the rate is properly formatted for the database
-      const formattedRate = Math.min(Math.max(0, parseFloat((75).toFixed(2))), 999.99);
+      // Cap at MAX_RATE to prevent overflow
+      const defaultRate = 75; // Default hourly rate
+      const formattedRate = Math.min(Math.max(0, parseFloat(defaultRate.toFixed(2))), MAX_RATE);
       
-      // Submit application with dummy data for now
+      // Use a standard 1-hour duration (60 minutes)
+      const defaultDuration = 60;
+      
+      // Submit application with controlled values
       const result = await submitDeveloperApplication(
         ticketId, 
         userId,
         {
           proposed_message: "I'd like to help with your request. I have experience in this area.",
-          proposed_duration: 60, // 1 hour
-          proposed_rate: formattedRate // $75/hour properly formatted
+          proposed_duration: defaultDuration,
+          proposed_rate: formattedRate
         }
       );
       

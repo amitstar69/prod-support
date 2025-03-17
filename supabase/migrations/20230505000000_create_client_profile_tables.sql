@@ -24,11 +24,11 @@ CREATE TABLE IF NOT EXISTS client_profiles (
   completed_projects INTEGER DEFAULT 0,
   profile_completion_percentage INTEGER DEFAULT 0,
   preferred_help_format TEXT[] DEFAULT '{}',
-  budget DECIMAL(10, 2),
+  budget NUMERIC(10, 2), -- Set to numeric(10,2) to allow values up to 99,999,999.99
   payment_method TEXT CHECK (payment_method IN ('Stripe', 'PayPal')),
   bio TEXT,
   tech_stack TEXT[] DEFAULT '{}',
-  budget_per_hour DECIMAL(10, 2),
+  budget_per_hour NUMERIC(10, 2), -- Set to numeric(10,2) to allow values up to 99,999,999.99
   company TEXT,
   position TEXT,
   project_types TEXT[] DEFAULT '{}',

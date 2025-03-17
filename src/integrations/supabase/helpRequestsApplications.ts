@@ -4,6 +4,10 @@ import { HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
 import { enableRealtimeForTable } from './setupRealtime';
 
+// Constants to prevent numeric overflow
+const MAX_RATE = 999.99; // Maximum rate in USD
+const MAX_DURATION = 480; // Maximum duration in minutes (8 hours)
+
 // Function to submit a developer application for a help request
 export const submitDeveloperApplication = async (
   requestId: string,
@@ -21,14 +25,27 @@ export const submitDeveloperApplication = async (
       applicationData 
     });
     
-    // Ensure the rate is properly formatted
-    let formattedRate = applicationData.proposed_rate;
-    if (formattedRate !== undefined) {
-      // Make sure the rate is a valid numeric with two decimal places 
-      // The help_request_matches.proposed_rate is likely defined as numeric(10,2)
-      // Let's ensure we're within database limits by capping at 9999.99
-      formattedRate = Math.min(Math.max(0, parseFloat(formattedRate.toFixed(2))), 9999.99);
-      console.log('[submitDeveloperApplication] Formatted rate:', formattedRate);
+    // Validate and format input values to prevent database overflow
+    let validatedData = { ...applicationData };
+    
+    // Ensure the rate is properly formatted and within limits
+    if (validatedData.proposed_rate !== undefined) {
+      // Make sure the rate is a valid numeric with two decimal places and within limits
+      // The help_request_matches.proposed_rate is defined as numeric(10,2)
+      validatedData.proposed_rate = Math.min(
+        Math.max(0, parseFloat(validatedData.proposed_rate.toFixed(2))), 
+        MAX_RATE
+      );
+      console.log('[submitDeveloperApplication] Validated rate:', validatedData.proposed_rate);
+    }
+    
+    // Ensure duration is within limits
+    if (validatedData.proposed_duration !== undefined) {
+      validatedData.proposed_duration = Math.min(
+        Math.max(15, validatedData.proposed_duration), 
+        MAX_DURATION
+      );
+      console.log('[submitDeveloperApplication] Validated duration:', validatedData.proposed_duration);
     }
     
     // Check for local storage request
@@ -44,9 +61,9 @@ export const submitDeveloperApplication = async (
         // Update existing application
         localApplications[existingIndex] = {
           ...localApplications[existingIndex],
-          proposed_message: applicationData.proposed_message,
-          proposed_duration: applicationData.proposed_duration,
-          proposed_rate: formattedRate,
+          proposed_message: validatedData.proposed_message,
+          proposed_duration: validatedData.proposed_duration,
+          proposed_rate: validatedData.proposed_rate,
           match_score: 85,
           status: 'pending',
           updated_at: new Date().toISOString()
@@ -73,9 +90,9 @@ export const submitDeveloperApplication = async (
         developer_id: developerId,
         status: 'pending',
         match_score: 85,
-        proposed_message: applicationData.proposed_message,
-        proposed_duration: applicationData.proposed_duration,
-        proposed_rate: formattedRate,
+        proposed_message: validatedData.proposed_message,
+        proposed_duration: validatedData.proposed_duration,
+        proposed_rate: validatedData.proposed_rate,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -114,16 +131,19 @@ export const submitDeveloperApplication = async (
       
       // If application exists, update it
       if (existing) {
-        const updatePayload = {
-          proposed_message: applicationData.proposed_message,
-          proposed_duration: applicationData.proposed_duration,
+        const updatePayload: Record<string, any> = {
+          proposed_message: validatedData.proposed_message,
           updated_at: new Date().toISOString()
         };
         
-        // Only include rate if it's valid
-        if (formattedRate !== undefined) {
-          // @ts-ignore - TypeScript doesn't know we're doing this dynamically
-          updatePayload.proposed_rate = formattedRate;
+        // Only include duration if it's provided
+        if (validatedData.proposed_duration !== undefined) {
+          updatePayload.proposed_duration = validatedData.proposed_duration;
+        }
+        
+        // Only include rate if it's provided
+        if (validatedData.proposed_rate !== undefined) {
+          updatePayload.proposed_rate = validatedData.proposed_rate;
         }
 
         const { error: updateError } = await supabase
@@ -151,19 +171,22 @@ export const submitDeveloperApplication = async (
       }
       
       // Create new application
-      const insertPayload = {
+      const insertPayload: Record<string, any> = {
         request_id: requestId,
         developer_id: developerId,
         status: 'pending',
         match_score: 85,
-        proposed_message: applicationData.proposed_message,
-        proposed_duration: applicationData.proposed_duration
+        proposed_message: validatedData.proposed_message
       };
       
-      // Only include rate if it's valid
-      if (formattedRate !== undefined) {
-        // @ts-ignore - TypeScript doesn't know we're doing this dynamically
-        insertPayload.proposed_rate = formattedRate;
+      // Only include duration if it's provided
+      if (validatedData.proposed_duration !== undefined) {
+        insertPayload.proposed_duration = validatedData.proposed_duration;
+      }
+      
+      // Only include rate if it's provided
+      if (validatedData.proposed_rate !== undefined) {
+        insertPayload.proposed_rate = validatedData.proposed_rate;
       }
 
       // Create new application - Debug/test the insertion

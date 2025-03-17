@@ -21,6 +21,10 @@ import { submitDeveloperApplication } from '../../integrations/supabase/helpRequ
 import { isLocalId } from '../../integrations/supabase/helpRequestsUtils';
 import { enableRealtimeForTable } from '../../integrations/supabase/setupRealtime';
 
+// Define maximum allowed values to prevent numeric overflow
+const MAX_RATE = 999.99; // Maximum hourly rate in USD
+const MAX_DURATION = 480; // Maximum duration in minutes (8 hours)
+
 interface DeveloperApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -37,7 +41,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
   const { userId } = useAuth();
   const navigate = useNavigate();
   const [message, setMessage] = useState('');
-  const [estimatedTime, setEstimatedTime] = useState(ticket.estimated_duration || 30);
+  const [estimatedTime, setEstimatedTime] = useState(Math.min(ticket.estimated_duration || 30, MAX_DURATION));
   const [proposedRate, setProposedRate] = useState(75); // Default hourly rate in USD
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -56,8 +60,11 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
       setIsSubmitting(true);
       
       // Format the rate properly to avoid numeric field overflow
-      // The database likely has a numeric type with limited precision
-      const formattedRate = Math.min(Math.max(0, parseFloat(proposedRate.toFixed(2))), 9999.99);
+      // Cap at MAX_RATE to prevent database overflow
+      const formattedRate = Math.min(Math.max(0, parseFloat(proposedRate.toFixed(2))), MAX_RATE);
+      
+      // Cap duration to prevent database overflow
+      const formattedDuration = Math.min(estimatedTime, MAX_DURATION);
       
       console.log('Submitting application with data:', {
         request_id: ticket.id,
@@ -65,7 +72,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
         status: 'pending',
         match_score: 85,
         proposed_message: message,
-        proposed_duration: estimatedTime,
+        proposed_duration: formattedDuration,
         proposed_rate: formattedRate
       });
 
@@ -83,7 +90,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
           localApplications[existingIndex] = {
             ...localApplications[existingIndex],
             proposed_message: message,
-            proposed_duration: estimatedTime,
+            proposed_duration: formattedDuration,
             proposed_rate: formattedRate,
             match_score: 85,
             status: 'pending',
@@ -106,7 +113,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
           status: 'pending',
           match_score: 85,
           proposed_message: message,
-          proposed_duration: estimatedTime,
+          proposed_duration: formattedDuration,
           proposed_rate: formattedRate,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -137,7 +144,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
         userId, 
         {
           proposed_message: message,
-          proposed_duration: estimatedTime,
+          proposed_duration: formattedDuration,
           proposed_rate: formattedRate
         }
       );
@@ -179,7 +186,9 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
   const calculateTotalCost = () => {
     const hourlyRate = proposedRate;
     const hours = estimatedTime / 60;
-    return formatCurrency(Math.round(hourlyRate * hours * 100) / 100);
+    // Prevent cost overflow by capping at reasonable maximum
+    const totalCost = Math.min(hourlyRate * hours, 9999.99);
+    return formatCurrency(Math.round(totalCost * 100) / 100);
   };
 
   return (
@@ -222,7 +231,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
             <Slider
               value={[estimatedTime]}
               min={15}
-              max={180}
+              max={MAX_DURATION}
               step={15}
               onValueChange={(values) => setEstimatedTime(values[0])}
               disabled={isSubmitting}
