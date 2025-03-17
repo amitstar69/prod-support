@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/auth';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
 import { createHelpRequest } from '../../../integrations/supabase/helpRequests';
+import { toast } from "../../ui/use-toast";
 
 interface FormContainerProps {
   children: React.ReactNode;

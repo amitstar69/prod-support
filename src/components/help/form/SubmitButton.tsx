@@ -5,7 +5,7 @@ import { Button } from '../../ui/button';
 import { useAuth } from '../../../contexts/auth';
 import AuthWarning from './AuthWarning';
 import SubmitButtonContent from './SubmitButtonContent';
-import { toast } from 'sonner';
+import { toast } from "../../ui/use-toast";
 
 /**
  * Component that renders the submit button for the help request form

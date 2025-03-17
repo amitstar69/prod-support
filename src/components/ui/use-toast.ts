@@ -1,4 +1,5 @@
 
-import { useToast, toast } from "sonner";
+// This file now re-exports Sonner's toast function
+import { toast } from "sonner";
 
-export { useToast, toast };
+export { toast };
