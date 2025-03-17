@@ -87,8 +87,8 @@ export const setupApplicationsSubscription = (requestId: string, callback: (payl
   }
 };
 
-// Setup realtime subscription for notifications
-export const setupNotificationsSubscription = (userId: string, callback: (payload: any) => void) => {
+// This function has been renamed to avoid naming conflicts with notifications.ts
+export const setupLegacyNotificationsSubscription = (userId: string, callback: (payload: any) => void) => {
   console.log('Setting up notifications subscription for user:', userId);
   
   try {
