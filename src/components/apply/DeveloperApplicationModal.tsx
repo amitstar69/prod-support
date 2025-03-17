@@ -22,7 +22,7 @@ import { isLocalId } from '../../integrations/supabase/helpRequestsUtils';
 import { enableRealtimeForTable } from '../../integrations/supabase/setupRealtime';
 
 // Define maximum allowed values to prevent numeric overflow
-const MAX_RATE = 999.99; // Maximum hourly rate in USD
+const MAX_RATE = 9.99; // Maximum hourly rate in USD (precision 3, scale 2)
 const MAX_DURATION = 480; // Maximum duration in minutes (8 hours)
 
 interface DeveloperApplicationModalProps {
@@ -42,7 +42,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
   const navigate = useNavigate();
   const [message, setMessage] = useState('');
   const [estimatedTime, setEstimatedTime] = useState(Math.min(ticket.estimated_duration || 30, MAX_DURATION));
-  const [proposedRate, setProposedRate] = useState(75); // Default hourly rate in USD
+  const [proposedRate, setProposedRate] = useState(5); // Default hourly rate in USD, capped to match database limits
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -70,7 +70,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
         request_id: ticket.id,
         developer_id: userId,
         status: 'pending',
-        match_score: 85,
+        match_score: Math.min(85, 9.99), // Cap match score to avoid numeric overflow
         proposed_message: message,
         proposed_duration: formattedDuration,
         proposed_rate: formattedRate
@@ -187,7 +187,7 @@ const DeveloperApplicationModal: React.FC<DeveloperApplicationModalProps> = ({
     const hourlyRate = proposedRate;
     const hours = estimatedTime / 60;
     // Prevent cost overflow by capping at reasonable maximum
-    const totalCost = Math.min(hourlyRate * hours, 9999.99);
+    const totalCost = Math.min(hourlyRate * hours, 9.99);
     return formatCurrency(Math.round(totalCost * 100) / 100);
   };
 

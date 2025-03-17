@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { toast } from 'sonner';
 import { submitDeveloperApplication } from '../../integrations/supabase/helpRequests';
 
 // Constants to prevent numeric overflow
-const MAX_RATE = 999.99; // Maximum rate in USD
+const MAX_RATE = 9.99; // Maximum rate in USD (precision 3, scale 2)
 
 export interface UseTicketApplicationsResult {
   recommendedTickets: HelpRequest[];
@@ -61,7 +60,7 @@ export const useTicketApplications = (
       
       // Make sure the rate is properly formatted for the database
       // Cap at MAX_RATE to prevent overflow
-      const defaultRate = 75; // Default hourly rate
+      const defaultRate = 5; // Default hourly rate within the numeric(3,2) limit
       const formattedRate = Math.min(Math.max(0, parseFloat(defaultRate.toFixed(2))), MAX_RATE);
       
       // Use a standard 1-hour duration (60 minutes)

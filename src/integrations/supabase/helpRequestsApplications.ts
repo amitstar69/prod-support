@@ -1,11 +1,13 @@
+
 import { supabase } from './client';
 import { HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
 import { enableRealtimeForTable } from './setupRealtime';
 
 // Constants to prevent numeric overflow
-const MAX_RATE = 999.99; // Maximum rate in USD
+const MAX_RATE = 9.99; // Maximum rate in USD (precision 3, scale 2)
 const MAX_DURATION = 480; // Maximum duration in minutes (8 hours)
+const MAX_MATCH_SCORE = 9.99; // Maximum match score (precision 3, scale 2)
 
 // Function to submit a developer application for a help request
 export const submitDeveloperApplication = async (
@@ -39,7 +41,7 @@ export const submitDeveloperApplication = async (
     // Ensure the rate is properly formatted and within limits
     if (validatedData.proposed_rate !== undefined) {
       // Make sure the rate is a valid numeric with two decimal places and within limits
-      // The help_request_matches.proposed_rate is defined as numeric(10,2)
+      // The help_request_matches.proposed_rate is defined as numeric(3,2)
       validatedData.proposed_rate = Math.min(
         Math.max(0, parseFloat(validatedData.proposed_rate.toFixed(2))), 
         MAX_RATE
@@ -197,7 +199,7 @@ export const submitDeveloperApplication = async (
         request_id: requestId,
         developer_id: developerId,
         status: 'pending',
-        match_score: 85,
+        match_score: Math.min(85, MAX_MATCH_SCORE), // Ensure match_score is capped to avoid overflow
         proposed_message: validatedData.proposed_message,
         proposed_duration: validatedData.proposed_duration !== undefined ? validatedData.proposed_duration : null,
         proposed_rate: validatedData.proposed_rate !== undefined ? validatedData.proposed_rate : null
