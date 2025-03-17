@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { HelpRequestMatch } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -19,6 +18,15 @@ export const submitDeveloperApplication = async (
   }
 ) => {
   try {
+    // Validate required fields
+    if (!requestId || !developerId) {
+      console.error('[submitDeveloperApplication] Missing required fields:', { requestId, developerId });
+      return { 
+        success: false, 
+        error: 'Request ID and Developer ID are required' 
+      };
+    }
+
     console.log('[submitDeveloperApplication] Submitting application with data:', { 
       requestId, 
       developerId, 
@@ -114,6 +122,12 @@ export const submitDeveloperApplication = async (
     
     // For Supabase help requests
     if (isValidUUID(requestId)) {
+      // Verify UUIDs are valid format before database operations
+      if (!isValidUUID(developerId)) {
+        console.error('[submitDeveloperApplication] Invalid developer ID format:', developerId);
+        return { success: false, error: 'Invalid developer ID format' };
+      }
+
       // Check if there's an existing application
       const { data: existing, error: existingError } = await supabase
         .from('help_request_matches')
@@ -170,8 +184,16 @@ export const submitDeveloperApplication = async (
         return { success: true, isUpdate: true };
       }
       
-      // Create new application - Fix the insert payload to ensure all required fields are present
-      const insertPayload = {
+      // Create new application with properly typed payload
+      const insertPayload: {
+        request_id: string;
+        developer_id: string;
+        status: string;
+        match_score: number;
+        proposed_message?: string;
+        proposed_duration: number | null;
+        proposed_rate: number | null;
+      } = {
         request_id: requestId,
         developer_id: developerId,
         status: 'pending',
@@ -180,6 +202,8 @@ export const submitDeveloperApplication = async (
         proposed_duration: validatedData.proposed_duration !== undefined ? validatedData.proposed_duration : null,
         proposed_rate: validatedData.proposed_rate !== undefined ? validatedData.proposed_rate : null
       };
+
+      console.log('[submitDeveloperApplication] Inserting with payload:', insertPayload);
 
       // Create new application with properly typed payload
       const insertResponse = await supabase
