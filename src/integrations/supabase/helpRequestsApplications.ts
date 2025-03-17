@@ -1,6 +1,5 @@
-
 import { supabase } from './client';
-import { HelpRequestMatch } from '../../types/helpRequest';
+import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
 import { enableRealtimeForTable } from './setupRealtime';
 
@@ -11,11 +10,11 @@ const MAX_MATCH_SCORE = 9.99; // Maximum match score (precision 3, scale 2)
 
 // Valid status values according to the database constraint
 const VALID_MATCH_STATUSES = {
-  PENDING: 'pending',
-  APPROVED: 'approved',
-  REJECTED: 'rejected',
-  COMPLETED: 'completed',
-  CANCELLED: 'cancelled'
+  PENDING: 'pending' as ApplicationStatus,
+  APPROVED: 'approved' as ApplicationStatus,
+  REJECTED: 'rejected' as ApplicationStatus,
+  COMPLETED: 'completed' as ApplicationStatus,
+  CANCELLED: 'cancelled' as ApplicationStatus
 };
 
 // Function to submit a developer application for a help request
@@ -369,7 +368,7 @@ export const getDeveloperApplicationsForRequest = async (requestId: string) => {
 // Function to approve or reject a developer application
 export const updateApplicationStatus = async (
   applicationId: string, 
-  status: 'approved' | 'rejected' | 'completed' | 'cancelled',
+  status: ApplicationStatus,
   clientId: string
 ) => {
   try {
@@ -478,4 +477,3 @@ export const updateApplicationStatus = async (
     };
   }
 };
-

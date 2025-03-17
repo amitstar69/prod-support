@@ -1,3 +1,4 @@
+
 export interface HelpRequest {
   id?: string;
   client_id: string;
@@ -107,3 +108,6 @@ export const matchStatusOptions = [
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' }
 ];
+
+// Create a new type definition for the valid application statuses
+export type ApplicationStatus = 'approved' | 'rejected' | 'completed' | 'cancelled' | 'pending';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HelpRequestMatch } from '../../types/helpRequest';
+import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
 import { updateApplicationStatus } from '../../integrations/supabase/helpRequests';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
@@ -12,11 +12,11 @@ import { Alert, AlertDescription } from '../ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 
 const APPLICATION_STATUSES = {
-  PENDING: 'pending',
-  APPROVED: 'approved',
-  REJECTED: 'rejected',
-  COMPLETED: 'completed',
-  CANCELLED: 'cancelled'
+  PENDING: 'pending' as ApplicationStatus,
+  APPROVED: 'approved' as ApplicationStatus,
+  REJECTED: 'rejected' as ApplicationStatus,
+  COMPLETED: 'completed' as ApplicationStatus,
+  CANCELLED: 'cancelled' as ApplicationStatus
 };
 
 interface DeveloperProfile {
