@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
@@ -53,6 +54,7 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Approving application...');
       
+      console.log('Approving application with status:', APPLICATION_STATUSES.APPROVED);
       const result = await updateApplicationStatus(applicationId, APPLICATION_STATUSES.APPROVED, clientId);
       
       toast.dismiss();
@@ -69,6 +71,7 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
         onApplicationUpdate();
       } else {
         toast.error(`Failed to approve application: ${result.error}`);
+        console.error('Error details:', result);
       }
     } catch (error) {
       toast.dismiss();
@@ -84,6 +87,7 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Rejecting application...');
       
+      console.log('Rejecting application with status:', APPLICATION_STATUSES.REJECTED);
       const result = await updateApplicationStatus(applicationId, APPLICATION_STATUSES.REJECTED, clientId);
       
       toast.dismiss();
@@ -93,6 +97,7 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
         onApplicationUpdate();
       } else {
         toast.error(`Failed to reject application: ${result.error}`);
+        console.error('Error details:', result);
       }
     } catch (error) {
       toast.dismiss();

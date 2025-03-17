@@ -382,6 +382,8 @@ export const updateApplicationStatus = async (
       return { success: false, error: `Invalid status value. Must be one of: ${Object.values(VALID_MATCH_STATUSES).join(', ')}` };
     }
 
+    console.log('Updating application status:', { applicationId, status, clientId });
+
     // For local storage applications
     if (applicationId.startsWith('app-')) {
       const localApplications = JSON.parse(localStorage.getItem('help_request_matches') || '[]');
@@ -440,6 +442,8 @@ export const updateApplicationStatus = async (
       return { success: false, error: 'You are not authorized to update this application' };
     }
     
+    console.log('Updating status in database to:', status);
+
     // Update the application status
     const { data, error } = await supabase
       .from('help_request_matches')
@@ -455,20 +459,30 @@ export const updateApplicationStatus = async (
     // If approved, also update the help request status and reject other applications
     if (status === VALID_MATCH_STATUSES.APPROVED) {
       // Update help request status
-      await supabase
+      const updateResult = await supabase
         .from('help_requests')
         .update({ status: 'in-progress' })
         .eq('id', applicationData.request_id);
         
+      if (updateResult.error) {
+        console.error('Error updating help request status:', updateResult.error);
+        // Don't fail the whole operation if this update fails
+      }
+        
       // Reject other applications for this request
-      await supabase
+      const rejectResult = await supabase
         .from('help_request_matches')
         .update({ status: VALID_MATCH_STATUSES.REJECTED })
         .eq('request_id', applicationData.request_id)
         .neq('id', applicationId);
+        
+      if (rejectResult.error) {
+        console.error('Error rejecting other applications:', rejectResult.error);
+        // Don't fail the whole operation if this update fails
+      }
     }
 
-    return { success: true, data: data[0] };
+    return { success: true, data: data?.[0] };
   } catch (error) {
     console.error('Exception updating application status:', error);
     return { 

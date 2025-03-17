@@ -110,4 +110,4 @@ export const matchStatusOptions = [
 ];
 
 // Create a new type definition for the valid application statuses
-export type ApplicationStatus = 'approved' | 'rejected' | 'completed' | 'cancelled' | 'pending';
+export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
