@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { ExternalLink, ArrowUpRight, Clock, DollarSign, Zap, CheckCircle, AlertCircle } from 'lucide-react';
+import { ExternalLink, ArrowUpRight, Clock, DollarSign, Zap, CheckCircle, AlertCircle, MessageCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -22,6 +23,7 @@ interface TicketListProps {
   isAuthenticated: boolean;
   isRecommended?: boolean;
   isApplication?: boolean;
+  onOpenChat?: (helpRequestId: string, clientId: string, clientName?: string) => void;
 }
 
 const TicketList: React.FC<TicketListProps> = ({ 
@@ -30,7 +32,8 @@ const TicketList: React.FC<TicketListProps> = ({
   currentUserId,
   isAuthenticated,
   isRecommended = false,
-  isApplication = false
+  isApplication = false,
+  onOpenChat
 }) => {
   const navigate = useNavigate();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
@@ -81,6 +84,15 @@ const TicketList: React.FC<TicketListProps> = ({
       setShowApplicationModal(true);
     } else {
       setPendingAction({ type: 'apply', ticketId: ticket.id || '' });
+      setShowAuthDialog(true);
+    }
+  };
+  
+  const handleChatClick = (helpRequestId: string, clientId: string, clientName?: string) => {
+    if (onOpenChat && isAuthenticated) {
+      onOpenChat(helpRequestId, clientId, clientName);
+    } else if (!isAuthenticated) {
+      setPendingAction({ type: 'view', ticketId: helpRequestId });
       setShowAuthDialog(true);
     }
   };
@@ -323,6 +335,22 @@ const TicketList: React.FC<TicketListProps> = ({
                           {ticket.status === 'in-progress' ? 'In Progress' : 
                            ticket.status === 'resolved' ? 'Resolved' :
                            ticket.status === 'completed' ? 'Completed' : 'Unavailable'}
+                        </Button>
+                      )}
+                      
+                      {/* Add Chat button if onOpenChat is provided and the ticket has a client_id */}
+                      {onOpenChat && ticket.client_id && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleChatClick(ticket.id || '', ticket.client_id, ticket.client_name);
+                          }}
+                        >
+                          Chat
+                          <MessageCircle className="h-3.5 w-3.5 ml-1" />
                         </Button>
                       )}
                     </div>
