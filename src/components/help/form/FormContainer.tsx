@@ -13,7 +13,7 @@ interface FormContainerProps {
 const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
   const { isAuthenticated, userId } = useAuth();
   const navigate = useNavigate();
-  const { formData, isSubmitting, setIsSubmitting, resetForm } = useHelpRequest();
+  const { formData, isSubmitting, setIsSubmitting, resetForm, validateForm } = useHelpRequest();
   const [submissionTimer, setSubmissionTimer] = useState<NodeJS.Timeout | null>(null);
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,6 +21,11 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
     
     if (isSubmitting) {
       return; // Prevent multiple submissions
+    }
+    
+    // Validate the form
+    if (!validateForm()) {
+      return; // Stop if validation fails
     }
     
     // Generate a client ID based on authentication status
@@ -35,7 +40,11 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
     const timer = setTimeout(() => {
       console.log('Submission taking longer than expected, resetting state...');
       setIsSubmitting(false);
-      toast.error('Request is taking longer than expected. Please try again or refresh the page.');
+      toast({
+        title: "Request is taking longer than expected",
+        description: "Please try again or refresh the page.",
+        variant: "destructive"
+      });
     }, 10000); // 10 seconds timeout
     
     setSubmissionTimer(timer);
@@ -70,7 +79,12 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       console.log('Help request created successfully:', result);
       
       // Show success message and redirect
-      toast.success('Help request submitted successfully!');
+      toast({
+        title: "Success!",
+        description: "Your help request has been submitted successfully.",
+        variant: "success"
+      });
+      
       resetForm();
       
       // Clear the timeout since submission was successful
@@ -79,11 +93,22 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
         setSubmissionTimer(null);
       }
       
-      navigate('/get-help/success', { state: { requestId: result.data.id } });
+      // Navigate to success page with request ID and data
+      navigate('/get-help/success', { 
+        state: { 
+          requestId: result.data.id,
+          ticketData: result.data 
+        },
+        replace: true // Replace history so back button doesn't take user to the form
+      });
       
     } catch (error: any) {
       console.error('Error in form submission:', error);
-      toast.error('An unexpected error occurred: ' + error.message);
+      toast({
+        title: "Error submitting request",
+        description: "An unexpected error occurred: " + error.message,
+        variant: "destructive"
+      });
     } finally {
       // Clear the timeout
       if (submissionTimer) {

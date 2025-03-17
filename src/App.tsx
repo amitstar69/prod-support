@@ -71,8 +71,7 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route path="/get-help" element={<GetHelpPage />} />
-            <Route path="/get-help/request/:requestId" element={<GetHelpPage />} />
+            <Route path="/get-help/*" element={<GetHelpPage />} />
             <Route 
               path="/client-dashboard" 
               element={
