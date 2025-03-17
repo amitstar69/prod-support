@@ -309,18 +309,16 @@ export const getDeveloperApplicationsForRequest = async (requestId: string) => {
       return { success: true, data: matchingApplications };
     }
 
-    // For database help requests - fix the join relationship
+    // For database help requests - use explicit path for the join
     const { data, error } = await supabase
       .from('help_request_matches')
       .select(`
         *,
-        developer:developer_id (
+        developer:profiles!help_request_matches_developer_id_fkey (
           id,
-          profile:id (
-            name,
-            image,
-            description
-          )
+          name,
+          image,
+          description
         )
       `)
       .eq('request_id', requestId)
@@ -333,12 +331,16 @@ export const getDeveloperApplicationsForRequest = async (requestId: string) => {
 
     // Transform the data to maintain compatibility with existing code
     const transformedData = data.map(app => {
-      if (app.developer && app.developer.profile) {
+      if (app.developer) {
         return {
           ...app,
           developers: {
             id: app.developer_id,
-            profiles: app.developer.profile
+            profiles: {
+              name: app.developer.name,
+              image: app.developer.image,
+              description: app.developer.description
+            }
           }
         };
       }
