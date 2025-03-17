@@ -170,26 +170,18 @@ export const submitDeveloperApplication = async (
         return { success: true, isUpdate: true };
       }
       
-      // Create new application
-      const insertPayload: Record<string, any> = {
+      // Create new application - Fix the insert payload to ensure all required fields are present
+      const insertPayload = {
         request_id: requestId,
         developer_id: developerId,
         status: 'pending',
         match_score: 85,
-        proposed_message: validatedData.proposed_message
+        proposed_message: validatedData.proposed_message,
+        proposed_duration: validatedData.proposed_duration !== undefined ? validatedData.proposed_duration : null,
+        proposed_rate: validatedData.proposed_rate !== undefined ? validatedData.proposed_rate : null
       };
-      
-      // Only include duration if it's provided
-      if (validatedData.proposed_duration !== undefined) {
-        insertPayload.proposed_duration = validatedData.proposed_duration;
-      }
-      
-      // Only include rate if it's provided
-      if (validatedData.proposed_rate !== undefined) {
-        insertPayload.proposed_rate = validatedData.proposed_rate;
-      }
 
-      // Create new application - Debug/test the insertion
+      // Create new application with properly typed payload
       const insertResponse = await supabase
         .from('help_request_matches')
         .insert(insertPayload);
