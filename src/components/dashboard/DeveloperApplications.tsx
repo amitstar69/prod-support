@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequestMatch } from '../../types/helpRequest';
 import { updateApplicationStatus } from '../../integrations/supabase/helpRequests';
@@ -9,6 +9,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
 import { Clock, Hourglass, DollarSign, MessageCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '../ui/alert';
 
 interface DeveloperProfile {
   id: string;
@@ -35,9 +36,12 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
   onOpenChat
 }) => {
   const navigate = useNavigate();
+  const [processingApplicationIds, setProcessingApplicationIds] = useState<string[]>([]);
   
   const handleApprove = async (applicationId: string) => {
     try {
+      // Add to processing list
+      setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Approving application...');
       
       const result = await updateApplicationStatus(applicationId, 'approved', clientId);
@@ -54,11 +58,16 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       toast.dismiss();
       toast.error('An error occurred while approving the application');
       console.error('Error approving application:', error);
+    } finally {
+      // Remove from processing list
+      setProcessingApplicationIds(prev => prev.filter(id => id !== applicationId));
     }
   };
   
   const handleReject = async (applicationId: string) => {
     try {
+      // Add to processing list
+      setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Rejecting application...');
       
       const result = await updateApplicationStatus(applicationId, 'rejected', clientId);
@@ -75,6 +84,9 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       toast.dismiss();
       toast.error('An error occurred while rejecting the application');
       console.error('Error rejecting application:', error);
+    } finally {
+      // Remove from processing list
+      setProcessingApplicationIds(prev => prev.filter(id => id !== applicationId));
     }
   };
   
@@ -96,9 +108,13 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
     return '/placeholder.svg';
   };
 
+  const isProcessing = (applicationId: string) => {
+    return processingApplicationIds.includes(applicationId);
+  };
+
   if (applications.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-lg border border-border/40 text-center">
+      <div className="bg-background p-6 rounded-lg border border-border/40 text-center">
         <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">👨‍💻</div>
         <h3 className="text-xl font-medium mb-2">No developer applications yet</h3>
         <p className="text-muted-foreground mb-4">
@@ -116,7 +132,7 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
             <div className="flex justify-between items-start">
               <div className="flex items-center gap-3">
                 <Avatar>
-                  <AvatarImage src={getDeveloperImage(application)} />
+                  <AvatarImage src={getDeveloperImage(application)} alt={getDeveloperName(application)} />
                   <AvatarFallback>{getDeveloperName(application).charAt(0)}</AvatarFallback>
                 </Avatar>
                 <CardTitle className="text-lg">{getDeveloperName(application)}</CardTitle>
@@ -176,14 +192,25 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
                 <Button 
                   className="flex-1"
                   onClick={() => handleApprove(application.id)}
+                  disabled={isProcessing(application.id)}
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Approve
+                  {isProcessing(application.id) ? (
+                    <span className="flex items-center">
+                      <span className="animate-spin mr-2">◌</span>
+                      Processing...
+                    </span>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Approve
+                    </>
+                  )}
                 </Button>
                 <Button 
                   className="flex-1"
                   variant="outline"
                   onClick={() => handleReject(application.id)}
+                  disabled={isProcessing(application.id)}
                 >
                   <XCircle className="h-4 w-4 mr-2" />
                   Reject
@@ -195,6 +222,7 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
               className={application.status === 'pending' ? 'w-full mt-2' : 'flex-1'}
               variant={application.status === 'pending' ? 'outline' : 'default'}
               onClick={() => onOpenChat(application.developer_id, application.id)}
+              disabled={isProcessing(application.id)}
             >
               <MessageCircle className="h-4 w-4 mr-2" />
               Message

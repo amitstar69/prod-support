@@ -3,31 +3,51 @@ import React from 'react';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
 import { budgetRangeOptions } from '../../../types/helpRequest';
 import { Label } from '../../ui/label';
-import { Select } from '../../ui/select';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '../../ui/select';
 
 const BudgetSection: React.FC = () => {
   const { formData, handleInputChange } = useHelpRequest();
 
+  const handleSelectChange = (value: string) => {
+    // Create synthetic event to match handleInputChange expectations
+    const syntheticEvent = {
+      target: {
+        name: 'budget_range',
+        value
+      }
+    } as React.ChangeEvent<HTMLSelectElement>;
+    
+    handleInputChange(syntheticEvent);
+  };
+
   return (
     <div className="space-y-2">
-      <Label htmlFor="budget_range" className="text-base font-medium text-slate-800">
+      <Label htmlFor="budget_range" className="text-base font-medium text-foreground">
         Budget Range
       </Label>
-      <select
-        id="budget_range"
+      <Select 
+        value={formData.budget_range} 
+        onValueChange={handleSelectChange}
         name="budget_range"
-        value={formData.budget_range}
-        onChange={handleInputChange}
-        className="w-full px-4 py-3 border border-slate-300 rounded-md bg-white text-slate-900 shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-        aria-label="Select your budget range"
       >
-        {budgetRangeOptions.map((range) => (
-          <option key={range} value={range}>
-            {range}
-          </option>
-        ))}
-      </select>
-      <p className="text-sm text-slate-600">Choose a budget range that matches your project needs</p>
+        <SelectTrigger id="budget_range" className="w-full bg-background">
+          <SelectValue placeholder="Select your budget range" />
+        </SelectTrigger>
+        <SelectContent>
+          {budgetRangeOptions.map((range) => (
+            <SelectItem key={range} value={range}>
+              {range}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="text-sm text-muted-foreground">Choose a budget range that matches your project needs</p>
     </div>
   );
 };

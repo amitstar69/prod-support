@@ -14,7 +14,8 @@ import {
   PlusCircle, 
   Loader2, 
   User,
-  Star
+  Star,
+  Bell
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
@@ -25,6 +26,7 @@ import { getHelpRequestsForClient } from '../integrations/supabase/helpRequests'
 import DeveloperApplications from '../components/dashboard/DeveloperApplications';
 import ChatDialog from '../components/chat/ChatDialog';
 import { getDeveloperApplicationsForRequest } from '../integrations/supabase/helpRequests';
+import { Notification } from '../integrations/supabase/notifications';
 
 const ClientDashboard: React.FC = () => {
   const { userId, isAuthenticated } = useAuth();
@@ -41,12 +43,99 @@ const ClientDashboard: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatDeveloperId, setChatDeveloperId] = useState('');
   const [chatDeveloperName, setChatDeveloperName] = useState('Developer');
+  const [applicationNotifications, setApplicationNotifications] = useState<Notification[]>([]);
   
   useEffect(() => {
     if (isAuthenticated && userId) {
       fetchHelpRequests();
+      
+      // Set up realtime subscription to help_request_matches
+      const matchesChannel = supabase
+        .channel('public:help_request_matches')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'help_request_matches'
+        }, (payload) => {
+          // Check if this match is for one of our requests
+          const match = payload.new as HelpRequestMatch;
+          if (activeRequests.some(r => r.id === match.request_id)) {
+            toast.info('New developer application received!', {
+              action: {
+                label: 'View',
+                onClick: () => handleViewRequest(match.request_id)
+              }
+            });
+            
+            // Refresh help requests to update counts
+            fetchHelpRequests();
+          }
+        })
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(matchesChannel);
+      };
     } else {
       navigate('/login', { state: { returnTo: '/client-dashboard' } });
+    }
+  }, [userId, isAuthenticated]);
+
+  // Fetch application-related notifications
+  useEffect(() => {
+    if (isAuthenticated && userId) {
+      const fetchApplicationNotifications = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('entity_type', 'application')
+            .eq('is_read', false)
+            .order('created_at', { ascending: false });
+            
+          if (error) {
+            console.error('Error fetching application notifications:', error);
+            return;
+          }
+          
+          setApplicationNotifications(data || []);
+        } catch (err) {
+          console.error('Exception fetching application notifications:', err);
+        }
+      };
+      
+      fetchApplicationNotifications();
+      
+      // Set up subscription for new notifications
+      const notificationChannel = supabase
+        .channel('public:notifications')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId} AND entity_type=eq.application`
+        }, (payload) => {
+          const newNotification = payload.new as Notification;
+          setApplicationNotifications(prev => [newNotification, ...prev]);
+          
+          // Show toast notification
+          toast.info(newNotification.title, {
+            description: newNotification.message,
+            action: {
+              label: 'View',
+              onClick: () => {
+                // Extract request_id from related_entity_id (which is the application_id)
+                handleViewApplication(newNotification.related_entity_id);
+              }
+            }
+          });
+        })
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(notificationChannel);
+      };
     }
   }, [userId, isAuthenticated]);
 
@@ -141,6 +230,43 @@ const ClientDashboard: React.FC = () => {
     }
   };
 
+  // New function to handle viewing an application from notification
+  const handleViewApplication = async (applicationId: string) => {
+    try {
+      // First fetch the application to get the request_id
+      const { data, error } = await supabase
+        .from('help_request_matches')
+        .select('request_id')
+        .eq('id', applicationId)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching application details:', error);
+        toast.error('Failed to load application details');
+        return;
+      }
+      
+      if (data && data.request_id) {
+        // Mark related notification as read
+        await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('related_entity_id', applicationId);
+          
+        // Remove from local state
+        setApplicationNotifications(prev => 
+          prev.filter(notif => notif.related_entity_id !== applicationId)
+        );
+        
+        // Now view the request with this application
+        handleViewRequest(data.request_id);
+      }
+    } catch (error) {
+      console.error('Exception handling application view:', error);
+      toast.error('An error occurred while loading the application');
+    }
+  };
+
   const handleCreateRequest = () => {
     navigate('/get-help');
   };
@@ -186,7 +312,6 @@ const ClientDashboard: React.FC = () => {
   const handleViewRequest = (requestId: string) => {
     setSelectedRequestId(requestId);
     fetchApplicationsForRequest(requestId);
-    navigate(`/get-help/request/${requestId}`);
   };
 
   const handleOpenChat = (developerId: string, applicationId: string) => {
@@ -210,6 +335,14 @@ const ClientDashboard: React.FC = () => {
       fetchApplicationsForRequest(selectedRequestId);
       fetchHelpRequests();
     }
+  };
+
+  const getApplicationCountForRequest = (requestId: string) => {
+    return requestMatches[requestId]?.length || 0;
+  };
+
+  const getTotalNewApplicationsCount = () => {
+    return applicationNotifications.length;
   };
 
   if (!isAuthenticated) {
@@ -239,12 +372,24 @@ const ClientDashboard: React.FC = () => {
           <Button onClick={handleCreateRequest}>
             <PlusCircle className="h-4 w-4 mr-2" />
             New Help Request
+            {getTotalNewApplicationsCount() > 0 && (
+              <Badge variant="secondary" className="ml-2 bg-primary text-white">
+                {getTotalNewApplicationsCount()}
+              </Badge>
+            )}
           </Button>
         </div>
         
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="active">Active Requests</TabsTrigger>
+            <TabsTrigger value="active">
+              Active Requests
+              {getTotalNewApplicationsCount() > 0 && (
+                <Badge variant="secondary" className="ml-2 bg-primary text-white">
+                  {getTotalNewApplicationsCount()}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="completed">Completed Requests</TabsTrigger>
           </TabsList>
           
@@ -284,10 +429,23 @@ const ClientDashboard: React.FC = () => {
             ) : activeRequests.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {activeRequests.map((request) => (
-                  <Card key={request.id} className="overflow-hidden">
+                  <Card key={request.id} className={`overflow-hidden ${
+                    applicationNotifications.some(n => {
+                      // Extract request_id from the application id
+                      const appData = selectedRequestApplications.find(app => app.id === n.related_entity_id);
+                      return appData && appData.request_id === request.id;
+                    }) ? 'ring-2 ring-primary' : ''
+                  }`}>
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
-                        <CardTitle className="truncate">{request.title}</CardTitle>
+                        <CardTitle className="truncate flex items-center">
+                          {request.title}
+                          {getApplicationCountForRequest(request.id!) > 0 && (
+                            <Badge variant="secondary" className="ml-2 bg-primary text-white">
+                              {getApplicationCountForRequest(request.id!)}
+                            </Badge>
+                          )}
+                        </CardTitle>
                         <Badge 
                           variant="outline"
                           className={`
@@ -344,10 +502,17 @@ const ClientDashboard: React.FC = () => {
                     <CardFooter>
                       <Button 
                         className="w-full"
-                        variant="outline"
+                        variant={getApplicationCountForRequest(request.id!) > 0 ? "default" : "outline"}
                         onClick={() => handleViewRequest(request.id!)}
                       >
-                        View Details
+                        {getApplicationCountForRequest(request.id!) > 0 ? (
+                          <>
+                            <Bell className="h-4 w-4 mr-2" />
+                            View Applications ({getApplicationCountForRequest(request.id!)})
+                          </>
+                        ) : (
+                          "View Details"
+                        )}
                       </Button>
                     </CardFooter>
                   </Card>
