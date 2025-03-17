@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequestMatch } from '../../types/helpRequest';
@@ -11,6 +10,14 @@ import { toast } from 'sonner';
 import { Clock, Hourglass, DollarSign, MessageCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+
+const APPLICATION_STATUSES = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled'
+};
 
 interface DeveloperProfile {
   id: string;
@@ -43,18 +50,16 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
   
   const handleApprove = async (applicationId: string) => {
     try {
-      // Add to processing list
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Approving application...');
       
-      const result = await updateApplicationStatus(applicationId, 'approved', clientId);
+      const result = await updateApplicationStatus(applicationId, APPLICATION_STATUSES.APPROVED, clientId);
       
       toast.dismiss();
       
       if (result.success) {
         toast.success('Application approved successfully!');
         
-        // Find the approved application to display in the success dialog
         const approved = applications.find(app => app.id === applicationId);
         if (approved) {
           setApprovedApplication(approved);
@@ -70,18 +75,16 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       toast.error('An error occurred while approving the application');
       console.error('Error approving application:', error);
     } finally {
-      // Remove from processing list
       setProcessingApplicationIds(prev => prev.filter(id => id !== applicationId));
     }
   };
   
   const handleReject = async (applicationId: string) => {
     try {
-      // Add to processing list
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Rejecting application...');
       
-      const result = await updateApplicationStatus(applicationId, 'rejected', clientId);
+      const result = await updateApplicationStatus(applicationId, APPLICATION_STATUSES.REJECTED, clientId);
       
       toast.dismiss();
       
@@ -96,7 +99,6 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       toast.error('An error occurred while rejecting the application');
       console.error('Error rejecting application:', error);
     } finally {
-      // Remove from processing list
       setProcessingApplicationIds(prev => prev.filter(id => id !== applicationId));
     }
   };
@@ -111,7 +113,6 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
   };
 
   const getDeveloperName = (application: any) => {
-    // Handle both original and transformed data structure
     if (application.developers?.profiles?.name) {
       return application.developers.profiles.name;
     }
@@ -122,7 +123,6 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
   };
   
   const getDeveloperImage = (application: any) => {
-    // Handle both original and transformed data structure
     if (application.developers?.profiles?.image) {
       return application.developers.profiles.image;
     }
@@ -257,7 +257,6 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
         ))}
       </div>
 
-      {/* Success Dialog */}
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

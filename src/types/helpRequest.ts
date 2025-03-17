@@ -1,8 +1,7 @@
-
 export interface HelpRequest {
   id?: string;
   client_id: string;
-  client_name?: string;  // Added this line to fix the type error
+  client_name?: string;
   title: string;
   description: string;
   technical_area: string[];
@@ -25,7 +24,7 @@ export interface HelpRequestMatch {
   request_id: string;
   developer_id: string;
   match_score?: number;
-  status: string; // Changed from specific literals to allow any string from database
+  status: string;
   created_at?: string;
   updated_at?: string;
   proposed_message?: string;
@@ -50,7 +49,7 @@ export interface HelpSession {
   scheduled_end?: string;
   actual_start?: string;
   actual_end?: string;
-  status: string; // Changed from specific literals to allow any string from database
+  status: string;
   final_cost?: number;
   created_at?: string;
   updated_at?: string;
@@ -89,7 +88,6 @@ export const budgetRangeOptions = [
   '$500+'
 ];
 
-// Updated to match the new database constraint for help_requests_status_check
 export const requestStatusOptions = [
   { value: 'open', label: 'Open' },
   { value: 'claimed', label: 'Claimed' },
@@ -98,6 +96,14 @@ export const requestStatusOptions = [
   { value: 'pending', label: 'Pending' },
   { value: 'matching', label: 'Matching' },
   { value: 'scheduled', label: 'Scheduled' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' }
+];
+
+export const matchStatusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'rejected', label: 'Rejected' },
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' }
 ];

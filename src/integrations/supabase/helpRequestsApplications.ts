@@ -9,6 +9,15 @@ const MAX_RATE = 9.99; // Maximum rate in USD (precision 3, scale 2)
 const MAX_DURATION = 480; // Maximum duration in minutes (8 hours)
 const MAX_MATCH_SCORE = 9.99; // Maximum match score (precision 3, scale 2)
 
+// Valid status values according to the database constraint
+const VALID_MATCH_STATUSES = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled'
+};
+
 // Function to submit a developer application for a help request
 export const submitDeveloperApplication = async (
   requestId: string,
@@ -360,12 +369,18 @@ export const getDeveloperApplicationsForRequest = async (requestId: string) => {
 // Function to approve or reject a developer application
 export const updateApplicationStatus = async (
   applicationId: string, 
-  status: 'approved' | 'rejected' | 'completed',
+  status: 'approved' | 'rejected' | 'completed' | 'cancelled',
   clientId: string
 ) => {
   try {
     if (!applicationId || !status || !clientId) {
       return { success: false, error: 'Missing required fields' };
+    }
+
+    // Validate the status to ensure it matches the database constraint
+    if (!Object.values(VALID_MATCH_STATUSES).includes(status)) {
+      console.error(`Invalid status: ${status}. Valid statuses are: ${Object.values(VALID_MATCH_STATUSES).join(', ')}`);
+      return { success: false, error: `Invalid status value. Must be one of: ${Object.values(VALID_MATCH_STATUSES).join(', ')}` };
     }
 
     // For local storage applications
@@ -384,7 +399,7 @@ export const updateApplicationStatus = async (
       localStorage.setItem('help_request_matches', JSON.stringify(localApplications));
       
       // If approved, also update the help request status
-      if (status === 'approved') {
+      if (status === VALID_MATCH_STATUSES.APPROVED) {
         const requestId = localApplications[applicationIndex].request_id;
         const localHelpRequests = JSON.parse(localStorage.getItem('helpRequests') || '[]');
         const requestIndex = localHelpRequests.findIndex((req: any) => req.id === requestId);
@@ -439,7 +454,7 @@ export const updateApplicationStatus = async (
     }
     
     // If approved, also update the help request status and reject other applications
-    if (status === 'approved') {
+    if (status === VALID_MATCH_STATUSES.APPROVED) {
       // Update help request status
       await supabase
         .from('help_requests')
@@ -449,7 +464,7 @@ export const updateApplicationStatus = async (
       // Reject other applications for this request
       await supabase
         .from('help_request_matches')
-        .update({ status: 'rejected' })
+        .update({ status: VALID_MATCH_STATUSES.REJECTED })
         .eq('request_id', applicationData.request_id)
         .neq('id', applicationId);
     }
@@ -463,3 +478,4 @@ export const updateApplicationStatus = async (
     };
   }
 };
+
