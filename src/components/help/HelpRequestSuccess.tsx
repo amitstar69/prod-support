@@ -5,7 +5,7 @@ import { CheckCircle2, ListChecks, Send, Clock, ChevronRight } from 'lucide-reac
 import { Badge } from '../ui/badge';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
-import { toast } from '../ui/use-toast';
+import { toast } from 'sonner';
 
 const HelpRequestSuccess: React.FC = () => {
   const location = useLocation();
@@ -14,11 +14,7 @@ const HelpRequestSuccess: React.FC = () => {
   
   useEffect(() => {
     if (!requestId) {
-      toast({
-        title: "Missing request information",
-        description: "We couldn't find details about your request. Please check your requests dashboard.",
-        variant: "destructive"
-      });
+      toast.error("We couldn't find details about your request. Please check your requests dashboard.");
     }
   }, [requestId]);
 

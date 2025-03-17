@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/auth';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
 import { createHelpRequest } from '../../../integrations/supabase/helpRequests';
-import { toast } from "../../ui/use-toast";
+import { toast } from "sonner";
 
 interface FormContainerProps {
   children: React.ReactNode;
@@ -40,11 +40,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
     const timer = setTimeout(() => {
       console.log('Submission taking longer than expected, resetting state...');
       setIsSubmitting(false);
-      toast({
-        title: "Request is taking longer than expected",
-        description: "Please try again or refresh the page.",
-        variant: "destructive"
-      });
+      toast.error("Request is taking longer than expected. Please try again or refresh the page.");
     }, 10000); // 10 seconds timeout
     
     setSubmissionTimer(timer);
@@ -79,11 +75,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       console.log('Help request created successfully:', result);
       
       // Show success message and redirect
-      toast({
-        title: "Success!",
-        description: "Your help request has been submitted successfully.",
-        variant: "success"
-      });
+      toast.success("Your help request has been submitted successfully.");
       
       resetForm();
       
@@ -104,11 +96,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       
     } catch (error: any) {
       console.error('Error in form submission:', error);
-      toast({
-        title: "Error submitting request",
-        description: "An unexpected error occurred: " + error.message,
-        variant: "destructive"
-      });
+      toast.error("An unexpected error occurred: " + error.message);
     } finally {
       // Clear the timeout
       if (submissionTimer) {
