@@ -82,9 +82,24 @@
     -moz-osx-font-smoothing: grayscale;
   }
   
+  /* Improve focus styles for better accessibility */
+  a:focus, button:focus, input:focus, select:focus, textarea:focus {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+  
   /* Add smooth hover effects for all interactive elements */
   a, button {
     @apply transition-all duration-300;
+  }
+  
+  /* Improve form element styling for accessibility */
+  input, textarea, select {
+    @apply placeholder:text-slate-400;
+  }
+  
+  /* Improve headings for better readability */
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
   }
 }
 
@@ -120,6 +135,36 @@
   .button-secondary {
     @apply inline-flex items-center justify-center rounded-full bg-secondary px-5 py-2 text-sm font-medium text-secondary-foreground shadow-sm hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 transition-all duration-300;
   }
+  
+  /* High contrast form elements for better accessibility */
+  .form-label {
+    @apply block text-base font-medium text-slate-800 mb-1;
+  }
+  
+  .form-input {
+    @apply w-full px-4 py-3 border border-slate-300 rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm;
+  }
+  
+  .form-select {
+    @apply w-full px-4 py-3 border border-slate-300 rounded-md bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm;
+  }
+  
+  .form-checkbox {
+    @apply h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary;
+  }
+  
+  /* Accessible tag/chip component */
+  .tag {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  .tag-primary {
+    @apply bg-primary/10 text-primary;
+  }
+  
+  .tag-secondary {
+    @apply bg-secondary text-secondary-foreground;
+  }
 }
 
 /* Floating animation for developer hero section */
@@ -154,4 +199,17 @@
 .animate-float-delayed {
   animation: float-delayed 7s ease-in-out infinite;
   animation-delay: 1s;
+}
+
+/* Accessible skip to content link */
+.skip-to-content {
+  @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded;
+}
+
+/* Remove App.css styles that are conflicting with the layout */
+#root {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
 }
