@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -9,12 +10,18 @@ const MAX_DURATION = 480; // Maximum duration in minutes (8 hours)
 const MAX_MATCH_SCORE = 9.99; // Maximum match score (precision 3, scale 2)
 
 // Valid status values according to the database constraint
+// IMPORTANT: These values must exactly match what's in the database constraint
 const VALID_MATCH_STATUSES = {
   PENDING: 'pending' as ApplicationStatus,
   APPROVED: 'approved' as ApplicationStatus,
   REJECTED: 'rejected' as ApplicationStatus,
   COMPLETED: 'completed' as ApplicationStatus,
   CANCELLED: 'cancelled' as ApplicationStatus
+};
+
+// Function to validate if a status value is allowed by the database constraint
+const isValidMatchStatus = (status: string): boolean => {
+  return Object.values(VALID_MATCH_STATUSES).includes(status as ApplicationStatus);
 };
 
 // Function to submit a developer application for a help request
@@ -83,7 +90,7 @@ export const submitDeveloperApplication = async (
           proposed_duration: validatedData.proposed_duration,
           proposed_rate: validatedData.proposed_rate,
           match_score: 85,
-          status: 'pending',
+          status: VALID_MATCH_STATUSES.PENDING,
           updated_at: new Date().toISOString()
         };
         
@@ -106,7 +113,7 @@ export const submitDeveloperApplication = async (
         id: `app-${Date.now()}`,
         request_id: requestId,
         developer_id: developerId,
-        status: 'pending',
+        status: VALID_MATCH_STATUSES.PENDING,
         match_score: 85,
         proposed_message: validatedData.proposed_message,
         proposed_duration: validatedData.proposed_duration,
@@ -183,7 +190,7 @@ export const submitDeveloperApplication = async (
         console.log('[submitDeveloperApplication] Successfully updated application:', existing.id);
         
         // If application was accepted, update the ticket status to 'claimed'
-        if (existing.status === 'accepted') {
+        if (existing.status === VALID_MATCH_STATUSES.APPROVED) {
           await supabase
             .from('help_requests')
             .update({ status: 'claimed' })
@@ -198,7 +205,7 @@ export const submitDeveloperApplication = async (
       const insertPayload: {
         request_id: string;
         developer_id: string;
-        status: string;
+        status: ApplicationStatus;
         match_score: number;
         proposed_message?: string;
         proposed_duration: number | null;
@@ -206,7 +213,7 @@ export const submitDeveloperApplication = async (
       } = {
         request_id: requestId,
         developer_id: developerId,
-        status: 'pending',
+        status: VALID_MATCH_STATUSES.PENDING,
         match_score: Math.min(85, MAX_MATCH_SCORE), // Ensure match_score is capped to avoid overflow
         proposed_message: validatedData.proposed_message,
         proposed_duration: validatedData.proposed_duration !== undefined ? validatedData.proposed_duration : null,
@@ -377,7 +384,7 @@ export const updateApplicationStatus = async (
     }
 
     // Validate the status to ensure it matches the database constraint
-    if (!Object.values(VALID_MATCH_STATUSES).includes(status)) {
+    if (!isValidMatchStatus(status)) {
       console.error(`Invalid status: ${status}. Valid statuses are: ${Object.values(VALID_MATCH_STATUSES).join(', ')}`);
       return { success: false, error: `Invalid status value. Must be one of: ${Object.values(VALID_MATCH_STATUSES).join(', ')}` };
     }

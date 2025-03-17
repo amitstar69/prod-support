@@ -1,12 +1,21 @@
 
 import { useState, useEffect } from 'react';
-import { HelpRequest } from '../../types/helpRequest';
+import { HelpRequest, ApplicationStatus } from '../../types/helpRequest';
 import { toast } from 'sonner';
-import { submitDeveloperApplication, getDeveloperApplicationsForRequest } from '../../integrations/supabase/helpRequests';
+import { submitDeveloperApplication, getDeveloperApplicationsForRequest } from '../../integrations/supabase/helpRequestsApplications';
 import { setupApplicationsSubscription } from '../../integrations/supabase/realtime';
 
 // Constants to prevent numeric overflow
 const MAX_RATE = 9.99; // Maximum rate in USD (precision 3, scale 2)
+
+// Valid status values exactly matching the database constraint
+const VALID_MATCH_STATUSES = {
+  PENDING: 'pending' as ApplicationStatus,
+  APPROVED: 'approved' as ApplicationStatus,
+  REJECTED: 'rejected' as ApplicationStatus,
+  COMPLETED: 'completed' as ApplicationStatus,
+  CANCELLED: 'cancelled' as ApplicationStatus
+};
 
 export interface UseTicketApplicationsResult {
   recommendedTickets: HelpRequest[];
@@ -160,7 +169,7 @@ export const useTicketApplications = (
           }));
           
           // Show toast for important status updates
-          if (payload.new.status === 'approved') {
+          if (payload.new.status === VALID_MATCH_STATUSES.APPROVED) {
             toast.success('Your application has been approved!', {
               description: `Your application for "${ticket.title}" has been approved.`,
               action: {
@@ -173,7 +182,7 @@ export const useTicketApplications = (
                 }
               }
             });
-          } else if (payload.new.status === 'rejected') {
+          } else if (payload.new.status === VALID_MATCH_STATUSES.REJECTED) {
             toast('Your application has been rejected', {
               description: `Your application for "${ticket.title}" was not accepted.`
             });

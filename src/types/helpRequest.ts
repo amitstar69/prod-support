@@ -110,4 +110,5 @@ export const matchStatusOptions = [
 ];
 
 // Create a new type definition for the valid application statuses
+// IMPORTANT: The order here should match the order in the database constraint
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';

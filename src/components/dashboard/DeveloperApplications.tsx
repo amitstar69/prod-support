@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
-import { updateApplicationStatus } from '../../integrations/supabase/helpRequests';
+import { updateApplicationStatus } from '../../integrations/supabase/helpRequestsApplications';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
@@ -170,8 +169,8 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
                 <Badge 
                   variant="outline"
                   className={`
-                    ${application.status === 'approved' ? 'bg-green-50 text-green-800 border-green-200' : 
-                     application.status === 'rejected' ? 'bg-red-50 text-red-800 border-red-200' :
+                    ${application.status === APPLICATION_STATUSES.APPROVED ? 'bg-green-50 text-green-800 border-green-200' : 
+                     application.status === APPLICATION_STATUSES.REJECTED ? 'bg-red-50 text-red-800 border-red-200' :
                      'bg-blue-50 text-blue-800 border-blue-200'}
                   `}
                 >
@@ -217,7 +216,7 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
             </CardContent>
             
             <CardFooter className="gap-3 flex flex-wrap">
-              {application.status === 'pending' && (
+              {application.status === APPLICATION_STATUSES.PENDING && (
                 <>
                   <Button 
                     className="flex-1"
@@ -249,8 +248,8 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
               )}
               
               <Button 
-                className={application.status === 'pending' ? 'w-full mt-2' : 'flex-1'}
-                variant={application.status === 'pending' ? 'outline' : 'default'}
+                className={application.status === APPLICATION_STATUSES.PENDING ? 'w-full mt-2' : 'flex-1'}
+                variant={application.status === APPLICATION_STATUSES.PENDING ? 'outline' : 'default'}
                 onClick={() => onOpenChat(application.developer_id, application.id)}
                 disabled={isProcessing(application.id)}
               >
