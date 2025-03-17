@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -70,18 +71,19 @@ const ClientDashboard: React.FC = () => {
         })
         .subscribe();
         
-      const handleViewRequest = (event: CustomEvent) => {
+      // Fix: Create a proper custom event type handler
+      const handleViewRequestEvent = (event: CustomEvent) => {
         const { requestId } = event.detail;
         if (requestId) {
           handleViewRequest(requestId);
         }
       };
       
-      window.addEventListener('viewRequest', handleViewRequest as EventListener);
+      window.addEventListener('viewRequest', handleViewRequestEvent as EventListener);
       
       return () => {
         supabase.removeChannel(matchesChannel);
-        window.removeEventListener('viewRequest', handleViewRequest as EventListener);
+        window.removeEventListener('viewRequest', handleViewRequestEvent as EventListener);
       };
     } else {
       navigate('/login', { state: { returnTo: '/client-dashboard' } });
