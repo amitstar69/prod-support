@@ -34,7 +34,6 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
     }
     
     // Generate a client ID based on authentication status
-    // If authenticated, use the actual userId, otherwise create a temporary guest ID
     const clientId = isAuthenticated && userId ? userId : `client-guest-${Date.now()}`;
     
     console.log('Submitting help request with clientId:', clientId, 'isAuthenticated:', isAuthenticated);
@@ -43,27 +42,27 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
     setIsSubmitting(true);
     setSubmissionProgress(10); // Start progress
     
-    // Set up a progress simulation for visual feedback
-    // This gives users a sense that something is happening
+    // Set up a more realistic progress simulation
     const progressInterval = setInterval(() => {
       setSubmissionProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return prev;
+        // Move progress more slowly between 60-90%
+        if (prev >= 60 && prev < 90) {
+          return prev + 2; // Slower progress in the critical range
+        } else if (prev < 60) {
+          return prev + 10;
         }
-        return prev + 10;
+        return prev; // Don't auto-increment past 90%
       });
-    }, 700);
+    }, 800); // Slightly slower update frequency
     
-    // Set a timeout to prevent the page from being stuck in a loading state
-    // We'll extend this to 30 seconds to account for potential network delays
+    // Extend timeout to 45 seconds
     const timer = setTimeout(() => {
       console.log('Submission taking longer than expected, resetting state...');
       setIsSubmitting(false);
       setSubmissionProgress(0);
       clearInterval(progressInterval);
       toast.error("Request is taking longer than expected. Please try again or refresh the page.");
-    }, 30000); // 30 seconds timeout
+    }, 45000); // 45 seconds timeout - more generous
     
     setSubmissionTimer(timer);
     
@@ -94,10 +93,23 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       
       console.log('Prepared help request object:', helpRequestBase);
       
+      // Add debounce to avoid race conditions or rapid state changes
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       setSubmissionProgress(60); // Update progress
       
-      // Use the createHelpRequest utility function
-      const result = await createHelpRequest(helpRequestBase);
+      // Use the createHelpRequest utility function with a timeout
+      const result = await Promise.race([
+        createHelpRequest(helpRequestBase),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
+        )
+      ]) as any;
+      
+      // Ensure we have a valid result before proceeding
+      if (!result) {
+        throw new Error('No response received from server');
+      }
       
       setSubmissionProgress(90); // Almost done
       
@@ -106,6 +118,9 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       }
       
       console.log('Help request created successfully:', result);
+      
+      // Small delay to ensure UI has time to update before redirect
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       setSubmissionProgress(100); // Complete
       
@@ -140,7 +155,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       } else if (error.message.includes('network') || error.message.includes('fetch')) {
         toast.error("Network error: Please check your internet connection and try again");
       } else if (error.message.includes('timeout')) {
-        toast.error("Request timed out: The server is taking too long to respond");
+        toast.error("Request timed out: The server is taking too long to respond. Please try again later.");
       } else {
         toast.error("An error occurred: " + error.message);
       }
@@ -170,7 +185,11 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
         {isSubmitting && (
           <div className="space-y-2 py-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Submitting your request...</span>
+              <span className="text-sm text-muted-foreground">
+                {submissionProgress < 60 ? "Preparing submission..." : 
+                 submissionProgress < 90 ? "Processing your request..." : 
+                 "Finalizing submission..."}
+              </span>
               <span className="text-sm font-medium">{submissionProgress}%</span>
             </div>
             <Progress value={submissionProgress} className="h-2" />
