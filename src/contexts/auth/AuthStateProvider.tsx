@@ -1,8 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthState, AuthContextType } from './types';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../integrations/supabase/client';
 import { login as authLogin } from './authLogin';
-import { register } from './authRegister';
+import { register as authRegister } from './authRegister';
 import { logoutUser, checkSupabaseSession, setupAuthStateChangeListener } from './authUtils';
 
 // Log Supabase configuration information
@@ -125,8 +126,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   
   // Register handler function
   const handleRegister = async (userData: any, userType: 'developer' | 'client'): Promise<boolean> => {
-    const result = await register(userData, userType);
-    return result.success;
+    // Pass all required arguments to the authRegister function
+    const result = await authRegister(
+      userData, 
+      userType,
+      mockDevelopers,
+      mockClients,
+      setMockDevelopers,
+      setMockClients,
+      setAuthState
+    );
+    
+    // Since the authRegister now returns boolean directly in the modified version
+    return result;
   };
   
   return (
