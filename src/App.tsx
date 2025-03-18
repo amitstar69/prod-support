@@ -9,6 +9,8 @@ import ProductDetail from './pages/ProductDetail';
 import ProtectedRoute from './components/ProtectedRoute';
 import Profile from './pages/Profile';
 import ClientProfile from './pages/ClientProfile';
+import ClientOnboarding from './pages/onboarding/ClientOnboarding';
+import DeveloperOnboarding from './pages/onboarding/DeveloperOnboarding';
 import GetHelpPage from './pages/GetHelpPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -96,6 +98,24 @@ function App() {
               element={
                 <ProtectedRoute requiredUserType="client">
                   <ClientDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Onboarding Routes */}
+            <Route 
+              path="/onboarding/client" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientOnboarding />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/onboarding/developer" 
+              element={
+                <ProtectedRoute requiredUserType="developer">
+                  <DeveloperOnboarding />
                 </ProtectedRoute>
               } 
             />
