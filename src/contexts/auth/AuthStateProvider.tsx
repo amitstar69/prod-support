@@ -19,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => false,
   register: async () => false,
   logout: async () => {},
+  logoutUser: async () => {} // Add this property
 });
 
 // Custom hook to use the auth context
@@ -148,6 +149,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login: handleLogin,
         register: handleRegister,
         logout: handleLogout,
+        logoutUser: handleLogout // Use the same handler for both methods
       }}
     >
       {children}

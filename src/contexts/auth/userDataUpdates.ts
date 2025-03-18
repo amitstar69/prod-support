@@ -2,8 +2,10 @@
 import { supabase } from '../../integrations/supabase/client';
 import { Developer, Client } from '../../types/product';
 
+type UserData = Partial<Developer | Client>;
+
 // Function to update user data
-export const updateUserData = async (userData: Partial<Developer | Client>): Promise<boolean> => {
+export const updateUserData = async (userData: UserData): Promise<boolean> => {
   // First check if we have auth state
   const authStateStr = localStorage.getItem('authState');
   if (!authStateStr) {
@@ -19,21 +21,26 @@ export const updateUserData = async (userData: Partial<Developer | Client>): Pro
   }
   
   try {
+    // Prepare profile data with type safety
+    const profileData: any = {
+      name: userData.name,
+      email: userData.email,
+      image: userData.image,
+      location: userData.location,
+      description: userData.description,
+      profile_completed: userData.profileCompleted,
+      profile_completion_percentage: userData.profileCompletionPercentage,
+    };
+    
+    // Add properties that might exist on either type
+    if ('username' in userData) profileData.username = userData.username;
+    if ('bio' in userData) profileData.bio = userData.bio;
+    if ('onboardingCompletedAt' in userData) profileData.onboarding_completed_at = userData.onboardingCompletedAt;
+    
     // Update the basic profile data first
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({
-        name: userData.name,
-        email: userData.email,
-        image: userData.image,
-        username: userData.username,
-        location: userData.location,
-        description: userData.description,
-        bio: userData.bio,
-        profile_completed: userData.profileCompleted,
-        profile_completion_percentage: userData.profileCompletionPercentage,
-        onboarding_completed_at: userData.onboardingCompletedAt
-      })
+      .update(profileData)
       .eq('id', userId);
       
     if (profileError) {
@@ -43,17 +50,20 @@ export const updateUserData = async (userData: Partial<Developer | Client>): Pro
     
     // Now update the type-specific profile data
     if (userType === 'developer') {
+      const devData: any = {};
+      
+      // Add developer-specific properties safely
+      if ('category' in userData) devData.category = userData.category;
+      if ('skills' in userData) devData.skills = userData.skills;
+      if ('hourlyRate' in userData) devData.hourly_rate = userData.hourlyRate;
+      if ('minuteRate' in userData) devData.minute_rate = userData.minuteRate;
+      if ('experience' in userData) devData.experience = userData.experience;
+      if ('availability' in userData) devData.availability = userData.availability;
+      if ('communicationPreferences' in userData) devData.communication_preferences = userData.communicationPreferences;
+      
       const { error: devProfileError } = await supabase
         .from('developer_profiles')
-        .update({
-          category: userData.category,
-          skills: userData.skills,
-          hourly_rate: userData.hourlyRate,
-          minute_rate: userData.minuteRate,
-          experience: userData.experience,
-          availability: userData.availability,
-          communication_preferences: userData.communicationPreferences
-        })
+        .update(devData)
         .eq('id', userId);
         
       if (devProfileError) {
@@ -61,21 +71,23 @@ export const updateUserData = async (userData: Partial<Developer | Client>): Pro
         return updateUserDataInLocalStorage(userType, userId, userData);
       }
     } else if (userType === 'client') {
+      const clientData: any = {};
+      
+      // Add client-specific properties safely
+      if ('lookingFor' in userData) clientData.looking_for = userData.lookingFor;
+      if ('preferredHelpFormat' in userData) clientData.preferred_help_format = userData.preferredHelpFormat;
+      if ('techStack' in userData) clientData.tech_stack = userData.techStack;
+      if ('budgetPerHour' in userData) clientData.budget_per_hour = userData.budgetPerHour;
+      if ('paymentMethod' in userData) clientData.payment_method = userData.paymentMethod;
+      if ('communicationPreferences' in userData) clientData.communication_preferences = userData.communicationPreferences;
+      if ('industry' in userData) clientData.industry = userData.industry;
+      if ('projectTypes' in userData) clientData.project_types = userData.projectTypes;
+      if ('company' in userData) clientData.company = userData.company;
+      if ('position' in userData) clientData.position = userData.position;
+      
       const { error: clientProfileError } = await supabase
         .from('client_profiles')
-        .update({
-          looking_for: userData.lookingFor,
-          preferred_help_format: userData.preferredHelpFormat,
-          tech_stack: userData.techStack,
-          budget_per_hour: userData.budgetPerHour,
-          payment_method: userData.paymentMethod,
-          communication_preferences: userData.communicationPreferences,
-          profile_completion_percentage: userData.profileCompletionPercentage,
-          industry: userData.industry,
-          project_types: userData.projectTypes,
-          company: userData.company,
-          position: userData.position
-        })
+        .update(clientData)
         .eq('id', userId);
         
       if (clientProfileError) {
@@ -96,7 +108,7 @@ export const updateUserData = async (userData: Partial<Developer | Client>): Pro
 export const updateUserDataInLocalStorage = (
   userType: string | null, 
   userId: string | null, 
-  userData: Partial<Developer | Client>
+  userData: UserData
 ): boolean => {
   try {
     if (userType === 'developer') {

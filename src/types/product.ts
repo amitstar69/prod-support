@@ -23,6 +23,11 @@ export interface Developer {
   preferredWorkingHours?: string;
   communicationPreferences?: string[];  // ["chat", "voice", "video"]
   profileCompleted?: boolean;
+  // Fields needed for both Developer and Client
+  username?: string;
+  bio?: string;
+  profileCompletionPercentage?: number;
+  onboardingCompletedAt?: string;
 }
 
 export interface Client {
@@ -65,6 +70,7 @@ export interface Client {
     hours?: string;
   };
   communicationPreferences?: string[];
+  onboardingCompletedAt?: string;
 }
 
 export interface Category {

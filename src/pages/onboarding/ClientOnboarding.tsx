@@ -10,7 +10,7 @@ import ClientCompletionStep from './steps/client/ClientCompletionStep';
 import ProfileLoadingState from '../../components/profile/ProfileLoadingState';
 
 const ClientOnboarding: React.FC = () => {
-  const { userId, logoutUser } = useAuth();
+  const { userId, logout } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
@@ -34,10 +34,9 @@ const ClientOnboarding: React.FC = () => {
         }
         
         // Determine starting step based on any existing profile data
-        // This is just an example logic, adjust according to your data model
         if (userData.name && userData.email) {
-          if (userData.techStack?.length > 0 || userData.industry) {
-            if (userData.projectTypes?.length > 0) {
+          if ((userData.techStack && userData.techStack.length > 0) || userData.industry) {
+            if (userData.projectTypes && userData.projectTypes.length > 0) {
               setCurrentStep(4); // Almost complete, go to final step
             } else {
               setCurrentStep(3); // Has preferences, go to projects step
@@ -63,7 +62,7 @@ const ClientOnboarding: React.FC = () => {
   }, [userId, navigate]);
   
   if (isLoading) {
-    return <ProfileLoadingState onForceLogout={logoutUser} />;
+    return <ProfileLoadingState onForceLogout={logout} />;
   }
   
   const renderCurrentStep = () => {

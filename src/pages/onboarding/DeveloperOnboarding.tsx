@@ -11,7 +11,7 @@ import DeveloperCompletionStep from './steps/developer/DeveloperCompletionStep';
 import ProfileLoadingState from '../../components/profile/ProfileLoadingState';
 
 const DeveloperOnboarding: React.FC = () => {
-  const { userId, logoutUser } = useAuth();
+  const { userId, logout } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
@@ -36,7 +36,7 @@ const DeveloperOnboarding: React.FC = () => {
         
         // Determine starting step based on any existing profile data
         if (userData.name && userData.email) {
-          if (userData.skills?.length > 0) {
+          if (userData.skills && userData.skills.length > 0) {
             if (userData.hourlyRate && userData.minuteRate) {
               if (userData.availability !== undefined) {
                 setCurrentStep(5); // Almost complete, go to final step
@@ -67,7 +67,7 @@ const DeveloperOnboarding: React.FC = () => {
   }, [userId, navigate]);
   
   if (isLoading) {
-    return <ProfileLoadingState onForceLogout={logoutUser} />;
+    return <ProfileLoadingState onForceLogout={logout} />;
   }
   
   const renderCurrentStep = () => {
