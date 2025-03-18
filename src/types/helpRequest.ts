@@ -91,10 +91,12 @@ export const budgetRangeOptions = [
   '$500+'
 ];
 
+// Updated urgency options to match database constraints
 export const urgencyOptions = [
-  { value: 'immediate', label: 'Immediate' },
-  { value: '24hours', label: '24 hours' },
-  { value: 'flexible', label: 'Flexible' }
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'urgent', label: 'Urgent' }
 ];
 
 export const locationOptions = [

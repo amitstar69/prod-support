@@ -38,6 +38,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
     const clientId = isAuthenticated && userId ? userId : `client-guest-${Date.now()}`;
     
     console.log('Submitting help request with clientId:', clientId, 'isAuthenticated:', isAuthenticated);
+    console.log('Form data being submitted:', formData);
     
     setIsSubmitting(true);
     setSubmissionProgress(10); // Start progress
@@ -80,7 +81,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
         title: formData.title || 'Untitled Request',
         description: formData.description || 'No description provided',
         technical_area: formData.technical_area,
-        urgency: formData.urgency || 'flexible',
+        urgency: formData.urgency || 'medium', // Use medium as fallback for urgency
         communication_preference: formData.communication_preference,
         estimated_duration: duration,
         budget_range: formData.budget_range,
@@ -90,6 +91,8 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
         nda_required: formData.nda_required || false,
         preferred_developer_location: formData.preferred_developer_location || 'Global'
       };
+      
+      console.log('Prepared help request object:', helpRequestBase);
       
       setSubmissionProgress(60); // Update progress
       
@@ -132,7 +135,9 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       clearInterval(progressInterval);
       
       // Provide more specific error messages based on the error
-      if (error.message.includes('network') || error.message.includes('fetch')) {
+      if (error.message.includes('urgency_check')) {
+        toast.error("Invalid urgency value. Please select a valid urgency level.");
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
         toast.error("Network error: Please check your internet connection and try again");
       } else if (error.message.includes('timeout')) {
         toast.error("Request timed out: The server is taking too long to respond");

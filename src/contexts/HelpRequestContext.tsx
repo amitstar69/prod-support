@@ -24,7 +24,7 @@ const defaultFormData: Omit<HelpRequest, 'client_id' | 'id' | 'created_at' | 'up
   title: '',
   description: '',
   technical_area: [],
-  urgency: 'flexible',
+  urgency: 'medium', // Updated default urgency to a valid value
   communication_preference: [],
   estimated_duration: 30,
   budget_range: budgetRangeOptions[1],
