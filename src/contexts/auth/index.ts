@@ -1,5 +1,6 @@
 
 export { useAuth, AuthProvider } from './AuthStateProvider';
-export { getCurrentUserData, updateUserData } from './authProfileData';
+export { getCurrentUserData } from './userDataFetching';
+export { updateUserData } from './userDataUpdates';
 export { debugCheckProfileExists, debugCreateProfile } from './authDebug';
 export { logoutUser } from './authUtils';
