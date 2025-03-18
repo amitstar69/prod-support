@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/auth';
@@ -5,6 +6,7 @@ import { useHelpRequest } from '../../../contexts/HelpRequestContext';
 import { createHelpRequest } from '../../../integrations/supabase/helpRequests';
 import { toast } from "sonner";
 import StepButtons from './StepButtons';
+import { Progress } from '../../../components/ui/progress';
 
 interface FormContainerProps {
   children: React.ReactNode;
@@ -14,6 +16,7 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
   const { isAuthenticated, userId } = useAuth();
   const navigate = useNavigate();
   const { formData, isSubmitting, currentStep, setIsSubmitting, resetForm, validateForm } = useHelpRequest();
+  const [submissionProgress, setSubmissionProgress] = useState(0);
   const [submissionTimer, setSubmissionTimer] = useState<NodeJS.Timeout | null>(null);
   
   const totalSteps = 2; // Total number of steps in our form
@@ -37,17 +40,36 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
     console.log('Submitting help request with clientId:', clientId, 'isAuthenticated:', isAuthenticated);
     
     setIsSubmitting(true);
+    setSubmissionProgress(10); // Start progress
+    
+    // Set up a progress simulation for visual feedback
+    // This gives users a sense that something is happening
+    const progressInterval = setInterval(() => {
+      setSubmissionProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return prev;
+        }
+        return prev + 10;
+      });
+    }, 700);
     
     // Set a timeout to prevent the page from being stuck in a loading state
+    // We'll extend this to 30 seconds to account for potential network delays
     const timer = setTimeout(() => {
       console.log('Submission taking longer than expected, resetting state...');
       setIsSubmitting(false);
+      setSubmissionProgress(0);
+      clearInterval(progressInterval);
       toast.error("Request is taking longer than expected. Please try again or refresh the page.");
-    }, 10000); // 10 seconds timeout
+    }, 30000); // 30 seconds timeout
     
     setSubmissionTimer(timer);
     
     try {
+      // Update progress to indicate we're processing
+      setSubmissionProgress(30);
+      
       // Ensure estimated_duration is a number
       const duration = typeof formData.estimated_duration === 'string' 
         ? parseInt(formData.estimated_duration, 10) 
@@ -69,8 +91,12 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
         preferred_developer_location: formData.preferred_developer_location || 'Global'
       };
       
+      setSubmissionProgress(60); // Update progress
+      
       // Use the createHelpRequest utility function
       const result = await createHelpRequest(helpRequestBase);
+      
+      setSubmissionProgress(90); // Almost done
       
       if (!result.success) {
         throw new Error(result.error);
@@ -78,16 +104,19 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       
       console.log('Help request created successfully:', result);
       
+      setSubmissionProgress(100); // Complete
+      
       // Show success message and redirect
       toast.success("Your help request has been submitted successfully.");
       
       resetForm();
       
-      // Clear the timeout since submission was successful
+      // Clear the timeout and interval since submission was successful
       if (submissionTimer) {
         clearTimeout(submissionTimer);
         setSubmissionTimer(null);
       }
+      clearInterval(progressInterval);
       
       // Navigate to success page with request ID and data
       navigate('/get-help/success', { 
@@ -100,7 +129,19 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       
     } catch (error: any) {
       console.error('Error in form submission:', error);
-      toast.error("An unexpected error occurred: " + error.message);
+      clearInterval(progressInterval);
+      
+      // Provide more specific error messages based on the error
+      if (error.message.includes('network') || error.message.includes('fetch')) {
+        toast.error("Network error: Please check your internet connection and try again");
+      } else if (error.message.includes('timeout')) {
+        toast.error("Request timed out: The server is taking too long to respond");
+      } else {
+        toast.error("An error occurred: " + error.message);
+      }
+      
+      // Reset the progress
+      setSubmissionProgress(0);
     } finally {
       // Clear the timeout
       if (submissionTimer) {
@@ -119,6 +160,17 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Only show the current step */}
         {React.Children.toArray(children)[currentStep - 1]}
+        
+        {/* Show progress bar when submitting */}
+        {isSubmitting && (
+          <div className="space-y-2 py-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Submitting your request...</span>
+              <span className="text-sm font-medium">{submissionProgress}%</span>
+            </div>
+            <Progress value={submissionProgress} className="h-2" />
+          </div>
+        )}
         
         <StepButtons totalSteps={totalSteps} onSubmit={handleSubmit} />
       </form>

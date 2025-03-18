@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, Route, Routes } from 'react-router-dom';
 import Layout from '../components/Layout';
 import HelpRequestForm from '../components/help/HelpRequestForm';
@@ -7,9 +7,16 @@ import HelpRequestSuccess from '../components/help/HelpRequestSuccess';
 import HelpRequestsTracking from '../components/help/HelpRequestsTracking';
 import HelpRequestDetail from '../components/help/HelpRequestDetail';
 import { ArrowLeft } from 'lucide-react';
+import { initEmergencyRecovery } from '../utils/emergencyRecovery';
 
 const GetHelpPage: React.FC = () => {
   const navigate = useNavigate();
+  
+  // Initialize emergency recovery mechanism
+  useEffect(() => {
+    const cleanup = initEmergencyRecovery();
+    return cleanup;
+  }, []);
   
   return (
     <Layout>

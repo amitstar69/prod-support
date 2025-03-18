@@ -15,7 +15,7 @@ const SubmitButtonContent: React.FC<SubmitButtonContentProps> = ({ isSubmitting 
     return (
       <>
         <Loader2 className="h-5 w-5 animate-spin" />
-        <span>Submitting...</span>
+        <span>Processing request...</span>
       </>
     );
   }
