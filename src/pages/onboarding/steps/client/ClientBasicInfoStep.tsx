@@ -99,6 +99,7 @@ const ClientBasicInfoStep: React.FC = () => {
       subtitle="We need some basic information to set up your profile"
       nextDisabled={!formValid || isLoading}
       showBackButton={false}
+      onNextStep={handleSubmit}
     >
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

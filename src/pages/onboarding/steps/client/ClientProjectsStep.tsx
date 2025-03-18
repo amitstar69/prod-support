@@ -4,7 +4,6 @@ import { useOnboarding } from '../../../../contexts/OnboardingContext';
 import { useAuth, getCurrentUserData, updateUserData } from '../../../../contexts/auth';
 import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
 import { Label } from '../../../../components/ui/label';
-import { Button } from '../../../../components/ui/button';
 import { Checkbox } from '../../../../components/ui/checkbox';
 import { toast } from 'sonner';
 
@@ -39,7 +38,7 @@ const ClientProjectsStep: React.FC = () => {
     const fetchUserData = async () => {
       try {
         const userData = await getCurrentUserData();
-        if (userData && userData.projectTypes && Array.isArray(userData.projectTypes)) {
+        if (userData && 'projectTypes' in userData && userData.projectTypes && Array.isArray(userData.projectTypes)) {
           setProjectTypes(userData.projectTypes);
         }
       } catch (error) {
@@ -93,8 +92,8 @@ const ClientProjectsStep: React.FC = () => {
     <OnboardingLayout
       title="Project Types"
       subtitle="What kind of projects are you looking to get help with?"
-      onNextStep={handleSubmit}
       nextDisabled={!formValid || isLoading}
+      onNextStep={handleSubmit}
     >
       <div className="space-y-6">
         <div className="space-y-2">

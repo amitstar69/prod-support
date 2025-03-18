@@ -87,12 +87,14 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   const completeOnboarding = async (): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const success = await updateUserData({
+      // Create the update data with the ISO string date
+      const updateData = {
         profileCompleted: true,
         profileCompletionPercentage: 100,
-        // Use ISO string format for the date
         onboardingCompletedAt: new Date().toISOString()
-      });
+      };
+      
+      const success = await updateUserData(updateData);
       
       if (success) {
         setIsOnboardingComplete(true);

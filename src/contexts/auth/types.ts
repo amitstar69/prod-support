@@ -8,5 +8,5 @@ export interface AuthContextType extends AuthState {
   login: (email: string, password: string, userType: 'developer' | 'client') => Promise<boolean>;
   register: (userData: any, userType: 'developer' | 'client') => Promise<boolean>;
   logout: () => Promise<void>;
-  logoutUser: () => Promise<void>; // Add this property
+  logoutUser: () => Promise<void>; // Alias for logout for backward compatibility
 }

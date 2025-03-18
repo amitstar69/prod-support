@@ -12,6 +12,9 @@ interface OnboardingLayoutProps {
   showBackButton?: boolean;
   showSkipButton?: boolean;
   isLastStep?: boolean;
+  showNextButton?: boolean;
+  showStepIndicator?: boolean;
+  onNextStep?: () => void;
 }
 
 const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
@@ -21,7 +24,10 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   nextDisabled = false,
   showBackButton = true,
   showSkipButton = true,
-  isLastStep = false
+  isLastStep = false,
+  showNextButton = true,
+  showStepIndicator = true,
+  onNextStep
 }) => {
   const { 
     currentStep, 
@@ -33,6 +39,14 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
     isLoading
   } = useOnboarding();
 
+  const handleNextClick = () => {
+    if (onNextStep) {
+      onNextStep();
+    } else {
+      goToNextStep();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -41,7 +55,9 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-xl font-semibold">Complete Your Profile</h1>
-              <p className="text-muted-foreground text-sm">Step {currentStep} of {totalSteps}</p>
+              {showStepIndicator && (
+                <p className="text-muted-foreground text-sm">Step {currentStep} of {totalSteps}</p>
+              )}
             </div>
             {showSkipButton && (
               <Button 
@@ -57,16 +73,18 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
       </header>
 
       {/* Progress bar */}
-      <div className="bg-muted border-b border-border/40">
-        <div className="container mx-auto px-4">
-          <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
-            <div 
-              className="bg-primary h-full transition-all duration-300 ease-in-out" 
-              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-            />
+      {showStepIndicator && (
+        <div className="bg-muted border-b border-border/40">
+          <div className="container mx-auto px-4">
+            <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+              <div 
+                className="bg-primary h-full transition-all duration-300 ease-in-out" 
+                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Content */}
       <div className="flex-grow">
@@ -97,26 +115,28 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
                 )}
               </div>
               <div>
-                {isLastStep ? (
-                  <Button
-                    variant="default"
-                    onClick={completeOnboarding}
-                    disabled={nextDisabled || isLoading}
-                    className="flex items-center gap-2"
-                  >
-                    {isLoading ? 'Saving...' : 'Complete'}
-                    <Check size={16} />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="default"
-                    onClick={goToNextStep}
-                    disabled={nextDisabled || isLoading}
-                    className="flex items-center gap-2"
-                  >
-                    Next
-                    <ChevronRight size={16} />
-                  </Button>
+                {showNextButton && (
+                  isLastStep ? (
+                    <Button
+                      variant="default"
+                      onClick={completeOnboarding}
+                      disabled={nextDisabled || isLoading}
+                      className="flex items-center gap-2"
+                    >
+                      {isLoading ? 'Saving...' : 'Complete'}
+                      <Check size={16} />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="default"
+                      onClick={handleNextClick}
+                      disabled={nextDisabled || isLoading}
+                      className="flex items-center gap-2"
+                    >
+                      Next
+                      <ChevronRight size={16} />
+                    </Button>
+                  )
                 )}
               </div>
             </div>

@@ -43,13 +43,13 @@ const DeveloperSkillsStep: React.FC = () => {
       try {
         const userData = await getCurrentUserData();
         if (userData) {
-          if (userData.skills && Array.isArray(userData.skills)) {
+          if ('skills' in userData && userData.skills && Array.isArray(userData.skills)) {
             setSkills(userData.skills);
           }
-          if (userData.category) {
+          if ('category' in userData && userData.category) {
             setCategory(userData.category);
           }
-          if (userData.experience) {
+          if ('experience' in userData && userData.experience) {
             setExperience(userData.experience);
           }
         }
@@ -103,6 +103,7 @@ const DeveloperSkillsStep: React.FC = () => {
         skills,
         category,
         experience,
+        profileCompletionPercentage: 40 // 2/5 steps completed
       };
       
       const success = await updateUserData(updatedUserData);
@@ -126,6 +127,7 @@ const DeveloperSkillsStep: React.FC = () => {
       title="Your Skills & Expertise"
       subtitle="Let clients know what you're great at"
       nextDisabled={!formValid || isLoading}
+      onNextStep={handleSubmit}
     >
       <div className="space-y-6">
         <div className="space-y-2">

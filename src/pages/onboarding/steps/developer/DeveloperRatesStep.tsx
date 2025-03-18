@@ -21,10 +21,10 @@ const DeveloperRatesStep: React.FC = () => {
       try {
         const userData = await getCurrentUserData();
         if (userData) {
-          if (userData.hourlyRate) {
+          if ('hourlyRate' in userData && userData.hourlyRate) {
             setHourlyRate(userData.hourlyRate);
           }
-          if (userData.minuteRate) {
+          if ('minuteRate' in userData && userData.minuteRate) {
             setMinuteRate(userData.minuteRate);
           } else {
             // Default to hourly rate / 60, rounded to nearest dollar
@@ -83,8 +83,8 @@ const DeveloperRatesStep: React.FC = () => {
     <OnboardingLayout
       title="Set Your Rates"
       subtitle="How much do you charge for your expertise?"
-      onNextStep={handleSubmit}
       nextDisabled={isLoading}
+      onNextStep={handleSubmit}
     >
       <div className="space-y-8 py-4">
         <div className="space-y-4">

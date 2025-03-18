@@ -36,8 +36,9 @@ const DeveloperOnboarding: React.FC = () => {
         
         // Determine starting step based on any existing profile data
         if (userData.name && userData.email) {
-          if (userData.skills && userData.skills.length > 0) {
-            if (userData.hourlyRate && userData.minuteRate) {
+          // Use type guards to check for developer-specific properties
+          if ('skills' in userData && userData.skills && userData.skills.length > 0) {
+            if ('hourlyRate' in userData && 'minuteRate' in userData && userData.hourlyRate && userData.minuteRate) {
               if (userData.availability !== undefined) {
                 setCurrentStep(5); // Almost complete, go to final step
               } else {

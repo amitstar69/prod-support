@@ -1,141 +1,83 @@
 
-import { supabase } from '../../integrations/supabase/client';
+import { supabase } from '../../integrations/supabase';
 import { Developer, Client } from '../../types/product';
 
 type UserData = Partial<Developer | Client>;
 
+// Helper function to check if a property exists in an object
+function hasProperty<K extends string>(obj: object, prop: K): obj is { [key in K]: unknown } {
+  return prop in obj;
+}
+
 // Function to update user data
 export const updateUserData = async (userData: UserData): Promise<boolean> => {
-  // First check if we have auth state
-  const authStateStr = localStorage.getItem('authState');
-  if (!authStateStr) {
-    console.error('No auth state found in localStorage');
-    return false;
-  }
-  
-  const { isAuthenticated, userType, userId } = JSON.parse(authStateStr);
-  
-  if (!isAuthenticated || !userId) {
-    console.error('User not authenticated or missing userId');
-    return false;
-  }
-  
   try {
-    // Prepare profile data with type safety
-    const profileData: any = {
-      name: userData.name,
-      email: userData.email,
-      image: userData.image,
-      location: userData.location,
-      description: userData.description,
-      profile_completed: userData.profileCompleted,
-      profile_completion_percentage: userData.profileCompletionPercentage,
-    };
-    
-    // Add properties that might exist on either type
-    if ('username' in userData) profileData.username = userData.username;
-    if ('bio' in userData) profileData.bio = userData.bio;
-    if ('onboardingCompletedAt' in userData) profileData.onboarding_completed_at = userData.onboardingCompletedAt;
-    
-    // Update the basic profile data first
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update(profileData)
-      .eq('id', userId);
-      
-    if (profileError) {
-      console.error('Error updating profile in Supabase:', profileError);
-      return updateUserDataInLocalStorage(userType, userId, userData);
-    }
-    
-    // Now update the type-specific profile data
-    if (userType === 'developer') {
-      const devData: any = {};
-      
-      // Add developer-specific properties safely
-      if ('category' in userData) devData.category = userData.category;
-      if ('skills' in userData) devData.skills = userData.skills;
-      if ('hourlyRate' in userData) devData.hourly_rate = userData.hourlyRate;
-      if ('minuteRate' in userData) devData.minute_rate = userData.minuteRate;
-      if ('experience' in userData) devData.experience = userData.experience;
-      if ('availability' in userData) devData.availability = userData.availability;
-      if ('communicationPreferences' in userData) devData.communication_preferences = userData.communicationPreferences;
-      
-      const { error: devProfileError } = await supabase
-        .from('developer_profiles')
-        .update(devData)
-        .eq('id', userId);
-        
-      if (devProfileError) {
-        console.error('Error updating developer profile in Supabase:', devProfileError);
-        return updateUserDataInLocalStorage(userType, userId, userData);
-      }
-    } else if (userType === 'client') {
-      const clientData: any = {};
-      
-      // Add client-specific properties safely
-      if ('lookingFor' in userData) clientData.looking_for = userData.lookingFor;
-      if ('preferredHelpFormat' in userData) clientData.preferred_help_format = userData.preferredHelpFormat;
-      if ('techStack' in userData) clientData.tech_stack = userData.techStack;
-      if ('budgetPerHour' in userData) clientData.budget_per_hour = userData.budgetPerHour;
-      if ('paymentMethod' in userData) clientData.payment_method = userData.paymentMethod;
-      if ('communicationPreferences' in userData) clientData.communication_preferences = userData.communicationPreferences;
-      if ('industry' in userData) clientData.industry = userData.industry;
-      if ('projectTypes' in userData) clientData.project_types = userData.projectTypes;
-      if ('company' in userData) clientData.company = userData.company;
-      if ('position' in userData) clientData.position = userData.position;
-      
-      const { error: clientProfileError } = await supabase
-        .from('client_profiles')
-        .update(clientData)
-        .eq('id', userId);
-        
-      if (clientProfileError) {
-        console.error('Error updating client profile in Supabase:', clientProfileError);
-        return updateUserDataInLocalStorage(userType, userId, userData);
-      }
-    }
-    
-    console.log('User data updated successfully in Supabase');
-    return true;
-  } catch (error) {
-    console.error('Exception updating user data in Supabase:', error);
-    return updateUserDataInLocalStorage(userType, userId, userData);
-  }
-};
-
-// Helper to update user data in localStorage (as fallback)
-export const updateUserDataInLocalStorage = (
-  userType: string | null, 
-  userId: string | null, 
-  userData: UserData
-): boolean => {
-  try {
-    if (userType === 'developer') {
-      const developers = JSON.parse(localStorage.getItem('mockDevelopers') || '[]');
-      const updatedDevelopers = developers.map((dev: Developer) => {
-        if (dev.id === userId) {
-          return { ...dev, ...userData };
-        }
-        return dev;
-      });
-      localStorage.setItem('mockDevelopers', JSON.stringify(updatedDevelopers));
-    } else if (userType === 'client') {
-      const clients = JSON.parse(localStorage.getItem('mockClients') || '[]');
-      const updatedClients = clients.map((client: Client) => {
-        if (client.id === userId) {
-          return { ...client, ...userData };
-        }
-        return client;
-      });
-      localStorage.setItem('mockClients', JSON.stringify(updatedClients));
-    } else {
+    const { error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('Session error:', error.message);
       return false;
     }
-    console.log('User data updated in localStorage');
+
+    const { data: user, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('User fetch error:', userError?.message);
+      return false;
+    }
+
+    // Determine user type from auth metadata
+    const userType = user.user?.user_metadata?.user_type as 'developer' | 'client' | undefined;
+    
+    // Prepare data for database
+    const dataToUpdate: Record<string, any> = {};
+    
+    // Common fields for both user types
+    if (hasProperty(userData, 'name')) dataToUpdate.name = userData.name;
+    if (hasProperty(userData, 'email')) dataToUpdate.email = userData.email;
+    if (hasProperty(userData, 'location')) dataToUpdate.location = userData.location;
+    if (hasProperty(userData, 'username')) dataToUpdate.username = userData.username;
+    if (hasProperty(userData, 'description')) dataToUpdate.description = userData.description;
+    if (hasProperty(userData, 'bio')) dataToUpdate.bio = userData.bio;
+    if (hasProperty(userData, 'image')) dataToUpdate.image = userData.image;
+    if (hasProperty(userData, 'profileCompleted')) dataToUpdate.profile_completed = userData.profileCompleted;
+    if (hasProperty(userData, 'profileCompletionPercentage')) dataToUpdate.profile_completion_percentage = userData.profileCompletionPercentage;
+    if (hasProperty(userData, 'onboardingCompletedAt')) dataToUpdate.onboarding_completed_at = userData.onboardingCompletedAt;
+    
+    // User type specific fields
+    if (userType === 'developer') {
+      if (hasProperty(userData, 'phone')) dataToUpdate.phone = userData.phone;
+      if (hasProperty(userData, 'category')) dataToUpdate.category = userData.category;
+      if (hasProperty(userData, 'skills')) dataToUpdate.skills = userData.skills;
+      if (hasProperty(userData, 'hourlyRate')) dataToUpdate.hourly_rate = userData.hourlyRate;
+      if (hasProperty(userData, 'minuteRate')) dataToUpdate.minute_rate = userData.minuteRate;
+      if (hasProperty(userData, 'experience')) dataToUpdate.experience = userData.experience;
+      if (hasProperty(userData, 'availability')) dataToUpdate.availability = userData.availability;
+    } else if (userType === 'client') {
+      if (hasProperty(userData, 'industry')) dataToUpdate.industry = userData.industry;
+      if (hasProperty(userData, 'company')) dataToUpdate.company = userData.company;
+      if (hasProperty(userData, 'position')) dataToUpdate.position = userData.position;
+      if (hasProperty(userData, 'budgetPerHour')) dataToUpdate.budget_per_hour = userData.budgetPerHour;
+      if (hasProperty(userData, 'lookingFor')) dataToUpdate.looking_for = userData.lookingFor;
+      if (hasProperty(userData, 'preferredHelpFormat')) dataToUpdate.preferred_help_format = userData.preferredHelpFormat;
+      if (hasProperty(userData, 'techStack')) dataToUpdate.tech_stack = userData.techStack;
+      if (hasProperty(userData, 'projectTypes')) dataToUpdate.project_types = userData.projectTypes;
+      if (hasProperty(userData, 'paymentMethod')) dataToUpdate.payment_method = userData.paymentMethod;
+    }
+    
+    // Update profiles table
+    const tableName = userType === 'developer' ? 'developer_profiles' : 'client_profiles';
+    const { error: updateError } = await supabase
+      .from(tableName)
+      .update(dataToUpdate)
+      .eq('id', user.user.id);
+    
+    if (updateError) {
+      console.error('Profile update error:', updateError.message);
+      return false;
+    }
+    
     return true;
   } catch (error) {
-    console.error('Error updating user data in localStorage:', error);
+    console.error('Update user data error:', error);
     return false;
   }
 };

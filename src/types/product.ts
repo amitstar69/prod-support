@@ -1,3 +1,4 @@
+
 export interface Developer {
   id: string;
   name: string;
@@ -8,7 +9,10 @@ export interface Developer {
   experience: string;
   description: string;
   rating: number;
-  availability: boolean;
+  availability: boolean | {
+    days?: string[];
+    hours?: string;
+  };
   featured?: boolean;
   minuteRate?: number;  // Field for per-minute billing
   online?: boolean;     // Field to show current online status
@@ -71,6 +75,11 @@ export interface Client {
   };
   communicationPreferences?: string[];
   onboardingCompletedAt?: string;
+  skills?: string[];  // For compatibility
+  hourlyRate?: number; // For compatibility
+  minuteRate?: number; // For compatibility
+  experience?: string; // For compatibility
+  category?: string;   // For compatibility
 }
 
 export interface Category {
@@ -101,8 +110,9 @@ export interface ProfileSettings {
   updated_at?: string;
 }
 
-export type AuthContextType = AuthState & {
+export interface AuthContextType extends AuthState {
   login: (email: string, password: string, userType: 'developer' | 'client') => Promise<boolean>;
   register: (userData: any, userType: 'developer' | 'client') => Promise<boolean>;
-  logout: () => Promise<void>; // Updated to return Promise<void>
-};
+  logout: () => Promise<void>; 
+  logoutUser: () => Promise<void>; // Added for explicit clarity
+}

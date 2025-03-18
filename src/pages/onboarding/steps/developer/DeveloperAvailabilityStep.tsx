@@ -91,8 +91,8 @@ const DeveloperAvailabilityStep: React.FC = () => {
     <OnboardingLayout
       title="Your Availability"
       subtitle="Let clients know when you're available to help"
-      onNextStep={handleSubmit}
       nextDisabled={isLoading}
+      onNextStep={handleSubmit}
     >
       <div className="space-y-8 py-4">
         <div className="flex items-center justify-between">

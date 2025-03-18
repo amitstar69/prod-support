@@ -41,10 +41,10 @@ const ClientPreferencesStep: React.FC = () => {
       try {
         const userData = await getCurrentUserData();
         if (userData) {
-          if (userData.techStack && Array.isArray(userData.techStack)) {
+          if ('techStack' in userData && userData.techStack && Array.isArray(userData.techStack)) {
             setTechStack(userData.techStack);
           }
-          if (userData.industry) {
+          if ('industry' in userData && userData.industry) {
             setIndustry(userData.industry);
           }
         }
@@ -116,8 +116,8 @@ const ClientPreferencesStep: React.FC = () => {
     <OnboardingLayout
       title="Technical Preferences"
       subtitle="Tell us about your tech stack and industry"
-      onNextStep={handleSubmit}
       nextDisabled={!formValid || isLoading}
+      onNextStep={handleSubmit}
     >
       <div className="space-y-6">
         <div className="space-y-2">

@@ -35,8 +35,10 @@ const ClientOnboarding: React.FC = () => {
         
         // Determine starting step based on any existing profile data
         if (userData.name && userData.email) {
-          if ((userData.techStack && userData.techStack.length > 0) || userData.industry) {
-            if (userData.projectTypes && userData.projectTypes.length > 0) {
+          // Use type guards to check for client-specific properties
+          if ('techStack' in userData && 'industry' in userData &&
+              ((userData.techStack && userData.techStack.length > 0) || userData.industry)) {
+            if ('projectTypes' in userData && userData.projectTypes && userData.projectTypes.length > 0) {
               setCurrentStep(4); // Almost complete, go to final step
             } else {
               setCurrentStep(3); // Has preferences, go to projects step

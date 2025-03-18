@@ -33,7 +33,7 @@ const DeveloperBasicInfoStep: React.FC = () => {
             lastName: nameParts.slice(1).join(' ') || '',
             email: userData.email || '',
             location: userData.location || '',
-            phone: userData.phone || ''
+            phone: ('phone' in userData) ? userData.phone || '' : ''
           });
         }
       } catch (error) {
@@ -94,9 +94,9 @@ const DeveloperBasicInfoStep: React.FC = () => {
     <OnboardingLayout
       title="Let's start with the basics"
       subtitle="We need some basic information to set up your profile"
-      onNextStep={handleSubmit}
       nextDisabled={!formValid || isLoading}
       showBackButton={false}
+      onNextStep={handleSubmit}
     >
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
