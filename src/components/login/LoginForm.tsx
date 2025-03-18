@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
@@ -8,6 +9,7 @@ import { useAuth } from '../../contexts/auth';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { UserType } from '../../hooks/useLoginForm';
+import { Check } from 'lucide-react';
 
 interface LoginFormProps {
   email?: string;
@@ -104,22 +106,44 @@ const LoginForm: React.FC<LoginFormProps> = ({
   return (
     <div className="w-full max-w-md mx-auto">
       <form onSubmit={onSubmit || handleLogin} className="space-y-6">
+        <div className="text-center mb-2">
+          <div className="text-sm mb-1">
+            Don't have an account?{' '}
+            <Button
+              variant="link"
+              className="p-0 h-auto font-medium text-primary"
+              type="button"
+              onClick={() => navigate('/register')}
+            >
+              Sign up
+            </Button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-4 bg-muted p-1 rounded-lg">
           <Button
             type="button"
-            variant={userType === 'client' ? 'default' : 'ghost'}
+            variant={userType === 'client' ? 'default' : 'outline'}
             onClick={() => handleUserTypeChange('client')}
-            className="w-full"
+            className={`w-full relative ${userType === 'client' ? 'text-white bg-primary hover:bg-primary/90' : 'bg-background border hover:bg-muted/50'}`}
+            aria-pressed={userType === 'client'}
           >
-            Client
+            {userType === 'client' && (
+              <Check className="h-4 w-4 absolute left-2" />
+            )}
+            <span className={userType === 'client' ? 'ml-2' : ''}>Client</span>
           </Button>
           <Button
             type="button"
-            variant={userType === 'developer' ? 'default' : 'ghost'}
+            variant={userType === 'developer' ? 'default' : 'outline'}
             onClick={() => handleUserTypeChange('developer')}
-            className="w-full"
+            className={`w-full relative ${userType === 'developer' ? 'text-white bg-primary hover:bg-primary/90' : 'bg-background border hover:bg-muted/50'}`}
+            aria-pressed={userType === 'developer'}
           >
-            Developer
+            {userType === 'developer' && (
+              <Check className="h-4 w-4 absolute left-2" />
+            )}
+            <span className={userType === 'developer' ? 'ml-2' : ''}>Developer</span>
           </Button>
         </div>
 
@@ -137,17 +161,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
           </div>
           
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Button
-                variant="link"
-                className="p-0 h-auto font-normal text-xs"
-                type="button"
-                onClick={() => navigate('/forgot-password')}
-              >
-                Forgot Password?
-              </Button>
-            </div>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
@@ -172,6 +186,17 @@ const LoginForm: React.FC<LoginFormProps> = ({
             'Sign In'
           )}
         </Button>
+
+        <div className="text-center">
+          <Button
+            variant="link"
+            className="p-0 h-auto font-normal text-sm"
+            type="button"
+            onClick={() => navigate('/forgot-password')}
+          >
+            Forgot Password?
+          </Button>
+        </div>
         
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
@@ -190,18 +215,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
           </Button>
           <Button variant="outline" type="button" disabled={externalIsLoading !== undefined ? externalIsLoading : isLoading}>
             GitHub
-          </Button>
-        </div>
-        
-        <div className="text-center text-sm">
-          Don't have an account?{' '}
-          <Button
-            variant="link"
-            className="p-0 h-auto font-normal"
-            type="button"
-            onClick={() => navigate('/register')}
-          >
-            Sign up
           </Button>
         </div>
       </form>
