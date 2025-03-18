@@ -1,168 +1,167 @@
 
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import { useAuth, getCurrentUserData, updateUserData } from '../../../../contexts/auth';
+import { Developer } from '../../../../types/product';
 import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
-import { Input } from '../../../../components/ui/input';
-import { Label } from '../../../../components/ui/label';
-import { toast } from 'sonner';
 
 const DeveloperBasicInfoStep: React.FC = () => {
-  const { goToNextStep } = useOnboarding();
-  const { userId } = useAuth();
+  const { userData, updateUserDataAndProceed } = useOnboarding();
   
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
+    phone: '',
     location: '',
-    phone: ''
+    bio: ''
   });
   
-  const [isLoading, setIsLoading] = useState(false);
-  const [formValid, setFormValid] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Update form data when userData changes
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userData = await getCurrentUserData();
-        if (userData) {
-          const nameParts = userData.name ? userData.name.split(' ') : ['', ''];
-          setFormData({
-            firstName: nameParts[0] || '',
-            lastName: nameParts.slice(1).join(' ') || '',
-            email: userData.email || '',
-            location: userData.location || '',
-            phone: ('phone' in userData) ? userData.phone || '' : ''
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      }
-    };
-    
-    if (userId) {
-      fetchUserData();
+    if (userData) {
+      const fullName = userData.name || '';
+      const nameParts = fullName.split(' ');
+      
+      setFormData({
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        email: userData.email || '',
+        phone: 'phone' in userData ? userData.phone || '' : '',
+        location: userData.location || '',
+        bio: 'bio' in userData ? userData.bio || '' : '',
+      });
     }
-  }, [userId]);
+  }, [userData]);
   
-  useEffect(() => {
-    // Check if required fields are filled
-    setFormValid(
-      formData.firstName.trim() !== '' && 
-      formData.lastName.trim() !== '' && 
-      formData.email.trim() !== ''
-    );
-  }, [formData]);
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
   
   const handleSubmit = async () => {
-    setIsLoading(true);
+    setIsSubmitting(true);
+    
     try {
-      const updatedUserData = {
-        name: `${formData.firstName} ${formData.lastName}`.trim(),
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      
+      const developerData: Partial<Developer> = {
+        name: fullName,
         email: formData.email,
-        location: formData.location,
         phone: formData.phone,
-        username: `${formData.firstName.toLowerCase()}${formData.lastName.toLowerCase()}`
+        location: formData.location,
+        bio: formData.bio,
+        profileCompletionPercentage: 25, // 25% complete after basic info
       };
       
-      const success = await updateUserData(updatedUserData);
-      
-      if (success) {
-        toast.success('Basic information saved successfully');
-        goToNextStep();
-      } else {
-        toast.error('Failed to save information');
-      }
+      await updateUserDataAndProceed(developerData);
     } catch (error) {
-      console.error('Error saving basic info:', error);
-      toast.error('An error occurred while saving');
+      console.error('Error updating basic info:', error);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
   
   return (
-    <OnboardingLayout
-      title="Let's start with the basics"
-      subtitle="We need some basic information to set up your profile"
-      nextDisabled={!formValid || isLoading}
-      showBackButton={false}
+    <OnboardingLayout 
+      title="Basic Information"
+      subtitle="Let's get started with some basic information about you"
       onNextStep={handleSubmit}
+      nextDisabled={isSubmitting}
     >
       <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="firstName">First Name *</Label>
-            <Input
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="firstName" className="block text-sm font-medium mb-1">
+              First Name
+            </label>
+            <input
               id="firstName"
               name="firstName"
+              type="text"
               value={formData.firstName}
-              onChange={handleInputChange}
-              placeholder="Enter your first name"
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
               required
             />
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="lastName">Last Name *</Label>
-            <Input
+          <div>
+            <label htmlFor="lastName" className="block text-sm font-medium mb-1">
+              Last Name
+            </label>
+            <input
               id="lastName"
               name="lastName"
+              type="text"
               value={formData.lastName}
-              onChange={handleInputChange}
-              placeholder="Enter your last name"
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
               required
             />
           </div>
         </div>
         
-        <div className="space-y-2">
-          <Label htmlFor="email">Email Address *</Label>
-          <Input
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium mb-1">
+            Email
+          </label>
+          <input
             id="email"
             name="email"
             type="email"
             value={formData.email}
-            onChange={handleInputChange}
-            placeholder="Enter your email address"
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
             required
           />
         </div>
         
-        <div className="space-y-2">
-          <Label htmlFor="location">Location</Label>
-          <Input
-            id="location"
-            name="location"
-            value={formData.location}
-            onChange={handleInputChange}
-            placeholder="City, Country"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="phone">Phone Number</Label>
-          <Input
+        <div>
+          <label htmlFor="phone" className="block text-sm font-medium mb-1">
+            Phone Number (Optional)
+          </label>
+          <input
             id="phone"
             name="phone"
+            type="tel"
             value={formData.phone}
-            onChange={handleInputChange}
-            placeholder="Your phone number"
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            placeholder="+1 (123) 456-7890"
           />
         </div>
         
-        <p className="text-sm text-muted-foreground">
-          * Required fields
-        </p>
+        <div>
+          <label htmlFor="location" className="block text-sm font-medium mb-1">
+            Location
+          </label>
+          <input
+            id="location"
+            name="location"
+            type="text"
+            value={formData.location}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            placeholder="City, Country"
+            required
+          />
+        </div>
+        
+        <div>
+          <label htmlFor="bio" className="block text-sm font-medium mb-1">
+            Short Bio
+          </label>
+          <textarea
+            id="bio"
+            name="bio"
+            value={formData.bio}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            placeholder="Tell us a bit about yourself"
+            rows={3}
+          />
+        </div>
       </div>
     </OnboardingLayout>
   );

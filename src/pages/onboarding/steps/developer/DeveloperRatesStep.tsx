@@ -1,158 +1,164 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import { useAuth, getCurrentUserData, updateUserData } from '../../../../contexts/auth';
+import { Developer } from '../../../../types/product';
 import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
-import { Input } from '../../../../components/ui/input';
-import { Label } from '../../../../components/ui/label';
 import { Slider } from '../../../../components/ui/slider';
-import { toast } from 'sonner';
 
 const DeveloperRatesStep: React.FC = () => {
-  const { goToNextStep } = useOnboarding();
-  const { userId } = useAuth();
+  const { userData, updateUserDataAndProceed } = useOnboarding();
+  const navigate = useNavigate();
   
-  const [hourlyRate, setHourlyRate] = useState<number>(50);
-  const [minuteRate, setMinuteRate] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    hourlyRate: 0,
+    minuteRate: 0,
+    calculateMinuteRate: true
+  });
   
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Update form data when userData changes
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userData = await getCurrentUserData();
-        if (userData) {
-          if ('hourlyRate' in userData && userData.hourlyRate) {
-            setHourlyRate(userData.hourlyRate);
-          }
-          if ('minuteRate' in userData && userData.minuteRate) {
-            setMinuteRate(userData.minuteRate);
-          } else {
-            // Default to hourly rate / 60, rounded to nearest dollar
-            setMinuteRate(Math.round(hourlyRate / 60));
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      }
-    };
-    
-    if (userId) {
-      fetchUserData();
+    if (userData) {
+      const hourlyRate = 'hourlyRate' in userData ? userData.hourlyRate || 50 : 50;
+      setFormData({
+        hourlyRate,
+        minuteRate: 'minuteRate' in userData ? userData.minuteRate || Math.round(hourlyRate / 60) : Math.round(hourlyRate / 60),
+        calculateMinuteRate: true
+      });
     }
-  }, [userId]);
-  
-  // Update minute rate when hourly rate changes
-  useEffect(() => {
-    setMinuteRate(Math.round(hourlyRate / 60));
-  }, [hourlyRate]);
+  }, [userData]);
   
   const handleHourlyRateChange = (value: number[]) => {
-    setHourlyRate(value[0]);
+    const newHourlyRate = value[0];
+    setFormData(prev => ({ 
+      ...prev, 
+      hourlyRate: newHourlyRate,
+      minuteRate: prev.calculateMinuteRate ? Math.round(newHourlyRate / 60) : prev.minuteRate
+    }));
   };
   
   const handleMinuteRateChange = (value: number[]) => {
-    setMinuteRate(value[0]);
+    const newMinuteRate = value[0];
+    setFormData(prev => ({ 
+      ...prev, 
+      minuteRate: newMinuteRate,
+      calculateMinuteRate: false
+    }));
+  };
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const numValue = parseInt(value);
+    
+    if (name === 'hourlyRate') {
+      setFormData(prev => ({ 
+        ...prev, 
+        hourlyRate: numValue || 0,
+        minuteRate: prev.calculateMinuteRate ? Math.round((numValue || 0) / 60) : prev.minuteRate
+      }));
+    } else if (name === 'minuteRate') {
+      setFormData(prev => ({ 
+        ...prev, 
+        minuteRate: numValue || 0,
+        calculateMinuteRate: false
+      }));
+    }
   };
   
   const handleSubmit = async () => {
-    setIsLoading(true);
+    setIsSubmitting(true);
+    
     try {
-      const updatedUserData = {
-        hourlyRate,
-        minuteRate,
-        profileCompletionPercentage: 60 // 3/5 steps completed
+      const developerData: Partial<Developer> = {
+        hourlyRate: formData.hourlyRate,
+        minuteRate: formData.minuteRate,
+        profileCompletionPercentage: 65, // 65% complete after rates
       };
       
-      const success = await updateUserData(updatedUserData);
-      
-      if (success) {
-        toast.success('Rates saved successfully');
-        goToNextStep();
-      } else {
-        toast.error('Failed to save rates');
-      }
+      await updateUserDataAndProceed(developerData);
     } catch (error) {
-      console.error('Error saving rates:', error);
-      toast.error('An error occurred while saving');
+      console.error('Error updating rates:', error);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
   
   return (
-    <OnboardingLayout
-      title="Set Your Rates"
-      subtitle="How much do you charge for your expertise?"
-      nextDisabled={isLoading}
+    <OnboardingLayout 
+      title="Your Rates"
+      subtitle="Set your hourly and per-minute rates for client work"
       onNextStep={handleSubmit}
+      nextDisabled={isSubmitting}
+      onBackStep={() => navigate(-1)}
     >
-      <div className="space-y-8 py-4">
-        <div className="space-y-4">
-          <Label htmlFor="hourlyRate">Hourly Rate (USD)</Label>
-          <div className="flex items-center gap-4">
-            <div className="flex-grow">
+      <div className="space-y-10 py-4">
+        <div className="space-y-6">
+          <div>
+            <label className="text-base font-medium mb-4 block">Hourly Rate (USD)</label>
+            <div className="space-y-4">
               <Slider
-                id="hourlyRate"
-                min={15}
-                max={250}
-                step={5}
-                value={[hourlyRate]}
+                value={[formData.hourlyRate]}
                 onValueChange={handleHourlyRateChange}
+                min={20}
+                max={200}
+                step={5}
               />
-            </div>
-            <div className="w-16">
-              <Input
-                type="number"
-                value={hourlyRate}
-                onChange={(e) => setHourlyRate(Number(e.target.value))}
-                min={15}
-                max={250}
-                className="text-right"
-              />
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-muted-foreground">$20</div>
+                <input
+                  type="number"
+                  name="hourlyRate"
+                  value={formData.hourlyRate}
+                  onChange={handleChange}
+                  min={0}
+                  className="w-24 text-center px-2 py-1 border border-gray-300 rounded-md"
+                />
+                <div className="text-sm text-muted-foreground">$200+</div>
+              </div>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            The average rate for your experience level is $45-75/hour
-          </p>
-        </div>
-        
-        <div className="space-y-4">
-          <Label htmlFor="minuteRate">Per-Minute Rate (USD)</Label>
-          <div className="flex items-center gap-4">
-            <div className="flex-grow">
+          
+          <div className="pt-6 border-t border-gray-200">
+            <label className="text-base font-medium mb-4 block">Per-Minute Rate (USD)</label>
+            <div className="space-y-4">
               <Slider
-                id="minuteRate"
-                min={0.25}
-                max={5}
-                step={0.25}
-                value={[minuteRate]}
+                value={[formData.minuteRate]}
                 onValueChange={handleMinuteRateChange}
+                min={0}
+                max={10}
+                step={0.1}
               />
-            </div>
-            <div className="w-16">
-              <Input
-                type="number"
-                value={minuteRate}
-                onChange={(e) => setMinuteRate(Number(e.target.value))}
-                min={0.25}
-                max={5}
-                step={0.25}
-                className="text-right"
-              />
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-muted-foreground">$0</div>
+                <input
+                  type="number"
+                  name="minuteRate"
+                  value={formData.minuteRate}
+                  onChange={handleChange}
+                  min={0}
+                  step={0.1}
+                  className="w-24 text-center px-2 py-1 border border-gray-300 rounded-md"
+                />
+                <div className="text-sm text-muted-foreground">$10+</div>
+              </div>
+              {formData.calculateMinuteRate && (
+                <p className="text-sm text-muted-foreground italic">
+                  This is automatically calculated from your hourly rate (hourly ÷ 60).
+                </p>
+              )}
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            This is what clients pay for quick help sessions
-          </p>
         </div>
         
-        <div className="p-4 bg-muted rounded-lg">
-          <h3 className="font-medium mb-2">Pricing Tips</h3>
-          <ul className="text-sm space-y-1 list-disc pl-4">
-            <li>Set competitive rates based on your experience level</li>
-            <li>Higher rates can signal expertise but may limit inquiries</li>
-            <li>Lower rates might attract more clients but could undervalue your skills</li>
-            <li>You can adjust your rates at any time from your profile settings</li>
+        <div className="bg-muted p-4 rounded-lg">
+          <h3 className="font-medium mb-2">Rate Tips</h3>
+          <ul className="text-sm text-muted-foreground space-y-2">
+            <li>• Set rates based on your experience level and specialized skills</li>
+            <li>• Research market rates for developers in your specialty</li>
+            <li>• Consider your location and cost of living</li>
+            <li>• You can adjust your rates later as you gain more experience</li>
           </ul>
         </div>
       </div>

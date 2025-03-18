@@ -1,4 +1,3 @@
-
 export interface Developer {
   id: string;
   name: string;
@@ -72,7 +71,7 @@ export interface Client {
   availability?: {
     days?: string[];
     hours?: string;
-  };
+  } | boolean;  // Updated to allow boolean for compatibility
   communicationPreferences?: string[];
   onboardingCompletedAt?: string;
   skills?: string[];  // For compatibility

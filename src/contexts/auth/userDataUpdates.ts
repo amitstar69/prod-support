@@ -51,10 +51,8 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
       if (hasProperty(userData, 'minuteRate')) dataToUpdate.minute_rate = userData.minuteRate;
       if (hasProperty(userData, 'experience')) dataToUpdate.experience = userData.experience;
       if (hasProperty(userData, 'availability')) {
-        // Ensure availability is a boolean when stored in database
-        dataToUpdate.availability = typeof userData.availability === 'boolean' 
-          ? userData.availability 
-          : true; // Default to true if it's an object
+        // For developer, availability can be a boolean or an object
+        dataToUpdate.availability = userData.availability;
       }
     } else if (userType === 'client') {
       if (hasProperty(userData, 'industry')) dataToUpdate.industry = userData.industry;
@@ -66,6 +64,15 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
       if (hasProperty(userData, 'techStack')) dataToUpdate.tech_stack = userData.techStack;
       if (hasProperty(userData, 'projectTypes')) dataToUpdate.project_types = userData.projectTypes;
       if (hasProperty(userData, 'paymentMethod')) dataToUpdate.payment_method = userData.paymentMethod;
+      if (hasProperty(userData, 'availability')) {
+        // For client, ensure availability is an object if it's provided
+        if (typeof userData.availability === 'boolean') {
+          // Convert boolean to appropriate availability object
+          dataToUpdate.availability = userData.availability ? {} : null;
+        } else {
+          dataToUpdate.availability = userData.availability;
+        }
+      }
     }
     
     // Update profiles table
@@ -104,12 +111,6 @@ export const updateUserDataInLocalStorage = (userId: string, userData: UserData)
       developers[developerIndex] = { 
         ...developers[developerIndex], 
         ...userData,
-        // Ensure availability is handled correctly
-        ...(userData.availability && {
-          availability: typeof userData.availability === 'boolean' 
-            ? userData.availability 
-            : true
-        })
       };
       localStorage.setItem('mockDevelopers', JSON.stringify(developers));
       return true;
@@ -119,7 +120,16 @@ export const updateUserDataInLocalStorage = (userId: string, userData: UserData)
     const clientIndex = clients.findIndex(client => client.id === userId);
     if (clientIndex !== -1) {
       // Update client data
-      clients[clientIndex] = { ...clients[clientIndex], ...userData };
+      clients[clientIndex] = { 
+        ...clients[clientIndex], 
+        ...userData,
+        // Handle availability appropriately
+        ...(hasProperty(userData, 'availability') && {
+          availability: typeof userData.availability === 'boolean' 
+            ? (userData.availability ? {} : null) 
+            : userData.availability
+        })
+      };
       localStorage.setItem('mockClients', JSON.stringify(clients));
       return true;
     }

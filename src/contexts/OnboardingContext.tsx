@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, getCurrentUserData, updateUserData } from './auth';
+import { Developer, Client } from '../types/product';
 import { toast } from 'sonner';
 
 interface OnboardingContextType {
@@ -14,6 +15,8 @@ interface OnboardingContextType {
   skipOnboarding: () => void;
   isOnboardingComplete: boolean;
   isLoading: boolean;
+  userData: Partial<Developer | Client>;
+  updateUserDataAndProceed: (data: Partial<Developer | Client>) => Promise<void>;
 }
 
 const OnboardingContext = createContext<OnboardingContextType | null>(null);
@@ -43,24 +46,26 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   const [currentStep, setCurrentStep] = useState(1);
   const [isOnboardingComplete, setIsOnboardingComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [userData, setUserData] = useState<Partial<Developer | Client>>({});
   
   useEffect(() => {
-    const checkOnboardingStatus = async () => {
+    const fetchUserData = async () => {
       setIsLoading(true);
       try {
-        const userData = await getCurrentUserData();
-        if (userData) {
-          setIsOnboardingComplete(!!userData.profileCompleted);
+        const data = await getCurrentUserData();
+        if (data) {
+          setUserData(data);
+          setIsOnboardingComplete(!!data.profileCompleted);
         }
       } catch (error) {
-        console.error('Error checking onboarding status:', error);
+        console.error('Error fetching user data:', error);
       } finally {
         setIsLoading(false);
       }
     };
     
     if (userId) {
-      checkOnboardingStatus();
+      fetchUserData();
     } else {
       setIsLoading(false);
     }
@@ -81,6 +86,26 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   const goToStep = (step: number) => {
     if (step >= 1 && step <= totalSteps) {
       setCurrentStep(step);
+    }
+  };
+  
+  const updateUserDataAndProceed = async (data: Partial<Developer | Client>) => {
+    setIsLoading(true);
+    try {
+      // Update userData state
+      const updatedUserData = { ...userData, ...data };
+      setUserData(updatedUserData);
+      
+      // Update in database
+      await updateUserData(data);
+      
+      // Go to next step
+      goToNextStep();
+    } catch (error) {
+      console.error('Error updating user data:', error);
+      toast.error('Failed to update your information');
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -141,7 +166,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         completeOnboarding,
         skipOnboarding,
         isOnboardingComplete,
-        isLoading
+        isLoading,
+        userData,
+        updateUserDataAndProceed
       }}
     >
       {children}

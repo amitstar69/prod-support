@@ -1,38 +1,51 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import { updateUserData } from '../../../../contexts/auth';
 import { Client } from '../../../../types/product';
+import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
 
 const ClientBasicInfoStep: React.FC = () => {
   const { userData, updateUserDataAndProceed } = useOnboarding();
-  const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
-    firstName: userData?.name ? userData.name.split(' ')[0] : '',
-    lastName: userData?.name ? userData.name.split(' ').slice(1).join(' ') : '',
-    email: userData?.email || '',
-    company: 'company' in userData ? userData.company || '' : '',
-    position: 'position' in userData ? userData.position || '' : '',
-    location: userData?.location || '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    company: '',
+    position: '',
+    location: '',
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Update form data when userData changes
+  useEffect(() => {
+    if (userData) {
+      const fullName = userData.name || '';
+      const nameParts = fullName.split(' ');
+      
+      setFormData({
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        email: userData.email || '',
+        company: 'company' in userData ? userData.company || '' : '',
+        position: 'position' in userData ? userData.position || '' : '',
+        location: userData.location || '',
+      });
+    }
+  }, [userData]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setIsSubmitting(true);
     
     try {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       
-      // Type guard to ensure we're dealing with a Client
       const clientData: Partial<Client> = {
         name: fullName,
         email: formData.email,
@@ -51,13 +64,13 @@ const ClientBasicInfoStep: React.FC = () => {
   };
   
   return (
-    <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Basic Information</h1>
-      <p className="text-muted-foreground mb-8">
-        Let's get started with some basic information about you.
-      </p>
-      
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <OnboardingLayout 
+      title="Basic Information"
+      subtitle="Let's get started with some basic information about you"
+      onNextStep={handleSubmit}
+      nextDisabled={isSubmitting}
+    >
+      <div className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="firstName" className="block text-sm font-medium mb-1">
@@ -147,18 +160,8 @@ const ClientBasicInfoStep: React.FC = () => {
             required
           />
         </div>
-        
-        <div className="pt-4">
-          <button
-            type="submit"
-            className="w-full bg-primary text-white py-2 rounded-md font-medium hover:bg-primary-dark"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Saving...' : 'Continue'}
-          </button>
-        </div>
-      </form>
-    </div>
+      </div>
+    </OnboardingLayout>
   );
 };
 

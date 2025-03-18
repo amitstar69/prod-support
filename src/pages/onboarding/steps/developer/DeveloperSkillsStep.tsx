@@ -1,21 +1,32 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import { updateUserData } from '../../../../contexts/auth';
 import { Developer } from '../../../../types/product';
+import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
 
 const DeveloperSkillsStep: React.FC = () => {
   const { userData, updateUserDataAndProceed } = useOnboarding();
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
-    category: 'category' in userData ? userData.category || 'frontend' : 'frontend',
-    skills: 'skills' in userData ? (userData.skills || []).join(', ') : '',
-    experience: 'experience' in userData ? userData.experience || '' : '',
+    category: userData && 'category' in userData ? userData.category || 'frontend' : 'frontend',
+    skills: userData && 'skills' in userData ? (userData.skills || []).join(', ') : '',
+    experience: userData && 'experience' in userData ? userData.experience || '' : '',
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Update form data when userData changes
+  useEffect(() => {
+    if (userData) {
+      setFormData({
+        category: 'category' in userData ? userData.category || 'frontend' : 'frontend',
+        skills: 'skills' in userData ? (userData.skills || []).join(', ') : '',
+        experience: 'experience' in userData ? userData.experience || '' : '',
+      });
+    }
+  }, [userData]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -50,13 +61,14 @@ const DeveloperSkillsStep: React.FC = () => {
   };
   
   return (
-    <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Your Skills</h1>
-      <p className="text-muted-foreground mb-8">
-        Tell us about your expertise and technical skills.
-      </p>
-      
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <OnboardingLayout 
+      title="Your Skills"
+      subtitle="Tell us about your expertise and technical skills"
+      onNextStep={handleSubmit}
+      nextDisabled={isSubmitting}
+      onBackStep={() => navigate(-1)}
+    >
+      <div className="space-y-6">
         <div>
           <label htmlFor="category" className="block text-sm font-medium mb-1">
             Primary Specialization
@@ -111,25 +123,8 @@ const DeveloperSkillsStep: React.FC = () => {
             required
           />
         </div>
-        
-        <div className="flex gap-4 pt-4">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="w-1/3 border border-gray-300 bg-white py-2 rounded-md font-medium text-gray-700"
-          >
-            Back
-          </button>
-          <button
-            type="submit"
-            className="w-2/3 bg-primary text-white py-2 rounded-md font-medium hover:bg-primary-dark"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Saving...' : 'Continue'}
-          </button>
-        </div>
-      </form>
-    </div>
+      </div>
+    </OnboardingLayout>
   );
 };
 
