@@ -7,7 +7,7 @@ import {
   getHelpRequest,
   updateHelpRequest
 } from './helpRequestsCore';
-import { testDatabaseAccess } from './helpRequestsDebug';
+import { testHelpRequestsTableAccess as testDatabaseAccess } from './helpRequestsDebug';
 import { submitDeveloperApplication, getDeveloperApplicationsForRequest } from './helpRequestsApplications';
 
 // Create a help request
