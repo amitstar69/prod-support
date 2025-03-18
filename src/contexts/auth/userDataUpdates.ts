@@ -50,7 +50,12 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
       if (hasProperty(userData, 'hourlyRate')) dataToUpdate.hourly_rate = userData.hourlyRate;
       if (hasProperty(userData, 'minuteRate')) dataToUpdate.minute_rate = userData.minuteRate;
       if (hasProperty(userData, 'experience')) dataToUpdate.experience = userData.experience;
-      if (hasProperty(userData, 'availability')) dataToUpdate.availability = userData.availability;
+      if (hasProperty(userData, 'availability')) {
+        // Ensure availability is a boolean when stored in database
+        dataToUpdate.availability = typeof userData.availability === 'boolean' 
+          ? userData.availability 
+          : true; // Default to true if it's an object
+      }
     } else if (userType === 'client') {
       if (hasProperty(userData, 'industry')) dataToUpdate.industry = userData.industry;
       if (hasProperty(userData, 'company')) dataToUpdate.company = userData.company;
@@ -78,6 +83,50 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error('Update user data error:', error);
+    return false;
+  }
+};
+
+// Add the missing function for local storage updates
+export const updateUserDataInLocalStorage = (userId: string, userData: UserData): boolean => {
+  try {
+    // Get existing data from localStorage
+    const developersStr = localStorage.getItem('mockDevelopers');
+    const clientsStr = localStorage.getItem('mockClients');
+    
+    const developers = developersStr ? JSON.parse(developersStr) as Developer[] : [];
+    const clients = clientsStr ? JSON.parse(clientsStr) as Client[] : [];
+    
+    // Check if the user is a developer
+    const developerIndex = developers.findIndex(dev => dev.id === userId);
+    if (developerIndex !== -1) {
+      // Update developer data
+      developers[developerIndex] = { 
+        ...developers[developerIndex], 
+        ...userData,
+        // Ensure availability is handled correctly
+        ...(userData.availability && {
+          availability: typeof userData.availability === 'boolean' 
+            ? userData.availability 
+            : true
+        })
+      };
+      localStorage.setItem('mockDevelopers', JSON.stringify(developers));
+      return true;
+    }
+    
+    // Check if the user is a client
+    const clientIndex = clients.findIndex(client => client.id === userId);
+    if (clientIndex !== -1) {
+      // Update client data
+      clients[clientIndex] = { ...clients[clientIndex], ...userData };
+      localStorage.setItem('mockClients', JSON.stringify(clients));
+      return true;
+    }
+    
+    return false; // User not found
+  } catch (error) {
+    console.error('Error updating user data in localStorage:', error);
     return false;
   }
 };

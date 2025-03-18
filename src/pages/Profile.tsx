@@ -314,7 +314,7 @@ const Profile: React.FC = () => {
                             id="availability"
                             name="availability"
                             type="checkbox"
-                            defaultChecked={developer.availability}
+                            defaultChecked={typeof developer.availability === 'boolean' ? developer.availability : true}
                             className="h-4 w-4 rounded border-border text-primary focus:ring-primary/25"
                           />
                           <label htmlFor="availability" className="text-sm font-medium">

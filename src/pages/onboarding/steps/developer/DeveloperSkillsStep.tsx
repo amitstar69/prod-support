@@ -1,232 +1,135 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import { useAuth, getCurrentUserData, updateUserData } from '../../../../contexts/auth';
-import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
-import { Label } from '../../../../components/ui/label';
-import { Button } from '../../../../components/ui/button';
-import { Badge } from '../../../../components/ui/badge';
-import { Input } from '../../../../components/ui/input';
-import { toast } from 'sonner';
-import { X } from 'lucide-react';
-
-// Common tech skills
-const COMMON_SKILLS = [
-  'JavaScript', 'TypeScript', 'React', 'Vue', 'Angular', 'Node.js',
-  'Python', 'Java', 'C#', 'PHP', 'Ruby', 'Go', 'Rust',
-  'HTML', 'CSS', 'Tailwind CSS', 'Bootstrap', 'Material UI',
-  'SQL', 'MongoDB', 'PostgreSQL', 'MySQL', 'Firebase',
-  'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP',
-  'GraphQL', 'REST API', 'Redux', 'Next.js', 'Express'
-];
-
-// Categories
-const CATEGORIES = [
-  'Frontend', 'Backend', 'Full Stack', 'Mobile', 'DevOps',
-  'Data Science', 'Machine Learning', 'Blockchain', 'Game Development'
-];
+import { updateUserData } from '../../../../contexts/auth';
+import { Developer } from '../../../../types/product';
 
 const DeveloperSkillsStep: React.FC = () => {
-  const { goToNextStep } = useOnboarding();
-  const { userId } = useAuth();
+  const { userData, updateUserDataAndProceed } = useOnboarding();
+  const navigate = useNavigate();
   
-  const [skills, setSkills] = useState<string[]>([]);
-  const [category, setCategory] = useState<string>('');
-  const [experience, setExperience] = useState<string>('');
-  const [newSkill, setNewSkill] = useState<string>('');
+  const [formData, setFormData] = useState({
+    category: 'category' in userData ? userData.category || 'frontend' : 'frontend',
+    skills: 'skills' in userData ? (userData.skills || []).join(', ') : '',
+    experience: 'experience' in userData ? userData.experience || '' : '',
+  });
   
-  const [isLoading, setIsLoading] = useState(false);
-  const [formValid, setFormValid] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userData = await getCurrentUserData();
-        if (userData) {
-          if ('skills' in userData && userData.skills && Array.isArray(userData.skills)) {
-            setSkills(userData.skills);
-          }
-          if ('category' in userData && userData.category) {
-            setCategory(userData.category);
-          }
-          if ('experience' in userData && userData.experience) {
-            setExperience(userData.experience);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      }
-    };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
     
-    if (userId) {
-      fetchUserData();
-    }
-  }, [userId]);
-  
-  useEffect(() => {
-    // Check if form is valid
-    setFormValid(
-      skills.length > 0 && 
-      category !== '' && 
-      experience !== ''
-    );
-  }, [skills, category, experience]);
-  
-  const addSkill = (skill: string) => {
-    if (!skills.includes(skill)) {
-      setSkills([...skills, skill]);
-    }
-  };
-  
-  const removeSkill = (skill: string) => {
-    setSkills(skills.filter(s => s !== skill));
-  };
-  
-  const handleAddNewSkill = () => {
-    if (newSkill.trim() && !skills.includes(newSkill.trim())) {
-      setSkills([...skills, newSkill.trim()]);
-      setNewSkill('');
-    }
-  };
-  
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddNewSkill();
-    }
-  };
-  
-  const handleSubmit = async () => {
-    setIsLoading(true);
     try {
-      const updatedUserData = {
-        skills,
-        category,
-        experience,
-        profileCompletionPercentage: 40 // 2/5 steps completed
+      // Parse skills from comma-separated string to array
+      const skillsArray = formData.skills
+        .split(',')
+        .map(skill => skill.trim())
+        .filter(skill => skill.length > 0);
+      
+      // Type guard to ensure we're dealing with a Developer
+      const developerData: Partial<Developer> = {
+        category: formData.category,
+        skills: skillsArray,
+        experience: formData.experience,
+        profileCompletionPercentage: 50, // 50% complete after skills
       };
       
-      const success = await updateUserData(updatedUserData);
-      
-      if (success) {
-        toast.success('Skills and expertise saved successfully');
-        goToNextStep();
-      } else {
-        toast.error('Failed to save information');
-      }
+      await updateUserDataAndProceed(developerData);
     } catch (error) {
-      console.error('Error saving skills:', error);
-      toast.error('An error occurred while saving');
+      console.error('Error updating skills info:', error);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
   
   return (
-    <OnboardingLayout
-      title="Your Skills & Expertise"
-      subtitle="Let clients know what you're great at"
-      nextDisabled={!formValid || isLoading}
-      onNextStep={handleSubmit}
-    >
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <Label>Primary Category</Label>
-          <div className="grid grid-cols-3 gap-2">
-            {CATEGORIES.map((cat) => (
-              <Button
-                key={cat}
-                type="button"
-                variant={category === cat ? "default" : "outline"}
-                className="justify-start"
-                onClick={() => setCategory(cat)}
-              >
-                {cat}
-              </Button>
-            ))}
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label>Experience Level</Label>
-          <div className="grid grid-cols-3 gap-2">
-            {['1+ years', '3+ years', '5+ years', '7+ years', '10+ years', 'Expert'].map((exp) => (
-              <Button
-                key={exp}
-                type="button"
-                variant={experience === exp ? "default" : "outline"}
-                className="justify-start"
-                onClick={() => setExperience(exp)}
-              >
-                {exp}
-              </Button>
-            ))}
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label>Your Skills</Label>
-          <div className="p-3 border border-border rounded-md min-h-20">
-            {skills.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {skills.map((skill) => (
-                  <Badge 
-                    key={skill} 
-                    variant="secondary"
-                    className="flex items-center gap-1 py-1 px-2"
-                  >
-                    {skill}
-                    <button 
-                      onClick={() => removeSkill(skill)}
-                      className="ml-1 hover:text-destructive"
-                    >
-                      <X size={14} />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-2">
-                Add some skills below to get started
-              </p>
-            )}
-          </div>
-          
-          <div className="flex gap-2 mt-2">
-            <Input
-              placeholder="Add a custom skill..."
-              value={newSkill}
-              onChange={(e) => setNewSkill(e.target.value)}
-              onKeyPress={handleKeyPress}
-            />
-            <Button 
-              type="button" 
-              onClick={handleAddNewSkill}
-              disabled={!newSkill.trim()}
-            >
-              Add
-            </Button>
-          </div>
+    <div className="max-w-lg mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Your Skills</h1>
+      <p className="text-muted-foreground mb-8">
+        Tell us about your expertise and technical skills.
+      </p>
+      
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label htmlFor="category" className="block text-sm font-medium mb-1">
+            Primary Specialization
+          </label>
+          <select
+            id="category"
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          >
+            <option value="frontend">Frontend Development</option>
+            <option value="backend">Backend Development</option>
+            <option value="fullstack">Full Stack Development</option>
+            <option value="mobile">Mobile Development</option>
+            <option value="devops">DevOps</option>
+            <option value="database">Database Engineering</option>
+            <option value="security">Security</option>
+            <option value="ai">AI & Machine Learning</option>
+          </select>
         </div>
         
         <div>
-          <Label className="mb-2 block">Common Skills</Label>
-          <div className="flex flex-wrap gap-2">
-            {COMMON_SKILLS.filter(skill => !skills.includes(skill)).map((skill) => (
-              <Button
-                key={skill}
-                variant="outline"
-                size="sm"
-                onClick={() => addSkill(skill)}
-                className="mb-2"
-              >
-                {skill}
-              </Button>
-            ))}
-          </div>
+          <label htmlFor="skills" className="block text-sm font-medium mb-1">
+            Technical Skills (comma separated)
+          </label>
+          <textarea
+            id="skills"
+            name="skills"
+            value={formData.skills}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            placeholder="JavaScript, React, Node.js, etc."
+            rows={3}
+            required
+          />
         </div>
-      </div>
-    </OnboardingLayout>
+        
+        <div>
+          <label htmlFor="experience" className="block text-sm font-medium mb-1">
+            Experience Summary
+          </label>
+          <input
+            id="experience"
+            name="experience"
+            type="text"
+            value={formData.experience}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            placeholder="E.g. '5+ years full stack development'"
+            required
+          />
+        </div>
+        
+        <div className="flex gap-4 pt-4">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="w-1/3 border border-gray-300 bg-white py-2 rounded-md font-medium text-gray-700"
+          >
+            Back
+          </button>
+          <button
+            type="submit"
+            className="w-2/3 bg-primary text-white py-2 rounded-md font-medium hover:bg-primary-dark"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Saving...' : 'Continue'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 

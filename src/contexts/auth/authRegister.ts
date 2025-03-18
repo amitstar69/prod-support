@@ -1,4 +1,3 @@
-
 import { supabase } from '../../integrations/supabase/client';
 import { debugCheckProfileExists } from '../../integrations/supabase/profiles';
 import { toast } from 'sonner';
@@ -130,7 +129,9 @@ export const register = async (
               skills: devData.skills || ['JavaScript', 'React'],
               experience: devData.experience || '3+ years',
               rating: devData.rating || 4.5,
-              availability: devData.availability !== undefined ? devData.availability : true,
+              availability: typeof devData.availability === 'boolean' 
+                ? devData.availability 
+                : true,
               featured: devData.featured || false,
               online: devData.online || false,
               last_active: new Date().toISOString(),
@@ -142,7 +143,7 @@ export const register = async (
             
             const { error: devProfileError, data: devProfileData } = await supabase
               .from('developer_profiles')
-              .insert([developerProfileData])
+              .insert(developerProfileData)
               .select();
             
             if (devProfileError) {
