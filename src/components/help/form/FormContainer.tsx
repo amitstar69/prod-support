@@ -5,6 +5,8 @@ import { useAuth } from '../../../contexts/auth';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
 import { createHelpRequest } from '../../../integrations/supabase/helpRequests';
 import { toast } from "sonner";
+import StepIndicator from './StepIndicator';
+import StepButtons from './StepButtons';
 
 interface FormContainerProps {
   children: React.ReactNode;
@@ -13,8 +15,10 @@ interface FormContainerProps {
 const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
   const { isAuthenticated, userId } = useAuth();
   const navigate = useNavigate();
-  const { formData, isSubmitting, setIsSubmitting, resetForm, validateForm } = useHelpRequest();
+  const { formData, isSubmitting, currentStep, setIsSubmitting, resetForm, validateForm } = useHelpRequest();
   const [submissionTimer, setSubmissionTimer] = useState<NodeJS.Timeout | null>(null);
+  
+  const totalSteps = 2; // Total number of steps in our form
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,18 +55,20 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
         ? parseInt(formData.estimated_duration, 10) 
         : formData.estimated_duration;
       
-      // Create base request object - omit ticket_number as it's auto-generated
+      // Create base request object with all our fields
       const helpRequestBase = {
         title: formData.title || 'Untitled Request',
         description: formData.description || 'No description provided',
         technical_area: formData.technical_area,
-        urgency: formData.urgency || 'medium',
+        urgency: formData.urgency || 'flexible',
         communication_preference: formData.communication_preference,
         estimated_duration: duration,
         budget_range: formData.budget_range,
         code_snippet: formData.code_snippet || '',
         status: 'pending',
         client_id: clientId,
+        nda_required: formData.nda_required || false,
+        preferred_developer_location: formData.preferred_developer_location || 'Global'
       };
       
       // Use the createHelpRequest utility function
@@ -111,8 +117,14 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
   return (
     <div className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-sm border border-border/40">
       <h2 className="text-2xl font-semibold mb-6">Request Developer Help</h2>
+      
+      <StepIndicator totalSteps={totalSteps} />
+      
       <form onSubmit={handleSubmit} className="space-y-6">
-        {children}
+        {/* Only show the current step */}
+        {React.Children.toArray(children)[currentStep - 1]}
+        
+        <StepButtons totalSteps={totalSteps} onSubmit={handleSubmit} />
       </form>
     </div>
   );

@@ -2,26 +2,16 @@
 import React from 'react';
 import { HelpRequestProvider } from '../../contexts/HelpRequestContext';
 
-// Import form sections
-import TitleDescriptionSection from './form/TitleDescriptionSection';
-import TechnicalAreaSection from './form/TechnicalAreaSection';
-import UrgencyDurationSection from './form/UrgencyDurationSection';
-import CommunicationSection from './form/CommunicationSection';
-import BudgetSection from './form/BudgetSection';
-import CodeSnippetSection from './form/CodeSnippetSection';
-import SubmitButton from './form/SubmitButton';
+// Import form components
 import FormContainer from './form/FormContainer';
+import Step1BasicInfo from './form/Step1BasicInfo';
+import Step2AdditionalInfo from './form/Step2AdditionalInfo';
 
 const HelpRequestFormContent: React.FC = () => {
   return (
     <FormContainer>
-      <TitleDescriptionSection />
-      <TechnicalAreaSection />
-      <UrgencyDurationSection />
-      <CommunicationSection />
-      <BudgetSection />
-      <CodeSnippetSection />
-      <SubmitButton />
+      <Step1BasicInfo />
+      <Step2AdditionalInfo />
     </FormContainer>
   );
 };

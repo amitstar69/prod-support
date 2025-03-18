@@ -18,6 +18,8 @@ export interface HelpRequest {
   preferred_developer_experience?: string;
   attachments?: any;
   ticket_number?: number;
+  nda_required?: boolean;
+  preferred_developer_location?: string;
 }
 
 export interface HelpRequestMatch {
@@ -87,6 +89,22 @@ export const budgetRangeOptions = [
   '$100 - $200',
   '$200 - $500',
   '$500+'
+];
+
+export const urgencyOptions = [
+  { value: 'immediate', label: 'Immediate' },
+  { value: '24hours', label: '24 hours' },
+  { value: 'flexible', label: 'Flexible' }
+];
+
+export const locationOptions = [
+  { value: 'Global', label: 'Global' },
+  { value: 'North America', label: 'North America' },
+  { value: 'Europe', label: 'Europe' },
+  { value: 'Asia', label: 'Asia' },
+  { value: 'Australia', label: 'Australia' },
+  { value: 'South America', label: 'South America' },
+  { value: 'Africa', label: 'Africa' }
 ];
 
 export const requestStatusOptions = [

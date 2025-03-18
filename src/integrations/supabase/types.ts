@@ -243,7 +243,9 @@ export type Database = {
           description: string
           estimated_duration: number
           id: string
+          nda_required: boolean | null
           preferred_developer_experience: string | null
+          preferred_developer_location: string | null
           status: string
           technical_area: string[]
           ticket_number: number
@@ -262,7 +264,9 @@ export type Database = {
           description: string
           estimated_duration: number
           id?: string
+          nda_required?: boolean | null
           preferred_developer_experience?: string | null
+          preferred_developer_location?: string | null
           status?: string
           technical_area: string[]
           ticket_number?: never
@@ -281,7 +285,9 @@ export type Database = {
           description?: string
           estimated_duration?: number
           id?: string
+          nda_required?: boolean | null
           preferred_developer_experience?: string | null
+          preferred_developer_location?: string | null
           status?: string
           technical_area?: string[]
           ticket_number?: never
