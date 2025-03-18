@@ -1,14 +1,16 @@
-
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { toast } from 'sonner';
 import { useAuth, getCurrentUserData, updateUserData } from '../contexts/auth';
 import { Client } from '../types/product';
 import ProfileCard from '../components/profile/ProfileCard';
-import { LogOut } from 'lucide-react';
+import { LogOut, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
 const ClientProfile: React.FC = () => {
+  const navigate = useNavigate();
   const { userId, logout } = useAuth();
   const [client, setClient] = useState<Client | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -20,7 +22,6 @@ const ClientProfile: React.FC = () => {
     email: '',
     location: '',
     description: '',
-    // New fields
     username: '',
     bio: '',
     company: '',
@@ -37,25 +38,22 @@ const ClientProfile: React.FC = () => {
     const fetchUser = async () => {
       setIsLoading(true);
       
-      // Set a timeout to prevent infinite loading state
       const timeoutId = setTimeout(() => {
         console.log('Profile loading timeout reached');
         setLoadingTimeoutReached(true);
         setIsLoading(false);
         toast.error("Loading profile data is taking longer than expected. You can try logging out and back in.");
-      }, 10000); // 10 seconds timeout
+      }, 10000);
       
       try {
         const userData = await getCurrentUserData();
         
-        // Clear timeout since we got data
         clearTimeout(timeoutId);
         
         if (userData) {
           const clientData = userData as Client;
           setClient(clientData);
           
-          // Split the name into first and last name for the form
           const nameParts = clientData.name ? clientData.name.split(' ') : ['', ''];
           const firstName = nameParts[0] || '';
           const lastName = nameParts.slice(1).join(' ') || '';
@@ -66,7 +64,6 @@ const ClientProfile: React.FC = () => {
             email: clientData.email || '',
             location: clientData.location || '',
             description: clientData.description || '',
-            // New fields with fallbacks
             username: clientData.username || '',
             bio: clientData.bio || '',
             company: clientData.company || '',
@@ -83,7 +80,6 @@ const ClientProfile: React.FC = () => {
           console.error("User data not found");
         }
       } catch (error) {
-        // Clear timeout since we got an error
         clearTimeout(timeoutId);
         
         console.error("Error fetching user data:", error);
@@ -100,10 +96,7 @@ const ClientProfile: React.FC = () => {
       toast.error("User ID not found. Please try logging in again.");
     }
     
-    // Cleanup function to clear the timeout if component unmounts
     return () => {
-      // This will be called when the component unmounts
-      // or before the effect runs again
       setIsLoading(false);
     };
   }, [userId]);
@@ -124,7 +117,6 @@ const ClientProfile: React.FC = () => {
         email: formData.email,
         location: formData.location,
         description: formData.description,
-        // Add new fields
         username: formData.username,
         bio: formData.bio,
         company: formData.company,
@@ -135,7 +127,6 @@ const ClientProfile: React.FC = () => {
         preferredHelpFormat: formData.preferredHelpFormat,
         budgetPerHour: formData.budgetPerHour,
         paymentMethod: formData.paymentMethod,
-        // Update profile completion status
         profileCompleted: true,
         profileCompletionPercentage: 100
       };
@@ -145,7 +136,6 @@ const ClientProfile: React.FC = () => {
       const success = await updateUserData(updatedData);
       
       if (success) {
-        // Refresh client data
         const userData = await getCurrentUserData();
         if (userData) {
           setClient(userData as Client);
@@ -164,15 +154,17 @@ const ClientProfile: React.FC = () => {
   
   const handleForceLogout = async () => {
     try {
-      // Force logout regardless of state
       localStorage.removeItem('authState');
       await logout();
       window.location.href = '/';
     } catch (error) {
       console.error('Error during force logout:', error);
-      // Last resort: redirect to home
       window.location.href = '/';
     }
+  };
+  
+  const handleBack = () => {
+    navigate(-1);
   };
   
   if (isLoading) {
@@ -263,8 +255,27 @@ const ClientProfile: React.FC = () => {
   
   return (
     <Layout>
-      <div className="bg-secondary/50 py-10">
+      <div className="bg-secondary/50 py-6">
         <div className="container mx-auto px-4">
+          <div className="mb-4">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="p-0 h-auto text-muted-foreground" 
+                      onClick={handleBack}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back
+                    </Button>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
           <h1 className="heading-2 mb-2 text-center">Client Profile</h1>
           <p className="text-center text-muted-foreground">Manage your profile information</p>
         </div>
