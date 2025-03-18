@@ -12,7 +12,10 @@ const Step1BasicInfo: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <h3 className="text-lg font-medium">Step 1: Describe Your Issue</h3>
+      <div className="border-b pb-4 mb-6">
+        <h3 className="text-xl font-medium text-slate-800">Step 1 out of 2</h3>
+        <p className="text-lg text-slate-600 mt-2">Tell us about what you need help with</p>
+      </div>
       
       {/* Title */}
       <div className="space-y-2">

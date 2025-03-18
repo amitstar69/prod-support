@@ -1,11 +1,9 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/auth';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
 import { createHelpRequest } from '../../../integrations/supabase/helpRequests';
 import { toast } from "sonner";
-import StepIndicator from './StepIndicator';
 import StepButtons from './StepButtons';
 
 interface FormContainerProps {
@@ -117,8 +115,6 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
   return (
     <div className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-sm border border-border/40">
       <h2 className="text-2xl font-semibold mb-6">Request Developer Help</h2>
-      
-      <StepIndicator totalSteps={totalSteps} />
       
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Only show the current step */}

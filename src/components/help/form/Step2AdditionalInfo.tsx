@@ -12,7 +12,10 @@ const Step2AdditionalInfo: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <h3 className="text-lg font-medium">Step 2: Additional Details</h3>
+      <div className="border-b pb-4 mb-6">
+        <h3 className="text-xl font-medium text-slate-800">Step 2 out of 2</h3>
+        <p className="text-lg text-slate-600 mt-2">Tell us about your preferences</p>
+      </div>
       
       {/* Communication Methods */}
       <div className="space-y-3">
