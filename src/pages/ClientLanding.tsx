@@ -164,7 +164,7 @@ const ClientLanding: React.FC = () => {
   };
   
   const handleViewRequests = () => {
-    navigate('/client-dashboard');
+    navigate('/ticket-dashboard');
   };
   
   return (
@@ -303,14 +303,14 @@ const ClientLanding: React.FC = () => {
                 
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">View Your Requests</CardTitle>
+                    <CardTitle className="text-base">View Your Tickets</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0 text-sm text-muted-foreground">
                     Manage your existing requests and developer sessions
                   </CardContent>
                   <CardFooter>
                     <Button className="w-full" variant="outline" onClick={handleViewRequests}>
-                      View Requests
+                      View Tickets
                       <ChevronRight className="h-4 w-4 ml-2" />
                     </Button>
                   </CardFooter>

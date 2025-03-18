@@ -33,14 +33,14 @@ const NavLinks: React.FC = () => {
             Dashboard
           </NavLink>
           <NavLink
-            to="/client-dashboard"
+            to="/ticket-dashboard"
             className={({ isActive }) =>
               isActive
                 ? 'text-primary font-medium'
                 : 'text-muted-foreground hover:text-foreground'
             }
           >
-            Requests
+            Tickets
           </NavLink>
         </>
       )}

@@ -363,9 +363,9 @@ const ClientDashboard: React.FC = () => {
     <Layout>
       <div className="bg-secondary/30 py-6">
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-bold mb-1">Client Dashboard</h1>
+          <h1 className="text-2xl font-bold mb-1">Tickets Dashboard</h1>
           <p className="text-muted-foreground text-sm">
-            Manage your help requests and developer sessions
+            Manage your help requests and developer applications
           </p>
         </div>
       </div>

@@ -69,12 +69,20 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
               Browse Tickets
             </Link>
           ) : userType === 'client' ? (
-            <Link 
-              to="/client-dashboard" 
-              className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
-            >
-              My Requests
-            </Link>
+            <>
+              <Link 
+                to="/client" 
+                className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
+              >
+                Dashboard
+              </Link>
+              <Link 
+                to="/ticket-dashboard" 
+                className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
+              >
+                Tickets
+              </Link>
+            </>
           ) : (
             <Link 
               to="/developer-dashboard" 

@@ -87,6 +87,14 @@ function App() {
               path="/client-dashboard" 
               element={
                 <ProtectedRoute requiredUserType="client">
+                  <ClientLanding />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/ticket-dashboard" 
+              element={
+                <ProtectedRoute requiredUserType="client">
                   <ClientDashboard />
                 </ProtectedRoute>
               } 
