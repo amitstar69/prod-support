@@ -6,24 +6,29 @@ import { toast } from 'sonner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  userType?: 'developer' | 'client';
   requiredUserType?: 'developer' | 'client';
   allowPublicAccess?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
+  userType, // This property is deprecated, use requiredUserType instead
   requiredUserType,
   allowPublicAccess = false
 }) => {
-  const { isAuthenticated, userType } = useAuth();
+  // If userType is provided but requiredUserType is not, use userType for backwards compatibility
+  const actualRequiredUserType = requiredUserType || userType;
+  
+  const { isAuthenticated, userType: authUserType } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
     // Show toast when redirecting because of wrong user type
-    if (isAuthenticated && requiredUserType && userType !== requiredUserType) {
-      toast.error(`This page is only accessible to ${requiredUserType}s.`);
+    if (isAuthenticated && actualRequiredUserType && authUserType !== actualRequiredUserType) {
+      toast.error(`This page is only accessible to ${actualRequiredUserType}s.`);
     }
-  }, [isAuthenticated, requiredUserType, userType]);
+  }, [isAuthenticated, actualRequiredUserType, authUserType]);
 
   // Allow public access routes to be viewed by anyone
   if (allowPublicAccess) {
@@ -36,8 +41,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Redirect to appropriate dashboard if wrong user type
-  if (requiredUserType && userType !== requiredUserType) {
-    const redirectPath = userType === 'developer' ? '/developer-dashboard' : '/client-dashboard';
+  if (actualRequiredUserType && authUserType !== actualRequiredUserType) {
+    const redirectPath = authUserType === 'developer' ? '/developer-dashboard' : '/client-dashboard';
     return <Navigate to={redirectPath} replace />;
   }
 

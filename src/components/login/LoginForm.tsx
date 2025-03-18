@@ -7,26 +7,77 @@ import { Separator } from '../ui/separator';
 import { useAuth } from '../../contexts/auth';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { UserType } from '../../hooks/useLoginForm';
 
-type UserTypeOption = 'client' | 'developer';
+interface LoginFormProps {
+  email?: string;
+  password?: string;
+  userType?: UserType;
+  isLoading?: boolean;
+  error?: string;
+  rememberMe?: boolean;
+  onEmailChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onPasswordChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onUserTypeChange?: (type: UserType) => void;
+  onRememberMeChange?: () => void;
+  onSubmit?: (e: React.FormEvent) => void;
+}
 
-const LoginForm: React.FC = () => {
+const LoginForm: React.FC<LoginFormProps> = ({
+  email: externalEmail,
+  password: externalPassword,
+  userType: externalUserType,
+  isLoading: externalIsLoading,
+  error: externalError,
+  rememberMe: externalRememberMe,
+  onEmailChange,
+  onPasswordChange,
+  onUserTypeChange,
+  onRememberMeChange,
+  onSubmit,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
   
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [userType, setUserType] = useState<UserTypeOption>('client');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState(externalEmail || '');
+  const [password, setPassword] = useState(externalPassword || '');
+  const [isLoading, setIsLoading] = useState(externalIsLoading || false);
+  const [userType, setUserType] = useState<UserType>(externalUserType || 'client');
+  const [error, setError] = useState(externalError || '');
   
-  const handleUserTypeChange = (type: UserTypeOption) => {
-    setUserType(type);
+  const handleUserTypeChange = (type: UserType) => {
+    if (onUserTypeChange) {
+      onUserTypeChange(type);
+    } else {
+      setUserType(type);
+    }
+  };
+  
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onEmailChange) {
+      onEmailChange(e);
+    } else {
+      setEmail(e.target.value);
+    }
+  };
+  
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onPasswordChange) {
+      onPasswordChange(e);
+    } else {
+      setPassword(e.target.value);
+    }
   };
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (onSubmit) {
+      onSubmit(e);
+      return;
+    }
+    
     setIsLoading(true);
     setError('');
     
@@ -52,7 +103,7 @@ const LoginForm: React.FC = () => {
   
   return (
     <div className="w-full max-w-md mx-auto">
-      <form onSubmit={handleLogin} className="space-y-6">
+      <form onSubmit={onSubmit || handleLogin} className="space-y-6">
         <div className="grid grid-cols-2 gap-4 bg-muted p-1 rounded-lg">
           <Button
             type="button"
@@ -79,8 +130,8 @@ const LoginForm: React.FC = () => {
               id="email"
               placeholder="your@email.com"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={externalEmail !== undefined ? externalEmail : email}
+              onChange={handleEmailChange}
               required
             />
           </div>
@@ -100,8 +151,8 @@ const LoginForm: React.FC = () => {
             <Input
               id="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={externalPassword !== undefined ? externalPassword : password}
+              onChange={handlePasswordChange}
               required
             />
           </div>
@@ -110,9 +161,9 @@ const LoginForm: React.FC = () => {
         <Button 
           type="submit" 
           className="w-full" 
-          disabled={isLoading}
+          disabled={externalIsLoading !== undefined ? externalIsLoading : isLoading}
         >
-          {isLoading ? (
+          {(externalIsLoading !== undefined ? externalIsLoading : isLoading) ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Signing in...
@@ -134,10 +185,10 @@ const LoginForm: React.FC = () => {
         </div>
         
         <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline" type="button" disabled={isLoading}>
+          <Button variant="outline" type="button" disabled={externalIsLoading !== undefined ? externalIsLoading : isLoading}>
             Google
           </Button>
-          <Button variant="outline" type="button" disabled={isLoading}>
+          <Button variant="outline" type="button" disabled={externalIsLoading !== undefined ? externalIsLoading : isLoading}>
             GitHub
           </Button>
         </div>

@@ -1,8 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthState, AuthContextType } from './types';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../integrations/supabase/client';
-import { login } from './authLogin';
+import { login as authLogin } from './authLogin';
 import { register } from './authRegister';
 import { logoutUser, checkSupabaseSession, setupAuthStateChangeListener } from './authUtils';
 
@@ -118,12 +117,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
   
+  // Login handler function
+  const handleLogin = async (email: string, password: string, userType: 'developer' | 'client'): Promise<boolean> => {
+    const result = await authLogin(email, password, userType);
+    return result.success;
+  };
+  
+  // Register handler function
+  const handleRegister = async (userData: any, userType: 'developer' | 'client'): Promise<boolean> => {
+    const result = await register(userData, userType);
+    return result.success;
+  };
+  
   return (
     <AuthContext.Provider
       value={{
         ...authState,
-        login: (email, password, userType) => login(email, password, userType, mockDevelopers, mockClients, setAuthState),
-        register: (userData, userType) => register(userData, userType, mockDevelopers, mockClients, setMockDevelopers, setMockClients, setAuthState),
+        login: handleLogin,
+        register: handleRegister,
         logout: handleLogout,
       }}
     >
