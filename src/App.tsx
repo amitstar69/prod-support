@@ -15,6 +15,7 @@ import RegisterPage from './pages/RegisterPage';
 import NotFound from './pages/NotFound';
 import DeveloperDashboard from './pages/DeveloperDashboard';
 import ClientDashboard from './pages/ClientDashboard';
+import ClientLanding from './pages/ClientLanding';
 import DeveloperRegistration from './pages/DeveloperRegistration';
 import SessionHistory from './pages/SessionHistory';
 import DeveloperTicketDetail from './pages/DeveloperTicketDetail';
@@ -72,6 +73,16 @@ function App() {
               } 
             />
             <Route path="/get-help/*" element={<GetHelpPage />} />
+            
+            {/* Client Routes */}
+            <Route 
+              path="/client" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientLanding />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="/client-dashboard" 
               element={
@@ -80,6 +91,8 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            
+            {/* Developer Routes */}
             <Route 
               path="/developer-dashboard" 
               element={

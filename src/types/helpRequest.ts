@@ -1,4 +1,3 @@
-
 export interface HelpRequest {
   id?: string;
   client_id: string;
@@ -91,7 +90,6 @@ export const budgetRangeOptions = [
   '$500+'
 ];
 
-// Updated urgency options to match database constraints
 export const urgencyOptions = [
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
@@ -129,6 +127,50 @@ export const matchStatusOptions = [
   { value: 'cancelled', label: 'Cancelled' }
 ];
 
-// Create a new type definition for the valid application statuses
-// IMPORTANT: The order here should match the order in the database constraint
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
+
+export interface ProfileSettings {
+  id?: string;
+  user_id: string;
+  completed_first_session?: boolean;
+  has_zoom?: boolean;
+  payment_method_added?: boolean;
+  onboarding_completed?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ClientProfile {
+  id?: string;
+  name?: string;
+  email?: string;
+  image?: string;
+  user_type?: string;
+  company?: string;
+  position?: string;
+  location?: string;
+  description?: string;
+  technical_interests?: string[];
+  created_at?: string;
+  updated_at?: string;
+  has_zoom?: boolean;
+  completed_first_session?: boolean;
+  payment_method_added?: boolean;
+}
+
+export interface DeveloperProfile {
+  id?: string;
+  name?: string;
+  email?: string;
+  image?: string;
+  user_type?: string;
+  title?: string;
+  skills?: string[];
+  hourly_rate?: number;
+  experience_years?: number;
+  created_at?: string;
+  updated_at?: string;
+  rating?: number;
+  availability?: boolean;
+  bio?: string;
+}

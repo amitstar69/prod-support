@@ -1,145 +1,72 @@
 
 import { supabase } from '../../integrations/supabase/client';
-import { toast } from 'sonner';
-import { Developer, Client } from '../../types/product';
-import { Dispatch, SetStateAction } from 'react';
-import { AuthState } from '../../types/product';
+import { AuthError } from '@supabase/supabase-js';
 
-// Login function
-export const login = async (
-  email: string, 
-  password: string, 
-  userType: 'developer' | 'client',
-  mockDevelopers: Developer[],
-  mockClients: Client[],
-  setAuthState: Dispatch<SetStateAction<AuthState>>
-): Promise<boolean> => {
-  // Try Supabase login first
-  if (supabase) {
-    try {
-      console.log(`Attempting to login user: ${email} as ${userType}`);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) {
-        console.error('Supabase login error:', error);
-        toast.error('Login failed: ' + error.message);
-        // Fallback to localStorage login if Supabase fails
-        return loginWithLocalStorage(email, password, userType, mockDevelopers, mockClients, setAuthState);
-      }
-      
-      if (!data.user) {
-        console.error('No user data returned from Supabase');
-        toast.error('Login failed: No user data returned');
-        return false;
-      }
-      
-      console.log('Login successful, user data:', data);
-      
-      try {
-        // Get user profile to determine user type
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .maybeSingle();
-          
-        if (profileError) {
-          console.error('Error getting profile:', profileError);
-          toast.error('Error retrieving user profile');
-          await supabase.auth.signOut();
-          return false;
-        }
-        
-        if (!profileData) {
-          console.error('Profile not found');
-          toast.error('Profile not found. You may need to register first.');
-          await supabase.auth.signOut();
-          return false;
-        }
-        
-        // Check if user type matches
-        if (profileData.user_type !== userType) {
-          console.error('User type mismatch');
-          toast.error(`You registered as a ${profileData.user_type}, but tried to log in as a ${userType}.`);
-          await supabase.auth.signOut();
-          return false;
-        }
-        
-        setAuthState({
-          isAuthenticated: true,
-          userType: profileData.user_type as 'developer' | 'client',
-          userId: data.user.id,
-        });
-        
-        localStorage.setItem('authState', JSON.stringify({
-          isAuthenticated: true,
-          userType: profileData.user_type as 'developer' | 'client',
-          userId: data.user.id,
-        }));
-        
-        return true;
-      } catch (profileException) {
-        console.error('Exception during profile fetch:', profileException);
-        toast.error('Error processing login. Please try again.');
-        await supabase.auth.signOut();
-        return false;
-      }
-    } catch (error) {
-      console.error('Supabase login exception:', error);
-      toast.error('Login service unavailable. Please try again later.');
-      // Fallback to localStorage login
-      return loginWithLocalStorage(email, password, userType, mockDevelopers, mockClients, setAuthState);
-    }
-  } else {
-    console.error('Supabase client is not available. Falling back to localStorage login.');
-    // Use localStorage login as fallback
-    return loginWithLocalStorage(email, password, userType, mockDevelopers, mockClients, setAuthState);
-  }
-};
+export const loginWithEmailAndPassword = async (
+  email: string,
+  password: string,
+  userType: 'client' | 'developer'
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    console.log(`Attempting to log in as ${userType} with email:`, email);
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-// Helper for localStorage login
-const loginWithLocalStorage = (
-  email: string, 
-  password: string, 
-  userType: 'developer' | 'client',
-  mockDevelopers: Developer[],
-  mockClients: Client[],
-  setAuthState: Dispatch<SetStateAction<AuthState>>
-): boolean => {
-  if (userType === 'developer') {
-    const developer = mockDevelopers.find(dev => dev.email === email);
-    if (developer) {
-      setAuthState({
-        isAuthenticated: true,
-        userType: 'developer',
-        userId: developer.id,
-      });
-      localStorage.setItem('authState', JSON.stringify({
-        isAuthenticated: true,
-        userType: 'developer',
-        userId: developer.id,
-      }));
-      return true;
+    if (error) {
+      console.error('Login error:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
     }
-  } else {
-    const client = mockClients.find(c => c.email === email);
-    if (client) {
-      setAuthState({
-        isAuthenticated: true,
-        userType: 'client',
-        userId: client.id,
-      });
-      localStorage.setItem('authState', JSON.stringify({
-        isAuthenticated: true,
-        userType: 'client',
-        userId: client.id,
-      }));
-      return true;
+
+    if (!data.user) {
+      console.error('No user returned after login');
+      return {
+        success: false,
+        error: 'Login failed. Please try again.',
+      };
     }
+
+    // Fetch user profile to check their user type
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('user_type')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError);
+      // Sign out user if we can't verify their user type
+      await supabase.auth.signOut();
+      return {
+        success: false,
+        error: 'Error verifying user type. Please try again.',
+      };
+    }
+
+    // Check if user type matches
+    if (profileData.user_type !== userType) {
+      console.error('User type mismatch:', profileData.user_type, 'vs', userType);
+      // Sign out user if their type doesn't match
+      await supabase.auth.signOut();
+      return {
+        success: false,
+        error: `You are registered as a ${profileData.user_type}, not a ${userType}. Please use the correct login option.`,
+      };
+    }
+
+    console.log('Login successful for', userType);
+    return { success: true };
+  } catch (error) {
+    const authError = error as AuthError;
+    console.error('Exception during login:', authError);
+    return {
+      success: false,
+      error: authError.message || 'An unexpected error occurred during login.',
+    };
   }
-  toast.error('Invalid email or password for ' + userType + ' account');
-  return false;
 };
