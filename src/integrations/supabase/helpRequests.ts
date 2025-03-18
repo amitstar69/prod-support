@@ -7,6 +7,8 @@ import {
   getHelpRequest,
   updateHelpRequest
 } from './helpRequestsCore';
+import { testDatabaseAccess } from './helpRequestsDebug';
+import { submitDeveloperApplication, getDeveloperApplicationsForRequest } from './helpRequestsApplications';
 
 // Create a help request
 export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'created_at' | 'updated_at' | 'ticket_number'>) => {
@@ -30,5 +32,8 @@ export {
   getHelpRequestsForClient,
   getAllPublicHelpRequests,
   getHelpRequest,
-  updateHelpRequest
+  updateHelpRequest,
+  testDatabaseAccess,
+  submitDeveloperApplication,
+  getDeveloperApplicationsForRequest
 };
