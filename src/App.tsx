@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
@@ -78,7 +77,7 @@ function App() {
             <Route 
               path="/client" 
               element={
-                <ProtectedRoute requiredUserType="client">
+                <ProtectedRoute userType="client">
                   <ClientLanding />
                 </ProtectedRoute>
               } 

@@ -78,11 +78,22 @@ export interface Category {
 export type Product = Developer;
 
 // Auth-related interfaces
-export type AuthState = {
+export interface AuthState {
   isAuthenticated: boolean;
   userType: 'developer' | 'client' | null;
   userId: string | null;
-};
+}
+
+export interface ProfileSettings {
+  id?: string;
+  user_id: string;
+  completed_first_session?: boolean;
+  has_zoom?: boolean;
+  payment_method_added?: boolean;
+  onboarding_completed?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export type AuthContextType = AuthState & {
   login: (email: string, password: string, userType: 'developer' | 'client') => Promise<boolean>;

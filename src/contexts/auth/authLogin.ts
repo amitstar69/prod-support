@@ -70,3 +70,6 @@ export const loginWithEmailAndPassword = async (
     };
   }
 };
+
+// Export login function for AuthStateProvider
+export const login = loginWithEmailAndPassword;

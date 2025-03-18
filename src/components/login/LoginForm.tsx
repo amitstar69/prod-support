@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
@@ -20,34 +19,32 @@ const LoginForm: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userType, setUserType] = useState<UserTypeOption>('client');
+  const [error, setError] = useState('');
   
   const handleUserTypeChange = (type: UserTypeOption) => {
     setUserType(type);
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-    
     setIsLoading(true);
+    setError('');
     
     try {
       const success = await login(email, password, userType);
-      
       if (success) {
-        const returnPath = location.state?.returnTo || (userType === 'client' ? '/client' : '/developer-dashboard');
-        navigate(returnPath, { replace: true });
-        toast.success('Login successful!');
-      } else {
-        toast.error('Invalid email or password');
+        const redirectPath = userType === 'client' ? '/client' : 
+                           userType === 'developer' ? '/developer-dashboard' : '/';
+        
+        if (location.state && location.state.returnTo) {
+          navigate(location.state.returnTo);
+        } else {
+          navigate(redirectPath);
+        }
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Login failed');
-      console.error('Login error', error);
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -55,7 +52,7 @@ const LoginForm: React.FC = () => {
   
   return (
     <div className="w-full max-w-md mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleLogin} className="space-y-6">
         <div className="grid grid-cols-2 gap-4 bg-muted p-1 rounded-lg">
           <Button
             type="button"

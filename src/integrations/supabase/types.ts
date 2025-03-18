@@ -413,42 +413,54 @@ export type Database = {
       }
       profiles: {
         Row: {
+          completed_first_session: boolean | null
           description: string | null
           email: string
+          has_zoom: boolean | null
           id: string
           image: string | null
           joined_date: string | null
           languages: string[] | null
           location: string | null
           name: string
+          onboarding_completed: boolean | null
+          payment_method_added: boolean | null
           preferred_working_hours: string | null
           profile_completed: boolean | null
           user_type: string
           username: string | null
         }
         Insert: {
+          completed_first_session?: boolean | null
           description?: string | null
           email: string
+          has_zoom?: boolean | null
           id: string
           image?: string | null
           joined_date?: string | null
           languages?: string[] | null
           location?: string | null
           name: string
+          onboarding_completed?: boolean | null
+          payment_method_added?: boolean | null
           preferred_working_hours?: string | null
           profile_completed?: boolean | null
           user_type: string
           username?: string | null
         }
         Update: {
+          completed_first_session?: boolean | null
           description?: string | null
           email?: string
+          has_zoom?: boolean | null
           id?: string
           image?: string | null
           joined_date?: string | null
           languages?: string[] | null
           location?: string | null
           name?: string
+          onboarding_completed?: boolean | null
+          payment_method_added?: boolean | null
           preferred_working_hours?: string | null
           profile_completed?: boolean | null
           user_type?: string
