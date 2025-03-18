@@ -42,16 +42,6 @@ const NavLinks: React.FC = () => {
           >
             Tickets
           </NavLink>
-          <NavLink
-            to="/client-profile"
-            className={({ isActive }) =>
-              isActive
-                ? 'text-primary font-medium'
-                : 'text-muted-foreground hover:text-foreground'
-            }
-          >
-            Profile
-          </NavLink>
         </>
       )}
 
