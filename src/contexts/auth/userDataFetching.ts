@@ -1,6 +1,7 @@
 
 import { supabase } from '../../integrations/supabase/client';
 import { Developer, Client } from '../../types/product';
+import { fetchUserData } from './userDataFetchers';
 
 // Function to get the current user's data with timeout
 export const getCurrentUserData = async (): Promise<Developer | Client | null> => {
