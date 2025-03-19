@@ -1,7 +1,6 @@
-import { AuthState } from '../../types/product';
 
-// Re-export types from product.ts to centralize auth-related types
-export type { AuthState };
+// Remove the import and re-export since we're declaring AuthState directly in this file
+// This was causing the conflict
 
 export interface AuthState {
   isAuthenticated: boolean;
@@ -14,5 +13,5 @@ export interface AuthContextType extends AuthState {
   register: (userData: any, userType: 'developer' | 'client') => Promise<boolean>;
   logout: () => Promise<void>;
   logoutUser: () => Promise<void>;
-  isLoading: boolean; // Add loading state to the context
+  isLoading: boolean; // Loading state in the context
 }
