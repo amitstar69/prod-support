@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { UserType } from '../../hooks/useLoginForm';
 import { Check } from 'lucide-react';
+import { Checkbox } from '../ui/checkbox';
 
 interface LoginFormProps {
   email?: string;
@@ -120,31 +121,58 @@ const LoginForm: React.FC<LoginFormProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 bg-muted p-1 rounded-lg">
-          <Button
-            type="button"
-            variant={userType === 'client' ? 'default' : 'outline'}
-            onClick={() => handleUserTypeChange('client')}
-            className={`w-full relative ${userType === 'client' ? 'text-white bg-primary hover:bg-primary/90' : 'bg-background border hover:bg-muted/50'}`}
-            aria-pressed={userType === 'client'}
-          >
-            {userType === 'client' && (
-              <Check className="h-4 w-4 absolute left-2" />
-            )}
-            <span className={userType === 'client' ? 'ml-2' : ''}>Client</span>
-          </Button>
-          <Button
-            type="button"
-            variant={userType === 'developer' ? 'default' : 'outline'}
-            onClick={() => handleUserTypeChange('developer')}
-            className={`w-full relative ${userType === 'developer' ? 'text-white bg-primary hover:bg-primary/90' : 'bg-background border hover:bg-muted/50'}`}
-            aria-pressed={userType === 'developer'}
-          >
-            {userType === 'developer' && (
-              <Check className="h-4 w-4 absolute left-2" />
-            )}
-            <span className={userType === 'developer' ? 'ml-2' : ''}>Developer</span>
-          </Button>
+        <div className="flex flex-col gap-4">
+          <div className="text-center mb-0">
+            <span className="text-sm font-medium">Sign in as</span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div 
+              className={`flex items-center gap-2 py-2 px-3 rounded-md border cursor-pointer
+                ${userType === 'client' ? 'border-slate-400 bg-slate-50' : 'border-slate-200'}
+              `}
+              onClick={() => handleUserTypeChange('client')}
+              aria-pressed={userType === 'client'}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleUserTypeChange('client');
+                }
+              }}
+            >
+              <Checkbox 
+                checked={userType === 'client'} 
+                onCheckedChange={() => handleUserTypeChange('client')}
+                id="client-type"
+                className="data-[state=checked]:bg-slate-700 data-[state=checked]:text-white"
+              />
+              <Label htmlFor="client-type" className="cursor-pointer">Client</Label>
+            </div>
+            
+            <div 
+              className={`flex items-center gap-2 py-2 px-3 rounded-md border cursor-pointer
+                ${userType === 'developer' ? 'border-slate-400 bg-slate-50' : 'border-slate-200'}
+              `}
+              onClick={() => handleUserTypeChange('developer')}
+              aria-pressed={userType === 'developer'}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleUserTypeChange('developer');
+                }
+              }}
+            >
+              <Checkbox 
+                checked={userType === 'developer'} 
+                onCheckedChange={() => handleUserTypeChange('developer')}
+                id="developer-type"
+                className="data-[state=checked]:bg-slate-700 data-[state=checked]:text-white"
+              />
+              <Label htmlFor="developer-type" className="cursor-pointer">Developer</Label>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-4">
