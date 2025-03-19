@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/auth';
 import ProfileCard from '../components/profile/DeveloperProfileCard';
@@ -15,6 +15,7 @@ import { useDeveloperProfile } from '../hooks/useDeveloperProfile';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('profile');
   const { 
@@ -24,8 +25,16 @@ const Profile: React.FC = () => {
     isSaving,
     loadingTimeoutReached,
     handleInputChange,
-    handleSaveChanges
+    handleSaveChanges,
+    refreshProfile
   } = useDeveloperProfile();
+  
+  // Force refresh profile data when navigating back to this page
+  useEffect(() => {
+    if (refreshProfile) {
+      refreshProfile();
+    }
+  }, [location.key, refreshProfile]);
   
   const handleForceLogout = async () => {
     try {
@@ -56,7 +65,7 @@ const Profile: React.FC = () => {
         <ProfileErrorState 
           title="Loading Timeout"
           message="We couldn't load your profile information in a reasonable time. This could be due to connection issues or server problems."
-          onRetry={() => window.location.reload()}
+          onRetry={() => refreshProfile()}
           onForceLogout={handleForceLogout}
         />
       </Layout>
@@ -69,7 +78,7 @@ const Profile: React.FC = () => {
         <ProfileErrorState 
           title="Profile not found"
           message="We couldn't find your profile information"
-          onRetry={() => window.location.reload()}
+          onRetry={() => refreshProfile()}
           onForceLogout={handleForceLogout}
         />
       </Layout>

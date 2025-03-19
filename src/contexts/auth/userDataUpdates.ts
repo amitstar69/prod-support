@@ -116,6 +116,7 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     // Clear cached user data to force a fresh fetch on next load
     localStorage.removeItem(`userData_${user.user.id}`);
     localStorage.removeItem(`userDataTime_${user.user.id}`);
+    localStorage.setItem(`forceRefresh_${user.user.id}`, 'true');
     
     console.log('Profile update successful');
     return true;

@@ -1,6 +1,6 @@
 
-import { useState, useEffect } from 'react';
-import { useAuth, getCurrentUserData, updateUserData } from '../contexts/auth';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from '../contexts/auth';
 import { Client } from '../types/product';
 import { toast } from 'sonner';
 
@@ -46,68 +46,72 @@ export const useClientProfile = () => {
     paymentMethod: 'Stripe'
   });
   
-  useEffect(() => {
-    const fetchUser = async () => {
-      setIsLoading(true);
-      
-      const timeoutId = setTimeout(() => {
-        console.log('Profile loading timeout reached');
-        setLoadingTimeoutReached(true);
-        setIsLoading(false);
-        toast.error("Loading profile data is taking longer than expected. You can try logging out and back in.");
-      }, 10000);
-      
-      try {
-        const userData = await getCurrentUserData();
-        
-        clearTimeout(timeoutId);
-        
-        if (userData) {
-          const clientData = userData as Client;
-          setClient(clientData);
-          
-          const nameParts = clientData.name ? clientData.name.split(' ') : ['', ''];
-          const firstName = nameParts[0] || '';
-          const lastName = nameParts.slice(1).join(' ') || '';
-          
-          setFormData({
-            firstName,
-            lastName,
-            email: clientData.email || '',
-            location: clientData.location || '',
-            description: clientData.description || '',
-            username: clientData.username || '',
-            bio: clientData.bio || '',
-            company: clientData.company || '',
-            position: clientData.position || '',
-            techStack: clientData.techStack || [],
-            industry: clientData.industry || '',
-            projectTypes: clientData.projectTypes || [],
-            preferredHelpFormat: (clientData.preferredHelpFormat || []) as string[],
-            budgetPerHour: clientData.budgetPerHour || 0,
-            paymentMethod: (clientData.paymentMethod || 'Stripe') as 'Stripe' | 'PayPal'
-          });
-        } else {
-          toast.error("Failed to load profile data: User data not found");
-          console.error("User data not found");
-        }
-      } catch (error) {
-        clearTimeout(timeoutId);
-        
-        console.error("Error fetching user data:", error);
-        toast.error("Failed to load profile data. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchUserData = useCallback(async () => {
+    if (!userId) return;
     
+    setIsLoading(true);
+    
+    const timeoutId = setTimeout(() => {
+      console.log('Profile loading timeout reached');
+      setLoadingTimeoutReached(true);
+      setIsLoading(false);
+      toast.error("Loading profile data is taking longer than expected. You can try logging out and back in.");
+    }, 10000);
+    
+    try {
+      // Always force a fresh fetch when explicitly calling fetchUserData
+      invalidateUserDataCache(userId);
+      const userData = await getCurrentUserData();
+      
+      clearTimeout(timeoutId);
+      
+      if (userData) {
+        const clientData = userData as Client;
+        setClient(clientData);
+        
+        const nameParts = clientData.name ? clientData.name.split(' ') : ['', ''];
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        setFormData({
+          firstName,
+          lastName,
+          email: clientData.email || '',
+          location: clientData.location || '',
+          description: clientData.description || '',
+          username: clientData.username || '',
+          bio: clientData.bio || '',
+          company: clientData.company || '',
+          position: clientData.position || '',
+          techStack: clientData.techStack || [],
+          industry: clientData.industry || '',
+          projectTypes: clientData.projectTypes || [],
+          preferredHelpFormat: (clientData.preferredHelpFormat || []) as string[],
+          budgetPerHour: clientData.budgetPerHour || 0,
+          paymentMethod: (clientData.paymentMethod || 'Stripe') as 'Stripe' | 'PayPal'
+        });
+      } else {
+        toast.error("Failed to load profile data: User data not found");
+        console.error("User data not found");
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      console.error("Error fetching user data:", error);
+      toast.error("Failed to load profile data. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId]);
+  
+  useEffect(() => {
     if (userId) {
-      fetchUser();
+      fetchUserData();
     } else {
       setIsLoading(false);
       toast.error("User ID not found. Please try logging in again.");
     }
-  }, [userId]);
+  }, [userId, fetchUserData]);
   
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -117,11 +121,19 @@ export const useClientProfile = () => {
   };
   
   const handleSaveChanges = async () => {
+    if (!userId) {
+      toast.error("User ID not found. Please try logging in again.");
+      return;
+    }
+    
     setIsSaving(true);
     
     try {
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      console.log(`Updating client name from "${client?.name}" to "${fullName}"`);
+      
       const updatedData: Partial<Client> = {
-        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        name: fullName,
         email: formData.email,
         location: formData.location,
         description: formData.description,
@@ -144,9 +156,35 @@ export const useClientProfile = () => {
       const success = await updateUserData(updatedData);
       
       if (success) {
+        // Force a refresh of the cache for this user
+        invalidateUserDataCache(userId);
+        
+        // Fetch fresh data immediately
         const userData = await getCurrentUserData();
         if (userData) {
           setClient(userData as Client);
+          console.log("Updated client data:", userData);
+          
+          // Update the form data with the fresh data to ensure consistency
+          const nameParts = userData.name ? userData.name.split(' ') : ['', ''];
+          setFormData(prev => ({
+            ...prev,
+            firstName: nameParts[0] || '',
+            lastName: nameParts.slice(1).join(' ') || '',
+            email: userData.email || prev.email,
+            location: userData.location || prev.location,
+            description: userData.description || prev.description,
+            username: userData.username || prev.username,
+            bio: 'bio' in userData ? userData.bio || prev.bio : prev.bio,
+            company: 'company' in userData ? userData.company || prev.company : prev.company,
+            position: 'position' in userData ? userData.position || prev.position : prev.position,
+            techStack: 'techStack' in userData ? userData.techStack || prev.techStack : prev.techStack,
+            industry: 'industry' in userData ? userData.industry || prev.industry : prev.industry,
+            projectTypes: 'projectTypes' in userData ? userData.projectTypes || prev.projectTypes : prev.projectTypes,
+            preferredHelpFormat: 'preferredHelpFormat' in userData ? userData.preferredHelpFormat || prev.preferredHelpFormat : prev.preferredHelpFormat,
+            budgetPerHour: 'budgetPerHour' in userData ? userData.budgetPerHour || prev.budgetPerHour : prev.budgetPerHour,
+            paymentMethod: 'paymentMethod' in userData ? (userData.paymentMethod as 'Stripe' | 'PayPal') || prev.paymentMethod : prev.paymentMethod
+          }));
         }
         toast.success('Profile updated successfully');
       } else {
@@ -160,6 +198,13 @@ export const useClientProfile = () => {
     }
   };
   
+  const refreshProfile = useCallback(() => {
+    if (userId) {
+      invalidateUserDataCache(userId);
+      fetchUserData();
+    }
+  }, [userId, fetchUserData]);
+  
   return {
     client,
     formData,
@@ -167,6 +212,7 @@ export const useClientProfile = () => {
     isSaving,
     loadingTimeoutReached,
     handleInputChange,
-    handleSaveChanges
+    handleSaveChanges,
+    refreshProfile
   };
 };

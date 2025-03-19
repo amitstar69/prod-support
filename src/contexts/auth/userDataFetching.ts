@@ -27,13 +27,14 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     localStorage.removeItem(`userData_${userId}`);
     localStorage.removeItem(`userDataTime_${userId}`);
   } else {
-    // Check local cache
+    // Check local cache - with reduced cache time (30 seconds instead of 60)
     const cachedDataStr = localStorage.getItem(`userData_${userId}`);
     const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
     
     if (cachedDataStr && cacheTime) {
       const cacheAge = Date.now() - parseInt(cacheTime);
-      if (cacheAge < 60 * 1000) { // 1 minute cache (reduced from 5 minutes)
+      // Reduced cache time from 60 seconds to 30 seconds for more frequent refreshes
+      if (cacheAge < 30 * 1000) { 
         console.log('Using cached user data', cacheAge/1000, 'seconds old');
         return JSON.parse(cachedDataStr);
       }
@@ -93,6 +94,11 @@ export const getUserDataFromLocalStorage = (userType: string | null, userId: str
 // New function to force refresh user data on next fetch
 export const invalidateUserDataCache = (userId: string): void => {
   if (userId) {
+    // Set flag to force refresh on next fetch attempt
     localStorage.setItem(`forceRefresh_${userId}`, 'true');
+    // Immediately remove cached data
+    localStorage.removeItem(`userData_${userId}`);
+    localStorage.removeItem(`userDataTime_${userId}`);
+    console.log(`Cache invalidated for user ${userId}`);
   }
 };
