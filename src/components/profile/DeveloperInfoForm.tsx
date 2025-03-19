@@ -1,5 +1,7 @@
 
 import React from 'react';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 interface DeveloperInfoFormProps {
   firstName: string;
@@ -21,72 +23,73 @@ const DeveloperInfoForm: React.FC<DeveloperInfoFormProps> = ({
   return (
     <div className="flex-1 space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="firstName" className="block text-sm font-medium mb-1">
-            First Name
-          </label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="firstName">First Name</Label>
+          <Input
             id="firstName"
             type="text"
             value={firstName}
             onChange={(e) => onChange('firstName', e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+            placeholder="Enter your first name"
+            className="w-full transition-colors"
             required
           />
         </div>
-        <div>
-          <label htmlFor="lastName" className="block text-sm font-medium mb-1">
-            Last Name
-          </label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="lastName">Last Name</Label>
+          <Input
             id="lastName"
             type="text"
             value={lastName}
             onChange={(e) => onChange('lastName', e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+            placeholder="Enter your last name"
+            className="w-full transition-colors"
             required
           />
         </div>
       </div>
       
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-1">
-          Email
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
           id="email"
           type="email"
           value={email}
           onChange={(e) => onChange('email', e.target.value)}
-          className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+          placeholder="Your email address"
+          className="w-full transition-colors"
           required
         />
+        <p className="text-xs text-muted-foreground">
+          Your email is used for account notifications and client communications.
+        </p>
       </div>
       
-      <div>
-        <label htmlFor="phone" className="block text-sm font-medium mb-1">
-          Phone Number
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="phone">Phone Number (Optional)</Label>
+        <Input
           id="phone"
           type="tel"
           value={phone}
           onChange={(e) => onChange('phone', e.target.value)}
-          className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+          placeholder="Your phone number"
+          className="w-full transition-colors"
         />
       </div>
 
-      <div>
-        <label htmlFor="location" className="block text-sm font-medium mb-1">
-          Location
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="location">Location</Label>
+        <Input
           id="location"
           type="text"
           value={location}
           onChange={(e) => onChange('location', e.target.value)}
-          className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+          placeholder="City, Country"
+          className="w-full transition-colors"
         />
+        <p className="text-xs text-muted-foreground">
+          Helps clients find developers in their timezone or region.
+        </p>
       </div>
     </div>
   );
