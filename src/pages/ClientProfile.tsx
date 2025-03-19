@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/auth';
 import ProfileCard from '../components/profile/ProfileCard';
 import ProfileLoadingState from '../components/profile/ProfileLoadingState';
 import ProfileErrorState from '../components/profile/ProfileErrorState';
+import ProfileSidebar from '../components/profile/ProfileSidebar';
+import MessagesSection from '../components/chat/MessagesSection';
 import { useClientProfile } from '../hooks/useClientProfile';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +16,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/co
 const ClientProfile: React.FC = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const [activeTab, setActiveTab] = useState<string>('profile');
   const { 
     client,
     formData,
@@ -102,13 +105,97 @@ const ClientProfile: React.FC = () => {
       </div>
       
       <div className="container mx-auto px-4 py-12">
-        <ProfileCard 
-          client={client}
-          formData={formData}
-          onInputChange={handleInputChange}
-          isSaving={isSaving}
-          onSave={handleSaveChanges}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-10">
+          <ProfileSidebar 
+            activeTab={activeTab}
+            userType="client"
+            onTabChange={setActiveTab}
+          />
+          
+          <div>
+            {activeTab === 'profile' && (
+              <ProfileCard 
+                client={client}
+                formData={formData}
+                onInputChange={handleInputChange}
+                isSaving={isSaving}
+                onSave={handleSaveChanges}
+              />
+            )}
+
+            {activeTab === 'messages' && (
+              <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden p-6">
+                <MessagesSection />
+              </div>
+            )}
+            
+            {activeTab === 'sessions' && (
+              <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden p-6">
+                <h2 className="text-xl font-semibold mb-4">Session History</h2>
+                <p className="text-muted-foreground">View your past and upcoming help sessions.</p>
+                <div className="mt-8 text-center py-12 border-2 border-dashed border-border/40 rounded-lg">
+                  <p className="text-muted-foreground mb-4">No active sessions found</p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/get-help')}
+                  >
+                    Request help
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'payments' && (
+              <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden p-6">
+                <h2 className="text-xl font-semibold mb-4">Payment Methods</h2>
+                <p className="text-muted-foreground">Manage your payment methods and billing information.</p>
+                <div className="mt-8 text-center py-12 border-2 border-dashed border-border/40 rounded-lg">
+                  <p className="text-muted-foreground mb-4">No payment methods added yet</p>
+                  <Button variant="outline">
+                    Add payment method
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'settings' && (
+              <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden p-6">
+                <h2 className="text-xl font-semibold mb-4">Account Settings</h2>
+                <p className="text-muted-foreground">Manage your account preferences and settings.</p>
+                
+                <div className="mt-8 space-y-6">
+                  <div>
+                    <h3 className="text-base font-medium mb-2">Notification Preferences</h3>
+                    <div className="border rounded-md p-4">
+                      <div className="flex items-center justify-between py-2">
+                        <span>Email notifications</span>
+                        <Button variant="outline" size="sm">Edit</Button>
+                      </div>
+                      <div className="flex items-center justify-between py-2">
+                        <span>Push notifications</span>
+                        <Button variant="outline" size="sm">Edit</Button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-base font-medium mb-2">Password & Security</h3>
+                    <div className="border rounded-md p-4">
+                      <div className="flex items-center justify-between py-2">
+                        <span>Change password</span>
+                        <Button variant="outline" size="sm">Edit</Button>
+                      </div>
+                      <div className="flex items-center justify-between py-2">
+                        <span>Two-factor authentication</span>
+                        <Button variant="outline" size="sm">Setup</Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </Layout>
   );
