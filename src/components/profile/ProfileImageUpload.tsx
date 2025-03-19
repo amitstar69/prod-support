@@ -4,9 +4,18 @@ import { User } from 'lucide-react';
 
 interface ProfileImageUploadProps {
   imageUrl?: string;
+  onImageUpdate?: (url: string) => void;
 }
 
-const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ imageUrl }) => {
+const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ imageUrl, onImageUpdate }) => {
+  const handleImageChange = () => {
+    // In a real implementation, this would handle file upload
+    // For now, just call the callback with a placeholder URL if it exists
+    if (onImageUpdate) {
+      onImageUpdate('https://example.com/placeholder-image.jpg');
+    }
+  };
+
   return (
     <div className="flex flex-col items-center md:items-start gap-4">
       <div className="relative">
@@ -24,13 +33,18 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ imageUrl }) => 
         <button 
           type="button" 
           className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center shadow-sm"
+          onClick={handleImageChange}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
         </button>
       </div>
-      <button type="button" className="text-sm text-primary font-medium">
+      <button 
+        type="button" 
+        className="text-sm text-primary font-medium"
+        onClick={handleImageChange}
+      >
         Change Image
       </button>
     </div>
