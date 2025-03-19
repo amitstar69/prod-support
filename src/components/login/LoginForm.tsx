@@ -9,8 +9,7 @@ import { useAuth } from '../../contexts/auth';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { UserType } from '../../hooks/useLoginForm';
-import { Check } from 'lucide-react';
-import { Checkbox } from '../ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 interface LoginFormProps {
   email?: string;
@@ -49,11 +48,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
   const [userType, setUserType] = useState<UserType>(externalUserType || 'client');
   const [error, setError] = useState(externalError || '');
   
-  const handleUserTypeChange = (type: UserType) => {
+  const handleUserTypeChange = (value: string) => {
+    const newType = value as UserType;
     if (onUserTypeChange) {
-      onUserTypeChange(type);
+      onUserTypeChange(newType);
     } else {
-      setUserType(type);
+      setUserType(newType);
     }
   };
   
@@ -126,53 +126,25 @@ const LoginForm: React.FC<LoginFormProps> = ({
             <span className="text-sm font-medium">Sign in as</span>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div 
-              className={`flex items-center gap-2 py-2 px-3 rounded-md border cursor-pointer
-                ${userType === 'client' ? 'border-slate-400 bg-slate-50' : 'border-slate-200'}
-              `}
-              onClick={() => handleUserTypeChange('client')}
-              aria-pressed={userType === 'client'}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  handleUserTypeChange('client');
-                }
-              }}
+          <RadioGroup 
+            defaultValue={externalUserType || userType} 
+            value={externalUserType || userType}
+            onValueChange={handleUserTypeChange}
+            className="grid grid-cols-2 gap-4"
+          >
+            <div className={`flex items-center justify-center gap-2 p-3 rounded-md border cursor-pointer
+              ${(externalUserType || userType) === 'client' ? 'border-primary bg-primary/5' : 'border-slate-200'}`}
             >
-              <Checkbox 
-                checked={userType === 'client'} 
-                onCheckedChange={() => handleUserTypeChange('client')}
-                id="client-type"
-                className="data-[state=checked]:bg-slate-700 data-[state=checked]:text-white"
-              />
-              <Label htmlFor="client-type" className="cursor-pointer">Client</Label>
+              <RadioGroupItem value="client" id="client-type" className="text-primary" />
+              <Label htmlFor="client-type" className="cursor-pointer font-medium">Client</Label>
             </div>
-            
-            <div 
-              className={`flex items-center gap-2 py-2 px-3 rounded-md border cursor-pointer
-                ${userType === 'developer' ? 'border-slate-400 bg-slate-50' : 'border-slate-200'}
-              `}
-              onClick={() => handleUserTypeChange('developer')}
-              aria-pressed={userType === 'developer'}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  handleUserTypeChange('developer');
-                }
-              }}
+            <div className={`flex items-center justify-center gap-2 p-3 rounded-md border cursor-pointer
+              ${(externalUserType || userType) === 'developer' ? 'border-primary bg-primary/5' : 'border-slate-200'}`}
             >
-              <Checkbox 
-                checked={userType === 'developer'} 
-                onCheckedChange={() => handleUserTypeChange('developer')}
-                id="developer-type"
-                className="data-[state=checked]:bg-slate-700 data-[state=checked]:text-white"
-              />
-              <Label htmlFor="developer-type" className="cursor-pointer">Developer</Label>
+              <RadioGroupItem value="developer" id="developer-type" className="text-primary" />
+              <Label htmlFor="developer-type" className="cursor-pointer font-medium">Developer</Label>
             </div>
-          </div>
+          </RadioGroup>
         </div>
 
         <div className="space-y-4">
@@ -202,7 +174,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         
         <Button 
           type="submit" 
-          className="w-full" 
+          className="w-full bg-primary hover:bg-primary/90" 
           disabled={externalIsLoading !== undefined ? externalIsLoading : isLoading}
         >
           {(externalIsLoading !== undefined ? externalIsLoading : isLoading) ? (
