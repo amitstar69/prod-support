@@ -12,6 +12,8 @@ function hasProperty<K extends string>(obj: object, prop: K): obj is { [key in K
 // Function to update user data
 export const updateUserData = async (userData: UserData): Promise<boolean> => {
   try {
+    console.log('Starting updateUserData with payload:', userData);
+    
     const { error } = await supabase.auth.getSession();
     if (error) {
       console.error('Session error:', error.message);
@@ -45,6 +47,7 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     if (hasProperty(userData, 'profileCompletionPercentage')) baseProfileData.profile_completion_percentage = userData.profileCompletionPercentage;
     if (hasProperty(userData, 'onboardingCompletedAt')) baseProfileData.onboarding_completed_at = userData.onboardingCompletedAt;
     
+    let baseProfileSuccess = true;
     if (Object.keys(baseProfileData).length > 0) {
       console.log('Updating base profile data:', baseProfileData);
       const { error: baseProfileError, data: updatedProfileData } = await supabase
@@ -54,11 +57,11 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
         .select();
       
       if (baseProfileError) {
-        console.error('Base profile update error:', baseProfileError.message);
-        return false;
+        console.error('Base profile update error:', baseProfileError.message, baseProfileError);
+        baseProfileSuccess = false;
+      } else {
+        console.log('Base profile update successful:', updatedProfileData);
       }
-      
-      console.log('Base profile update successful:', updatedProfileData);
     }
     
     // Prepare data for user-type specific table
@@ -99,6 +102,7 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
       }
     }
     
+    let specificProfileSuccess = true;
     // Only update the specific profile table if there are fields to update
     if (Object.keys(specificProfileData).length > 0) {
       // Update the type-specific profile table
@@ -112,24 +116,25 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
         .select();
       
       if (updateError) {
-        console.error(`${tableName} update error:`, updateError.message);
-        return false;
+        console.error(`${tableName} update error:`, updateError.message, updateError);
+        specificProfileSuccess = false;
+      } else {
+        console.log(`${tableName} update successful:`, updatedTypeData);
       }
-      
-      console.log(`${tableName} update successful:`, updatedTypeData);
     }
     
     // Force a complete cache invalidation
+    console.log('Clearing cache for user:', user.user.id);
     localStorage.removeItem(`userData_${user.user.id}`);
     localStorage.removeItem(`userDataTime_${user.user.id}`);
     localStorage.setItem(`forceRefresh_${user.user.id}`, 'true');
     
-    console.log('Profile update successful, cache fully invalidated');
+    console.log('Profile update complete. Base profile success:', baseProfileSuccess, 'Specific profile success:', specificProfileSuccess);
     
     // Also update any local storage mock data for development purposes
     updateUserDataInLocalStorage(user.user.id, userData);
     
-    return true;
+    return baseProfileSuccess && specificProfileSuccess;
   } catch (error) {
     console.error('Update user data error:', error);
     return false;
@@ -145,6 +150,9 @@ export const updateUserDataInLocalStorage = (userId: string, userData: UserData)
     
     const developers = developersStr ? JSON.parse(developersStr) as Developer[] : [];
     const clients = clientsStr ? JSON.parse(clientsStr) as Client[] : [];
+    
+    console.log('Updating localStorage data for user:', userId);
+    console.log('Current localStorage state:', { developers, clients });
     
     // Check if the user is a developer
     const developerIndex = developers.findIndex(dev => dev.id === userId);

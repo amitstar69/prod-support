@@ -46,11 +46,11 @@ export const useClientProfile = () => {
     paymentMethod: 'Stripe'
   });
   
-  const fetchUserData = useCallback(async () => {
+  const fetchUserData = useCallback(async (forceRefresh = true) => {
     if (!userId) return;
     
     setIsLoading(true);
-    console.log('Fetching client profile data for user:', userId);
+    console.log('Fetching client profile data for user:', userId, 'forceRefresh:', forceRefresh);
     
     const timeoutId = setTimeout(() => {
       console.log('Profile loading timeout reached');
@@ -60,9 +60,13 @@ export const useClientProfile = () => {
     }, 10000);
     
     try {
-      // Always force a fresh fetch when explicitly calling fetchUserData
-      invalidateUserDataCache(userId);
-      console.log('Fetching fresh user data after cache invalidation');
+      // Force a fresh fetch if requested
+      if (forceRefresh) {
+        console.log('Forcing cache invalidation before fetch');
+        invalidateUserDataCache(userId);
+      }
+      
+      console.log('Fetching fresh user data');
       const userData = await getCurrentUserData();
       
       clearTimeout(timeoutId);
@@ -93,7 +97,7 @@ export const useClientProfile = () => {
           budgetPerHour: clientData.budgetPerHour || 0,
           paymentMethod: (clientData.paymentMethod || 'Stripe') as 'Stripe' | 'PayPal'
         });
-        console.log('Form data populated:', formData);
+        console.log('Form data populated:', { firstName, lastName, email: clientData.email });
       } else {
         toast.error("Failed to load profile data: User data not found");
         console.error("User data not found");
@@ -111,7 +115,7 @@ export const useClientProfile = () => {
   useEffect(() => {
     if (userId) {
       console.log('Initial client profile data fetch for user:', userId);
-      fetchUserData();
+      fetchUserData(false); // Initial load, don't force refresh
     } else {
       setIsLoading(false);
       toast.error("User ID not found. Please try logging in again.");
@@ -119,6 +123,7 @@ export const useClientProfile = () => {
   }, [userId, fetchUserData]);
   
   const handleInputChange = (field: string, value: any) => {
+    console.log('Input changed:', field, value);
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -167,35 +172,10 @@ export const useClientProfile = () => {
         // Force a refresh of the cache for this user
         invalidateUserDataCache(userId);
         
-        // Fetch fresh data immediately
+        // Fetch fresh data immediately after a successful update
         console.log('Fetching latest data after successful update');
-        const userData = await getCurrentUserData();
-        if (userData) {
-          setClient(userData as Client);
-          console.log("Updated client data:", userData);
-          
-          // Update the form data with the fresh data to ensure consistency
-          const nameParts = userData.name ? userData.name.split(' ') : ['', ''];
-          setFormData(prev => ({
-            ...prev,
-            firstName: nameParts[0] || '',
-            lastName: nameParts.slice(1).join(' ') || '',
-            email: userData.email || prev.email,
-            location: userData.location || prev.location,
-            description: userData.description || prev.description,
-            username: userData.username || prev.username,
-            bio: 'bio' in userData ? userData.bio || prev.bio : prev.bio,
-            company: 'company' in userData ? userData.company || prev.company : prev.company,
-            position: 'position' in userData ? userData.position || prev.position : prev.position,
-            techStack: 'techStack' in userData ? userData.techStack || prev.techStack : prev.techStack,
-            industry: 'industry' in userData ? userData.industry || prev.industry : prev.industry,
-            projectTypes: 'projectTypes' in userData ? userData.projectTypes || prev.projectTypes : prev.projectTypes,
-            preferredHelpFormat: 'preferredHelpFormat' in userData ? userData.preferredHelpFormat || prev.preferredHelpFormat : prev.preferredHelpFormat,
-            budgetPerHour: 'budgetPerHour' in userData ? userData.budgetPerHour || prev.budgetPerHour : prev.budgetPerHour,
-            paymentMethod: 'paymentMethod' in userData ? (userData.paymentMethod as 'Stripe' | 'PayPal') || prev.paymentMethod : prev.paymentMethod
-          }));
-          console.log('Form data updated with fresh data');
-        }
+        await fetchUserData(true);
+        
         toast.success('Profile updated successfully');
       } else {
         toast.error('Failed to update profile');
@@ -211,8 +191,7 @@ export const useClientProfile = () => {
   const refreshProfile = useCallback(() => {
     if (userId) {
       console.log('Manual profile refresh requested for user:', userId);
-      invalidateUserDataCache(userId);
-      fetchUserData();
+      fetchUserData(true);
     }
   }, [userId, fetchUserData]);
   

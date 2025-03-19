@@ -46,11 +46,11 @@ export const useDeveloperProfile = () => {
     bio: ''
   });
   
-  const fetchUserData = useCallback(async () => {
+  const fetchUserData = useCallback(async (forceRefresh = true) => {
     if (!userId) return;
     
     setIsLoading(true);
-    console.log('Fetching developer profile data for user:', userId);
+    console.log('Fetching developer profile data for user:', userId, 'forceRefresh:', forceRefresh);
     
     const timeoutId = setTimeout(() => {
       console.log('Profile loading timeout reached');
@@ -60,9 +60,13 @@ export const useDeveloperProfile = () => {
     }, 10000); // 10 seconds timeout
     
     try {
-      // Always force a fresh fetch when explicitly calling fetchUserData
-      invalidateUserDataCache(userId);
-      console.log('Fetching fresh user data after cache invalidation');
+      // Force a fresh fetch if requested
+      if (forceRefresh) {
+        console.log('Forcing cache invalidation before fetch');
+        invalidateUserDataCache(userId);
+      }
+      
+      console.log('Fetching fresh user data');
       const userData = await getCurrentUserData();
       
       clearTimeout(timeoutId);
@@ -93,7 +97,7 @@ export const useDeveloperProfile = () => {
           username: developerData.username || '',
           bio: developerData.bio || ''
         });
-        console.log('Form data populated:', formData);
+        console.log('Form data populated:', { firstName, lastName, email: developerData.email });
       } else {
         toast.error("Failed to load profile data: User data not found");
         console.error("User data not found");
@@ -111,7 +115,7 @@ export const useDeveloperProfile = () => {
   useEffect(() => {
     if (userId) {
       console.log('Initial developer profile data fetch for user:', userId);
-      fetchUserData();
+      fetchUserData(false); // Initial load, don't force refresh
     } else {
       setIsLoading(false);
       toast.error("User ID not found. Please try logging in again.");
@@ -119,6 +123,7 @@ export const useDeveloperProfile = () => {
   }, [userId, fetchUserData]);
   
   const handleInputChange = (field: string, value: any) => {
+    console.log('Input changed:', field, value);
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -167,36 +172,10 @@ export const useDeveloperProfile = () => {
         // Force a refresh of the cache for this user
         invalidateUserDataCache(userId);
         
-        // Fetch fresh data immediately
+        // Fetch fresh data immediately after a successful update
         console.log('Fetching latest data after successful update');
-        const userData = await getCurrentUserData();
-        if (userData) {
-          setDeveloper(userData as Developer);
-          console.log("Updated developer data:", userData);
-          
-          // Update the form data with the fresh data to ensure consistency
-          const nameParts = userData.name ? userData.name.split(' ') : ['', ''];
-          setFormData(prev => ({
-            ...prev,
-            firstName: nameParts[0] || '',
-            lastName: nameParts.slice(1).join(' ') || '',
-            email: userData.email || prev.email,
-            phone: 'phone' in userData ? userData.phone || prev.phone : prev.phone,
-            // Update all other fields with fresh data
-            location: userData.location || prev.location,
-            category: 'category' in userData ? userData.category || prev.category : prev.category,
-            skills: 'skills' in userData ? userData.skills || prev.skills : prev.skills,
-            experience: 'experience' in userData ? userData.experience || prev.experience : prev.experience,
-            hourlyRate: 'hourlyRate' in userData ? userData.hourlyRate || prev.hourlyRate : prev.hourlyRate,
-            minuteRate: 'minuteRate' in userData ? userData.minuteRate || prev.minuteRate : prev.minuteRate,
-            availability: typeof userData.availability === 'boolean' ? userData.availability : prev.availability,
-            description: userData.description || prev.description,
-            communicationPreferences: 'communicationPreferences' in userData ? userData.communicationPreferences || prev.communicationPreferences : prev.communicationPreferences,
-            username: userData.username || prev.username,
-            bio: 'bio' in userData ? userData.bio || prev.bio : prev.bio
-          }));
-          console.log('Form data updated with fresh data');
-        }
+        await fetchUserData(true);
+        
         toast.success('Profile updated successfully');
       } else {
         toast.error('Failed to update profile');
@@ -212,8 +191,7 @@ export const useDeveloperProfile = () => {
   const refreshProfile = useCallback(() => {
     if (userId) {
       console.log('Manual profile refresh requested for user:', userId);
-      invalidateUserDataCache(userId);
-      fetchUserData();
+      fetchUserData(true);
     }
   }, [userId, fetchUserData]);
   

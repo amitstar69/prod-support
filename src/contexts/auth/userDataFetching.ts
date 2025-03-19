@@ -19,6 +19,8 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     return null;
   }
   
+  console.log('getCurrentUserData called for user:', userId, 'type:', userType);
+  
   // Check for forced refresh flag
   const forceRefresh = localStorage.getItem(`forceRefresh_${userId}`) === 'true';
   if (forceRefresh) {
@@ -27,18 +29,18 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     localStorage.removeItem(`userData_${userId}`);
     localStorage.removeItem(`userDataTime_${userId}`);
   } else {
-    // Check local cache - using extremely short cache time (30 seconds)
+    // Check local cache - using extremely short cache time (10 seconds)
     const cachedDataStr = localStorage.getItem(`userData_${userId}`);
     const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
     
     if (cachedDataStr && cacheTime) {
       const cacheAge = Date.now() - parseInt(cacheTime);
-      // Use 30-second cache time to balance performance with freshness
-      if (cacheAge < 30 * 1000) { 
+      // Use 10-second cache time for very fresh data
+      if (cacheAge < 10 * 1000) { 
         console.log('Using cached user data', cacheAge/1000, 'seconds old');
         return JSON.parse(cachedDataStr);
       } else {
-        console.log('Cache expired, fetching fresh data');
+        console.log('Cache expired after', cacheAge/1000, 'seconds, fetching fresh data');
       }
     }
   }
@@ -54,6 +56,7 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
   if (supabase) {
     try {
       console.time('fetchUserData');
+      console.log('Fetching fresh user data from Supabase');
       // Race between the data fetch and timeout
       const dataPromise = fetchUserData(userType, userId);
       const result = await Promise.race([dataPromise, timeoutPromise]);
@@ -64,11 +67,12 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
         return getUserDataFromLocalStorage(userType, userId);
       }
       
+      console.log('Fresh user data fetched successfully:', result);
+      
       // Cache result for future use
       localStorage.setItem(`userData_${userId}`, JSON.stringify(result));
       localStorage.setItem(`userDataTime_${userId}`, Date.now().toString());
       
-      console.log('Fresh user data fetched and cached:', result);
       return result;
     } catch (error) {
       console.error('Exception fetching user data from Supabase:', error);
