@@ -1,7 +1,19 @@
+import { AuthState } from './types';
+import { AuthContextType } from './types';
 
-export { useAuth, AuthProvider } from './AuthStateProvider';
-export { getCurrentUserData } from './userDataFetching';
-export { updateUserData } from './userDataUpdates';
-export { debugCheckProfileExists, debugCreateProfile } from './authDebug';
-export { logoutUser } from './authUtils';
-export { fetchUserData } from './userDataFetchers';
+// Import the authentication provider
+import { AuthStateProvider } from './AuthStateProvider';
+import { useAuth } from './authHook';
+
+// Import the user data fetching functions
+import { getCurrentUserData, invalidateUserDataCache } from './userDataFetching';
+import { updateUserData } from './userDataUpdates';
+
+// Export auth context and hook
+export { AuthStateProvider } from './AuthStateProvider';
+export { useAuth } from './authHook';
+
+// Export user data functions
+export { getCurrentUserData, updateUserData, invalidateUserDataCache };
+
+export type { AuthState, AuthContextType };

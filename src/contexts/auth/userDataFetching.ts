@@ -19,15 +19,24 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     return null;
   }
   
-  // First check local cache
-  const cachedDataStr = localStorage.getItem(`userData_${userId}`);
-  const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
-  
-  if (cachedDataStr && cacheTime) {
-    const cacheAge = Date.now() - parseInt(cacheTime);
-    if (cacheAge < 5 * 60 * 1000) { // 5 minutes cache
-      console.log('Using cached user data', cacheAge/1000, 'seconds old');
-      return JSON.parse(cachedDataStr);
+  // Check for forced refresh flag
+  const forceRefresh = localStorage.getItem(`forceRefresh_${userId}`) === 'true';
+  if (forceRefresh) {
+    console.log('Force refresh requested, skipping cache');
+    localStorage.removeItem(`forceRefresh_${userId}`);
+    localStorage.removeItem(`userData_${userId}`);
+    localStorage.removeItem(`userDataTime_${userId}`);
+  } else {
+    // Check local cache
+    const cachedDataStr = localStorage.getItem(`userData_${userId}`);
+    const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
+    
+    if (cachedDataStr && cacheTime) {
+      const cacheAge = Date.now() - parseInt(cacheTime);
+      if (cacheAge < 60 * 1000) { // 1 minute cache (reduced from 5 minutes)
+        console.log('Using cached user data', cacheAge/1000, 'seconds old');
+        return JSON.parse(cachedDataStr);
+      }
     }
   }
   
@@ -36,14 +45,16 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     setTimeout(() => {
       console.warn('getCurrentUserData timeout reached');
       resolve(null);
-    }, 3000); // 3 seconds timeout (reduced from 5s)
+    }, 5000); // 5 seconds timeout
   });
   
   if (supabase) {
     try {
+      console.time('fetchUserData');
       // Race between the data fetch and timeout
       const dataPromise = fetchUserData(userType, userId);
       const result = await Promise.race([dataPromise, timeoutPromise]);
+      console.timeEnd('fetchUserData');
       
       if (result === null) {
         console.error('Fetching user data timed out, falling back to localStorage');
@@ -77,4 +88,11 @@ export const getUserDataFromLocalStorage = (userType: string | null, userId: str
     return clients.find((client: Client) => client.id === userId) || null;
   }
   return null;
+};
+
+// New function to force refresh user data on next fetch
+export const invalidateUserDataCache = (userId: string): void => {
+  if (userId) {
+    localStorage.setItem(`forceRefresh_${userId}`, 'true');
+  }
 };

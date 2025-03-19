@@ -1,6 +1,6 @@
 
-import { useState, useEffect } from 'react';
-import { useAuth, getCurrentUserData, updateUserData } from '../contexts/auth';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from '../contexts/auth';
 import { Developer } from '../types/product';
 import { toast } from 'sonner';
 
@@ -46,68 +46,70 @@ export const useDeveloperProfile = () => {
     bio: ''
   });
   
-  useEffect(() => {
-    const fetchUser = async () => {
-      setIsLoading(true);
-      
-      const timeoutId = setTimeout(() => {
-        console.log('Profile loading timeout reached');
-        setLoadingTimeoutReached(true);
-        setIsLoading(false);
-        toast.error("Loading profile data is taking longer than expected. You can try logging out and back in.");
-      }, 10000); // 10 seconds timeout
-      
-      try {
-        const userData = await getCurrentUserData();
-        
-        clearTimeout(timeoutId);
-        
-        if (userData) {
-          const developerData = userData as Developer;
-          setDeveloper(developerData);
-          
-          const nameParts = developerData.name ? developerData.name.split(' ') : ['', ''];
-          const firstName = nameParts[0] || '';
-          const lastName = nameParts.slice(1).join(' ') || '';
-          
-          setFormData({
-            firstName,
-            lastName,
-            email: developerData.email || '',
-            phone: developerData.phone || '',
-            location: developerData.location || '',
-            category: developerData.category || 'frontend',
-            skills: developerData.skills || [],
-            experience: developerData.experience || '',
-            hourlyRate: developerData.hourlyRate || 75,
-            minuteRate: developerData.minuteRate || 1.25,
-            availability: typeof developerData.availability === 'boolean' ? developerData.availability : true,
-            description: developerData.description || '',
-            communicationPreferences: (developerData.communicationPreferences || ['video', 'chat', 'voice']) as string[],
-            username: developerData.username || '',
-            bio: developerData.bio || ''
-          });
-        } else {
-          toast.error("Failed to load profile data: User data not found");
-          console.error("User data not found");
-        }
-      } catch (error) {
-        clearTimeout(timeoutId);
-        
-        console.error("Error fetching user data:", error);
-        toast.error("Failed to load profile data. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchUserData = useCallback(async () => {
+    if (!userId) return;
     
+    setIsLoading(true);
+    
+    const timeoutId = setTimeout(() => {
+      console.log('Profile loading timeout reached');
+      setLoadingTimeoutReached(true);
+      setIsLoading(false);
+      toast.error("Loading profile data is taking longer than expected. You can try logging out and back in.");
+    }, 10000); // 10 seconds timeout
+    
+    try {
+      const userData = await getCurrentUserData();
+      
+      clearTimeout(timeoutId);
+      
+      if (userData) {
+        const developerData = userData as Developer;
+        setDeveloper(developerData);
+        
+        const nameParts = developerData.name ? developerData.name.split(' ') : ['', ''];
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        setFormData({
+          firstName,
+          lastName,
+          email: developerData.email || '',
+          phone: developerData.phone || '',
+          location: developerData.location || '',
+          category: developerData.category || 'frontend',
+          skills: developerData.skills || [],
+          experience: developerData.experience || '',
+          hourlyRate: developerData.hourlyRate || 75,
+          minuteRate: developerData.minuteRate || 1.25,
+          availability: typeof developerData.availability === 'boolean' ? developerData.availability : true,
+          description: developerData.description || '',
+          communicationPreferences: (developerData.communicationPreferences || ['video', 'chat', 'voice']) as string[],
+          username: developerData.username || '',
+          bio: developerData.bio || ''
+        });
+      } else {
+        toast.error("Failed to load profile data: User data not found");
+        console.error("User data not found");
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      console.error("Error fetching user data:", error);
+      toast.error("Failed to load profile data. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId]);
+  
+  useEffect(() => {
     if (userId) {
-      fetchUser();
+      fetchUserData();
     } else {
       setIsLoading(false);
       toast.error("User ID not found. Please try logging in again.");
     }
-  }, [userId]);
+  }, [userId, fetchUserData]);
   
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -117,11 +119,19 @@ export const useDeveloperProfile = () => {
   };
   
   const handleSaveChanges = async () => {
+    if (!userId) {
+      toast.error("User ID not found. Please try logging in again.");
+      return;
+    }
+    
     setIsSaving(true);
     
     try {
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      console.log(`Updating developer name from "${developer?.name}" to "${fullName}"`);
+      
       const updatedData: Partial<Developer> = {
-        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        name: fullName,
         email: formData.email,
         phone: formData.phone,
         location: formData.location,
@@ -144,9 +154,14 @@ export const useDeveloperProfile = () => {
       const success = await updateUserData(updatedData);
       
       if (success) {
+        // Force a refresh of the cache for this user
+        invalidateUserDataCache(userId);
+        
+        // Fetch fresh data immediately
         const userData = await getCurrentUserData();
         if (userData) {
           setDeveloper(userData as Developer);
+          console.log("Updated developer data:", userData);
         }
         toast.success('Profile updated successfully');
       } else {
@@ -160,6 +175,13 @@ export const useDeveloperProfile = () => {
     }
   };
   
+  const refreshProfile = useCallback(() => {
+    if (userId) {
+      invalidateUserDataCache(userId);
+      fetchUserData();
+    }
+  }, [userId, fetchUserData]);
+  
   return {
     developer,
     formData,
@@ -167,6 +189,7 @@ export const useDeveloperProfile = () => {
     isSaving,
     loadingTimeoutReached,
     handleInputChange,
-    handleSaveChanges
+    handleSaveChanges,
+    refreshProfile
   };
 };
