@@ -119,12 +119,12 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
       console.log(`${tableName} update successful:`, updatedTypeData);
     }
     
-    // Clear cached user data to force a fresh fetch on next load
+    // Force a complete cache invalidation
     localStorage.removeItem(`userData_${user.user.id}`);
     localStorage.removeItem(`userDataTime_${user.user.id}`);
     localStorage.setItem(`forceRefresh_${user.user.id}`, 'true');
     
-    console.log('Profile update successful, cache invalidated');
+    console.log('Profile update successful, cache fully invalidated');
     
     // Also update any local storage mock data for development purposes
     updateUserDataInLocalStorage(user.user.id, userData);

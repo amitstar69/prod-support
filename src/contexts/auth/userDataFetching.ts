@@ -22,21 +22,23 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
   // Check for forced refresh flag
   const forceRefresh = localStorage.getItem(`forceRefresh_${userId}`) === 'true';
   if (forceRefresh) {
-    console.log('Force refresh requested, skipping cache');
+    console.log('Force refresh requested, skipping cache entirely');
     localStorage.removeItem(`forceRefresh_${userId}`);
     localStorage.removeItem(`userData_${userId}`);
     localStorage.removeItem(`userDataTime_${userId}`);
   } else {
-    // Check local cache - with extremely short cache time (5 seconds instead of 30)
+    // Check local cache - using extremely short cache time (30 seconds)
     const cachedDataStr = localStorage.getItem(`userData_${userId}`);
     const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
     
     if (cachedDataStr && cacheTime) {
       const cacheAge = Date.now() - parseInt(cacheTime);
-      // Reduced cache time to just 5 seconds to ensure frequent refreshes
-      if (cacheAge < 5 * 1000) { 
+      // Use 30-second cache time to balance performance with freshness
+      if (cacheAge < 30 * 1000) { 
         console.log('Using cached user data', cacheAge/1000, 'seconds old');
         return JSON.parse(cachedDataStr);
+      } else {
+        console.log('Cache expired, fetching fresh data');
       }
     }
   }
