@@ -73,8 +73,8 @@ export const useClientProfile = () => {
       
       if (userData) {
         const clientData = userData as Client;
-        setClient(clientData);
         console.log('Client data fetched successfully:', clientData);
+        setClient(clientData);
         
         const nameParts = clientData.name ? clientData.name.split(' ') : ['', ''];
         const firstName = nameParts[0] || '';
@@ -115,10 +115,9 @@ export const useClientProfile = () => {
   useEffect(() => {
     if (userId) {
       console.log('Initial client profile data fetch for user:', userId);
-      fetchUserData(false); // Initial load, don't force refresh
+      fetchUserData(true); // Force a fresh fetch on initial load
     } else {
       setIsLoading(false);
-      toast.error("User ID not found. Please try logging in again.");
     }
   }, [userId, fetchUserData]);
   
@@ -164,10 +163,19 @@ export const useClientProfile = () => {
       
       console.log("Submitting client profile update:", updatedData);
       
+      // First update the cache before the API call to ensure UI is in sync
+      if (client) {
+        setClient({
+          ...client,
+          ...updatedData
+        });
+      }
+      
       const success = await updateUserData(updatedData);
       
       if (success) {
         console.log('Profile update successful, forcing data refresh');
+        toast.success('Profile updated successfully');
         
         // Force a refresh of the cache for this user
         invalidateUserDataCache(userId);
@@ -175,14 +183,16 @@ export const useClientProfile = () => {
         // Fetch fresh data immediately after a successful update
         console.log('Fetching latest data after successful update');
         await fetchUserData(true);
-        
-        toast.success('Profile updated successfully');
       } else {
         toast.error('Failed to update profile');
+        // Revert client state to original if update failed
+        await fetchUserData(true);
       }
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('An error occurred while updating your profile');
+      // Revert client state if there was an exception
+      await fetchUserData(true);
     } finally {
       setIsSaving(false);
     }

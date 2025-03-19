@@ -2,6 +2,7 @@
 import { supabase } from '../../integrations/supabase/client';
 import { Developer, Client } from '../../types/product';
 import { fetchUserData } from './userDataFetchers';
+import { toast } from 'sonner';
 
 // Function to get the current user's data with timeout
 export const getCurrentUserData = async (): Promise<Developer | Client | null> => {
@@ -29,14 +30,14 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     localStorage.removeItem(`userData_${userId}`);
     localStorage.removeItem(`userDataTime_${userId}`);
   } else {
-    // Check local cache - using extremely short cache time (10 seconds)
+    // Check local cache - using a 5-second cache time
     const cachedDataStr = localStorage.getItem(`userData_${userId}`);
     const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
     
     if (cachedDataStr && cacheTime) {
       const cacheAge = Date.now() - parseInt(cacheTime);
-      // Use 10-second cache time for very fresh data
-      if (cacheAge < 10 * 1000) { 
+      // Use 5-second cache time for very fresh data
+      if (cacheAge < 5 * 1000) { 
         console.log('Using cached user data', cacheAge/1000, 'seconds old');
         return JSON.parse(cachedDataStr);
       } else {
@@ -50,7 +51,7 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     setTimeout(() => {
       console.warn('getCurrentUserData timeout reached');
       resolve(null);
-    }, 5000); // 5 seconds timeout
+    }, 8000); // 8 seconds timeout
   });
   
   if (supabase) {
@@ -76,11 +77,13 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
       return result;
     } catch (error) {
       console.error('Exception fetching user data from Supabase:', error);
+      toast.error('Error fetching your profile: Network or server issue');
       // Fall back to localStorage
       return getUserDataFromLocalStorage(userType, userId);
     }
   } else {
     console.error('Supabase client not available');
+    toast.error('Supabase client not available');
     // Use localStorage as fallback
     return getUserDataFromLocalStorage(userType, userId);
   }

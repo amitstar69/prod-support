@@ -1,6 +1,7 @@
 
 import { supabase } from '../../integrations/supabase';
 import { Developer, Client } from '../../types/product';
+import { toast } from 'sonner';
 
 type UserData = Partial<Developer | Client>;
 
@@ -48,19 +49,28 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     if (hasProperty(userData, 'onboardingCompletedAt')) baseProfileData.onboarding_completed_at = userData.onboardingCompletedAt;
     
     let baseProfileSuccess = true;
+    let baseProfileResult = null;
+    
     if (Object.keys(baseProfileData).length > 0) {
       console.log('Updating base profile data:', baseProfileData);
-      const { error: baseProfileError, data: updatedProfileData } = await supabase
-        .from('profiles')
-        .update(baseProfileData)
-        .eq('id', user.user.id)
-        .select();
-      
-      if (baseProfileError) {
-        console.error('Base profile update error:', baseProfileError.message, baseProfileError);
+      try {
+        const { error: baseProfileError, data: updatedProfileData } = await supabase
+          .from('profiles')
+          .update(baseProfileData)
+          .eq('id', user.user.id)
+          .select();
+        
+        if (baseProfileError) {
+          console.error('Base profile update error:', baseProfileError.message, baseProfileError);
+          toast.error(`Error updating profile: ${baseProfileError.message}`);
+          baseProfileSuccess = false;
+        } else {
+          console.log('Base profile update successful:', updatedProfileData);
+          baseProfileResult = updatedProfileData;
+        }
+      } catch (updateError) {
+        console.error('Exception during base profile update:', updateError);
         baseProfileSuccess = false;
-      } else {
-        console.log('Base profile update successful:', updatedProfileData);
       }
     }
     
@@ -103,23 +113,32 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     }
     
     let specificProfileSuccess = true;
+    let specificProfileResult = null;
+    
     // Only update the specific profile table if there are fields to update
     if (Object.keys(specificProfileData).length > 0) {
       // Update the type-specific profile table
       const tableName = userType === 'developer' ? 'developer_profiles' : 'client_profiles';
       console.log(`Updating ${tableName} data:`, specificProfileData);
       
-      const { error: updateError, data: updatedTypeData } = await supabase
-        .from(tableName)
-        .update(specificProfileData)
-        .eq('id', user.user.id)
-        .select();
-      
-      if (updateError) {
-        console.error(`${tableName} update error:`, updateError.message, updateError);
+      try {
+        const { error: updateError, data: updatedTypeData } = await supabase
+          .from(tableName)
+          .update(specificProfileData)
+          .eq('id', user.user.id)
+          .select();
+        
+        if (updateError) {
+          console.error(`${tableName} update error:`, updateError.message, updateError);
+          toast.error(`Error updating ${userType} profile: ${updateError.message}`);
+          specificProfileSuccess = false;
+        } else {
+          console.log(`${tableName} update successful:`, updatedTypeData);
+          specificProfileResult = updatedTypeData;
+        }
+      } catch (updateError) {
+        console.error(`Exception during ${userType} profile update:`, updateError);
         specificProfileSuccess = false;
-      } else {
-        console.log(`${tableName} update successful:`, updatedTypeData);
       }
     }
     
@@ -129,19 +148,26 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     localStorage.removeItem(`userDataTime_${user.user.id}`);
     localStorage.setItem(`forceRefresh_${user.user.id}`, 'true');
     
+    const success = baseProfileSuccess && specificProfileSuccess;
     console.log('Profile update complete. Base profile success:', baseProfileSuccess, 'Specific profile success:', specificProfileSuccess);
+    
+    if (!success) {
+      console.error('Profile update failed. Will not update local storage.');
+      return false;
+    }
     
     // Also update any local storage mock data for development purposes
     updateUserDataInLocalStorage(user.user.id, userData);
     
-    return baseProfileSuccess && specificProfileSuccess;
+    return success;
   } catch (error) {
     console.error('Update user data error:', error);
+    toast.error(`Unexpected error updating profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return false;
   }
 };
 
-// Add the missing function for local storage updates
+// Function for local storage updates
 export const updateUserDataInLocalStorage = (userId: string, userData: UserData): boolean => {
   try {
     // Get existing data from localStorage
@@ -154,6 +180,8 @@ export const updateUserDataInLocalStorage = (userId: string, userData: UserData)
     console.log('Updating localStorage data for user:', userId);
     console.log('Current localStorage state:', { developers, clients });
     
+    let updated = false;
+    
     // Check if the user is a developer
     const developerIndex = developers.findIndex(dev => dev.id === userId);
     if (developerIndex !== -1) {
@@ -164,7 +192,7 @@ export const updateUserDataInLocalStorage = (userId: string, userData: UserData)
       };
       localStorage.setItem('mockDevelopers', JSON.stringify(developers));
       console.log('Updated developer data in localStorage:', developers[developerIndex]);
-      return true;
+      updated = true;
     }
     
     // Check if the user is a client
@@ -183,11 +211,14 @@ export const updateUserDataInLocalStorage = (userId: string, userData: UserData)
       };
       localStorage.setItem('mockClients', JSON.stringify(clients));
       console.log('Updated client data in localStorage:', clients[clientIndex]);
-      return true;
+      updated = true;
     }
     
-    console.log('User not found in localStorage mock data:', userId);
-    return false; // User not found
+    if (!updated) {
+      console.log('User not found in localStorage mock data:', userId);
+    }
+    
+    return updated;
   } catch (error) {
     console.error('Error updating user data in localStorage:', error);
     return false;

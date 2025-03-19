@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/auth';
+import { invalidateUserDataCache } from '../contexts/auth/userDataFetching';
 import ProfileCard from '../components/profile/ProfileCard';
 import ProfileLoadingState from '../components/profile/ProfileLoadingState';
 import ProfileErrorState from '../components/profile/ProfileErrorState';
@@ -16,7 +16,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/co
 const ClientProfile: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, userId } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('profile');
   const { 
     client,
@@ -29,12 +29,17 @@ const ClientProfile: React.FC = () => {
     refreshProfile
   } = useClientProfile();
   
-  // Force refresh profile data when navigating back to this page
+  // Force refresh profile data when navigating to this page
   useEffect(() => {
-    if (refreshProfile) {
+    console.log('ClientProfile component mounted or location changed');
+    
+    // Always force a fresh data fetch when this component mounts or route changes
+    if (userId) {
+      console.log('Forcing profile refresh on route change/component mount');
+      invalidateUserDataCache(userId);
       refreshProfile();
     }
-  }, [location.key, refreshProfile]);
+  }, [location.key, refreshProfile, userId]);
   
   const handleForceLogout = async () => {
     try {
