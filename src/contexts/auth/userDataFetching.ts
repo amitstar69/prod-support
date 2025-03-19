@@ -30,14 +30,14 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     localStorage.removeItem(`userData_${userId}`);
     localStorage.removeItem(`userDataTime_${userId}`);
   } else {
-    // Check local cache - using a 5-second cache time
+    // Check local cache - using a 3-second cache time (reduced from previous 5 seconds)
     const cachedDataStr = localStorage.getItem(`userData_${userId}`);
     const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
     
     if (cachedDataStr && cacheTime) {
       const cacheAge = Date.now() - parseInt(cacheTime);
-      // Use 5-second cache time for very fresh data
-      if (cacheAge < 5 * 1000) { 
+      // Use 3-second cache time for very fresh data
+      if (cacheAge < 3 * 1000) { 
         console.log('Using cached user data', cacheAge/1000, 'seconds old');
         return JSON.parse(cachedDataStr);
       } else {

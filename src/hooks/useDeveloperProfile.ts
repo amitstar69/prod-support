@@ -115,10 +115,9 @@ export const useDeveloperProfile = () => {
   useEffect(() => {
     if (userId) {
       console.log('Initial developer profile data fetch for user:', userId);
-      fetchUserData(false); // Initial load, don't force refresh
+      fetchUserData(true); // Force a fresh fetch on initial load
     } else {
       setIsLoading(false);
-      toast.error("User ID not found. Please try logging in again.");
     }
   }, [userId, fetchUserData]);
   
@@ -164,6 +163,15 @@ export const useDeveloperProfile = () => {
       
       console.log("Submitting developer profile update:", updatedData);
       
+      // First update the local state before the API call to ensure UI is responsive
+      if (developer) {
+        const updatedDeveloper = {
+          ...developer,
+          ...updatedData
+        };
+        setDeveloper(updatedDeveloper);
+      }
+      
       const success = await updateUserData(updatedData);
       
       if (success) {
@@ -175,14 +183,16 @@ export const useDeveloperProfile = () => {
         // Fetch fresh data immediately after a successful update
         console.log('Fetching latest data after successful update');
         await fetchUserData(true);
-        
-        toast.success('Profile updated successfully');
       } else {
-        toast.error('Failed to update profile');
+        toast.error('Failed to update profile. Please verify your connection and try again.');
+        // Revert developer state to original if update failed
+        await fetchUserData(true);
       }
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('An error occurred while updating your profile');
+      // Revert developer state if there was an exception
+      await fetchUserData(true);
     } finally {
       setIsSaving(false);
     }

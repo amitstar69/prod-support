@@ -46,7 +46,7 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     // if (hasProperty(userData, 'bio')) baseProfileData.bio = userData.bio; // REMOVED THIS LINE
     if (hasProperty(userData, 'image')) baseProfileData.image = userData.image;
     if (hasProperty(userData, 'profileCompleted')) baseProfileData.profile_completed = userData.profileCompleted;
-    if (hasProperty(userData, 'profileCompletionPercentage')) baseProfileData.profile_completion_percentage = userData.profileCompletionPercentage;
+    // Do not include profile_completion_percentage in base profiles as it doesn't exist there
     if (hasProperty(userData, 'onboardingCompletedAt')) baseProfileData.onboarding_completed_at = userData.onboardingCompletedAt;
     
     let baseProfileSuccess = true;
@@ -90,10 +90,11 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
         // For developer, availability can be a boolean or an object
         specificProfileData.availability = userData.availability;
       }
+      if (hasProperty(userData, 'bio')) specificProfileData.bio = userData.bio; // Add bio to developer profile
       if (hasProperty(userData, 'communicationPreferences')) specificProfileData.communication_preferences = userData.communicationPreferences;
     } else if (userType === 'client') {
       // Make sure bio is in the client_profiles table update
-      if (hasProperty(userData, 'bio')) specificProfileData.bio = userData.bio; // MOVED HERE
+      if (hasProperty(userData, 'bio')) specificProfileData.bio = userData.bio;
       if (hasProperty(userData, 'industry')) specificProfileData.industry = userData.industry;
       if (hasProperty(userData, 'company')) specificProfileData.company = userData.company;
       if (hasProperty(userData, 'position')) specificProfileData.position = userData.position;
@@ -104,6 +105,7 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
       if (hasProperty(userData, 'projectTypes')) specificProfileData.project_types = userData.projectTypes;
       if (hasProperty(userData, 'paymentMethod')) specificProfileData.payment_method = userData.paymentMethod;
       if (hasProperty(userData, 'communicationPreferences')) specificProfileData.communication_preferences = userData.communicationPreferences;
+      if (hasProperty(userData, 'profileCompletionPercentage')) specificProfileData.profile_completion_percentage = userData.profileCompletionPercentage;
       if (hasProperty(userData, 'availability')) {
         // For client, ensure availability is an object if it's provided
         if (typeof userData.availability === 'boolean') {
@@ -151,7 +153,9 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     localStorage.removeItem(`userDataTime_${user.user.id}`);
     localStorage.setItem(`forceRefresh_${user.user.id}`, 'true');
     
-    const success = baseProfileSuccess && specificProfileSuccess;
+    // Consider either base profile or specific profile update success as overall success
+    // This is a change from the previous logic which required both to succeed
+    const success = baseProfileSuccess || specificProfileSuccess;
     console.log('Profile update complete. Base profile success:', baseProfileSuccess, 'Specific profile success:', specificProfileSuccess);
     
     if (!success) {
