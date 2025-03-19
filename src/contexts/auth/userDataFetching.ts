@@ -27,14 +27,14 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     localStorage.removeItem(`userData_${userId}`);
     localStorage.removeItem(`userDataTime_${userId}`);
   } else {
-    // Check local cache - with reduced cache time (30 seconds instead of 60)
+    // Check local cache - with extremely short cache time (5 seconds instead of 30)
     const cachedDataStr = localStorage.getItem(`userData_${userId}`);
     const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
     
     if (cachedDataStr && cacheTime) {
       const cacheAge = Date.now() - parseInt(cacheTime);
-      // Reduced cache time from 60 seconds to 30 seconds for more frequent refreshes
-      if (cacheAge < 30 * 1000) { 
+      // Reduced cache time to just 5 seconds to ensure frequent refreshes
+      if (cacheAge < 5 * 1000) { 
         console.log('Using cached user data', cacheAge/1000, 'seconds old');
         return JSON.parse(cachedDataStr);
       }
@@ -66,6 +66,7 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
       localStorage.setItem(`userData_${userId}`, JSON.stringify(result));
       localStorage.setItem(`userDataTime_${userId}`, Date.now().toString());
       
+      console.log('Fresh user data fetched and cached:', result);
       return result;
     } catch (error) {
       console.error('Exception fetching user data from Supabase:', error);
@@ -91,9 +92,10 @@ export const getUserDataFromLocalStorage = (userType: string | null, userId: str
   return null;
 };
 
-// New function to force refresh user data on next fetch
+// Function to force refresh user data on next fetch
 export const invalidateUserDataCache = (userId: string): void => {
   if (userId) {
+    console.log(`Invalidating cache for user ${userId}`);
     // Set flag to force refresh on next fetch attempt
     localStorage.setItem(`forceRefresh_${userId}`, 'true');
     // Immediately remove cached data

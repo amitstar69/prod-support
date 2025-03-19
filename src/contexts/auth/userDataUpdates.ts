@@ -47,15 +47,18 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     
     if (Object.keys(baseProfileData).length > 0) {
       console.log('Updating base profile data:', baseProfileData);
-      const { error: baseProfileError } = await supabase
+      const { error: baseProfileError, data: updatedProfileData } = await supabase
         .from('profiles')
         .update(baseProfileData)
-        .eq('id', user.user.id);
+        .eq('id', user.user.id)
+        .select();
       
       if (baseProfileError) {
         console.error('Base profile update error:', baseProfileError.message);
         return false;
       }
+      
+      console.log('Base profile update successful:', updatedProfileData);
     }
     
     // Prepare data for user-type specific table
@@ -102,15 +105,18 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
       const tableName = userType === 'developer' ? 'developer_profiles' : 'client_profiles';
       console.log(`Updating ${tableName} data:`, specificProfileData);
       
-      const { error: updateError } = await supabase
+      const { error: updateError, data: updatedTypeData } = await supabase
         .from(tableName)
         .update(specificProfileData)
-        .eq('id', user.user.id);
+        .eq('id', user.user.id)
+        .select();
       
       if (updateError) {
         console.error(`${tableName} update error:`, updateError.message);
         return false;
       }
+      
+      console.log(`${tableName} update successful:`, updatedTypeData);
     }
     
     // Clear cached user data to force a fresh fetch on next load
@@ -118,7 +124,11 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     localStorage.removeItem(`userDataTime_${user.user.id}`);
     localStorage.setItem(`forceRefresh_${user.user.id}`, 'true');
     
-    console.log('Profile update successful');
+    console.log('Profile update successful, cache invalidated');
+    
+    // Also update any local storage mock data for development purposes
+    updateUserDataInLocalStorage(user.user.id, userData);
+    
     return true;
   } catch (error) {
     console.error('Update user data error:', error);
@@ -145,6 +155,7 @@ export const updateUserDataInLocalStorage = (userId: string, userData: UserData)
         ...userData,
       };
       localStorage.setItem('mockDevelopers', JSON.stringify(developers));
+      console.log('Updated developer data in localStorage:', developers[developerIndex]);
       return true;
     }
     
@@ -163,9 +174,11 @@ export const updateUserDataInLocalStorage = (userId: string, userData: UserData)
         })
       };
       localStorage.setItem('mockClients', JSON.stringify(clients));
+      console.log('Updated client data in localStorage:', clients[clientIndex]);
       return true;
     }
     
+    console.log('User not found in localStorage mock data:', userId);
     return false; // User not found
   } catch (error) {
     console.error('Error updating user data in localStorage:', error);

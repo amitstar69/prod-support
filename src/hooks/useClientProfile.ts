@@ -50,6 +50,7 @@ export const useClientProfile = () => {
     if (!userId) return;
     
     setIsLoading(true);
+    console.log('Fetching client profile data for user:', userId);
     
     const timeoutId = setTimeout(() => {
       console.log('Profile loading timeout reached');
@@ -61,6 +62,7 @@ export const useClientProfile = () => {
     try {
       // Always force a fresh fetch when explicitly calling fetchUserData
       invalidateUserDataCache(userId);
+      console.log('Fetching fresh user data after cache invalidation');
       const userData = await getCurrentUserData();
       
       clearTimeout(timeoutId);
@@ -68,6 +70,7 @@ export const useClientProfile = () => {
       if (userData) {
         const clientData = userData as Client;
         setClient(clientData);
+        console.log('Client data fetched successfully:', clientData);
         
         const nameParts = clientData.name ? clientData.name.split(' ') : ['', ''];
         const firstName = nameParts[0] || '';
@@ -90,6 +93,7 @@ export const useClientProfile = () => {
           budgetPerHour: clientData.budgetPerHour || 0,
           paymentMethod: (clientData.paymentMethod || 'Stripe') as 'Stripe' | 'PayPal'
         });
+        console.log('Form data populated:', formData);
       } else {
         toast.error("Failed to load profile data: User data not found");
         console.error("User data not found");
@@ -106,6 +110,7 @@ export const useClientProfile = () => {
   
   useEffect(() => {
     if (userId) {
+      console.log('Initial client profile data fetch for user:', userId);
       fetchUserData();
     } else {
       setIsLoading(false);
@@ -127,6 +132,7 @@ export const useClientProfile = () => {
     }
     
     setIsSaving(true);
+    console.log('Saving client profile changes for user:', userId);
     
     try {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
@@ -156,10 +162,13 @@ export const useClientProfile = () => {
       const success = await updateUserData(updatedData);
       
       if (success) {
+        console.log('Profile update successful, forcing data refresh');
+        
         // Force a refresh of the cache for this user
         invalidateUserDataCache(userId);
         
         // Fetch fresh data immediately
+        console.log('Fetching latest data after successful update');
         const userData = await getCurrentUserData();
         if (userData) {
           setClient(userData as Client);
@@ -185,6 +194,7 @@ export const useClientProfile = () => {
             budgetPerHour: 'budgetPerHour' in userData ? userData.budgetPerHour || prev.budgetPerHour : prev.budgetPerHour,
             paymentMethod: 'paymentMethod' in userData ? (userData.paymentMethod as 'Stripe' | 'PayPal') || prev.paymentMethod : prev.paymentMethod
           }));
+          console.log('Form data updated with fresh data');
         }
         toast.success('Profile updated successfully');
       } else {
@@ -200,6 +210,7 @@ export const useClientProfile = () => {
   
   const refreshProfile = useCallback(() => {
     if (userId) {
+      console.log('Manual profile refresh requested for user:', userId);
       invalidateUserDataCache(userId);
       fetchUserData();
     }
