@@ -19,12 +19,24 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     return null;
   }
   
+  // First check local cache
+  const cachedDataStr = localStorage.getItem(`userData_${userId}`);
+  const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
+  
+  if (cachedDataStr && cacheTime) {
+    const cacheAge = Date.now() - parseInt(cacheTime);
+    if (cacheAge < 5 * 60 * 1000) { // 5 minutes cache
+      console.log('Using cached user data', cacheAge/1000, 'seconds old');
+      return JSON.parse(cachedDataStr);
+    }
+  }
+  
   // Create a timeout promise
   const timeoutPromise = new Promise<null>((resolve) => {
     setTimeout(() => {
       console.warn('getCurrentUserData timeout reached');
       resolve(null);
-    }, 5000); // 5 seconds timeout
+    }, 3000); // 3 seconds timeout (reduced from 5s)
   });
   
   if (supabase) {
@@ -37,6 +49,10 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
         console.error('Fetching user data timed out, falling back to localStorage');
         return getUserDataFromLocalStorage(userType, userId);
       }
+      
+      // Cache result for future use
+      localStorage.setItem(`userData_${userId}`, JSON.stringify(result));
+      localStorage.setItem(`userDataTime_${userId}`, Date.now().toString());
       
       return result;
     } catch (error) {

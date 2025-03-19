@@ -1,95 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import Layout from '../components/Layout';
-import { User, CreditCard, LogOut, Settings, Video, MessageSquare, Save } from 'lucide-react';
-import { toast } from 'sonner';
-import { useAuth, getCurrentUserData, updateUserData } from '../contexts/auth';
-import { Developer } from '../types/product';
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
+import { useAuth } from '../contexts/auth';
+import ProfileCard from '../components/profile/DeveloperProfileCard';
+import ProfileLoadingState from '../components/profile/ProfileLoadingState';
+import ProfileErrorState from '../components/profile/ProfileErrorState';
+import ProfileSidebar from '../components/profile/ProfileSidebar';
 import MessagesSection from '../components/chat/MessagesSection';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/components/ui/breadcrumb';
+import { useDeveloperProfile } from '../hooks/useDeveloperProfile';
 
 const Profile: React.FC = () => {
-  const { userId, logout } = useAuth();
   const navigate = useNavigate();
-  const [developer, setDeveloper] = useState<Developer | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('profile');
+  const { 
+    developer,
+    formData,
+    isLoading,
+    isSaving,
+    loadingTimeoutReached,
+    handleInputChange,
+    handleSaveChanges
+  } = useDeveloperProfile();
   
-  useEffect(() => {
-    const fetchUser = async () => {
-      setIsLoading(true);
-      try {
-        const userData = await getCurrentUserData();
-        if (userData) {
-          setDeveloper(userData as Developer);
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        toast.error("Failed to load profile data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchUser();
-  }, [userId]);
-  
-  const handleSaveChanges = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    
-    const updatedData: Partial<Developer> = {
-      name: formData.get('firstName') + ' ' + formData.get('lastName'),
-      email: formData.get('email') as string,
-      phone: formData.get('phone') as string,
-      category: formData.get('category') as string,
-      skills: (formData.get('skills') as string).split(',').map(skill => skill.trim()),
-      experience: formData.get('experience') as string,
-      hourlyRate: parseFloat(formData.get('hourlyRate') as string),
-      availability: formData.has('availability'),
-      description: formData.get('description') as string
-    };
-    
+  const handleForceLogout = async () => {
     try {
-      const success = await updateUserData(updatedData);
-      
-      if (success) {
-        const userData = await getCurrentUserData();
-        if (userData) {
-          setDeveloper(userData as Developer);
-        }
-        toast.success('Profile updated successfully');
-      } else {
-        toast.error('Failed to update profile');
-      }
+      localStorage.removeItem('authState');
+      await logout();
+      window.location.href = '/';
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('An error occurred while updating your profile');
-    } finally {
-      setIsSaving(false);
+      console.error('Error during force logout:', error);
+      window.location.href = '/';
     }
   };
   
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (error) {
-      console.error('Error logging out:', error);
-      toast.error('Failed to log out properly. Please try again.');
-    }
+  const handleBack = () => {
+    navigate(-1);
   };
   
   if (isLoading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-12 text-center">
-          <div className="animate-pulse">Loading profile...</div>
-        </div>
+        <ProfileLoadingState onForceLogout={handleForceLogout} />
+      </Layout>
+    );
+  }
+  
+  if (loadingTimeoutReached) {
+    return (
+      <Layout>
+        <ProfileErrorState 
+          title="Loading Timeout"
+          message="We couldn't load your profile information in a reasonable time. This could be due to connection issues or server problems."
+          onRetry={() => window.location.reload()}
+          onForceLogout={handleForceLogout}
+        />
       </Layout>
     );
   }
@@ -97,325 +66,132 @@ const Profile: React.FC = () => {
   if (!developer) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-12 text-center">
-          <h2 className="heading-3 mb-4">Profile not found</h2>
-          <p className="text-muted-foreground mb-6">We couldn't find your profile information</p>
-        </div>
+        <ProfileErrorState 
+          title="Profile not found"
+          message="We couldn't find your profile information"
+          onRetry={() => window.location.reload()}
+          onForceLogout={handleForceLogout}
+        />
       </Layout>
     );
   }
   
-  const nameParts = developer.name ? developer.name.split(' ') : ['', ''];
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.slice(1).join(' ') || '';
-  
   return (
     <Layout>
-      <div className="bg-secondary/50 py-10">
+      <div className="bg-secondary/50 py-6">
         <div className="container mx-auto px-4">
+          <div className="mb-4">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="p-0 h-auto text-muted-foreground" 
+                      onClick={handleBack}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back
+                    </Button>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
           <h1 className="heading-2 mb-2 text-center">Developer Profile</h1>
-          <p className="text-center text-muted-foreground">Manage your profile, availability and preferences</p>
+          <p className="text-center text-muted-foreground">Manage your profile information</p>
         </div>
       </div>
       
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-10">
-          <aside>
-            <div className="flex flex-col gap-1">
-              <button 
-                className={`flex items-center gap-3 px-4 py-2 rounded-md ${activeTab === 'profile' ? 'bg-primary/10 text-primary font-medium' : 'text-foreground/70 hover:bg-muted transition-colors'}`}
-                onClick={() => setActiveTab('profile')}
-              >
-                <User className="h-5 w-5" />
-                <span>Profile</span>
-              </button>
-              
-              <button 
-                className={`flex items-center gap-3 px-4 py-2 rounded-md ${activeTab === 'messages' ? 'bg-primary/10 text-primary font-medium' : 'text-foreground/70 hover:bg-muted transition-colors'}`}
-                onClick={() => setActiveTab('messages')}
-              >
-                <MessageSquare className="h-5 w-5" />
-                <span>Messages</span>
-              </button>
-              
-              <button className="flex items-center gap-3 px-4 py-2 rounded-md text-foreground/70 hover:bg-muted transition-colors">
-                <Video className="h-5 w-5" />
-                <span>Sessions</span>
-              </button>
-              
-              <button className="flex items-center gap-3 px-4 py-2 rounded-md text-foreground/70 hover:bg-muted transition-colors">
-                <CreditCard className="h-5 w-5" />
-                <span>Earnings</span>
-              </button>
-              
-              <button className="flex items-center gap-3 px-4 py-2 rounded-md text-foreground/70 hover:bg-muted transition-colors">
-                <Settings className="h-5 w-5" />
-                <span>Settings</span>
-              </button>
-              
-              <button 
-                onClick={handleLogout}
-                className="flex items-center gap-3 px-4 py-2 rounded-md text-foreground/70 hover:bg-muted transition-colors"
-              >
-                <LogOut className="h-5 w-5" />
-                <span>Logout</span>
-              </button>
-            </div>
-          </aside>
+          <ProfileSidebar 
+            activeTab={activeTab}
+            userType="developer"
+            onTabChange={setActiveTab}
+          />
           
           <div>
             {activeTab === 'profile' && (
-              <form onSubmit={handleSaveChanges}>
-                <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden">
-                  <div className="p-6 md:p-8">
-                    <h2 className="text-xl font-semibold mb-6">Developer Information</h2>
-                    
-                    <div className="flex flex-col md:flex-row gap-8">
-                      <div className="flex flex-col items-center md:items-start gap-4">
-                        <div className="relative">
-                          <div className="h-20 w-20 md:h-24 md:w-24 rounded-full bg-muted flex items-center justify-center">
-                            <User className="h-10 w-10 text-muted-foreground" />
-                          </div>
-                          <button type="button" className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center shadow-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                        </div>
-                        <button type="button" className="text-sm text-primary font-medium">
-                          Change Image
-                        </button>
-                      </div>
-                      
-                      <div className="flex-1 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label htmlFor="firstName" className="block text-sm font-medium mb-1">
-                              First Name
-                            </label>
-                            <input
-                              id="firstName"
-                              name="firstName"
-                              type="text"
-                              defaultValue={firstName}
-                              className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="lastName" className="block text-sm font-medium mb-1">
-                              Last Name
-                            </label>
-                            <input
-                              id="lastName"
-                              name="lastName"
-                              type="text"
-                              defaultValue={lastName}
-                              className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-                              required
-                            />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="email" className="block text-sm font-medium mb-1">
-                            Email
-                          </label>
-                          <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            defaultValue={developer.email || ''}
-                            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="phone" className="block text-sm font-medium mb-1">
-                            Phone Number
-                          </label>
-                          <input
-                            id="phone"
-                            name="phone"
-                            type="tel"
-                            defaultValue={developer.phone || ''}
-                            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="category" className="block text-sm font-medium mb-1">
-                            Specialization
-                          </label>
-                          <select
-                            id="category"
-                            name="category"
-                            defaultValue={developer.category || 'frontend'}
-                            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-                          >
-                            <option value="frontend">Frontend Development</option>
-                            <option value="backend">Backend Development</option>
-                            <option value="fullstack">Full Stack Development</option>
-                            <option value="mobile">Mobile Development</option>
-                            <option value="devops">DevOps</option>
-                            <option value="database">Database</option>
-                            <option value="security">Security</option>
-                            <option value="ai">AI & Machine Learning</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label htmlFor="skills" className="block text-sm font-medium mb-1">
-                            Skills (comma separated)
-                          </label>
-                          <input
-                            id="skills"
-                            name="skills"
-                            type="text"
-                            defaultValue={developer.skills ? developer.skills.join(', ') : ''}
-                            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="experience" className="block text-sm font-medium mb-1">
-                            Experience Summary
-                          </label>
-                          <input
-                            id="experience"
-                            name="experience"
-                            type="text"
-                            defaultValue={developer.experience || ''}
-                            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="hourlyRate" className="block text-sm font-medium mb-1">
-                            Hourly Rate ($)
-                          </label>
-                          <input
-                            id="hourlyRate"
-                            name="hourlyRate"
-                            type="number"
-                            defaultValue={developer.hourlyRate || 75}
-                            min="1"
-                            step="1"
-                            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-                            required
-                          />
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <input
-                            id="availability"
-                            name="availability"
-                            type="checkbox"
-                            defaultChecked={typeof developer.availability === 'boolean' ? developer.availability : true}
-                            className="h-4 w-4 rounded border-border text-primary focus:ring-primary/25"
-                          />
-                          <label htmlFor="availability" className="text-sm font-medium">
-                            Available for hire
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="border-t border-border/40 p-6 md:p-8">
-                    <h2 className="text-xl font-semibold mb-6">About You</h2>
-                    
-                    <div className="space-y-6">
-                      <div>
-                        <label htmlFor="description" className="block text-sm font-medium mb-1">
-                          Professional Summary (shown to potential clients)
-                        </label>
-                        <textarea
-                          id="description"
-                          name="description"
-                          rows={4}
-                          defaultValue={developer.description || ''}
-                          className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="border-t border-border/40 p-6 md:p-8">
-                    <h2 className="text-xl font-semibold mb-6">Communication Preferences</h2>
-                    
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-base font-medium mb-3">Preferred Communication Tools</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          <label className="flex items-center gap-2 p-3 border border-border rounded-md hover:bg-secondary/30 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              defaultChecked={true}
-                              className="h-4 w-4 rounded border-border text-primary focus:ring-primary/25"
-                              name="communication[]"
-                              value="video"
-                            />
-                            <span>In-app Video Call</span>
-                          </label>
-                          <label className="flex items-center gap-2 p-3 border border-border rounded-md hover:bg-secondary/30 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              defaultChecked={true}
-                              className="h-4 w-4 rounded border-border text-primary focus:ring-primary/25"
-                              name="communication[]"
-                              value="teams"
-                            />
-                            <span>Microsoft Teams</span>
-                          </label>
-                          <label className="flex items-center gap-2 p-3 border border-border rounded-md hover:bg-secondary/30 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              defaultChecked={true}
-                              className="h-4 w-4 rounded border-border text-primary focus:ring-primary/25"
-                              name="communication[]"
-                              value="zoom"
-                            />
-                            <span>Zoom</span>
-                          </label>
-                        </div>
-                      </div>
-                      
-                      <div className="pt-2">
-                        <button 
-                          type="submit"
-                          className="button-primary inline-flex items-center gap-2"
-                          disabled={isSaving}
-                        >
-                          {isSaving ? (
-                            <>
-                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Saving changes...
-                            </>
-                          ) : (
-                            <>
-                              <Save className="h-4 w-4" />
-                              Save All Changes
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </form>
+              <ProfileCard 
+                developer={developer}
+                formData={formData}
+                onInputChange={handleInputChange}
+                isSaving={isSaving}
+                onSave={handleSaveChanges}
+              />
             )}
 
             {activeTab === 'messages' && (
               <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden p-6">
                 <MessagesSection />
+              </div>
+            )}
+            
+            {activeTab === 'sessions' && (
+              <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden p-6">
+                <h2 className="text-xl font-semibold mb-4">Session History</h2>
+                <p className="text-muted-foreground">View your past and upcoming help sessions.</p>
+                <div className="mt-8 text-center py-12 border-2 border-dashed border-border/40 rounded-lg">
+                  <p className="text-muted-foreground mb-4">No active sessions found</p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/developer-dashboard')}
+                  >
+                    View available help requests
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'earnings' && (
+              <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden p-6">
+                <h2 className="text-xl font-semibold mb-4">Earnings</h2>
+                <p className="text-muted-foreground">Manage your earnings and payment methods.</p>
+                <div className="mt-8 text-center py-12 border-2 border-dashed border-border/40 rounded-lg">
+                  <p className="text-muted-foreground mb-4">No earnings data available yet</p>
+                  <Button variant="outline">
+                    Set up payment account
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'settings' && (
+              <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden p-6">
+                <h2 className="text-xl font-semibold mb-4">Account Settings</h2>
+                <p className="text-muted-foreground">Manage your account preferences and settings.</p>
+                
+                <div className="mt-8 space-y-6">
+                  <div>
+                    <h3 className="text-base font-medium mb-2">Notification Preferences</h3>
+                    <div className="border rounded-md p-4">
+                      <div className="flex items-center justify-between py-2">
+                        <span>Email notifications</span>
+                        <Button variant="outline" size="sm">Edit</Button>
+                      </div>
+                      <div className="flex items-center justify-between py-2">
+                        <span>Push notifications</span>
+                        <Button variant="outline" size="sm">Edit</Button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-base font-medium mb-2">Password & Security</h3>
+                    <div className="border rounded-md p-4">
+                      <div className="flex items-center justify-between py-2">
+                        <span>Change password</span>
+                        <Button variant="outline" size="sm">Edit</Button>
+                      </div>
+                      <div className="flex items-center justify-between py-2">
+                        <span>Two-factor authentication</span>
+                        <Button variant="outline" size="sm">Setup</Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
