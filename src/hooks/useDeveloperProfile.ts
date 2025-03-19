@@ -80,6 +80,11 @@ export const useDeveloperProfile = () => {
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
         
+        // Ensure communicationPreferences is always an array
+        const communicationPrefs = Array.isArray(developerData.communicationPreferences) 
+          ? developerData.communicationPreferences 
+          : ['video', 'chat', 'voice'];
+        
         setFormData({
           firstName,
           lastName,
@@ -93,7 +98,7 @@ export const useDeveloperProfile = () => {
           minuteRate: developerData.minuteRate || 1.25,
           availability: typeof developerData.availability === 'boolean' ? developerData.availability : true,
           description: developerData.description || '',
-          communicationPreferences: (developerData.communicationPreferences || ['video', 'chat', 'voice']) as string[],
+          communicationPreferences: communicationPrefs,
           username: developerData.username || '',
           bio: developerData.bio || ''
         });
@@ -110,6 +115,17 @@ export const useDeveloperProfile = () => {
     } finally {
       setIsLoading(false);
     }
+  }, [userId]);
+  
+  // Clean up effect
+  useEffect(() => {
+    return () => {
+      if (userId) {
+        // When component unmounts, invalidate the cache to ensure fresh data on return
+        console.log('Developer profile component unmounting, invalidating cache for user:', userId);
+        invalidateUserDataCache(userId);
+      }
+    };
   }, [userId]);
   
   useEffect(() => {
@@ -176,6 +192,7 @@ export const useDeveloperProfile = () => {
       
       if (success) {
         console.log('Profile update successful, forcing data refresh');
+        toast.success('Profile updated successfully');
         
         // Force a refresh of the cache for this user
         invalidateUserDataCache(userId);

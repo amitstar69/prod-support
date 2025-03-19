@@ -43,7 +43,6 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     if (hasProperty(userData, 'username')) baseProfileData.username = userData.username;
     if (hasProperty(userData, 'description')) baseProfileData.description = userData.description;
     // Important: bio does not belong in the profiles table
-    // if (hasProperty(userData, 'bio')) baseProfileData.bio = userData.bio; // REMOVED THIS LINE
     if (hasProperty(userData, 'image')) baseProfileData.image = userData.image;
     if (hasProperty(userData, 'profileCompleted')) baseProfileData.profile_completed = userData.profileCompleted;
     // Do not include profile_completion_percentage in base profiles as it doesn't exist there
@@ -92,6 +91,8 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
       }
       if (hasProperty(userData, 'bio')) specificProfileData.bio = userData.bio; // Add bio to developer profile
       if (hasProperty(userData, 'communicationPreferences')) specificProfileData.communication_preferences = userData.communicationPreferences;
+      // Adding profileCompletionPercentage to developer_profiles if specified
+      if (hasProperty(userData, 'profileCompletionPercentage')) specificProfileData.profile_completion_percentage = userData.profileCompletionPercentage;
     } else if (userType === 'client') {
       // Make sure bio is in the client_profiles table update
       if (hasProperty(userData, 'bio')) specificProfileData.bio = userData.bio;
@@ -155,8 +156,11 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     
     // Consider either base profile or specific profile update success as overall success
     // This is a change from the previous logic which required both to succeed
-    const success = baseProfileSuccess || specificProfileSuccess;
+    const success = (baseProfileSuccess || Object.keys(baseProfileData).length === 0) && 
+                   (specificProfileSuccess || Object.keys(specificProfileData).length === 0);
+                   
     console.log('Profile update complete. Base profile success:', baseProfileSuccess, 'Specific profile success:', specificProfileSuccess);
+    console.log('Overall success:', success);
     
     if (!success) {
       console.error('Profile update failed. Will not update local storage.');

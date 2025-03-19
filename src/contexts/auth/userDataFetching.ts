@@ -30,14 +30,14 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     localStorage.removeItem(`userData_${userId}`);
     localStorage.removeItem(`userDataTime_${userId}`);
   } else {
-    // Check local cache - using a 3-second cache time (reduced from previous 5 seconds)
+    // Check local cache - using a 2-second cache time (reduced from previous 3 seconds)
     const cachedDataStr = localStorage.getItem(`userData_${userId}`);
     const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
     
     if (cachedDataStr && cacheTime) {
       const cacheAge = Date.now() - parseInt(cacheTime);
-      // Use 3-second cache time for very fresh data
-      if (cacheAge < 3 * 1000) { 
+      // Use 2-second cache time for very fresh data
+      if (cacheAge < 2 * 1000) { 
         console.log('Using cached user data', cacheAge/1000, 'seconds old');
         return JSON.parse(cachedDataStr);
       } else {
@@ -70,9 +70,16 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
       
       console.log('Fresh user data fetched successfully:', result);
       
-      // Cache result for future use
-      localStorage.setItem(`userData_${userId}`, JSON.stringify(result));
-      localStorage.setItem(`userDataTime_${userId}`, Date.now().toString());
+      // Cache result for future use - making sure to avoid circular references
+      try {
+        // Clone the object to remove any circular references before storing
+        const safeResult = JSON.parse(JSON.stringify(result));
+        localStorage.setItem(`userData_${userId}`, JSON.stringify(safeResult));
+        localStorage.setItem(`userDataTime_${userId}`, Date.now().toString());
+      } catch (cacheError) {
+        console.error('Error caching user data:', cacheError);
+        // If we can't cache, just continue - it's not critical
+      }
       
       return result;
     } catch (error) {

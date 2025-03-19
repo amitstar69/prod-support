@@ -16,7 +16,7 @@ import { useDeveloperProfile } from '../hooks/useDeveloperProfile';
 const Profile: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, userId } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('profile');
   const { 
     developer,
@@ -32,8 +32,14 @@ const Profile: React.FC = () => {
   // Force refresh profile data when navigating back to this page
   useEffect(() => {
     if (refreshProfile) {
+      console.log("Profile page mounted or route changed, refreshing data");
       refreshProfile();
     }
+    
+    // Cleanup on unmount
+    return () => {
+      console.log("Profile page unmounting");
+    };
   }, [location.key, refreshProfile]);
   
   const handleForceLogout = async () => {
