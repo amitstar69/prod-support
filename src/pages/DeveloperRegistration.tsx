@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { toast } from 'sonner';
-import { useAuth, getCurrentUserData, updateUserData } from '../contexts/AuthContext';
+import { useAuth, getCurrentUserData, updateUserData } from '../contexts/auth';
 
 const DeveloperRegistration: React.FC = () => {
   const navigate = useNavigate();

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { User, Code } from 'lucide-react';
@@ -10,6 +9,7 @@ import { debugCheckProfileExists, debugCreateProfile } from '../contexts/auth';
 import { Button } from '../components/ui/button';
 
 const RegisterPage: React.FC = () => {
+  
   const navigate = useNavigate();
   const location = useLocation();
   const { register, isAuthenticated } = useAuth();

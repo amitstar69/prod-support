@@ -42,7 +42,7 @@ export const debugCheckProfileExists = async (userId: string) => {
     }
     
     return { exists: !!profileData, profileData };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Exception checking profile:', error);
     return { exists: false, error: error.message };
   }
@@ -67,8 +67,7 @@ export const debugCreateProfile = async (userId: string, userType: string, email
         profile_completed: false,
         username: name.toLowerCase().replace(/\s+/g, '')
       })
-      .select()
-      .single();
+      .select();
       
     if (profileError) {
       console.error('Error creating base profile:', profileError);
@@ -94,8 +93,7 @@ export const debugCreateProfile = async (userId: string, userType: string, email
           rating: 4.5,
           communication_preferences: ['chat', 'video']
         })
-        .select()
-        .single();
+        .select();
         
       typeProfileData = data;
       typeProfileError = error;
@@ -112,8 +110,7 @@ export const debugCreateProfile = async (userId: string, userType: string, email
           communication_preferences: ['chat'],
           profile_completion_percentage: 30
         })
-        .select()
-        .single();
+        .select();
         
       typeProfileData = data;
       typeProfileError = error;
@@ -139,7 +136,7 @@ export const debugCreateProfile = async (userId: string, userType: string, email
       profileData,
       typeProfileData
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Exception creating profile:', error);
     return { success: false, error: error.message };
   }
