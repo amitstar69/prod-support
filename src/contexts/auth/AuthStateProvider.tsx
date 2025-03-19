@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { AuthState, AuthContextType } from './types';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../integrations/supabase/client';
 import { login as authLogin } from './authLogin';
@@ -12,7 +11,7 @@ console.log('AuthContext: Supabase Key:', SUPABASE_ANON_KEY ? 'Key is set' : 'Ke
 console.log('AuthContext: Supabase Client:', supabase ? 'Client is initialized' : 'Client is not initialized');
 
 // Create the auth context
-const AuthContext = createContext<AuthContextType>({
+export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   userType: null,
   userId: null,
@@ -22,9 +21,6 @@ const AuthContext = createContext<AuthContextType>({
   logoutUser: async () => {},
   isLoading: true, // Add loading state
 });
-
-// Custom hook to use the auth context
-export const useAuth = () => useContext(AuthContext);
 
 // Provider component to wrap the app
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -233,3 +229,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     </AuthContext.Provider>
   );
 };
+
+// Export alias for backward compatibility
+export const AuthStateProvider = AuthProvider;

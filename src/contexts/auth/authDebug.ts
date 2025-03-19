@@ -2,146 +2,74 @@
 import { supabase } from '../../integrations/supabase/client';
 
 // Debug function to check if a profile exists
-export const debugCheckProfileExists = async (userId: string) => {
+export const debugCheckProfileExists = async (userId: string): Promise<boolean> => {
   if (!supabase) {
-    return {
-      exists: false,
-      error: 'Supabase client not available'
-    };
+    console.error('Supabase client not initialized');
+    return false;
   }
-  
-  try {
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, user_type, email')
-      .eq('id', userId)
-      .single();
-      
-    if (profileError) {
-      console.error('Error checking profile existence:', profileError);
-      return {
-        exists: false,
-        error: profileError.message,
-        details: profileError
-      };
-    }
-    
-    return {
-      exists: !!profileData,
-      profile: profileData
-    };
-  } catch (error) {
-    console.error('Exception checking profile existence:', error);
-    return {
-      exists: false,
-      error: error.message,
-      exception: error
-    };
-  }
-};
 
-// Debug function to create a profile directly
-export const debugCreateProfile = async (
-  userId: string, 
-  userType: 'developer' | 'client', 
-  email: string, 
-  name: string
-) => {
-  if (!supabase) {
-    return {
-      success: false,
-      error: 'Supabase client not available'
-    };
-  }
-  
   try {
-    // Check if profile already exists
-    const { data: existingProfile } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('id')
       .eq('id', userId)
       .single();
-      
-    if (existingProfile) {
-      return {
-        success: true,
-        message: 'Profile already exists',
-        profile: existingProfile
-      };
+    
+    if (error) {
+      console.error('Error checking profile:', error.message);
+      return false;
     }
     
-    // Create basic profile
-    const { data: profileData, error: profileError } = await supabase
+    return !!data;
+  } catch (error) {
+    console.error('Exception checking profile:', error);
+    return false;
+  }
+};
+
+// Debug function to create a profile
+export const debugCreateProfile = async (
+  userId: string, 
+  userType: 'developer' | 'client',
+  email: string
+): Promise<boolean> => {
+  if (!supabase) {
+    console.error('Supabase client not initialized');
+    return false;
+  }
+
+  try {
+    // Create base profile
+    const { error: profileError } = await supabase
       .from('profiles')
-      .insert([{
+      .insert({
         id: userId,
         user_type: userType,
         email: email,
-        name: name,
-        joined_date: new Date().toISOString(),
-        profile_completed: false
-      }])
-      .select();
-      
+        created_at: new Date().toISOString(),
+      });
+    
     if (profileError) {
-      console.error('Error creating profile directly:', profileError);
-      return {
-        success: false,
-        error: profileError.message,
-        details: profileError
-      };
+      console.error('Error creating base profile:', profileError.message);
+      return false;
     }
     
     // Create type-specific profile
-    if (userType === 'developer') {
-      const { error: devProfileError } = await supabase
-        .from('developer_profiles')
-        .insert([{
-          id: userId,
-          hourly_rate: 75,
-          minute_rate: 1.5,
-          category: 'frontend',
-          skills: ['JavaScript', 'React'],
-          experience: '3+ years',
-          rating: 4.5,
-          availability: true,
-          featured: false,
-          online: false,
-          last_active: new Date().toISOString()
-        }]);
-        
-      if (devProfileError) {
-        console.error('Error creating developer profile directly:', devProfileError);
-      }
-    } else {
-      const { error: clientProfileError } = await supabase
-        .from('client_profiles')
-        .insert([{
-          id: userId,
-          looking_for: ['web development'],
-          completed_projects: 0,
-          profile_completion_percentage: 30,
-          preferred_help_format: ['chat'],
-          budget_per_hour: 75,
-          payment_method: 'Stripe',
-          tech_stack: ['React']
-        }]);
-        
-      if (clientProfileError) {
-        console.error('Error creating client profile directly:', clientProfileError);
-      }
+    const tableName = userType === 'developer' ? 'developer_profiles' : 'client_profiles';
+    const { error: typeProfileError } = await supabase
+      .from(tableName)
+      .insert({
+        id: userId,
+      });
+    
+    if (typeProfileError) {
+      console.error(`Error creating ${userType} profile:`, typeProfileError.message);
+      return false;
     }
     
-    return {
-      success: true,
-      profile: profileData ? profileData[0] : null
-    };
+    return true;
   } catch (error) {
-    console.error('Exception creating profile directly:', error);
-    return {
-      success: false,
-      error: error.message,
-      exception: error
-    };
+    console.error('Exception creating profile:', error);
+    return false;
   }
 };
