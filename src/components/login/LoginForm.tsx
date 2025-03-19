@@ -9,6 +9,8 @@ import { useAuth } from '../../contexts/auth';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { UserType } from '../../hooks/useLoginForm';
+import { Check } from 'lucide-react';
+import { Checkbox } from '../ui/checkbox';
 
 interface LoginFormProps {
   email?: string;
@@ -119,18 +121,19 @@ const LoginForm: React.FC<LoginFormProps> = ({
           </div>
         </div>
 
-        {/* User Type Selection - Inspired by the reference image */}
-        <div className="w-full border-b border-slate-200 mb-2">
-          <div className="grid grid-cols-2 text-center">
+        <div className="flex flex-col gap-4">
+          <div className="text-center mb-0">
+            <span className="text-sm font-medium">Sign in as</span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
             <div 
-              className={`relative py-3 px-4 cursor-pointer transition-all duration-200 ${
-                userType === 'client' 
-                  ? 'font-medium text-slate-900' 
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
+              className={`flex items-center gap-2 py-2 px-3 rounded-md border cursor-pointer
+                ${userType === 'client' ? 'border-slate-400 bg-slate-50' : 'border-slate-200'}
+              `}
               onClick={() => handleUserTypeChange('client')}
-              role="radio"
-              aria-checked={userType === 'client'}
+              aria-pressed={userType === 'client'}
+              role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -138,21 +141,22 @@ const LoginForm: React.FC<LoginFormProps> = ({
                 }
               }}
             >
-              Find a developer
-              {userType === 'client' && (
-                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-900" />
-              )}
+              <Checkbox 
+                checked={userType === 'client'} 
+                onCheckedChange={() => handleUserTypeChange('client')}
+                id="client-type"
+                className="data-[state=checked]:bg-slate-700 data-[state=checked]:text-white"
+              />
+              <Label htmlFor="client-type" className="cursor-pointer">Client</Label>
             </div>
             
             <div 
-              className={`relative py-3 px-4 cursor-pointer transition-all duration-200 ${
-                userType === 'developer' 
-                  ? 'font-medium text-slate-900' 
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
+              className={`flex items-center gap-2 py-2 px-3 rounded-md border cursor-pointer
+                ${userType === 'developer' ? 'border-slate-400 bg-slate-50' : 'border-slate-200'}
+              `}
               onClick={() => handleUserTypeChange('developer')}
-              role="radio"
-              aria-checked={userType === 'developer'}
+              aria-pressed={userType === 'developer'}
+              role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -160,10 +164,13 @@ const LoginForm: React.FC<LoginFormProps> = ({
                 }
               }}
             >
-              Work as a developer
-              {userType === 'developer' && (
-                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-900" />
-              )}
+              <Checkbox 
+                checked={userType === 'developer'} 
+                onCheckedChange={() => handleUserTypeChange('developer')}
+                id="developer-type"
+                className="data-[state=checked]:bg-slate-700 data-[state=checked]:text-white"
+              />
+              <Label htmlFor="developer-type" className="cursor-pointer">Developer</Label>
             </div>
           </div>
         </div>
