@@ -42,7 +42,8 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     if (hasProperty(userData, 'location')) baseProfileData.location = userData.location;
     if (hasProperty(userData, 'username')) baseProfileData.username = userData.username;
     if (hasProperty(userData, 'description')) baseProfileData.description = userData.description;
-    if (hasProperty(userData, 'bio')) baseProfileData.bio = userData.bio;
+    // Important: bio does not belong in the profiles table
+    // if (hasProperty(userData, 'bio')) baseProfileData.bio = userData.bio; // REMOVED THIS LINE
     if (hasProperty(userData, 'image')) baseProfileData.image = userData.image;
     if (hasProperty(userData, 'profileCompleted')) baseProfileData.profile_completed = userData.profileCompleted;
     if (hasProperty(userData, 'profileCompletionPercentage')) baseProfileData.profile_completion_percentage = userData.profileCompletionPercentage;
@@ -91,6 +92,8 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
       }
       if (hasProperty(userData, 'communicationPreferences')) specificProfileData.communication_preferences = userData.communicationPreferences;
     } else if (userType === 'client') {
+      // Make sure bio is in the client_profiles table update
+      if (hasProperty(userData, 'bio')) specificProfileData.bio = userData.bio; // MOVED HERE
       if (hasProperty(userData, 'industry')) specificProfileData.industry = userData.industry;
       if (hasProperty(userData, 'company')) specificProfileData.company = userData.company;
       if (hasProperty(userData, 'position')) specificProfileData.position = userData.position;
@@ -158,6 +161,9 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     
     // Also update any local storage mock data for development purposes
     updateUserDataInLocalStorage(user.user.id, userData);
+    
+    // Show success toast message
+    toast.success('Profile updated successfully');
     
     return success;
   } catch (error) {

@@ -163,19 +163,19 @@ export const useClientProfile = () => {
       
       console.log("Submitting client profile update:", updatedData);
       
-      // First update the cache before the API call to ensure UI is in sync
+      // First update the local state before the API call to ensure UI is responsive
       if (client) {
-        setClient({
+        const updatedClient = {
           ...client,
           ...updatedData
-        });
+        };
+        setClient(updatedClient);
       }
       
       const success = await updateUserData(updatedData);
       
       if (success) {
         console.log('Profile update successful, forcing data refresh');
-        toast.success('Profile updated successfully');
         
         // Force a refresh of the cache for this user
         invalidateUserDataCache(userId);
@@ -184,7 +184,7 @@ export const useClientProfile = () => {
         console.log('Fetching latest data after successful update');
         await fetchUserData(true);
       } else {
-        toast.error('Failed to update profile');
+        toast.error('Failed to update profile. Please verify your connection and try again.');
         // Revert client state to original if update failed
         await fetchUserData(true);
       }

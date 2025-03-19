@@ -39,6 +39,14 @@ const ClientProfile: React.FC = () => {
       invalidateUserDataCache(userId);
       refreshProfile();
     }
+    
+    // Adding a cleanup function to force refresh when leaving
+    return () => {
+      if (userId) {
+        console.log('ClientProfile component unmounting - invalidating cache');
+        invalidateUserDataCache(userId);
+      }
+    };
   }, [location.key, refreshProfile, userId]);
   
   const handleForceLogout = async () => {
