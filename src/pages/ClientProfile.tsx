@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/auth';
@@ -12,11 +12,23 @@ import { useClientProfile } from '../hooks/useClientProfile';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/components/ui/breadcrumb';
+import { toast } from 'sonner';
 
 const ClientProfile: React.FC = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, userId } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('profile');
+  const [loadingTimeout, setLoadingTimeout] = useState<boolean>(false);
+  
+  // Set a fallback timeout to show error state if loading takes too long
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setLoadingTimeout(true);
+    }, 5000); // 5 seconds timeout
+    
+    return () => clearTimeout(timeoutId);
+  }, []);
+  
   const { 
     client,
     formData,
@@ -29,11 +41,13 @@ const ClientProfile: React.FC = () => {
   
   const handleForceLogout = async () => {
     try {
+      toast.info("Logging you out...");
       localStorage.removeItem('authState');
       await logout();
       window.location.href = '/';
     } catch (error) {
       console.error('Error during force logout:', error);
+      // Force reload even if logout fails
       window.location.href = '/';
     }
   };
@@ -42,7 +56,22 @@ const ClientProfile: React.FC = () => {
     navigate(-1);
   };
   
-  if (isLoading) {
+  // If no userId is available, show error
+  if (!userId) {
+    return (
+      <Layout>
+        <ProfileErrorState 
+          title="Authentication Error"
+          message="You are not properly authenticated. Please log in again."
+          onRetry={() => window.location.href = '/login'}
+          onForceLogout={handleForceLogout}
+        />
+      </Layout>
+    );
+  }
+  
+  // If loading and not timed out yet, show loading state
+  if (isLoading && !loadingTimeout) {
     return (
       <Layout>
         <ProfileLoadingState onForceLogout={handleForceLogout} />
@@ -50,7 +79,8 @@ const ClientProfile: React.FC = () => {
     );
   }
   
-  if (loadingTimeoutReached) {
+  // If loading timeout or stated loading timeout reached, show error
+  if (loadingTimeout || loadingTimeoutReached) {
     return (
       <Layout>
         <ProfileErrorState 
@@ -63,6 +93,7 @@ const ClientProfile: React.FC = () => {
     );
   }
   
+  // If client data not found, show error
   if (!client) {
     return (
       <Layout>
