@@ -5,6 +5,7 @@ import Layout from '../components/Layout';
 import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
 import { useLoginForm } from '../hooks/useLoginForm';
+import { Skeleton } from '../components/ui/skeleton';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,37 +25,55 @@ const LoginPage: React.FC = () => {
     isAuthenticated
   } = useLoginForm();
   
+  // Check auth status only once on initial component mount
   useEffect(() => {
-    checkAuthStatus();
+    const checkAuth = async () => {
+      console.time('auth-check');
+      await checkAuthStatus();
+      console.timeEnd('auth-check');
+    };
+    checkAuth();
   }, []);
   
+  // Handle redirect for authenticated users
   useEffect(() => {
     if (isAuthenticated) {
       console.log('User is already authenticated, redirecting to home');
-      navigate('/');
+      const destination = userType === 'client' ? '/client' : '/developer-dashboard';
+      navigate(destination);
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, userType]);
   
   return (
     <Layout>
       <LoginHeader />
       
       <div className="container mx-auto px-4 py-12">
-        <div className="max-w-md mx-auto">
-          <LoginForm
-            email={email}
-            password={password}
-            userType={userType}
-            isLoading={isLoading}
-            error={error}
-            rememberMe={rememberMe}
-            onEmailChange={handleEmailChange}
-            onPasswordChange={handlePasswordChange}
-            onUserTypeChange={handleUserTypeChange}
-            onRememberMeChange={handleRememberMeChange}
-            onSubmit={handleSubmit}
-          />
-        </div>
+        {/* Use a skeleton loader while initially checking auth status */}
+        {isLoading && !error && !email && !password ? (
+          <div className="max-w-md mx-auto space-y-4">
+            <Skeleton className="h-8 w-full mb-4" />
+            <Skeleton className="h-10 w-full mb-2" />
+            <Skeleton className="h-10 w-full mb-4" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : (
+          <div className="max-w-md mx-auto">
+            <LoginForm
+              email={email}
+              password={password}
+              userType={userType}
+              isLoading={isLoading}
+              error={error}
+              rememberMe={rememberMe}
+              onEmailChange={handleEmailChange}
+              onPasswordChange={handlePasswordChange}
+              onUserTypeChange={handleUserTypeChange}
+              onRememberMeChange={handleRememberMeChange}
+              onSubmit={handleSubmit}
+            />
+          </div>
+        )}
       </div>
     </Layout>
   );

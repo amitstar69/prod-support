@@ -1,5 +1,10 @@
+
 import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
+
+// User profile cache to reduce database queries
+const userProfileCache = new Map<string, { userType: string | null, timestamp: number }>();
+const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
 // Log out utility - extracted from AuthContext
 export const logoutUser = async (): Promise<void> => {
@@ -67,21 +72,46 @@ export const checkSupabaseSession = async (setAuthState: (state: any) => void) =
   }
   
   console.log('Checking Supabase session...');
+  console.time('session-check');
   
   try {
     const { data, error } = await supabase.auth.getSession();
     
+    console.timeEnd('session-check');
     console.log('Supabase session result:', { data, error });
+    
     if (data.session) {
+      const userId = data.session.user.id;
+      
+      // Check the cache first to avoid unnecessary database queries
+      const cachedProfile = userProfileCache.get(userId);
+      const now = Date.now();
+      
+      if (cachedProfile && (now - cachedProfile.timestamp) < CACHE_EXPIRY) {
+        console.log('Using cached user profile data');
+        const authState = {
+          isAuthenticated: true,
+          userType: cachedProfile.userType,
+          userId: userId,
+        };
+        
+        setAuthState(authState);
+        localStorage.setItem('authState', JSON.stringify(authState));
+        
+        return authState;
+      }
+      
       // Get user profile from Supabase
       console.log('User is authenticated, fetching profile for user:', data.session.user.id);
+      console.time('profile-fetch');
       
       try {
         const { data: profileData, error: profileError } = await supabase.from('profiles')
-          .select('*')
+          .select('user_type')
           .eq('id', data.session.user.id)
           .single();
           
+        console.timeEnd('profile-fetch');
         console.log('Profile fetch result:', { profileData, profileError });
         
         if (profileError) {
@@ -94,6 +124,12 @@ export const checkSupabaseSession = async (setAuthState: (state: any) => void) =
           const userType = profileData.user_type === 'developer' || profileData.user_type === 'client' 
             ? profileData.user_type as 'developer' | 'client'
             : null;
+          
+          // Cache the profile data
+          userProfileCache.set(userId, {
+            userType,
+            timestamp: now
+          });
           
           const authState = {
             isAuthenticated: true,
@@ -128,9 +164,28 @@ export const setupAuthStateChangeListener = (setAuthState: (state: any) => void)
       
       if (event === 'SIGNED_IN' && session) {
         try {
+          const userId = session.user.id;
+          
+          // Check the cache first to avoid unnecessary database queries
+          const cachedProfile = userProfileCache.get(userId);
+          const now = Date.now();
+          
+          if (cachedProfile && (now - cachedProfile.timestamp) < CACHE_EXPIRY) {
+            console.log('Using cached user profile data for auth state change');
+            const authState = {
+              isAuthenticated: true,
+              userType: cachedProfile.userType,
+              userId: userId,
+            };
+            
+            setAuthState(authState);
+            localStorage.setItem('authState', JSON.stringify(authState));
+            return;
+          }
+          
           // Get user profile
           const { data: profileData, error: profileError } = await supabase.from('profiles')
-            .select('*')
+            .select('user_type')
             .eq('id', session.user.id)
             .single();
             
@@ -144,6 +199,12 @@ export const setupAuthStateChangeListener = (setAuthState: (state: any) => void)
             const userType = profileData.user_type === 'developer' || profileData.user_type === 'client' 
               ? profileData.user_type as 'developer' | 'client'
               : null;
+              
+            // Cache the profile data
+            userProfileCache.set(userId, {
+              userType,
+              timestamp: now
+            });
               
             const authState = {
               isAuthenticated: true,

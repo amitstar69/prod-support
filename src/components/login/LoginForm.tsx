@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, memo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -25,7 +25,8 @@ interface LoginFormProps {
   onSubmit?: (e: React.FormEvent) => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({
+// Memoize the form component to prevent unnecessary re-renders
+const LoginForm: React.FC<LoginFormProps> = memo(({
   email: externalEmail,
   password: externalPassword,
   userType: externalUserType,
@@ -48,32 +49,33 @@ const LoginForm: React.FC<LoginFormProps> = ({
   const [userType, setUserType] = useState<UserType>(externalUserType || 'client');
   const [error, setError] = useState(externalError || '');
   
-  const handleUserTypeChange = (value: string) => {
+  // Use callbacks for handlers to prevent unnecessary re-renders
+  const handleUserTypeChange = useCallback((value: string) => {
     const newType = value as UserType;
     if (onUserTypeChange) {
       onUserTypeChange(newType);
     } else {
       setUserType(newType);
     }
-  };
+  }, [onUserTypeChange]);
   
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (onEmailChange) {
       onEmailChange(e);
     } else {
       setEmail(e.target.value);
     }
-  };
+  }, [onEmailChange]);
   
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (onPasswordChange) {
       onPasswordChange(e);
     } else {
       setPassword(e.target.value);
     }
-  };
+  }, [onPasswordChange]);
   
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (onSubmit) {
@@ -85,11 +87,23 @@ const LoginForm: React.FC<LoginFormProps> = ({
     setError('');
     
     try {
+      // Store login start time for performance monitoring
+      const startTime = Date.now();
+      
       const success = await login(email, password, userType);
+      
+      // Calculate login duration
+      const duration = Date.now() - startTime;
+      console.log(`Login attempt took ${duration}ms`);
+      
       if (success) {
         const redirectPath = userType === 'client' ? '/client' : 
                            userType === 'developer' ? '/developer-dashboard' : '/';
         
+        // Show toast notification
+        toast.success(`Successfully logged in as ${userType}`);
+        
+        // Perform navigation
         if (location.state && location.state.returnTo) {
           navigate(location.state.returnTo);
         } else {
@@ -102,7 +116,19 @@ const LoginForm: React.FC<LoginFormProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [email, login, location.state, navigate, password, userType, onSubmit]);
+  
+  // Add preconnect hint for Google to speed up social login (if implemented)
+  React.useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'preconnect';
+    link.href = 'https://accounts.google.com';
+    document.head.appendChild(link);
+    
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
   
   return (
     <div className="w-full max-w-md mx-auto">
@@ -157,6 +183,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
               value={externalEmail !== undefined ? externalEmail : email}
               onChange={handleEmailChange}
               required
+              autoComplete="email"
             />
           </div>
           
@@ -168,6 +195,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
               value={externalPassword !== undefined ? externalPassword : password}
               onChange={handlePasswordChange}
               required
+              autoComplete="current-password"
             />
           </div>
         </div>
@@ -220,6 +248,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
       </form>
     </div>
   );
-};
+});
+
+// Display name for React DevTools
+LoginForm.displayName = 'LoginForm';
 
 export default LoginForm;
