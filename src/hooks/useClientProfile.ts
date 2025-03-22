@@ -157,7 +157,7 @@ export const useClientProfile = () => {
         preferredHelpFormat: formData.preferredHelpFormat,
         budgetPerHour: formData.budgetPerHour,
         paymentMethod: formData.paymentMethod,
-        profileCompleted: true,
+        profileCompleted: true, // Explicitly set this to true on save
         profileCompletionPercentage: 100
       };
       

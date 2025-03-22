@@ -55,6 +55,9 @@ const ClientLanding: React.FC = () => {
     try {
       setIsLoading(true);
       
+      console.log('Fetching client dashboard profile data for user:', userId);
+      
+      // Force refresh from database to ensure we have the latest data
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -67,6 +70,7 @@ const ClientLanding: React.FC = () => {
         return;
       }
       
+      console.log('Client dashboard profile data:', data);
       setProfileData(data as ProfileData);
       
       // Calculate setup progress
@@ -80,6 +84,7 @@ const ClientLanding: React.FC = () => {
   };
   
   const calculateSetupProgress = (data: ProfileData) => {
+    console.log('Calculating setup progress from profile data:', data);
     const steps = [
       !!data.profile_completed,
       !!data.has_zoom,
@@ -87,9 +92,11 @@ const ClientLanding: React.FC = () => {
       !!data.payment_method_added
     ];
     
+    console.log('Setup steps completed:', steps);
     const completedSteps = steps.filter(Boolean).length;
     const progressPercentage = (completedSteps / steps.length) * 100;
     
+    console.log(`Setup progress: ${completedSteps}/${steps.length} = ${progressPercentage}%`);
     setSetupProgress(progressPercentage);
   };
   

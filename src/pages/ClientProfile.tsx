@@ -1,24 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { useAuth } from '../contexts/auth';
-import { invalidateUserDataCache } from '../contexts/auth/userDataFetching';
+import { useAuth, invalidateUserDataCache } from '../contexts/auth';
 import ProfileCard from '../components/profile/ProfileCard';
 import ProfileLoadingState from '../components/profile/ProfileLoadingState';
 import ProfileErrorState from '../components/profile/ProfileErrorState';
 import ProfileSidebar from '../components/profile/ProfileSidebar';
 import MessagesSection from '../components/chat/MessagesSection';
-import { useClientProfile } from '../hooks/useClientProfile';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/components/ui/breadcrumb';
+import { useClientProfile } from '../hooks/useClientProfile';
 
 const ClientProfile: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { logout, userId } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>('profile');
-  const { 
+  const [activeTab, setActiveTab] = React.useState<string>('profile');
+  const {
     client,
     formData,
     isLoading,
@@ -28,27 +26,22 @@ const ClientProfile: React.FC = () => {
     handleSaveChanges,
     refreshProfile
   } = useClientProfile();
-  
+
   // Force refresh profile data when navigating to this page
   useEffect(() => {
     console.log('ClientProfile component mounted or location changed');
+    console.log('Forcing profile refresh on route change/component mount');
+    refreshProfile();
     
-    // Always force a fresh data fetch when this component mounts or route changes
-    if (userId) {
-      console.log('Forcing profile refresh on route change/component mount');
-      invalidateUserDataCache(userId);
-      refreshProfile();
-    }
-    
-    // Adding a cleanup function to force refresh when leaving
+    // Cleanup on unmount
     return () => {
+      console.log('ClientProfile component unmounting - invalidating cache');
       if (userId) {
-        console.log('ClientProfile component unmounting - invalidating cache');
         invalidateUserDataCache(userId);
       }
     };
-  }, [location.key, refreshProfile, userId]);
-  
+  }, [refreshProfile, userId]);
+
   const handleForceLogout = async () => {
     try {
       localStorage.removeItem('authState');
@@ -59,11 +52,11 @@ const ClientProfile: React.FC = () => {
       window.location.href = '/';
     }
   };
-  
+
   const handleBack = () => {
     navigate(-1);
   };
-  
+
   if (isLoading) {
     return (
       <Layout>
@@ -71,7 +64,7 @@ const ClientProfile: React.FC = () => {
       </Layout>
     );
   }
-  
+
   if (loadingTimeoutReached) {
     return (
       <Layout>
@@ -84,7 +77,7 @@ const ClientProfile: React.FC = () => {
       </Layout>
     );
   }
-  
+
   if (!client) {
     return (
       <Layout>
@@ -97,7 +90,7 @@ const ClientProfile: React.FC = () => {
       </Layout>
     );
   }
-  
+
   return (
     <Layout>
       <div className="bg-secondary/50 py-6">

@@ -44,7 +44,13 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     if (hasProperty(userData, 'description')) baseProfileData.description = userData.description;
     // Important: bio does not belong in the profiles table
     if (hasProperty(userData, 'image')) baseProfileData.image = userData.image;
-    if (hasProperty(userData, 'profileCompleted')) baseProfileData.profile_completed = userData.profileCompleted;
+    
+    // We need to explicitly update the profile_completed flag when the user intends to mark their profile as completed
+    if (hasProperty(userData, 'profileCompleted')) {
+      baseProfileData.profile_completed = userData.profileCompleted;
+      console.log(`Setting profile_completed flag to ${userData.profileCompleted}`);
+    }
+    
     // Do not include profile_completion_percentage in base profiles as it doesn't exist there
     if (hasProperty(userData, 'onboardingCompletedAt')) baseProfileData.onboarding_completed_at = userData.onboardingCompletedAt;
     
