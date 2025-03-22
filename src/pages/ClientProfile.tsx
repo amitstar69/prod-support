@@ -41,7 +41,7 @@ const ClientProfile: React.FC = () => {
     
     refreshProfile();
     
-    // Cleanup on unmount
+    // Cleanup on unmount - invalidate cache to ensure fresh data on next navigation
     return () => {
       console.log('ClientProfile component unmounting - invalidating cache');
       if (userId) {

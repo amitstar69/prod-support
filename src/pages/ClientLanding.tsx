@@ -12,6 +12,7 @@ import { CalendarClock, Check, ChevronRight, CreditCard,
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { invalidateUserDataCache } from '../contexts/auth';
 
 interface ProfileData {
   id: string;
@@ -45,6 +46,12 @@ const ClientLanding: React.FC = () => {
       return;
     }
     
+    // Force refresh of profile data when dashboard is loaded
+    if (userId) {
+      console.log('Invalidating cache before dashboard fetch');
+      invalidateUserDataCache(userId);
+    }
+    
     fetchProfileData();
   }, [isAuthenticated, userType, userId]);
   
@@ -69,7 +76,11 @@ const ClientLanding: React.FC = () => {
         return;
       }
       
-      console.log('Client dashboard profile data:', data);
+      console.log('Client dashboard profile data (raw):', data);
+      
+      // Debug log - explicitly check profile_completed value
+      console.log('Profile completed flag value:', data.profile_completed);
+      
       setProfileData(data as ProfileData);
       
       // Calculate setup progress
