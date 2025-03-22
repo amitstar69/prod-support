@@ -8,7 +8,7 @@ const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>
 >(({ className, value, ...props }, ref) => {
-  // Log the progress value
+  // Log the progress value for debugging
   React.useEffect(() => {
     if (typeof value === 'number') {
       console.log(`Progress component value: ${value}%`);

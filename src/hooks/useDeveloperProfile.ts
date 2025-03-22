@@ -22,6 +22,54 @@ interface DeveloperProfileFormData {
   bio: string;
 }
 
+// Function to calculate profile completion percentage based on filled fields
+const calculateProfileCompletionPercentage = (formData: DeveloperProfileFormData): number => {
+  // Define required and optional fields for profile completion
+  const requiredFields: (keyof DeveloperProfileFormData)[] = [
+    'firstName', 'lastName', 'email', 'username', 'location', 'category', 'skills'
+  ];
+  
+  const optionalFields: (keyof DeveloperProfileFormData)[] = [
+    'bio', 'phone', 'experience', 'hourlyRate', 'minuteRate', 
+    'description', 'communicationPreferences', 'availability'
+  ];
+  
+  // Count completed required fields
+  let completedRequiredFields = 0;
+  for (const field of requiredFields) {
+    const value = formData[field];
+    if ((typeof value === 'string' && value.trim() !== '') || 
+        (Array.isArray(value) && value.length > 0)) {
+      completedRequiredFields++;
+    }
+  }
+  
+  // Count completed optional fields
+  let completedOptionalFields = 0;
+  for (const field of optionalFields) {
+    const value = formData[field];
+    if ((typeof value === 'string' && value.trim() !== '') || 
+        (Array.isArray(value) && value.length > 0) ||
+        (typeof value === 'number' && value > 0) ||
+        (typeof value === 'boolean')) {
+      completedOptionalFields++;
+    }
+  }
+  
+  // Calculate percentage - required fields are worth 70% of total, optional fields 30%
+  const requiredPercentage = (completedRequiredFields / requiredFields.length) * 70;
+  const optionalPercentage = (completedOptionalFields / optionalFields.length) * 30;
+  const totalPercentage = Math.round(requiredPercentage + optionalPercentage);
+  
+  console.log(`Developer profile completion calculation:`, {
+    required: `${completedRequiredFields}/${requiredFields.length} (${requiredPercentage.toFixed(1)}%)`,
+    optional: `${completedOptionalFields}/${optionalFields.length} (${optionalPercentage.toFixed(1)}%)`,
+    total: `${totalPercentage}%`
+  });
+  
+  return totalPercentage;
+};
+
 export const useDeveloperProfile = () => {
   const { userId } = useAuth();
   const [developer, setDeveloper] = useState<Developer | null>(null);
@@ -85,7 +133,7 @@ export const useDeveloperProfile = () => {
           ? developerData.communicationPreferences 
           : ['video', 'chat', 'voice'];
         
-        setFormData({
+        const newFormData = {
           firstName,
           lastName,
           email: developerData.email || '',
@@ -101,7 +149,16 @@ export const useDeveloperProfile = () => {
           communicationPreferences: communicationPrefs,
           username: developerData.username || '',
           bio: developerData.bio || ''
+        };
+        
+        setFormData(newFormData);
+        
+        // Log existing profile completion data
+        console.log('Existing developer profile completion data:', {
+          profileCompleted: developerData.profileCompleted,
+          percentage: developerData.profileCompletionPercentage
         });
+        
         console.log('Form data populated:', { firstName, lastName, email: developerData.email });
       } else {
         toast.error("Failed to load profile data: User data not found");
@@ -158,6 +215,14 @@ export const useDeveloperProfile = () => {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       console.log(`Updating developer name from "${developer?.name}" to "${fullName}"`);
       
+      // Calculate profile completion percentage
+      const completionPercentage = calculateProfileCompletionPercentage(formData);
+      console.log(`Calculated developer profile completion percentage: ${completionPercentage}%`);
+      
+      // Determine if profile should be marked as complete (if completion is >= 85%)
+      const isProfileComplete = completionPercentage >= 85;
+      console.log(`Developer profile will be marked as complete: ${isProfileComplete} (${completionPercentage}% >= 85%)`);
+      
       const updatedData: Partial<Developer> = {
         name: fullName,
         email: formData.email,
@@ -173,8 +238,9 @@ export const useDeveloperProfile = () => {
         communicationPreferences: formData.communicationPreferences,
         username: formData.username,
         bio: formData.bio,
-        profileCompleted: true,
-        profileCompletionPercentage: 100
+        // CRITICAL: These fields ensure profile completion is correctly tracked
+        profileCompleted: isProfileComplete,
+        profileCompletionPercentage: completionPercentage
       };
       
       console.log("Submitting developer profile update:", updatedData);

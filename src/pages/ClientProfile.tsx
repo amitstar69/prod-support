@@ -62,6 +62,11 @@ const ClientProfile: React.FC = () => {
   };
 
   const handleBack = () => {
+    // Invalidate cache before navigating back to ensure dashboard sees fresh data
+    if (userId) {
+      console.log('Invalidating cache before navigating back to dashboard');
+      invalidateUserDataCache(userId);
+    }
     navigate(-1);
   };
 

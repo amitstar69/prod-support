@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from '../contexts/auth';
 import { Client } from '../types/product';
@@ -20,6 +21,54 @@ interface ClientProfileFormData {
   budgetPerHour: number;
   paymentMethod: 'Stripe' | 'PayPal';
 }
+
+// Function to calculate profile completion percentage based on filled fields
+const calculateProfileCompletionPercentage = (formData: ClientProfileFormData): number => {
+  // Define required and optional fields for profile completion
+  const requiredFields: (keyof ClientProfileFormData)[] = [
+    'firstName', 'lastName', 'email', 'username', 'location'
+  ];
+  
+  const optionalFields: (keyof ClientProfileFormData)[] = [
+    'bio', 'company', 'position', 'techStack', 'industry', 
+    'description', 'projectTypes', 'preferredHelpFormat', 
+    'budgetPerHour', 'paymentMethod'
+  ];
+  
+  // Count completed required fields
+  let completedRequiredFields = 0;
+  for (const field of requiredFields) {
+    const value = formData[field];
+    if ((typeof value === 'string' && value.trim() !== '') || 
+        (Array.isArray(value) && value.length > 0)) {
+      completedRequiredFields++;
+    }
+  }
+  
+  // Count completed optional fields
+  let completedOptionalFields = 0;
+  for (const field of optionalFields) {
+    const value = formData[field];
+    if ((typeof value === 'string' && value.trim() !== '') || 
+        (Array.isArray(value) && value.length > 0) ||
+        (typeof value === 'number' && value > 0)) {
+      completedOptionalFields++;
+    }
+  }
+  
+  // Calculate percentage - required fields are worth 70% of total, optional fields 30%
+  const requiredPercentage = (completedRequiredFields / requiredFields.length) * 70;
+  const optionalPercentage = (completedOptionalFields / optionalFields.length) * 30;
+  const totalPercentage = Math.round(requiredPercentage + optionalPercentage);
+  
+  console.log(`Profile completion calculation:`, {
+    required: `${completedRequiredFields}/${requiredFields.length} (${requiredPercentage.toFixed(1)}%)`,
+    optional: `${completedOptionalFields}/${optionalFields.length} (${optionalPercentage.toFixed(1)}%)`,
+    total: `${totalPercentage}%`
+  });
+  
+  return totalPercentage;
+};
 
 export const useClientProfile = () => {
   const { userId } = useAuth();
@@ -79,7 +128,7 @@ export const useClientProfile = () => {
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
         
-        setFormData({
+        const newFormData = {
           firstName,
           lastName,
           email: clientData.email || '',
@@ -95,7 +144,16 @@ export const useClientProfile = () => {
           preferredHelpFormat: (clientData.preferredHelpFormat || []) as string[],
           budgetPerHour: clientData.budgetPerHour || 0,
           paymentMethod: (clientData.paymentMethod || 'Stripe') as 'Stripe' | 'PayPal'
+        };
+        
+        setFormData(newFormData);
+        
+        // Log existing profile completion data
+        console.log('Existing profile completion data:', {
+          profileCompleted: clientData.profileCompleted,
+          percentage: clientData.profileCompletionPercentage
         });
+        
         console.log('Form data populated:', { firstName, lastName, email: clientData.email });
       } else {
         toast.error("Failed to load profile data: User data not found");
@@ -141,6 +199,14 @@ export const useClientProfile = () => {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       console.log(`Updating client name from "${client?.name}" to "${fullName}"`);
       
+      // Calculate profile completion percentage
+      const completionPercentage = calculateProfileCompletionPercentage(formData);
+      console.log(`Calculated profile completion percentage: ${completionPercentage}%`);
+      
+      // Determine if profile should be marked as complete (if completion is >= 85%)
+      const isProfileComplete = completionPercentage >= 85;
+      console.log(`Profile will be marked as complete: ${isProfileComplete} (${completionPercentage}% >= 85%)`);
+      
       const updatedData: Partial<Client> = {
         name: fullName,
         email: formData.email,
@@ -156,8 +222,9 @@ export const useClientProfile = () => {
         preferredHelpFormat: formData.preferredHelpFormat,
         budgetPerHour: formData.budgetPerHour,
         paymentMethod: formData.paymentMethod,
-        profileCompleted: true, // Explicitly set this to true on save
-        profileCompletionPercentage: 100
+        // CRITICAL: These fields ensure profile completion is correctly tracked
+        profileCompleted: isProfileComplete,
+        profileCompletionPercentage: completionPercentage
       };
       
       console.log("Submitting client profile update:", updatedData);

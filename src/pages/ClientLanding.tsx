@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/auth';
+import { useAuth, invalidateUserDataCache } from '../contexts/auth';
 import { supabase } from '../integrations/supabase/client';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
@@ -8,11 +9,10 @@ import { Progress } from '../components/ui/progress';
 import { Button } from '../components/ui/button';
 import { CalendarClock, Check, ChevronRight, CreditCard, 
   Headphones, HelpCircle, Lightbulb, MessageSquare, PlusCircle, 
-  Settings, User, Video, Zap } from 'lucide-react';
+  Settings, User, Video, Zap, RefreshCw } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
-import { invalidateUserDataCache } from '../contexts/auth';
 
 interface ProfileData {
   id: string;
@@ -24,6 +24,7 @@ interface ProfileData {
   payment_method_added?: boolean;
   onboarding_completed?: boolean;
   profile_completed?: boolean;
+  profile_completion_percentage?: number;
 }
 
 const ClientLanding: React.FC = () => {
@@ -33,6 +34,7 @@ const ClientLanding: React.FC = () => {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [setupProgress, setSetupProgress] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   useEffect(() => {
     // Redirect if user is not authenticated or not a client
@@ -53,7 +55,7 @@ const ClientLanding: React.FC = () => {
     }
     
     fetchProfileData();
-  }, [isAuthenticated, userType, userId]);
+  }, [isAuthenticated, userType, userId, navigate]);
   
   const fetchProfileData = async () => {
     if (!userId) return;
@@ -63,51 +65,91 @@ const ClientLanding: React.FC = () => {
       
       console.log('Fetching client dashboard profile data for user:', userId);
       
-      // Force refresh from database to ensure we have the latest data
-      const { data, error } = await supabase
+      // First get base profile data (this includes profile_completed flag)
+      const { data: profileBaseData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
       
-      if (error) {
-        console.error('Error fetching profile data:', error);
+      if (profileError) {
+        console.error('Error fetching profile data:', profileError);
         toast.error('Failed to load your profile data');
         return;
       }
       
-      console.log('Client dashboard profile data (raw):', data);
+      console.log('Client base profile data:', profileBaseData);
       
-      // Debug log - explicitly check profile_completed value
-      console.log('Profile completed flag value:', data.profile_completed);
+      // Also fetch client specific profile data to get profile_completion_percentage
+      const { data: clientProfileData, error: clientProfileError } = await supabase
+        .from('client_profiles')
+        .select('profile_completion_percentage')
+        .eq('id', userId)
+        .single();
+        
+      if (clientProfileError) {
+        console.error('Error fetching client profile data:', clientProfileError);
+        // Don't return here as we might still have base profile data
+      }
       
-      setProfileData(data as ProfileData);
+      console.log('Client specific profile data:', clientProfileData);
+      
+      // Combine data from both queries
+      const combinedData = {
+        ...profileBaseData,
+        profile_completion_percentage: clientProfileData?.profile_completion_percentage || 0
+      };
+      
+      console.log('Combined client dashboard profile data (raw):', combinedData);
+      
+      // Debug logs - explicitly check profile_completed value and percentage
+      console.log('Profile completed flag value:', combinedData.profile_completed);
+      console.log('Profile completion percentage:', combinedData.profile_completion_percentage);
+      
+      setProfileData(combinedData as ProfileData);
       
       // Calculate setup progress
-      calculateSetupProgress(data as ProfileData);
+      calculateSetupProgress(combinedData as ProfileData);
     } catch (error) {
       console.error('Exception fetching profile data:', error);
       toast.error('An unexpected error occurred while loading your profile');
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
   
   const calculateSetupProgress = (data: ProfileData) => {
     console.log('Calculating setup progress from profile data:', data);
-    const steps = [
-      !!data.profile_completed,
-      !!data.has_zoom,
-      !!data.completed_first_session,
-      !!data.payment_method_added
+    
+    // Create an array of setup steps and whether they're completed
+    const setupSteps = [
+      !!data.profile_completed, // Profile completion is a boolean
+      !!data.has_zoom,          // Zoom setup
+      !!data.completed_first_session, // First session
+      !!data.payment_method_added     // Payment method
     ];
     
-    console.log('Setup steps completed:', steps, 'profile_completed value:', data.profile_completed);
-    const completedSteps = steps.filter(Boolean).length;
-    const progressPercentage = (completedSteps / steps.length) * 100;
+    console.log('Setup steps completed:', setupSteps, 'profile_completed value:', data.profile_completed);
     
-    console.log(`Setup progress: ${completedSteps}/${steps.length} = ${progressPercentage}%`);
-    setSetupProgress(progressPercentage);
+    // Count the number of completed steps
+    const completedSteps = setupSteps.filter(step => step).length;
+    const totalSteps = setupSteps.length;
+    
+    // Calculate the percentage
+    const progress = Math.round((completedSteps / totalSteps) * 100);
+    console.log(`Setup progress: ${completedSteps}/${totalSteps} = ${progress}%`);
+    
+    setSetupProgress(progress);
+  };
+  
+  const handleRefreshData = () => {
+    setIsRefreshing(true);
+    if (userId) {
+      console.log('Manually refreshing profile data');
+      invalidateUserDataCache(userId);
+      fetchProfileData();
+    }
   };
   
   const handleCompleteProfile = () => {
@@ -137,7 +179,10 @@ const ClientLanding: React.FC = () => {
       
       // Update local state
       setProfileData(prev => prev ? {...prev, has_zoom: true} : null);
-      calculateSetupProgress({...profileData!, has_zoom: true});
+      
+      // Force refresh data
+      invalidateUserDataCache(userId);
+      fetchProfileData();
     } catch (error) {
       toast.dismiss();
       console.error('Exception updating profile:', error);
@@ -166,9 +211,9 @@ const ClientLanding: React.FC = () => {
       toast.dismiss();
       toast.success('Profile updated successfully');
       
-      // Update local state
-      setProfileData(prev => prev ? {...prev, completed_first_session: true} : null);
-      calculateSetupProgress({...profileData!, completed_first_session: true});
+      // Force refresh data
+      invalidateUserDataCache(userId);
+      fetchProfileData();
     } catch (error) {
       toast.dismiss();
       console.error('Exception updating profile:', error);
