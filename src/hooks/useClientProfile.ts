@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from '../contexts/auth';
 import { Client } from '../types/product';
@@ -183,6 +182,8 @@ export const useClientProfile = () => {
         // Fetch fresh data immediately after a successful update
         console.log('Fetching latest data after successful update');
         await fetchUserData(true);
+        
+        toast.success('Profile updated successfully');
       } else {
         toast.error('Failed to update profile. Please verify your connection and try again.');
         // Revert client state to original if update failed

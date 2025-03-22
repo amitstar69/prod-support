@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
@@ -92,7 +91,7 @@ const ClientLanding: React.FC = () => {
       !!data.payment_method_added
     ];
     
-    console.log('Setup steps completed:', steps);
+    console.log('Setup steps completed:', steps, 'profile_completed value:', data.profile_completed);
     const completedSteps = steps.filter(Boolean).length;
     const progressPercentage = (completedSteps / steps.length) * 100;
     

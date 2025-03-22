@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -31,6 +32,13 @@ const ClientProfile: React.FC = () => {
   useEffect(() => {
     console.log('ClientProfile component mounted or location changed');
     console.log('Forcing profile refresh on route change/component mount');
+    
+    if (userId) {
+      // Invalidate cache first to ensure fresh data
+      console.log('Invalidating cache before refresh');
+      invalidateUserDataCache(userId);
+    }
+    
     refreshProfile();
     
     // Cleanup on unmount
