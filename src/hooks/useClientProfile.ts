@@ -56,9 +56,9 @@ const calculateProfileCompletionPercentage = (formData: ClientProfileFormData): 
     }
   }
   
-  // Calculate percentage - required fields are worth 70% of total, optional fields 30%
-  const requiredPercentage = (completedRequiredFields / requiredFields.length) * 70;
-  const optionalPercentage = (completedOptionalFields / optionalFields.length) * 30;
+  // Calculate percentage - required fields are worth 60% of total, optional fields 40%
+  const requiredPercentage = (completedRequiredFields / requiredFields.length) * 60;
+  const optionalPercentage = (completedOptionalFields / optionalFields.length) * 40;
   const totalPercentage = Math.round(requiredPercentage + optionalPercentage);
   
   console.log(`Profile completion calculation:`, {
@@ -203,9 +203,9 @@ export const useClientProfile = () => {
       const completionPercentage = calculateProfileCompletionPercentage(formData);
       console.log(`Calculated profile completion percentage: ${completionPercentage}%`);
       
-      // Determine if profile should be marked as complete (if completion is >= 85%)
-      const isProfileComplete = completionPercentage >= 85;
-      console.log(`Profile will be marked as complete: ${isProfileComplete} (${completionPercentage}% >= 85%)`);
+      // Determine if profile should be marked as complete (if completion is >= 80%)
+      const isProfileComplete = completionPercentage >= 80;
+      console.log(`Profile will be marked as complete: ${isProfileComplete} (${completionPercentage}% >= 80%)`);
       
       const updatedData: Partial<Client> = {
         name: fullName,

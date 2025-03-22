@@ -34,6 +34,7 @@ const ClientLanding: React.FC = () => {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [setupProgress, setSetupProgress] = useState(0);
+  const [profileCompletionProgress, setProfileCompletionProgress] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   useEffect(() => {
@@ -83,7 +84,7 @@ const ClientLanding: React.FC = () => {
       // Also fetch client specific profile data to get profile_completion_percentage
       const { data: clientProfileData, error: clientProfileError } = await supabase
         .from('client_profiles')
-        .select('profile_completion_percentage')
+        .select('*')  // Changed from only 'profile_completion_percentage' to '*' to get all client data
         .eq('id', userId)
         .single();
         
@@ -97,7 +98,7 @@ const ClientLanding: React.FC = () => {
       // Combine data from both queries
       const combinedData = {
         ...profileBaseData,
-        profile_completion_percentage: clientProfileData?.profile_completion_percentage || 0
+        ...(clientProfileData || {})  // Include all client profile data if available
       };
       
       console.log('Combined client dashboard profile data (raw):', combinedData);
@@ -108,7 +109,15 @@ const ClientLanding: React.FC = () => {
       
       setProfileData(combinedData as ProfileData);
       
-      // Calculate setup progress
+      // Set profile completion progress directly from the database value
+      if (typeof combinedData.profile_completion_percentage === 'number') {
+        setProfileCompletionProgress(combinedData.profile_completion_percentage);
+      } else {
+        // Fallback to binary completion if percentage not available
+        setProfileCompletionProgress(combinedData.profile_completed ? 100 : 0);
+      }
+      
+      // Calculate overall setup progress
       calculateSetupProgress(combinedData as ProfileData);
     } catch (error) {
       console.error('Exception fetching profile data:', error);
@@ -233,10 +242,24 @@ const ClientLanding: React.FC = () => {
     <Layout>
       <div className="bg-secondary/30 py-6">
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-bold mb-1">Welcome, {profileData?.name || 'Client'}</h1>
-          <p className="text-muted-foreground text-sm">
-            Your developer help platform dashboard
-          </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold mb-1">Welcome, {profileData?.name || 'Client'}</h1>
+              <p className="text-muted-foreground text-sm">
+                Your developer help platform dashboard
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefreshData} 
+              disabled={isRefreshing}
+              className="flex items-center gap-1"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+            </Button>
+          </div>
         </div>
       </div>
       
@@ -275,11 +298,19 @@ const ClientLanding: React.FC = () => {
                       <p className="text-sm text-muted-foreground mb-2">
                         Fill out your profile information to help developers understand your needs better
                       </p>
-                      {!profileData?.profile_completed && (
-                        <Button size="sm" onClick={handleCompleteProfile}>
-                          Complete Profile
-                        </Button>
-                      )}
+                      
+                      {/* Display profile completion percentage */}
+                      <div className="mb-3">
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                          <span>Profile completion</span>
+                          <span>{profileCompletionProgress}%</span>
+                        </div>
+                        <Progress value={profileCompletionProgress} className="h-1.5" />
+                      </div>
+                      
+                      <Button size="sm" onClick={handleCompleteProfile}>
+                        {profileData?.profile_completed ? 'Edit Profile' : 'Complete Profile'}
+                      </Button>
                     </div>
                   </div>
                   
