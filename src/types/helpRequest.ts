@@ -1,3 +1,4 @@
+
 export interface HelpRequest {
   id?: string;
   client_id: string;
@@ -56,6 +57,16 @@ export interface HelpSession {
   final_cost?: number;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface HelpRequestHistoryItem {
+  id: string;
+  help_request_id: string;
+  change_type: string;
+  previous_status: string | null;
+  new_status: string | null;
+  change_details: any;
+  changed_at: string;
 }
 
 export const technicalAreaOptions = [

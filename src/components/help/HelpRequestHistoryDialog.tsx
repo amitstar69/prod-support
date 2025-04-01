@@ -12,16 +12,7 @@ import { Button } from '../ui/button';
 import { Loader2, Clock, Check, AlertCircle, FileEdit, PauseCircle } from 'lucide-react';
 import { supabase } from '../../integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
-
-interface HelpRequestHistoryItem {
-  id: string;
-  help_request_id: string;
-  change_type: string;
-  previous_status: string | null;
-  new_status: string | null;
-  change_details: any;
-  changed_at: string;
-}
+import { HelpRequestHistoryItem } from '../../types/helpRequest';
 
 interface HelpRequestHistoryDialogProps {
   isOpen: boolean;

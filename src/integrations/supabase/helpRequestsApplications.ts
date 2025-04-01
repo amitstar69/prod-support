@@ -454,7 +454,7 @@ export const updateApplicationStatus = async (
     // Update the application status
     const { data, error } = await supabase
       .from('help_request_matches')
-      .update({ status })
+      .update({ status: status })
       .eq('id', applicationId)
       .select();
 
