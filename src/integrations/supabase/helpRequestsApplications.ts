@@ -9,9 +9,9 @@ const MAX_RATE = 9.99; // Maximum rate in USD (precision 3, scale 2)
 const MAX_DURATION = 480; // Maximum duration in minutes (8 hours)
 const MAX_MATCH_SCORE = 9.99; // Maximum match score (precision 3, scale 2)
 
-// Valid status values exactly matching the database constraint
-// IMPORTANT: These values must exactly match what's in the database constraint
-const VALID_MATCH_STATUSES = {
+// CRITICAL: These values MUST exactly match what's in the database constraint
+// DO NOT change the spelling, capitalization, or add any extra spaces
+export const VALID_MATCH_STATUSES = {
   PENDING: 'pending' as ApplicationStatus,
   APPROVED: 'approved' as ApplicationStatus,
   REJECTED: 'rejected' as ApplicationStatus,
@@ -383,10 +383,14 @@ export const updateApplicationStatus = async (
       return { success: false, error: 'Missing required fields' };
     }
 
-    // Validate the status to ensure it matches the database constraint
+    // CRITICAL: Validate the status to ensure it matches exactly what's in the database constraint
     if (!isValidMatchStatus(status)) {
-      console.error(`Invalid status: ${status}. Valid statuses are: ${Object.values(VALID_MATCH_STATUSES).join(', ')}`);
-      return { success: false, error: `Invalid status value. Must be one of: ${Object.values(VALID_MATCH_STATUSES).join(', ')}` };
+      const validStatusValues = Object.values(VALID_MATCH_STATUSES).join(', ');
+      console.error(`Invalid status: "${status}". Valid statuses are: ${validStatusValues}`);
+      return { 
+        success: false, 
+        error: `Invalid status value "${status}". Must be one of: ${validStatusValues}` 
+      };
     }
 
     console.log('Updating application status:', { applicationId, status, clientId });
@@ -451,10 +455,16 @@ export const updateApplicationStatus = async (
     
     console.log('Updating status in database to:', status);
 
+    // CRITICAL: Debug the exact payload we're sending to ensure it matches the constraint
+    const updatePayload = { 
+      status: status  // This must match exactly what's in the database constraint
+    };
+    console.log('Update payload:', updatePayload);
+
     // Update the application status
     const { data, error } = await supabase
       .from('help_request_matches')
-      .update({ status }) // Use the status variable directly to avoid any issues
+      .update(updatePayload)
       .eq('id', applicationId)
       .select();
 

@@ -15,10 +15,15 @@ export {
   setupAllRealtimeTables
 } from './setupRealtime';
 
+// Export the status constants
+export { VALID_MATCH_STATUSES } from './helpRequestsApplications';
+
 // Export everything else from the other modules
 export * from './profiles';
 export * from './helpRequests';
 export * from './helpRequestsDebug';
+export * from './helpRequestsUtils';
+export * from './helpRequestsApplications';
 export * from './testing';
 export * from './notifications';
 export * from './chat';

@@ -10,15 +10,9 @@ import { toast } from 'sonner';
 import { Clock, Hourglass, DollarSign, MessageCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+import { VALID_MATCH_STATUSES } from '../../integrations/supabase/helpRequestsApplications';
 
-// Important: These must match exactly what's in the database constraint
-const APPLICATION_STATUSES = {
-  PENDING: 'pending' as ApplicationStatus,
-  APPROVED: 'approved' as ApplicationStatus,
-  REJECTED: 'rejected' as ApplicationStatus,
-  COMPLETED: 'completed' as ApplicationStatus,
-  CANCELLED: 'cancelled' as ApplicationStatus
-};
+const APPLICATION_STATUSES = VALID_MATCH_STATUSES;
 
 interface DeveloperProfile {
   id: string;
