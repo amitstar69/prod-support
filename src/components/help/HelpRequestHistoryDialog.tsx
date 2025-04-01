@@ -63,7 +63,7 @@ const HelpRequestHistoryDialog: React.FC<HelpRequestHistoryDialogProps> = ({
         return;
       }
       
-      setHistoryItems(data || []);
+      setHistoryItems(data as HelpRequestHistoryItem[]);
     } catch (error) {
       console.error('Exception fetching request history:', error);
       toast.error('An unexpected error occurred while loading history');

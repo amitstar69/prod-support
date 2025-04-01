@@ -9,6 +9,7 @@ import {
 } from './helpRequestsCore';
 import { testHelpRequestsTableAccess as testDatabaseAccess } from './helpRequestsDebug';
 import { submitDeveloperApplication, getDeveloperApplicationsForRequest } from './helpRequestsApplications';
+import { supabase } from './client';
 
 // Create a help request
 export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'created_at' | 'updated_at' | 'ticket_number'>) => {

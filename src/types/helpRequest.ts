@@ -19,6 +19,7 @@ export interface HelpRequest {
   ticket_number?: number;
   nda_required?: boolean;
   preferred_developer_location?: string;
+  cancellation_reason?: string;
 }
 
 export interface HelpRequestMatch {
