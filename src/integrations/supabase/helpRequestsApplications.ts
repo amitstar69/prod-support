@@ -456,9 +456,33 @@ export const updateApplicationStatus = async (
     
     console.log('Updating status in database to:', status);
 
-    // CRITICAL: Ensure we're sending the exact value for the status
-    // This must match what the database constraint expects
-    const updatePayload = { status };
+    // First, verify the data in the table to see what statuses already exist
+    const { data: existingStatuses, error: checkError } = await supabase
+      .from('help_request_matches')
+      .select('status')
+      .limit(10);
+
+    if (checkError) {
+      console.error('Error checking existing statuses:', checkError);
+    } else {
+      console.log('Existing statuses in database:', existingStatuses.map(s => s.status));
+    }
+
+    // Let's check the constraint definition directly
+    const { data: constraintInfo, error: constraintError } = await supabase
+      .rpc('get_table_info', { table_name: 'help_request_matches' });
+
+    if (constraintError) {
+      console.error('Error getting constraint info:', constraintError);
+    } else {
+      console.log('Constraint info:', constraintInfo);
+    }
+
+    // CRITICAL: Ensure we're sending the exact value for the status by explicitly using the constant
+    // Do not modify or format this value in any way
+    const updatePayload = { 
+      status: status // Use the value exactly as provided, we validated it above
+    };
     console.log('Update payload for database:', updatePayload);
 
     // Update the application status

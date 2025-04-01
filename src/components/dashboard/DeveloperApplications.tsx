@@ -49,8 +49,9 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Approving application...');
       
-      // Use the exact constant value from VALID_MATCH_STATUSES
+      // Use the exact constant value from VALID_MATCH_STATUSES - critical for database compatibility
       console.log('Approving application with status:', APPLICATION_STATUSES.APPROVED);
+      
       const result = await updateApplicationStatus(
         applicationId, 
         APPLICATION_STATUSES.APPROVED as ApplicationStatus, 
@@ -89,6 +90,7 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       
       // Use the exact constant value from VALID_MATCH_STATUSES
       console.log('Rejecting application with status:', APPLICATION_STATUSES.REJECTED);
+      
       const result = await updateApplicationStatus(
         applicationId, 
         APPLICATION_STATUSES.REJECTED as ApplicationStatus, 

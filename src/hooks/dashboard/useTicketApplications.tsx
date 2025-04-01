@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { HelpRequest, ApplicationStatus } from '../../types/helpRequest';
 import { toast } from 'sonner';
@@ -146,6 +145,7 @@ export const useTicketApplications = (
             [ticket.id || '']: payload.new.status
           }));
           
+          // Make sure to use the exact constant values for status comparison
           if (payload.new.status === VALID_STATUS_VALUES.APPROVED) {
             toast.success('Your application has been approved!', {
               description: `Your application for "${ticket.title}" has been approved.`,
