@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -453,7 +454,7 @@ export const updateApplicationStatus = async (
     // Update the application status
     const { data, error } = await supabase
       .from('help_request_matches')
-      .update({ status: status })
+      .update({ status }) // Use the status variable directly to avoid any issues
       .eq('id', applicationId)
       .select();
 

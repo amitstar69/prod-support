@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Validation utilities
@@ -61,5 +60,47 @@ export const getValidHelpRequestStatuses = async () => {
   } catch (error) {
     console.error('Exception checking valid status values:', error);
     return { success: false, error };
+  }
+};
+
+// Function to check database constraints for a table
+export const checkTableConstraints = async (tableName: string) => {
+  try {
+    const { data, error } = await supabase.rpc('get_table_info', { table_name: tableName });
+    
+    if (error) {
+      console.error(`Error getting constraints for table ${tableName}:`, error);
+      return { success: false, error: error.message };
+    }
+    
+    console.log(`Constraints for table ${tableName}:`, data);
+    return { success: true, data };
+  } catch (error) {
+    console.error(`Exception getting constraints for table ${tableName}:`, error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+};
+
+// Function to check the valid status values for the help_request_matches table
+export const checkValidStatusValues = async () => {
+  try {
+    // This function would need to query the database to get information about the check constraint
+    // For now, we'll log what we believe are the valid statuses
+    console.log('Valid application statuses based on code:', 
+      ['pending', 'approved', 'rejected', 'completed', 'cancelled']);
+    
+    return { 
+      success: true, 
+      data: ['pending', 'approved', 'rejected', 'completed', 'cancelled']
+    };
+  } catch (error) {
+    console.error('Exception checking valid status values:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
   }
 };

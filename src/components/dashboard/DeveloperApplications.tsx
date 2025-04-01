@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
@@ -11,6 +12,7 @@ import { Clock, Hourglass, DollarSign, MessageCircle, CheckCircle2, XCircle } fr
 import { Alert, AlertDescription } from '../ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 
+// Important: These must match exactly what's in the database constraint
 const APPLICATION_STATUSES = {
   PENDING: 'pending' as ApplicationStatus,
   APPROVED: 'approved' as ApplicationStatus,
