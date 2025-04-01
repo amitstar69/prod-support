@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -455,10 +456,10 @@ export const updateApplicationStatus = async (
     
     console.log('Updating status in database to:', status);
 
-    // CRITICAL: Ensure we're using the exact string value from our constants
-    // This ensures perfect match with database constraint
+    // CRITICAL: Ensure we're sending the exact value for the status
+    // This must match what the database constraint expects
     const updatePayload = { status };
-    console.log('Update payload:', updatePayload);
+    console.log('Update payload for database:', updatePayload);
 
     // Update the application status
     const { data, error } = await supabase
@@ -469,6 +470,8 @@ export const updateApplicationStatus = async (
 
     if (error) {
       console.error('Error updating application status:', error);
+      console.error('Error details:', error.details);
+      console.error('Error hint:', error.hint);
       return { success: false, error: error.message };
     }
     
