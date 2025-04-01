@@ -87,8 +87,8 @@ export const setupApplicationsSubscription = (requestId: string, callback: (payl
   }
 };
 
-// Setup realtime subscription for notifications
-export const enableRealtimeForTable = async (tableName: string) => {
+// Check table info and enable realtime (renamed to avoid conflict)
+export const checkTableInfo = async (tableName: "help_requests" | "help_request_matches" | "notifications" | "chat_messages" | "help_sessions") => {
   try {
     // First, check if the table is already in the realtime publication
     const { data, error } = await supabase.rpc('get_table_info', { table_name: tableName });
@@ -100,7 +100,7 @@ export const enableRealtimeForTable = async (tableName: string) => {
     
     console.log(`Table info for ${tableName}:`, data);
     
-    // Enable realtime for the specific table
+    // Enable realtime for the specific table - now using a properly typed table name
     const enableRealtimeResult = await supabase.from(tableName).select('*').limit(1);
     
     if (enableRealtimeResult.error) {

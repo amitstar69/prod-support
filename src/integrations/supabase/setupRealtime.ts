@@ -2,7 +2,7 @@
 import { supabase } from './client';
 
 // Function to enable realtime for a specific table
-export const enableRealtimeForTable = async (tableName: string) => {
+export const enableRealtimeForTable = async (tableName: "help_requests" | "help_request_matches" | "notifications" | "chat_messages" | "help_sessions") => {
   try {
     console.log(`Enabling realtime for ${tableName}...`);
     
@@ -33,7 +33,7 @@ export const setupAllRealtimeTables = async () => {
     'help_requests',
     'help_request_matches',
     'notifications'
-  ];
+  ] as const;
   
   const results = await Promise.all(
     tables.map(table => enableRealtimeForTable(table))

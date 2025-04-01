@@ -1,11 +1,24 @@
 
-// Export everything from the modules
+// Export client
 export * from './client';
-export * from './realtime';
+
+// Export from realtime.ts but not the renamed function
+export { 
+  setupHelpRequestsSubscription,
+  setupApplicationsSubscription,
+  checkTableInfo
+} from './realtime';
+
+// Export from setupRealtime.ts with the enableRealtimeForTable function
+export {
+  enableRealtimeForTable,
+  setupAllRealtimeTables
+} from './setupRealtime';
+
+// Export everything else from the other modules
 export * from './profiles';
 export * from './helpRequests';
 export * from './helpRequestsDebug';
 export * from './testing';
 export * from './notifications';
 export * from './chat';
-export * from './setupRealtime';
