@@ -379,6 +379,7 @@ export const updateApplicationStatus = async (
 ) => {
   try {
     if (!applicationId || !status || !clientId) {
+      console.error('[updateApplicationStatus] Missing required fields:', { applicationId, status, clientId });
       return { success: false, error: 'Missing required fields' };
     }
 
@@ -386,14 +387,14 @@ export const updateApplicationStatus = async (
     const validStatuses = Object.values(VALID_MATCH_STATUSES);
     if (!validStatuses.includes(status)) {
       const validStatusValues = validStatuses.join(', ');
-      console.error(`Invalid status: "${status}". Valid statuses are: ${validStatusValues}`);
+      console.error(`[updateApplicationStatus] Invalid status: "${status}". Valid statuses are: ${validStatusValues}`);
       return { 
         success: false, 
         error: `Invalid status value "${status}". Must be one of: ${validStatusValues}` 
       };
     }
 
-    console.log('Updating application status:', { applicationId, status, clientId });
+    console.log('[updateApplicationStatus] Updating application status:', { applicationId, status, clientId });
 
     // For local storage applications
     if (applicationId.startsWith('app-')) {
@@ -433,7 +434,7 @@ export const updateApplicationStatus = async (
       .single();
       
     if (applicationError) {
-      console.error('Error getting application:', applicationError);
+      console.error('[updateApplicationStatus] Error getting application:', applicationError);
       return { success: false, error: applicationError.message };
     }
     
@@ -445,44 +446,26 @@ export const updateApplicationStatus = async (
       .single();
       
     if (requestError) {
-      console.error('Error getting help request:', requestError);
+      console.error('[updateApplicationStatus] Error getting help request:', requestError);
       return { success: false, error: requestError.message };
     }
     
     if (requestData.client_id !== clientId) {
+      console.error('[updateApplicationStatus] Authorization error: User is not the client for this request', {
+        requestClientId: requestData.client_id,
+        attemptingClientId: clientId
+      });
       return { success: false, error: 'You are not authorized to update this application' };
     }
     
-    console.log('Updating status in database to:', status);
-
-    // First, verify the data in the table to see what statuses already exist
-    const { data: existingStatuses, error: checkError } = await supabase
-      .from('help_request_matches')
-      .select('status')
-      .limit(10);
-
-    if (checkError) {
-      console.error('Error checking existing statuses:', checkError);
-    } else {
-      console.log('Existing statuses in database:', existingStatuses.map(s => s.status));
-    }
-
-    // Let's check the constraint definition directly
-    const { data: constraintInfo, error: constraintError } = await supabase
-      .rpc('get_table_info', { table_name: 'help_request_matches' });
-
-    if (constraintError) {
-      console.error('Error getting constraint info:', constraintError);
-    } else {
-      console.log('Constraint info:', constraintInfo);
-    }
+    console.log('[updateApplicationStatus] Updating status in database to:', status);
 
     // CRITICAL: Ensure we're sending the exact value for the status by explicitly using the constant
     // Do not modify or format this value in any way
     const updatePayload = { 
       status: status // Use the value exactly as provided, we validated it above
     };
-    console.log('Update payload for database:', updatePayload);
+    console.log('[updateApplicationStatus] Update payload for database:', updatePayload);
 
     // Update the application status
     const { data, error } = await supabase
@@ -492,15 +475,15 @@ export const updateApplicationStatus = async (
       .select();
 
     if (error) {
-      console.error('Error updating application status:', error);
-      console.error('Error details:', error.details);
-      console.error('Error hint:', error.hint);
+      console.error('[updateApplicationStatus] Error updating application status:', error);
+      console.error('[updateApplicationStatus] Error details:', error.details);
+      console.error('[updateApplicationStatus] Error hint:', error.hint);
       return { success: false, error: error.message };
     }
     
     // If approved, also update the help request status and reject other applications
     if (status === VALID_MATCH_STATUSES.APPROVED) {
-      console.log('Application approved, updating help request status and rejecting other applications');
+      console.log('[updateApplicationStatus] Application approved, updating help request status and rejecting other applications');
       
       // Update help request status
       const updateResult = await supabase
@@ -509,7 +492,7 @@ export const updateApplicationStatus = async (
         .eq('id', applicationData.request_id);
         
       if (updateResult.error) {
-        console.error('Error updating help request status:', updateResult.error);
+        console.error('[updateApplicationStatus] Error updating help request status:', updateResult.error);
         // Don't fail the whole operation if this update fails
       }
         
@@ -521,14 +504,14 @@ export const updateApplicationStatus = async (
         .neq('id', applicationId);
         
       if (rejectResult.error) {
-        console.error('Error rejecting other applications:', rejectResult.error);
+        console.error('[updateApplicationStatus] Error rejecting other applications:', rejectResult.error);
         // Don't fail the whole operation if this update fails
       }
     }
 
     return { success: true, data: data?.[0] };
   } catch (error) {
-    console.error('Exception updating application status:', error);
+    console.error('[updateApplicationStatus] Exception updating application status:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 

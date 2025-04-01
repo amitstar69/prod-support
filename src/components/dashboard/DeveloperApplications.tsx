@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
@@ -47,11 +48,13 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Approving application...');
       
-      console.log('Approving application with status:', APPLICATION_STATUSES.APPROVED);
+      // Make sure we're using the exact value from our constants that match the database constraint
+      const statusValue = APPLICATION_STATUSES.APPROVED;
+      console.log('Approving application with status:', statusValue);
       
       const result = await updateApplicationStatus(
         applicationId, 
-        APPLICATION_STATUSES.APPROVED as ApplicationStatus, 
+        statusValue as ApplicationStatus, 
         clientId
       );
       
@@ -85,11 +88,13 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Rejecting application...');
       
-      console.log('Rejecting application with status:', APPLICATION_STATUSES.REJECTED);
+      // Make sure we're using the exact value from our constants that match the database constraint
+      const statusValue = APPLICATION_STATUSES.REJECTED;
+      console.log('Rejecting application with status:', statusValue);
       
       const result = await updateApplicationStatus(
         applicationId, 
-        APPLICATION_STATUSES.REJECTED as ApplicationStatus, 
+        statusValue as ApplicationStatus, 
         clientId
       );
       
