@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -17,7 +16,8 @@ import {
   User,
   Star,
   Bell,
-  ArrowLeft
+  ArrowLeft,
+  FileEdit
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
@@ -29,6 +29,9 @@ import DeveloperApplications from '../components/dashboard/DeveloperApplications
 import ChatDialog from '../components/chat/ChatDialog';
 import { getDeveloperApplicationsForRequest } from '../integrations/supabase/helpRequests';
 import { Notification } from '../integrations/supabase/notifications';
+import EditHelpRequestForm from '../components/help/EditHelpRequestForm';
+import CancelHelpRequestDialog from '../components/help/CancelHelpRequestDialog';
+import HelpRequestHistoryDialog from '../components/help/HelpRequestHistoryDialog';
 
 const ClientDashboard: React.FC = () => {
   const { userId, isAuthenticated } = useAuth();
@@ -46,7 +49,13 @@ const ClientDashboard: React.FC = () => {
   const [chatDeveloperId, setChatDeveloperId] = useState('');
   const [chatDeveloperName, setChatDeveloperName] = useState('Developer');
   const [applicationNotifications, setApplicationNotifications] = useState<Notification[]>([]);
-  
+  const [selectedRequestForEdit, setSelectedRequestForEdit] = useState<HelpRequest | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedRequestForCancel, setSelectedRequestForCancel] = useState<HelpRequest | null>(null);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [selectedRequestForHistory, setSelectedRequestForHistory] = useState<HelpRequest | null>(null);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+
   useEffect(() => {
     if (isAuthenticated && userId) {
       fetchHelpRequests();
@@ -354,10 +363,24 @@ const ClientDashboard: React.FC = () => {
     return null;
   }
 
-  // Find the selected request if there is one
   const selectedRequest = selectedRequestId ? 
     [...activeRequests, ...completedRequests].find(req => req.id === selectedRequestId) : 
     null;
+
+  const handleEditRequest = (request: HelpRequest) => {
+    setSelectedRequestForEdit(request);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleCancelRequest = (request: HelpRequest) => {
+    setSelectedRequestForCancel(request);
+    setIsCancelDialogOpen(true);
+  };
+
+  const handleViewHistory = (request: HelpRequest) => {
+    setSelectedRequestForHistory(request);
+    setIsHistoryDialogOpen(true);
+  };
 
   return (
     <Layout>
@@ -545,7 +568,7 @@ const ClientDashboard: React.FC = () => {
                           </div>
                         </CardContent>
                         
-                        <CardFooter>
+                        <CardFooter className="flex flex-col space-y-2">
                           <Button 
                             className="w-full"
                             variant={getApplicationCountForRequest(request.id!) > 0 ? "default" : "outline"}
@@ -561,6 +584,36 @@ const ClientDashboard: React.FC = () => {
                               "View Details"
                             )}
                           </Button>
+                          
+                          <div className="flex gap-2 w-full">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => handleEditRequest(request)}
+                            >
+                              <FileEdit className="h-3.5 w-3.5 mr-1" />
+                              Edit
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => handleViewHistory(request)}
+                            >
+                              <Clock className="h-3.5 w-3.5 mr-1" />
+                              History
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1 text-red-500 hover:text-red-700"
+                              onClick={() => handleCancelRequest(request)}
+                            >
+                              <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                              Cancel
+                            </Button>
+                          </div>
                         </CardFooter>
                       </Card>
                     ))}
@@ -629,7 +682,7 @@ const ClientDashboard: React.FC = () => {
                           )}
                         </CardContent>
                         
-                        <CardFooter>
+                        <CardFooter className="flex flex-col space-y-2">
                           <Button 
                             className="w-full"
                             variant="outline"
@@ -637,6 +690,16 @@ const ClientDashboard: React.FC = () => {
                             onClick={() => handleViewRequest(request.id!)}
                           >
                             View Details
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => handleViewHistory(request)}
+                          >
+                            <Clock className="h-3.5 w-3.5 mr-1" />
+                            View History
                           </Button>
                         </CardFooter>
                       </Card>
@@ -667,6 +730,34 @@ const ClientDashboard: React.FC = () => {
           otherName={chatDeveloperName}
         />
       </div>
+      
+      {selectedRequestForEdit && (
+        <EditHelpRequestForm
+          isOpen={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+          helpRequest={selectedRequestForEdit}
+          onRequestUpdated={fetchHelpRequests}
+        />
+      )}
+      
+      {selectedRequestForCancel && (
+        <CancelHelpRequestDialog
+          isOpen={isCancelDialogOpen}
+          onClose={() => setIsCancelDialogOpen(false)}
+          requestId={selectedRequestForCancel.id!}
+          requestTitle={selectedRequestForCancel.title}
+          onRequestCancelled={fetchHelpRequests}
+        />
+      )}
+      
+      {selectedRequestForHistory && (
+        <HelpRequestHistoryDialog
+          isOpen={isHistoryDialogOpen}
+          onClose={() => setIsHistoryDialogOpen(false)}
+          requestId={selectedRequestForHistory.id!}
+          requestTitle={selectedRequestForHistory.title}
+        />
+      )}
     </Layout>
   );
 };

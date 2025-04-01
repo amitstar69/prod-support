@@ -177,6 +177,47 @@ export type Database = {
           },
         ]
       }
+      help_request_history: {
+        Row: {
+          change_details: Json
+          change_type: string
+          changed_at: string
+          changed_by: string
+          help_request_id: string
+          id: string
+          new_status: string | null
+          previous_status: string | null
+        }
+        Insert: {
+          change_details?: Json
+          change_type: string
+          changed_at?: string
+          changed_by: string
+          help_request_id: string
+          id?: string
+          new_status?: string | null
+          previous_status?: string | null
+        }
+        Update: {
+          change_details?: Json
+          change_type?: string
+          changed_at?: string
+          changed_by?: string
+          help_request_id?: string
+          id?: string
+          new_status?: string | null
+          previous_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_request_history_help_request_id_fkey"
+            columns: ["help_request_id"]
+            isOneToOne: false
+            referencedRelation: "help_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       help_request_matches: {
         Row: {
           created_at: string
@@ -235,6 +276,7 @@ export type Database = {
         Row: {
           attachments: Json | null
           budget_range: string
+          cancellation_reason: string | null
           client_id: string
           code_snippet: string | null
           communication_preference: string[]
@@ -256,6 +298,7 @@ export type Database = {
         Insert: {
           attachments?: Json | null
           budget_range: string
+          cancellation_reason?: string | null
           client_id: string
           code_snippet?: string | null
           communication_preference: string[]
@@ -277,6 +320,7 @@ export type Database = {
         Update: {
           attachments?: Json | null
           budget_range?: string
+          cancellation_reason?: string | null
           client_id?: string
           code_snippet?: string | null
           communication_preference?: string[]
