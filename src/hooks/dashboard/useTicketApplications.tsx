@@ -1,9 +1,13 @@
+
 import { useState, useEffect } from 'react';
 import { HelpRequest, ApplicationStatus } from '../../types/helpRequest';
 import { toast } from 'sonner';
-import { submitDeveloperApplication, getDeveloperApplicationsForRequest } from '../../integrations/supabase/helpRequestsApplications';
+import { 
+  submitDeveloperApplication, 
+  getDeveloperApplicationsForRequest, 
+  VALID_MATCH_STATUSES 
+} from '../../integrations/supabase/helpRequestsApplications';
 import { setupApplicationsSubscription } from '../../integrations/supabase/realtime';
-import { VALID_MATCH_STATUSES } from '../../integrations/supabase/helpRequestsApplications';
 
 // Constants to prevent numeric overflow
 const MAX_RATE = 9.99; // Maximum rate in USD (precision 3, scale 2)

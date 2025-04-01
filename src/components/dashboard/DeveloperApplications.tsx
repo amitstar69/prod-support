@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
-import { updateApplicationStatus } from '../../integrations/supabase/helpRequestsApplications';
+import { updateApplicationStatus, VALID_MATCH_STATUSES } from '../../integrations/supabase/helpRequestsApplications';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
@@ -10,8 +11,8 @@ import { toast } from 'sonner';
 import { Clock, Hourglass, DollarSign, MessageCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
-import { VALID_MATCH_STATUSES } from '../../integrations/supabase/helpRequestsApplications';
 
+// Use the exact database-matching values from our constant
 const APPLICATION_STATUSES = VALID_MATCH_STATUSES;
 
 interface DeveloperProfile {
@@ -48,8 +49,13 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Approving application...');
       
+      // Use the exact constant value from VALID_MATCH_STATUSES
       console.log('Approving application with status:', APPLICATION_STATUSES.APPROVED);
-      const result = await updateApplicationStatus(applicationId, APPLICATION_STATUSES.APPROVED, clientId);
+      const result = await updateApplicationStatus(
+        applicationId, 
+        APPLICATION_STATUSES.APPROVED as ApplicationStatus, 
+        clientId
+      );
       
       toast.dismiss();
       
@@ -81,8 +87,13 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Rejecting application...');
       
+      // Use the exact constant value from VALID_MATCH_STATUSES
       console.log('Rejecting application with status:', APPLICATION_STATUSES.REJECTED);
-      const result = await updateApplicationStatus(applicationId, APPLICATION_STATUSES.REJECTED, clientId);
+      const result = await updateApplicationStatus(
+        applicationId, 
+        APPLICATION_STATUSES.REJECTED as ApplicationStatus, 
+        clientId
+      );
       
       toast.dismiss();
       

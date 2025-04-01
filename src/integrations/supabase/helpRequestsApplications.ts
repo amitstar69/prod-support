@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -382,9 +383,10 @@ export const updateApplicationStatus = async (
       return { success: false, error: 'Missing required fields' };
     }
 
-    // CRITICAL: Validate the status to ensure it matches exactly what's in the database constraint
-    if (!isValidMatchStatus(status)) {
-      const validStatusValues = Object.values(VALID_MATCH_STATUSES).join(', ');
+    // CRITICAL: Validate the status value explicitly against our constant values
+    const validStatuses = Object.values(VALID_MATCH_STATUSES);
+    if (!validStatuses.includes(status)) {
+      const validStatusValues = validStatuses.join(', ');
       console.error(`Invalid status: "${status}". Valid statuses are: ${validStatusValues}`);
       return { 
         success: false, 
@@ -454,10 +456,9 @@ export const updateApplicationStatus = async (
     
     console.log('Updating status in database to:', status);
 
-    // CRITICAL: Debug the exact payload we're sending to ensure it matches the constraint
-    const updatePayload = { 
-      status: status  // This must match exactly what's in the database constraint
-    };
+    // CRITICAL: Ensure we're using the exact string value from our constants
+    // This ensures perfect match with database constraint
+    const updatePayload = { status };
     console.log('Update payload:', updatePayload);
 
     // Update the application status
@@ -474,6 +475,8 @@ export const updateApplicationStatus = async (
     
     // If approved, also update the help request status and reject other applications
     if (status === VALID_MATCH_STATUSES.APPROVED) {
+      console.log('Application approved, updating help request status and rejecting other applications');
+      
       // Update help request status
       const updateResult = await supabase
         .from('help_requests')
