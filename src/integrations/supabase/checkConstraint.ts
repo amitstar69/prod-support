@@ -1,6 +1,10 @@
 
 import { supabase } from './client';
 
+/**
+ * Utility function to check database constraints for a specific table
+ * This helps debug issues with check constraints
+ */
 export const checkDatabaseConstraints = async (tableName: string) => {
   try {
     // First, query the database for the table information
@@ -28,7 +32,6 @@ export const checkDatabaseConstraints = async (tableName: string) => {
     
     console.log(`Check constraints for table ${tableName}:`, checkConstraints);
     
-    // Return the constraint information
     return { 
       success: true, 
       data: {

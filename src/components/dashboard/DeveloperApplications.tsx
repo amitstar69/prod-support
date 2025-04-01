@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
@@ -12,7 +11,6 @@ import { Clock, Hourglass, DollarSign, MessageCircle, CheckCircle2, XCircle } fr
 import { Alert, AlertDescription } from '../ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 
-// Use the exact database-matching values from our constant
 const APPLICATION_STATUSES = VALID_MATCH_STATUSES;
 
 interface DeveloperProfile {
@@ -49,7 +47,6 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Approving application...');
       
-      // Use the exact constant value from VALID_MATCH_STATUSES - critical for database compatibility
       console.log('Approving application with status:', APPLICATION_STATUSES.APPROVED);
       
       const result = await updateApplicationStatus(
@@ -88,7 +85,6 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Rejecting application...');
       
-      // Use the exact constant value from VALID_MATCH_STATUSES
       console.log('Rejecting application with status:', APPLICATION_STATUSES.REJECTED);
       
       const result = await updateApplicationStatus(

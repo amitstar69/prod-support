@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
