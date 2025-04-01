@@ -87,37 +87,33 @@ export const setupApplicationsSubscription = (requestId: string, callback: (payl
   }
 };
 
-// This function has been renamed to avoid naming conflicts with notifications.ts
-export const setupLegacyNotificationsSubscription = (userId: string, callback: (payload: any) => void) => {
-  console.log('Setting up notifications subscription for user:', userId);
-  
+// Setup realtime subscription for notifications
+export const enableRealtimeForTable = async (tableName: string) => {
   try {
-    const channel = supabase
-      .channel(`notifications_for_${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`
-        },
-        (payload) => {
-          console.log('Notification received:', payload);
-          callback(payload.new);
-        }
-      )
-      .subscribe((status) => {
-        console.log('Notifications subscription status:', status);
-      });
-      
-    // Return the subscription for cleanup
-    return () => {
-      console.log('Cleaning up notifications subscription');
-      supabase.removeChannel(channel);
-    };
+    // First, check if the table is already in the realtime publication
+    const { data, error } = await supabase.rpc('get_table_info', { table_name: tableName });
+    
+    if (error) {
+      console.error(`Error getting table info for ${tableName}:`, error);
+      return { success: false, error: error.message };
+    }
+    
+    console.log(`Table info for ${tableName}:`, data);
+    
+    // Enable realtime for the specific table
+    const enableRealtimeResult = await supabase.from(tableName).select('*').limit(1);
+    
+    if (enableRealtimeResult.error) {
+      console.error(`Error enabling realtime for ${tableName}:`, enableRealtimeResult.error);
+      return { success: false, error: enableRealtimeResult.error.message };
+    }
+    
+    return { success: true };
   } catch (error) {
-    console.error('Exception setting up notifications subscription:', error);
-    return () => {}; // Return empty cleanup function
+    console.error(`Exception enabling realtime for ${tableName}:`, error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
   }
 };

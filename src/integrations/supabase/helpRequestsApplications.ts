@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -9,7 +8,7 @@ const MAX_RATE = 9.99; // Maximum rate in USD (precision 3, scale 2)
 const MAX_DURATION = 480; // Maximum duration in minutes (8 hours)
 const MAX_MATCH_SCORE = 9.99; // Maximum match score (precision 3, scale 2)
 
-// Valid status values according to the database constraint
+// Valid status values exactly matching the database constraint
 // IMPORTANT: These values must exactly match what's in the database constraint
 const VALID_MATCH_STATUSES = {
   PENDING: 'pending' as ApplicationStatus,

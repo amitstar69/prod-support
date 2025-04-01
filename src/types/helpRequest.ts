@@ -1,4 +1,3 @@
-
 export interface HelpRequest {
   id?: string;
   client_id: string;
@@ -69,6 +68,8 @@ export interface HelpRequestHistoryItem {
   changed_at: string;
 }
 
+export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
+
 export const technicalAreaOptions = [
   'Frontend',
   'Backend',
@@ -138,8 +139,6 @@ export const matchStatusOptions = [
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' }
 ];
-
-export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
 
 export interface ProfileSettings {
   id?: string;
