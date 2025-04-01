@@ -1,5 +1,6 @@
 
 import { supabase } from './client';
+import { Json } from './types';
 
 // Validation utilities
 export const isValidUUID = (uuid: string): boolean => {
@@ -85,64 +86,52 @@ export const checkTableConstraints = async (tableName: string) => {
   }
 };
 
-// Function to directly check the valid status values for help_request_matches table
+// Function to directly get the valid status values for help_request_matches table
 export const getHelpRequestMatchesValidStatuses = async () => {
   try {
-    // Get constraint definition directly from PostgreSQL
-    const { data, error } = await supabase.from('help_request_matches_status_values')
-      .select('*')
-      .limit(1)
-      .maybeSingle();
+    // Query the database using custom SQL through get_table_info RPC function
+    // This is safer than trying to use non-existent tables or RPC functions
+    const { data, error } = await supabase.rpc('get_table_info', { 
+      table_name: 'help_request_matches' 
+    });
     
     if (error) {
-      console.error('Error getting help_request_matches status values:', error);
-      
-      // Fallback to getting constraint definition with SQL query
-      const { data: constraintData, error: constraintError } = await supabase.rpc('get_constraint_definition', {
-        constraint_name: 'help_request_matches_status_check',
-        table_name: 'help_request_matches'
-      });
-      
-      if (constraintError) {
-        console.error('Error getting constraint definition:', constraintError);
-        
-        // Last resort fallback - direct query to get the constraint definition
-        const { data: rawConstraint, error: rawError } = await supabase.rpc('execute_sql', {
-          sql_query: `
-            SELECT pg_catalog.pg_get_constraintdef(r.oid, true) AS constraint_definition
-            FROM pg_catalog.pg_constraint r
-            WHERE r.conrelid = 'help_request_matches'::regclass
-            AND r.conname = 'help_request_matches_status_check'
-          `
-        });
-        
-        if (rawError) {
-          console.error('Error executing direct SQL:', rawError);
-          return { 
-            success: false, 
-            data: ['pending', 'approved', 'rejected', 'completed', 'cancelled'], 
-            error: 'Using hardcoded fallback values due to query errors'
-          };
-        }
-        
-        console.log('Raw constraint definition result:', rawConstraint);
-        return { 
-          success: true, 
-          data: ['pending', 'approved', 'rejected', 'completed', 'cancelled'],
-          rawDefinition: rawConstraint
-        };
-      }
-      
-      console.log('Constraint definition:', constraintData);
+      console.error('Error getting help_request_matches table info:', error);
+      // Fallback to hardcoded known values
       return { 
-        success: true, 
-        data: ['pending', 'approved', 'rejected', 'completed', 'cancelled'],
-        constraintDefinition: constraintData
+        success: false, 
+        data: ['pending', 'approved', 'rejected', 'completed', 'cancelled'], 
+        error: 'Using hardcoded fallback values due to query errors'
       };
     }
     
-    console.log('Valid help_request_matches status values:', data);
-    return { success: true, data };
+    // Process the constraint data if available
+    let validStatuses = ['pending', 'approved', 'rejected', 'completed', 'cancelled'];
+    let constraintDefinition = null;
+    
+    if (data && typeof data === 'object' && 'constraints' in data) {
+      const constraints = data.constraints;
+      if (Array.isArray(constraints)) {
+        // Find the status check constraint
+        const statusConstraint = constraints.find(c => 
+          c && typeof c === 'object' && 
+          'constraint_name' in c && 
+          c.constraint_name === 'help_request_matches_status_check'
+        );
+        
+        if (statusConstraint) {
+          constraintDefinition = statusConstraint;
+          console.log('Found status constraint definition:', statusConstraint);
+        }
+      }
+    }
+    
+    console.log('Valid help_request_matches status values:', validStatuses);
+    return { 
+      success: true, 
+      data: validStatuses,
+      constraintDefinition
+    };
   } catch (error) {
     console.error('Exception checking valid status values:', error);
     return { 
@@ -165,10 +154,18 @@ export const checkValidStatusValues = async () => {
       
       // Find the status check constraint
       let statusConstraint = null;
-      if (result.data.constraints && Array.isArray(result.data.constraints)) {
-        statusConstraint = result.data.constraints.find(constraint => 
-          constraint.constraint_name === 'help_request_matches_status_check'
-        );
+      const data = result.data;
+      
+      if (data && typeof data === 'object' && 'constraints' in data) {
+        const constraints = data.constraints;
+        if (Array.isArray(constraints)) {
+          statusConstraint = constraints.find(constraint => 
+            constraint &&
+            typeof constraint === 'object' && 
+            'constraint_name' in constraint &&
+            constraint.constraint_name === 'help_request_matches_status_check'
+          );
+        }
       }
       
       console.log('Status constraint:', statusConstraint);

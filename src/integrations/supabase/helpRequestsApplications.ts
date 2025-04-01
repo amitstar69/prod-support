@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
 import { isValidUUID, isLocalId } from './helpRequestsUtils';
@@ -12,11 +11,11 @@ const MAX_MATCH_SCORE = 9.99; // Maximum match score (precision 3, scale 2)
 // CRITICAL: These values MUST exactly match what's in the database constraint
 // DO NOT change the spelling, capitalization, or add any extra spaces
 export const VALID_MATCH_STATUSES = {
-  PENDING: 'pending' as ApplicationStatus,
-  APPROVED: 'approved' as ApplicationStatus,
-  REJECTED: 'rejected' as ApplicationStatus,
-  COMPLETED: 'completed' as ApplicationStatus,
-  CANCELLED: 'cancelled' as ApplicationStatus
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled'
 };
 
 // Function to validate if a status value is allowed by the database constraint
