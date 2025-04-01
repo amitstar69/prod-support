@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { HelpRequest, ApplicationStatus } from '../../types/helpRequest';
 import { toast } from 'sonner';
@@ -36,7 +35,6 @@ export const useTicketApplications = (
   const [myApplications, setMyApplications] = useState<HelpRequest[]>([]);
   const [applicationStatuses, setApplicationStatuses] = useState<Record<string, string>>({});
 
-  // Initial processing of tickets
   useEffect(() => {
     if (!tickets || !isAuthenticated || !userId) {
       setRecommendedTickets([]);
@@ -45,8 +43,6 @@ export const useTicketApplications = (
 
     console.log('[useTicketApplications] Processing tickets for recommendations:', tickets.length);
     
-    // For developers, show all available tickets as recommended
-    // Only show open or claimed tickets as recommended
     const recommended = tickets.filter(ticket => {
       const isAvailable = ticket.status === 'open' || ticket.status === 'claimed';
       return isAvailable;
@@ -56,7 +52,6 @@ export const useTicketApplications = (
     setRecommendedTickets(recommended);
   }, [tickets, isAuthenticated, userId]);
 
-  // Function to handle claiming a ticket
   const handleClaimTicket = async (ticketId: string) => {
     if (!isAuthenticated || !userId) {
       toast.error('You must be logged in to claim tickets');
@@ -71,18 +66,14 @@ export const useTicketApplications = (
     try {
       toast.loading('Processing your application...');
       
-      // Make sure the rate is properly formatted for the database
-      // Cap at MAX_RATE to prevent overflow
       const defaultRate = 5; // Default hourly rate within the numeric(3,2) limit
       const formattedRate = Math.min(Math.max(0, parseFloat(defaultRate.toFixed(2))), MAX_RATE);
       
-      // Use a standard 1-hour duration (60 minutes)
       const defaultDuration = 60;
       
-      // Submit application with controlled values
       const result = await submitDeveloperApplication(
         ticketId, 
-        userId,
+        userId as string,
         {
           proposed_message: "I'd like to help with your request. I have experience in this area.",
           proposed_duration: defaultDuration,
@@ -95,10 +86,8 @@ export const useTicketApplications = (
       if (result.success) {
         toast.success('Application submitted successfully!');
         
-        // Refresh ticket list
         refreshTickets();
         
-        // Also refresh my applications
         if (userId) {
           await fetchMyApplications(userId);
         }
@@ -112,7 +101,6 @@ export const useTicketApplications = (
     }
   };
 
-  // Function to fetch application status for a specific ticket
   const checkApplicationStatus = async (ticketId: string, developerId: string): Promise<string | null> => {
     try {
       const result = await getDeveloperApplicationsForRequest(ticketId);
@@ -129,7 +117,6 @@ export const useTicketApplications = (
     }
   };
 
-  // Function to fetch developer's submitted applications
   const fetchMyApplications = async (currentUserId: string | null) => {
     if (!isAuthenticated || !currentUserId) {
       setMyApplications([]);
@@ -137,13 +124,7 @@ export const useTicketApplications = (
     }
 
     try {
-      // In a real implementation, we would fetch applications from the database
-      // For now, use the tickets data and filter based on some criteria
-      
-      // This is a placeholder. In a real app, you would fetch actual applications
-      // from the database that match the current user ID
       const applications = tickets.filter(ticket => 
-        // Example filtering logic - in real app this would check a "developer_id" field
         ticket.status === 'claimed' || ticket.status === 'in-progress'
       );
       
@@ -153,7 +134,6 @@ export const useTicketApplications = (
     }
   };
 
-  // Set up realtime subscriptions for application status updates
   useEffect(() => {
     if (!isAuthenticated || !userId || userType !== 'developer') return;
     
@@ -162,20 +142,17 @@ export const useTicketApplications = (
       
       return setupApplicationsSubscription(ticket.id, (payload) => {
         if (payload.new && payload.new.developer_id === userId) {
-          // Update local application status cache
           setApplicationStatuses(prev => ({
             ...prev,
             [ticket.id || '']: payload.new.status
           }));
           
-          // Show toast for important status updates
           if (payload.new.status === VALID_MATCH_STATUSES.APPROVED) {
             toast.success('Your application has been approved!', {
               description: `Your application for "${ticket.title}" has been approved.`,
               action: {
                 label: 'View Details',
                 onClick: () => {
-                  // Trigger event to switch to application details
                   window.dispatchEvent(new CustomEvent('viewMyApplication', {
                     detail: { ticketId: ticket.id }
                   }));
@@ -188,19 +165,16 @@ export const useTicketApplications = (
             });
           }
           
-          // Refresh applications list
           fetchMyApplications(userId);
         }
       });
     }).filter(Boolean);
     
-    // Clean up subscriptions
     return () => {
       subscriptions.forEach(cleanup => cleanup && cleanup());
     };
   }, [recommendedTickets, isAuthenticated, userId, userType]);
 
-  // Fetch my applications when tickets change
   useEffect(() => {
     if (isAuthenticated && userId) {
       fetchMyApplications(userId);

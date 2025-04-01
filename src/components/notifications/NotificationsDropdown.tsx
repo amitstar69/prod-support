@@ -60,9 +60,11 @@ const NotificationsDropdown: React.FC = () => {
     setIsLoading(true);
     
     try {
+      console.log('Fetching notifications for user:', userId);
       const result = await fetchUserNotifications(userId);
       
       if (result.success) {
+        console.log('Loaded notifications:', result.data.length);
         setNotifications(result.data);
       } else {
         console.error('Error loading notifications:', result.error);
