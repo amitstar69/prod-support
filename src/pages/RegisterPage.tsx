@@ -190,9 +190,9 @@ const RegisterPage: React.FC = () => {
           }
         }
         
-        // Fix navigation paths to match route definitions in App.tsx
+        // Updated navigation paths to align with onboarding flows
         if (userType === 'developer') {
-          navigate('/developer'); // Change from '/developer-registration'
+          navigate('/onboarding/developer'); // Direct to developer onboarding flow
         } else {
           navigate('/client-profile');
         }

@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
 import { Developer } from '../../../../types/product';
 import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
+import { toast } from 'sonner';
 
 const DeveloperBasicInfoStep: React.FC = () => {
-  const { userData, updateUserDataAndProceed } = useOnboarding();
+  const { userData, updateUserDataAndProceed, isLoading } = useOnboarding();
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -21,6 +22,7 @@ const DeveloperBasicInfoStep: React.FC = () => {
   // Update form data when userData changes
   useEffect(() => {
     if (userData) {
+      console.log('Populating developer basic info form with:', userData);
       const fullName = userData.name || '';
       const nameParts = fullName.split(' ');
       
@@ -40,7 +42,29 @@ const DeveloperBasicInfoStep: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
+  const validateForm = () => {
+    if (!formData.firstName.trim()) {
+      toast.error("First name is required");
+      return false;
+    }
+    if (!formData.lastName.trim()) {
+      toast.error("Last name is required");
+      return false;
+    }
+    if (!formData.email.trim()) {
+      toast.error("Email is required");
+      return false;
+    }
+    if (!formData.location.trim()) {
+      toast.error("Location is required");
+      return false;
+    }
+    return true;
+  };
+  
   const handleSubmit = async () => {
+    if (!validateForm()) return;
+    
     setIsSubmitting(true);
     
     try {
@@ -55,9 +79,11 @@ const DeveloperBasicInfoStep: React.FC = () => {
         profileCompletionPercentage: 25, // 25% complete after basic info
       };
       
+      console.log('Submitting developer basic info:', developerData);
       await updateUserDataAndProceed(developerData);
     } catch (error) {
       console.error('Error updating basic info:', error);
+      toast.error("Failed to save your information. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -68,10 +94,10 @@ const DeveloperBasicInfoStep: React.FC = () => {
       title="Basic Information"
       subtitle="Let's get started with some basic information about you"
       onNextStep={handleSubmit}
-      nextDisabled={isSubmitting}
+      nextDisabled={isSubmitting || isLoading}
     >
       <div className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="firstName" className="block text-sm font-medium mb-1">
               First Name
