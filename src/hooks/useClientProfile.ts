@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from '../contexts/auth';
 import { Client } from '../types/product';
@@ -20,11 +19,10 @@ interface ClientProfileFormData {
   preferredHelpFormat: string[];
   budgetPerHour: number;
   paymentMethod: 'Stripe' | 'PayPal';
+  image?: string;
 }
 
-// Function to calculate profile completion percentage based on filled fields
 const calculateProfileCompletionPercentage = (formData: ClientProfileFormData): number => {
-  // Define required and optional fields for profile completion
   const requiredFields: (keyof ClientProfileFormData)[] = [
     'firstName', 'lastName', 'email', 'username', 'location'
   ];
@@ -35,7 +33,6 @@ const calculateProfileCompletionPercentage = (formData: ClientProfileFormData): 
     'budgetPerHour', 'paymentMethod'
   ];
   
-  // Count completed required fields
   let completedRequiredFields = 0;
   for (const field of requiredFields) {
     const value = formData[field];
@@ -45,7 +42,6 @@ const calculateProfileCompletionPercentage = (formData: ClientProfileFormData): 
     }
   }
   
-  // Count completed optional fields
   let completedOptionalFields = 0;
   for (const field of optionalFields) {
     const value = formData[field];
@@ -56,7 +52,6 @@ const calculateProfileCompletionPercentage = (formData: ClientProfileFormData): 
     }
   }
   
-  // Calculate percentage - required fields are worth 60% of total, optional fields 40%
   const requiredPercentage = (completedRequiredFields / requiredFields.length) * 60;
   const optionalPercentage = (completedOptionalFields / optionalFields.length) * 40;
   const totalPercentage = Math.round(requiredPercentage + optionalPercentage);
@@ -91,7 +86,8 @@ export const useClientProfile = () => {
     projectTypes: [],
     preferredHelpFormat: [],
     budgetPerHour: 0,
-    paymentMethod: 'Stripe'
+    paymentMethod: 'Stripe',
+    image: ''
   });
   
   const fetchUserData = useCallback(async (forceRefresh = true) => {
@@ -108,7 +104,6 @@ export const useClientProfile = () => {
     }, 10000);
     
     try {
-      // Force a fresh fetch if requested
       if (forceRefresh) {
         console.log('Forcing cache invalidation before fetch');
         invalidateUserDataCache(userId);
@@ -143,12 +138,12 @@ export const useClientProfile = () => {
           projectTypes: clientData.projectTypes || [],
           preferredHelpFormat: (clientData.preferredHelpFormat || []) as string[],
           budgetPerHour: clientData.budgetPerHour || 0,
-          paymentMethod: (clientData.paymentMethod || 'Stripe') as 'Stripe' | 'PayPal'
+          paymentMethod: (clientData.paymentMethod || 'Stripe') as 'Stripe' | 'PayPal',
+          image: clientData.image || ''
         };
         
         setFormData(newFormData);
         
-        // Log existing profile completion data
         console.log('Existing profile completion data:', {
           profileCompleted: clientData.profileCompleted,
           percentage: clientData.profileCompletionPercentage
@@ -172,7 +167,7 @@ export const useClientProfile = () => {
   useEffect(() => {
     if (userId) {
       console.log('Initial client profile data fetch for user:', userId);
-      fetchUserData(true); // Force a fresh fetch on initial load
+      fetchUserData(true);
     } else {
       setIsLoading(false);
     }
@@ -184,6 +179,51 @@ export const useClientProfile = () => {
       ...prev,
       [field]: value
     }));
+    
+    if (field === 'image') {
+      handleImageUpdate(value);
+    }
+  };
+  
+  const handleImageUpdate = async (imageUrl: string) => {
+    if (!userId) {
+      toast.error("User ID not found. Please try logging in again.");
+      return;
+    }
+    
+    setIsSaving(true);
+    console.log('Saving profile image update for user:', userId);
+    console.log('New image URL:', imageUrl);
+    
+    try {
+      const updatedData: Partial<Client> = {
+        image: imageUrl
+      };
+      
+      if (client) {
+        setClient({
+          ...client,
+          image: imageUrl
+        });
+      }
+      
+      const success = await updateUserData(updatedData);
+      
+      if (success) {
+        console.log('Profile image update successful');
+        
+        invalidateUserDataCache(userId);
+      } else {
+        toast.error('Failed to update profile image. Please try again.');
+        await fetchUserData(true);
+      }
+    } catch (error) {
+      console.error('Error updating profile image:', error);
+      toast.error('An error occurred while updating your profile image');
+      await fetchUserData(true);
+    } finally {
+      setIsSaving(false);
+    }
   };
   
   const handleSaveChanges = async () => {
@@ -199,11 +239,9 @@ export const useClientProfile = () => {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       console.log(`Updating client name from "${client?.name}" to "${fullName}"`);
       
-      // Calculate profile completion percentage
       const completionPercentage = calculateProfileCompletionPercentage(formData);
       console.log(`Calculated profile completion percentage: ${completionPercentage}%`);
       
-      // Determine if profile should be marked as complete (if completion is >= 80%)
       const isProfileComplete = completionPercentage >= 80;
       console.log(`Profile will be marked as complete: ${isProfileComplete} (${completionPercentage}% >= 80%)`);
       
@@ -222,14 +260,12 @@ export const useClientProfile = () => {
         preferredHelpFormat: formData.preferredHelpFormat,
         budgetPerHour: formData.budgetPerHour,
         paymentMethod: formData.paymentMethod,
-        // CRITICAL: These fields ensure profile completion is correctly tracked
         profileCompleted: isProfileComplete,
         profileCompletionPercentage: completionPercentage
       };
       
       console.log("Submitting client profile update:", updatedData);
       
-      // First update the local state before the API call to ensure UI is responsive
       if (client) {
         const updatedClient = {
           ...client,
@@ -243,23 +279,18 @@ export const useClientProfile = () => {
       if (success) {
         console.log('Profile update successful, forcing data refresh');
         
-        // Force a refresh of the cache for this user
         invalidateUserDataCache(userId);
         
-        // Fetch fresh data immediately after a successful update
-        console.log('Fetching latest data after successful update');
         await fetchUserData(true);
         
         toast.success('Profile updated successfully');
       } else {
         toast.error('Failed to update profile. Please verify your connection and try again.');
-        // Revert client state to original if update failed
         await fetchUserData(true);
       }
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('An error occurred while updating your profile');
-      // Revert client state if there was an exception
       await fetchUserData(true);
     } finally {
       setIsSaving(false);

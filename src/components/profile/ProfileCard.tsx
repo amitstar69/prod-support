@@ -27,6 +27,7 @@ interface ProfileCardProps {
     preferredHelpFormat: string[];
     budgetPerHour: number;
     paymentMethod: string;
+    image?: string;
   };
   onInputChange: (field: string, value: any) => void;
   isSaving: boolean;
@@ -47,7 +48,10 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
           <h2 className="text-xl font-semibold mb-6">Client Information</h2>
           
           <div className="flex flex-col md:flex-row gap-8">
-            <ProfileImageUpload imageUrl={client.image} />
+            <ProfileImageUpload 
+              imageUrl={client.image} 
+              onImageUpdate={(url) => onInputChange('image', url)}
+            />
             <ClientInfoForm 
               firstName={formData.firstName}
               lastName={formData.lastName}
