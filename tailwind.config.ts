@@ -62,6 +62,15 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				form: {
+					input: {
+						DEFAULT: 'hsl(var(--background))',
+						foreground: 'hsl(var(--foreground))',
+						placeholder: 'hsl(var(--muted-foreground))',
+						border: 'hsl(var(--border))',
+						focus: 'hsl(var(--ring))',
+					}
 				}
 			},
 			borderRadius: {

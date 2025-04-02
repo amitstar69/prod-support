@@ -97,6 +97,11 @@
     @apply placeholder:text-slate-400;
   }
   
+  /* Improve input text visibility in dark mode */
+  .dark input, .dark textarea, .dark select {
+    @apply text-white bg-slate-800 border-slate-700;
+  }
+  
   /* Improve headings for better readability */
   h1, h2, h3, h4, h5, h6 {
     @apply tracking-tight;

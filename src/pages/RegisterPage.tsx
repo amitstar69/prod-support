@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { User, Code } from 'lucide-react';
@@ -7,6 +8,9 @@ import { toast } from 'sonner';
 import { supabase } from '../integrations/supabase/client';
 import { debugCheckProfileExists, debugCreateProfile } from '../contexts/auth';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Checkbox } from '../components/ui/checkbox';
 
 const RegisterPage: React.FC = () => {
   
@@ -21,6 +25,7 @@ const RegisterPage: React.FC = () => {
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [termsAgreed, setTermsAgreed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
@@ -91,6 +96,14 @@ const RegisterPage: React.FC = () => {
       
       if (password.length < 6) {
         const errorMsg = 'Password must be at least 6 characters';
+        setFormError(errorMsg);
+        toast.error(errorMsg);
+        setIsLoading(false);
+        return;
+      }
+      
+      if (!termsAgreed) {
+        const errorMsg = 'You must agree to the Terms of Service and Privacy Policy';
         setFormError(errorMsg);
         toast.error(errorMsg);
         setIsLoading(false);
@@ -248,9 +261,9 @@ const RegisterPage: React.FC = () => {
                   </div>
                   
                   <div className="space-y-4 mb-4">
-                    <label className="block text-sm font-medium mb-2">
+                    <Label className="block text-sm font-medium mb-2">
                       I want to:
-                    </label>
+                    </Label>
                     <div className="grid grid-cols-2 gap-4">
                       <button
                         type="button"
@@ -284,72 +297,67 @@ const RegisterPage: React.FC = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label htmlFor="firstName" className="block text-sm font-medium">
+                      <Label htmlFor="firstName">
                         First Name
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         id="firstName"
                         name="firstName"
                         type="text"
-                        className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                         required
                       />
                     </div>
                     
                     <div className="space-y-1">
-                      <label htmlFor="lastName" className="block text-sm font-medium">
+                      <Label htmlFor="lastName">
                         Last Name
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         id="lastName"
                         name="lastName"
                         type="text"
-                        className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                         required
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-1">
-                    <label htmlFor="email" className="block text-sm font-medium">
+                    <Label htmlFor="email">
                       Email
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       id="email"
                       name="email"
                       type="email"
-                      className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                       required
                     />
                   </div>
                   
                   <div className="space-y-1">
-                    <label htmlFor="password" className="block text-sm font-medium">
+                    <Label htmlFor="password">
                       Password
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       id="password"
                       name="password"
                       type="password"
-                      className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
                       required
                       minLength={6}
                     />
                     <p className="text-xs text-muted-foreground mt-1">Password must be at least 6 characters</p>
                   </div>
                   
-                  <div>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        name="terms"
-                        required
-                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary/25"
-                      />
-                      <span className="text-sm">
-                        I agree to the <a href="#" className="text-primary font-medium">Terms of Service</a> and <a href="#" className="text-primary font-medium">Privacy Policy</a>
-                      </span>
-                    </label>
+                  <div className="flex items-start gap-2">
+                    <Checkbox 
+                      id="terms" 
+                      checked={termsAgreed}
+                      onCheckedChange={(checked) => setTermsAgreed(checked as boolean)}
+                      className="mt-1"
+                      required
+                    />
+                    <Label htmlFor="terms" className="text-sm font-normal leading-tight">
+                      I agree to the <a href="#" className="text-primary font-medium">Terms of Service</a> and <a href="#" className="text-primary font-medium">Privacy Policy</a>
+                    </Label>
                   </div>
                   
                   <div>
