@@ -15,6 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Button } from '../components/ui/button';
 import { AlertCircle, Database } from 'lucide-react';
 
+// Check if we're in development mode
+const isDevelopment = import.meta.env.MODE === 'development';
+
 const DeveloperDashboard = () => {
   const {
     tickets,
@@ -56,7 +59,8 @@ const DeveloperDashboard = () => {
           </div>
         )}
         
-        {isAuthenticated && (
+        {/* Only show debug tools in development environment */}
+        {isAuthenticated && isDevelopment && (
           <div className="mb-4 flex flex-wrap gap-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
             <div className="flex-1">
               <h3 className="text-sm font-medium flex items-center gap-1 text-amber-800">

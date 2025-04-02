@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { debugInspectHelpRequests, createTestHelpRequest } from '../../integrations/supabase/helpRequestsDebug';
 import { useAuth } from '../../contexts/auth';
@@ -8,16 +7,14 @@ import { toast } from 'sonner';
 // Check if we're in development environment
 const isDevelopment = import.meta.env.MODE === 'development';
 
-// Force hide in production
-const forceHidden = true;
-
+// Component is completely hidden in production
 const DebugHelpRequestDatabase: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   
   // On component mount, check if we should show the debug component
   useEffect(() => {
-    // Only show in development mode, and respect the forceHidden flag
-    setIsVisible(isDevelopment && !forceHidden);
+    // Only show in development mode
+    setIsVisible(isDevelopment);
   }, []);
 
   // If component should be hidden, don't render anything
