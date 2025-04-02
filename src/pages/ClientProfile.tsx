@@ -107,6 +107,18 @@ const ClientProfile: React.FC = () => {
 
   // Calculate profile completion percentage
   const profileCompletionPercentage = client.profileCompletionPercentage || 0;
+  
+  // Calculate setup progress - this is different from profile completion
+  // It includes other onboarding steps beyond just profile completion
+  const setupSteps = [
+    !!client.profileCompleted,             // Profile completed
+    !!client.completedFirstSession,        // First session completed 
+    !!client.hasZoom,                      // Zoom setup
+    !!client.paymentMethodAdded            // Payment method added
+  ];
+  
+  const completedSetupSteps = setupSteps.filter(step => step).length;
+  const setupProgressPercentage = Math.round((completedSetupSteps / setupSteps.length) * 100);
 
   return (
     <Layout>

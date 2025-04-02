@@ -261,7 +261,8 @@ export const useClientProfile = () => {
         budgetPerHour: formData.budgetPerHour,
         paymentMethod: formData.paymentMethod,
         profileCompleted: isProfileComplete,
-        profileCompletionPercentage: completionPercentage
+        profileCompletionPercentage: completionPercentage,
+        profile_completed: isProfileComplete
       };
       
       console.log("Submitting client profile update:", updatedData);

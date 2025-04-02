@@ -1,4 +1,3 @@
-
 import { supabase } from '../../integrations/supabase';
 import { Developer, Client } from '../../types/product';
 import { toast } from 'sonner';
@@ -50,6 +49,12 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     if (hasProperty(userData, 'profileCompleted')) {
       baseProfileData.profile_completed = userData.profileCompleted;
       console.log(`Setting profile_completed flag to ${userData.profileCompleted}`);
+    }
+    
+    // Also handle the direct profile_completed property 
+    if (hasProperty(userData, 'profile_completed')) {
+      baseProfileData.profile_completed = userData.profile_completed;
+      console.log(`Setting profile_completed flag directly to ${userData.profile_completed}`);
     }
     
     // Do not include profile_completion_percentage in base profiles as it doesn't exist there
