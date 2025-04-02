@@ -2,9 +2,9 @@
 import { supabase } from '../../integrations/supabase/client';
 import { AuthError } from '@supabase/supabase-js';
 
-// Cache for user profiles to avoid redundant queries
-const profileCache = new Map<string, { user_type: string, timestamp: number }>();
-const CACHE_EXPIRY = 5 * 60 * 1000; // Cache expires after 5 minutes
+// Cache for user profiles to reduce database queries
+const profileCache = new Map<string, { user_type: string | null, timestamp: number }>();
+const CACHE_EXPIRY = 15 * 60 * 1000; // Cache expires after 15 minutes for better performance
 
 export const loginWithEmailAndPassword = async (
   email: string,

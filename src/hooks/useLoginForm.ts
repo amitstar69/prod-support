@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
@@ -17,11 +18,13 @@ export const useLoginForm = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loginStartTime, setLoginStartTime] = useState<number | null>(null);
 
+  // Memoize handlers to prevent unnecessary re-renders
   const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value), []);
   const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value), []);
   const handleUserTypeChange = useCallback((type: UserType) => setUserType(type), []);
   const handleRememberMeChange = useCallback(() => setRememberMe(prev => !prev), []);
 
+  // Performance optimization: Use cached session first
   const checkAuthStatus = useCallback(async () => {
     try {
       const cachedSession = localStorage.getItem('supabase.auth.token');
@@ -36,6 +39,7 @@ export const useLoginForm = () => {
     }
   }, []);
 
+  // Redirect on authentication state change
   useEffect(() => {
     if (isAuthenticated && loginStartTime) {
       const loginEndTime = Date.now();
@@ -74,6 +78,7 @@ export const useLoginForm = () => {
     try {
       const loginPromise = login(email, password, userType);
       
+      // Add timeout for better UX
       const timeoutPromise = new Promise<boolean>((_, reject) => {
         setTimeout(() => reject(new Error('Login request timed out')), 10000);
       });

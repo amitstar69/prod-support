@@ -4,7 +4,7 @@ import { Developer, Client } from '../../types/product';
 import { fetchUserData } from './userDataFetchers';
 import { toast } from 'sonner';
 
-// Function to get the current user's data with timeout
+// Function to get the current user's data with improved caching and timeout
 export const getCurrentUserData = async (): Promise<Developer | Client | null> => {
   // First check if we have auth state
   const authStateStr = localStorage.getItem('authState');
@@ -30,14 +30,14 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     localStorage.removeItem(`userData_${userId}`);
     localStorage.removeItem(`userDataTime_${userId}`);
   } else {
-    // Check local cache - using a 10-second cache time (increased from previous 5 seconds)
+    // Improved caching strategy - using a 30-second cache time for better performance
     const cachedDataStr = localStorage.getItem(`userData_${userId}`);
     const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
     
     if (cachedDataStr && cacheTime) {
       const cacheAge = Date.now() - parseInt(cacheTime);
-      // Use 10-second cache time for very fresh data
-      if (cacheAge < 10 * 1000) { 
+      // Use 30-second cache time for fresher data but better performance
+      if (cacheAge < 30 * 1000) { 
         console.log('Using cached user data', cacheAge/1000, 'seconds old');
         try {
           return JSON.parse(cachedDataStr);
@@ -51,12 +51,12 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     }
   }
   
-  // Create a timeout promise - increased to 30 seconds to allow more time for slow connections
+  // Create a timeout promise - 30 seconds to allow more time for slow connections
   const timeoutPromise = new Promise<null>((resolve) => {
     setTimeout(() => {
       console.warn('getCurrentUserData timeout reached after 30 seconds');
       resolve(null);
-    }, 30000); // 30 seconds timeout (increased from 15 seconds)
+    }, 30000); // 30 seconds timeout
   });
   
   if (supabase) {
