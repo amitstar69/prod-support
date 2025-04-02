@@ -35,7 +35,7 @@ const DeveloperWelcomePage = () => {
           if (userData.email) completed++;
           if (userData.description) completed++;
           if (userData.skills && userData.skills.length > 0) completed++;
-          if (userData.hourly_rate) completed++;
+          if (userData.hourlyRate) completed++;
           if (userData.availability !== undefined) completed++;
           
           setProfileCompletion(Math.round((completed / totalFields) * 100));
