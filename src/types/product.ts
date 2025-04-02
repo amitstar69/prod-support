@@ -1,4 +1,3 @@
-
 export interface Developer {
   id: string;
   name: string;
@@ -32,6 +31,11 @@ export interface Developer {
   bio?: string;
   profileCompletionPercentage?: number;
   onboardingCompletedAt?: string;
+  // New fields for enhanced profile
+  education?: any[];
+  certifications?: any[];
+  portfolioItems?: any[];
+  languagesSpoken?: any[];
 }
 
 export interface Client {
