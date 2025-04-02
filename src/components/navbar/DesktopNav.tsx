@@ -67,7 +67,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
                 to="/developer-dashboard" 
                 className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
               >
-                Dashboard
+                My Dashboard
               </Link>
               <Link 
                 to="/developer-tickets" 

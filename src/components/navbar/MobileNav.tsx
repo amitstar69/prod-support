@@ -68,7 +68,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
                 className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
                 onClick={() => setIsOpen(false)}
               >
-                Dashboard
+                My Dashboard
               </Link>
               <Link
                 to="/developer-tickets"

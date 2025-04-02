@@ -65,7 +65,7 @@ const NavLinks: React.FC = () => {
                 : 'text-muted-foreground hover:text-foreground'
             }
           >
-            Dashboard
+            My Dashboard
           </NavLink>
           <NavLink
             to="/developer-tickets"
