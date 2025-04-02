@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/components/ui/breadcrumb';
 import { useClientProfile } from '../hooks/useClientProfile';
 import { Progress } from '../components/ui/progress';
+import { toast } from 'sonner';
 
 const ClientProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -32,33 +33,52 @@ const ClientProfile: React.FC = () => {
   // Force refresh profile data when navigating to this page
   useEffect(() => {
     console.log('ClientProfile component mounted or location changed');
-    console.log('Forcing profile refresh on route change/component mount');
+    
+    // Add a timeout to show an error toast if the profile still hasn't loaded after 15 seconds
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        toast.error("Profile is taking too long to load. Please try refreshing the page.");
+      }
+    }, 15000);
     
     if (userId) {
       // Invalidate cache first to ensure fresh data
       console.log('Invalidating cache before refresh');
       invalidateUserDataCache(userId);
+      
+      // Force refresh with a small delay to ensure cache is cleared
+      setTimeout(() => {
+        console.log('Forcing profile refresh with delay');
+        refreshProfile();
+      }, 100);
+    } else {
+      toast.error("User not logged in. Please log in to view your profile.");
+      navigate('/login');
     }
-    
-    refreshProfile();
     
     // Cleanup on unmount - invalidate cache to ensure fresh data on next navigation
     return () => {
       console.log('ClientProfile component unmounting - invalidating cache');
+      clearTimeout(timeoutId);
       if (userId) {
         invalidateUserDataCache(userId);
       }
     };
-  }, [refreshProfile, userId]);
+  }, [refreshProfile, userId, navigate, isLoading]);
 
   const handleForceLogout = async () => {
     try {
+      console.log('Forcing logout due to profile loading issues');
       localStorage.removeItem('authState');
+      if (userId) {
+        invalidateUserDataCache(userId);
+      }
       await logout();
-      window.location.href = '/';
+      toast.info("You've been logged out. Please log in again.");
+      window.location.href = '/login';
     } catch (error) {
       console.error('Error during force logout:', error);
-      window.location.href = '/';
+      window.location.href = '/login';
     }
   };
 
@@ -85,7 +105,10 @@ const ClientProfile: React.FC = () => {
         <ProfileErrorState 
           title="Loading Timeout"
           message="We couldn't load your profile information in a reasonable time. This could be due to connection issues or server problems."
-          onRetry={() => refreshProfile()}
+          onRetry={() => {
+            if (userId) invalidateUserDataCache(userId);
+            refreshProfile();
+          }}
           onForceLogout={handleForceLogout}
         />
       </Layout>
@@ -97,8 +120,11 @@ const ClientProfile: React.FC = () => {
       <Layout>
         <ProfileErrorState 
           title="Profile not found"
-          message="We couldn't find your profile information"
-          onRetry={() => refreshProfile()}
+          message="We couldn't find your profile information. Please try logging out and logging back in."
+          onRetry={() => {
+            if (userId) invalidateUserDataCache(userId);
+            refreshProfile();
+          }}
           onForceLogout={handleForceLogout}
         />
       </Layout>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from '../contexts/auth';
 import { Client } from '../types/product';
@@ -71,6 +72,7 @@ export const useClientProfile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingTimeoutReached, setLoadingTimeoutReached] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [formData, setFormData] = useState<ClientProfileFormData>({
     firstName: '',
     lastName: '',
@@ -94,14 +96,21 @@ export const useClientProfile = () => {
     if (!userId) return;
     
     setIsLoading(true);
-    console.log('Fetching client profile data for user:', userId, 'forceRefresh:', forceRefresh);
+    setLoadingTimeoutReached(false);
+    console.log('Fetching client profile data for user:', userId, 'forceRefresh:', forceRefresh, 'retry:', retryCount);
     
+    // Set a loading timeout - make it shorter on retries
+    const timeoutDuration = retryCount > 0 ? 8000 : 15000;
     const timeoutId = setTimeout(() => {
-      console.log('Profile loading timeout reached');
+      console.log('Profile loading timeout reached after', timeoutDuration/1000, 'seconds');
       setLoadingTimeoutReached(true);
       setIsLoading(false);
-      toast.error("Loading profile data is taking longer than expected. You can try logging out and back in.");
-    }, 10000);
+      
+      // Only show toast on first timeout
+      if (retryCount === 0) {
+        toast.error("Loading profile data is taking longer than expected. You can try refreshing or logging out and back in.");
+      }
+    }, timeoutDuration);
     
     try {
       if (forceRefresh) {
@@ -115,6 +124,14 @@ export const useClientProfile = () => {
       clearTimeout(timeoutId);
       
       if (userData) {
+        // Make sure we got client data
+        if (userData.userType !== 'client' && !('budgetPerHour' in userData)) {
+          console.error('User data is not client data:', userData);
+          toast.error("Retrieved user data is not client data. This may indicate an issue with your account type.");
+          setIsLoading(false);
+          return;
+        }
+        
         const clientData = userData as Client;
         console.log('Client data fetched successfully:', clientData);
         setClient(clientData);
@@ -149,20 +166,35 @@ export const useClientProfile = () => {
           percentage: clientData.profileCompletionPercentage
         });
         
-        console.log('Form data populated:', { firstName, lastName, email: clientData.email });
+        // Reset retry count on successful fetch
+        setRetryCount(0);
       } else {
         toast.error("Failed to load profile data: User data not found");
         console.error("User data not found");
+        
+        // Increment retry count for next attempt
+        setRetryCount(prev => prev + 1);
+        
+        // Auto-retry once if this is the first failure
+        if (retryCount === 0) {
+          console.log('Auto-retrying fetch after delay...');
+          setTimeout(() => {
+            fetchUserData(true);
+          }, 2000);
+        }
       }
     } catch (error) {
       clearTimeout(timeoutId);
       
       console.error("Error fetching user data:", error);
       toast.error("Failed to load profile data. Please try again later.");
+      
+      // Increment retry count
+      setRetryCount(prev => prev + 1);
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [userId, retryCount]);
   
   useEffect(() => {
     if (userId) {

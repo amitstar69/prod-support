@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, getCurrentUserData, updateUserData } from './auth';
+import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from './auth';
 import { Developer, Client } from '../types/product';
 import { toast } from 'sonner';
 
@@ -125,11 +125,16 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         setIsOnboardingComplete(true);
         toast.success('Onboarding completed successfully!');
         
-        // Redirect based on user type
+        // Invalidate cache to ensure fresh data on profile page
+        if (userId) {
+          invalidateUserDataCache(userId);
+        }
+        
+        // Redirect based on user type - use the specific profile pages
         if (userType === 'client') {
-          navigate('/client-dashboard');
+          navigate('/client-profile');
         } else {
-          navigate('/developer-dashboard');
+          navigate('/profile');
         }
         
         return true;

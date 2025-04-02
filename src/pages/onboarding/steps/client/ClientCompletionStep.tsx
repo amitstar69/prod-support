@@ -3,11 +3,18 @@ import React from 'react';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
 import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
 import { CheckCircle } from 'lucide-react';
+import { useAuth, invalidateUserDataCache } from '../../../../contexts/auth';
 
 const ClientCompletionStep: React.FC = () => {
   const { completeOnboarding, userData, skipOnboarding } = useOnboarding();
+  const { userId } = useAuth();
   
   const handleSubmit = async () => {
+    // Invalidate cache before completing onboarding
+    if (userId) {
+      invalidateUserDataCache(userId);
+    }
+    
     await completeOnboarding();
   };
   
