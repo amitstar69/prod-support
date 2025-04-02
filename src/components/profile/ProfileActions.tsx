@@ -1,19 +1,32 @@
 
 import React from 'react';
 import { Button } from '../ui/button';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, X } from 'lucide-react';
 
 interface ProfileActionsProps {
   isSaving: boolean;
   onSave: () => void;
+  onCancel?: () => void;
+  hasChanges?: boolean;
 }
 
-const ProfileActions: React.FC<ProfileActionsProps> = ({ isSaving, onSave }) => {
+const ProfileActions: React.FC<ProfileActionsProps> = ({ isSaving, onSave, onCancel, hasChanges = false }) => {
   return (
-    <div className="flex justify-end">
+    <div className="flex justify-end space-x-3">
+      {onCancel && (
+        <Button 
+          onClick={onCancel} 
+          variant="outline" 
+          disabled={isSaving || !hasChanges}
+          className="px-6"
+        >
+          <X className="mr-2 h-4 w-4" />
+          Cancel
+        </Button>
+      )}
       <Button 
         onClick={onSave} 
-        disabled={isSaving}
+        disabled={isSaving || !hasChanges}
         className="px-6"
       >
         {isSaving ? (
