@@ -32,6 +32,7 @@ const MyApplicationsPage = () => {
           onRefresh={fetchTickets}
           title="My Applications"
           description="Manage and track your active gig applications"
+          hideFilterButton={true}
         />
         
         {isLoading ? (

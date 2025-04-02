@@ -9,6 +9,7 @@ interface DashboardHeaderProps {
   onRefresh: () => void;
   title?: string;
   description?: string;
+  hideFilterButton?: boolean;
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ 
@@ -16,7 +17,8 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   setShowFilters, 
   onRefresh,
   title = "Available Gigs",
-  description = "Browse and apply for help requests from clients"
+  description = "Browse and apply for help requests from clients",
+  hideFilterButton = false
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-border/30">
@@ -31,15 +33,17 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-2 self-end sm:self-auto">
-          <Button 
-            variant="outline"
-            size="sm"
-            className={`flex items-center gap-1 h-9 ${showFilters ? 'bg-primary/10 text-primary' : ''}`}
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4" />
-            {showFilters ? 'Hide Filters' : 'Show Filters'}
-          </Button>
+          {!hideFilterButton && (
+            <Button 
+              variant="outline"
+              size="sm"
+              className={`flex items-center gap-1 h-9 ${showFilters ? 'bg-primary/10 text-primary' : ''}`}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4" />
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </Button>
+          )}
           <Button 
             variant="outline"
             size="sm"
