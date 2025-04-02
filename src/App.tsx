@@ -55,7 +55,13 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            
+            {/* Route for developer registration */}
             <Route path="/developer" element={<DeveloperRegistration />} />
+            
+            {/* Add this alias route to prevent 404 */}
+            <Route path="/developer-registration" element={<DeveloperRegistration />} />
+            
             <Route path="/search" element={<Search />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route 
