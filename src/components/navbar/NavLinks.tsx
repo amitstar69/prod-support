@@ -78,6 +78,16 @@ const NavLinks: React.FC = () => {
             Gigs
           </NavLink>
           <NavLink
+            to="/my-applications"
+            className={({ isActive }) =>
+              isActive
+                ? 'text-primary font-medium'
+                : 'text-muted-foreground hover:text-foreground'
+            }
+          >
+            My Applications
+          </NavLink>
+          <NavLink
             to="/profile"
             className={({ isActive }) =>
               isActive

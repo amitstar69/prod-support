@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
@@ -21,6 +22,7 @@ import ClientLanding from './pages/ClientLanding';
 import DeveloperRegistration from './pages/DeveloperRegistration';
 import SessionHistory from './pages/SessionHistory';
 import DeveloperTicketDetail from './pages/DeveloperTicketDetail';
+import MyApplicationsPage from './pages/MyApplicationsPage';
 
 import { AuthProvider } from './contexts/auth';
 import { HelpRequestProvider } from './contexts/HelpRequestContext';
@@ -146,12 +148,22 @@ function App() {
               } 
             />
             
-            {/* New route for developer tickets */}
+            {/* Route for developer tickets (Gigs) */}
             <Route 
               path="/developer-tickets" 
               element={
                 <ProtectedRoute requiredUserType="developer">
                   <DeveloperDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* New route for My Applications */}
+            <Route 
+              path="/my-applications" 
+              element={
+                <ProtectedRoute requiredUserType="developer">
+                  <MyApplicationsPage />
                 </ProtectedRoute>
               } 
             />

@@ -66,6 +66,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
               >
                 Gigs
               </Link>
+              <Link
+                to="/my-applications"
+                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                My Applications
+              </Link>
             </>
           ) : (
             // Client navigation section or non-authenticated

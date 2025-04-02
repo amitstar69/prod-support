@@ -21,7 +21,6 @@ const DeveloperDashboard = () => {
     tickets,
     filteredTickets,
     recommendedTickets,
-    myApplications,
     isLoading,
     filters,
     showFilters,
@@ -46,6 +45,8 @@ const DeveloperDashboard = () => {
           showFilters={showFilters} 
           setShowFilters={setShowFilters} 
           onRefresh={fetchTickets} 
+          title="Gigs"
+          description="Browse and discover available help requests"
         />
         
         {!isAuthenticated && (
@@ -53,8 +54,6 @@ const DeveloperDashboard = () => {
             <LoginPrompt />
           </div>
         )}
-        
-        {/* Debug tools completely removed from production builds */}
         
         <TicketControls 
           onForceRefresh={handleForceRefresh}
@@ -87,11 +86,6 @@ const DeveloperDashboard = () => {
               <TabsTrigger value="all" className="flex-1">
                 All Tickets
               </TabsTrigger>
-              {isAuthenticated && (
-                <TabsTrigger value="myApplications" className="flex-1">
-                  My Applications
-                </TabsTrigger>
-              )}
             </TabsList>
             
             {isAuthenticated && (
@@ -147,35 +141,6 @@ const DeveloperDashboard = () => {
                 />
               )}
             </TabsContent>
-            
-            {isAuthenticated && (
-              <TabsContent value="myApplications" className="mt-0">
-                <TicketSummary 
-                  filteredCount={myApplications.length} 
-                  totalCount={myApplications.length} 
-                  dataSource={dataSource}
-                  categoryTitle="My Applications"
-                />
-                
-                {myApplications.length > 0 ? (
-                  <TicketList 
-                    tickets={myApplications} 
-                    onClaimTicket={handleClaimTicket}
-                    currentUserId={userId}
-                    isAuthenticated={isAuthenticated}
-                    isApplication={true}
-                  />
-                ) : (
-                  <EmptyTicketState 
-                    tickets={tickets}
-                    isAuthenticated={isAuthenticated}
-                    onRefresh={fetchTickets}
-                    dataSource={dataSource}
-                    customMessage="You haven't applied to any tickets yet. Browse available tickets and start applying!"
-                  />
-                )}
-              </TabsContent>
-            )}
           </Tabs>
         )}
       </div>
