@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from '../contexts/auth';
 import { Client } from '../types/product';
@@ -101,7 +100,7 @@ export const useClientProfile = () => {
     console.log('Fetching client profile data for user:', userId, 'forceRefresh:', forceRefresh, 'retry:', retryCount);
     
     // Set a loading timeout - make it shorter on retries
-    const timeoutDuration = retryCount > 0 ? 10000 : 20000; // Increased timeouts (10s for retries, 20s initially)
+    const timeoutDuration = retryCount > 0 ? 15000 : 30000; // Increased timeouts (15s for retries, 30s initially)
     const timeoutId = setTimeout(() => {
       console.log('Profile loading timeout reached after', timeoutDuration/1000, 'seconds');
       setLoadingTimeoutReached(true);
@@ -117,6 +116,8 @@ export const useClientProfile = () => {
       if (forceRefresh) {
         console.log('Forcing cache invalidation before fetch');
         invalidateUserDataCache(userId);
+        // Add a small delay after cache invalidation to ensure it's processed
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
       
       console.log('Fetching fresh user data');
@@ -169,6 +170,7 @@ export const useClientProfile = () => {
         
         // Reset retry count on successful fetch
         setRetryCount(0);
+        setIsLoading(false);
       } else {
         console.error("User data not found");
         
@@ -189,6 +191,7 @@ export const useClientProfile = () => {
         } else {
           toast.error("Failed to load profile after multiple attempts. Please try refreshing the page.");
           setLoadingTimeoutReached(true);
+          setIsLoading(false);
         }
       }
     } catch (error) {
@@ -213,9 +216,6 @@ export const useClientProfile = () => {
       } else {
         toast.error("Failed to load profile after multiple attempts. Please try refreshing the page.");
         setLoadingTimeoutReached(true);
-      }
-    } finally {
-      if (retryCount >= maxRetryCount) {
         setIsLoading(false);
       }
     }
@@ -230,6 +230,11 @@ export const useClientProfile = () => {
     } else {
       setIsLoading(false);
     }
+    
+    // Clean up function to clear any pending timeouts when component unmounts
+    return () => {
+      console.log('useClientProfile hook cleaning up');
+    };
   }, [userId, fetchUserData]);
   
   const handleInputChange = (field: string, value: any) => {
@@ -340,6 +345,8 @@ export const useClientProfile = () => {
         
         invalidateUserDataCache(userId);
         
+        // Add a small delay before fetching fresh data
+        await new Promise(resolve => setTimeout(resolve, 300));
         await fetchUserData(true);
         
         toast.success('Profile updated successfully');

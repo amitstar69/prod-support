@@ -130,18 +130,18 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         if (userId) {
           console.log('Invalidating cache after onboarding completion');
           invalidateUserDataCache(userId);
+          
+          // Wait a moment to ensure data is invalidated
+          await new Promise(resolve => setTimeout(resolve, 800));
         }
         
-        // Wait a moment to ensure data is invalidated
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Redirect based on user type - use the specific profile pages
+        // Redirect based on user type - use the specific path names
         if (userType === 'client') {
           console.log('Redirecting to client dashboard after onboarding');
-          navigate('/client-dashboard');
+          navigate('/client-dashboard', { replace: true });
         } else {
           console.log('Redirecting to developer dashboard after onboarding');
-          navigate('/developer-dashboard');
+          navigate('/developer-dashboard', { replace: true });
         }
         
         return true;

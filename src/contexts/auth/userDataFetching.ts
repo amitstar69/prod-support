@@ -30,34 +30,40 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     localStorage.removeItem(`userData_${userId}`);
     localStorage.removeItem(`userDataTime_${userId}`);
   } else {
-    // Check local cache - using a 5-second cache time (increased from previous 2 seconds)
+    // Check local cache - using a 10-second cache time (increased from previous 5 seconds)
     const cachedDataStr = localStorage.getItem(`userData_${userId}`);
     const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
     
     if (cachedDataStr && cacheTime) {
       const cacheAge = Date.now() - parseInt(cacheTime);
-      // Use 5-second cache time for very fresh data
-      if (cacheAge < 5 * 1000) { 
+      // Use 10-second cache time for very fresh data
+      if (cacheAge < 10 * 1000) { 
         console.log('Using cached user data', cacheAge/1000, 'seconds old');
-        return JSON.parse(cachedDataStr);
+        try {
+          return JSON.parse(cachedDataStr);
+        } catch (parseError) {
+          console.error('Error parsing cached data, will fetch fresh data:', parseError);
+          // Continue to fetch fresh data
+        }
       } else {
         console.log('Cache expired after', cacheAge/1000, 'seconds, fetching fresh data');
       }
     }
   }
   
-  // Create a timeout promise
+  // Create a timeout promise - increased to 30 seconds to allow more time for slow connections
   const timeoutPromise = new Promise<null>((resolve) => {
     setTimeout(() => {
-      console.warn('getCurrentUserData timeout reached');
+      console.warn('getCurrentUserData timeout reached after 30 seconds');
       resolve(null);
-    }, 15000); // 15 seconds timeout (increased from 8 seconds)
+    }, 30000); // 30 seconds timeout (increased from 15 seconds)
   });
   
   if (supabase) {
     try {
       console.time('fetchUserData');
       console.log('Fetching fresh user data from Supabase');
+      
       // Race between the data fetch and timeout
       const dataPromise = fetchUserData(userType, userId);
       const result = await Promise.race([dataPromise, timeoutPromise]);
@@ -68,6 +74,9 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
         const localData = getUserDataFromLocalStorage(userType, userId);
         if (localData) {
           console.log('Found user data in localStorage, using as fallback');
+          // We've timed out but have local data, so let's still update the timestamp
+          // to prevent excessive retries in rapid succession
+          localStorage.setItem(`userDataTime_${userId}`, Date.now().toString());
           return localData;
         } else {
           console.error('No user data found in localStorage either');
@@ -80,7 +89,7 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
       
       // Cache result for future use - making sure to avoid circular references
       try {
-        // Clone the object to remove any circular references before storing
+        // Handle circular references before storing
         const safeResult = JSON.parse(JSON.stringify(result));
         localStorage.setItem(`userData_${userId}`, JSON.stringify(safeResult));
         localStorage.setItem(`userDataTime_${userId}`, Date.now().toString());

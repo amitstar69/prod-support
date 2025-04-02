@@ -4,23 +4,41 @@ import { useOnboarding } from '../../../../contexts/OnboardingContext';
 import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
 import { CheckCircle } from 'lucide-react';
 import { useAuth, invalidateUserDataCache } from '../../../../contexts/auth';
+import { toast } from 'sonner';
 
 const ClientCompletionStep: React.FC = () => {
   const { completeOnboarding, userData, skipOnboarding } = useOnboarding();
   const { userId } = useAuth();
   
   const handleSubmit = async () => {
-    // Force a complete cache invalidation before completing onboarding
-    if (userId) {
-      console.log('Invalidating cache before completing onboarding');
-      invalidateUserDataCache(userId);
-      
-      // Add a small delay to ensure cache invalidation is processed
-      await new Promise(resolve => setTimeout(resolve, 300));
-    }
+    // Show a loading toast
+    const loadingToast = toast.loading('Completing your profile...');
     
-    // Then complete the onboarding process
-    await completeOnboarding();
+    try {
+      // Force a complete cache invalidation before completing onboarding
+      if (userId) {
+        console.log('Invalidating cache before completing onboarding');
+        invalidateUserDataCache(userId);
+        
+        // Add a small delay to ensure cache invalidation is processed
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      // Then complete the onboarding process
+      const success = await completeOnboarding();
+      
+      // Clear the loading toast
+      toast.dismiss(loadingToast);
+      
+      if (!success) {
+        toast.error('There was an issue completing your profile. Please try again.');
+      }
+    } catch (error) {
+      // Clear the loading toast and show error
+      toast.dismiss(loadingToast);
+      console.error('Error during profile completion:', error);
+      toast.error('There was an unexpected error completing your profile. Please try again.');
+    }
   };
   
   return (
