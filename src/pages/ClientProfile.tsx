@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -11,7 +10,7 @@ import MessagesSection from '../components/chat/MessagesSection';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/components/ui/breadcrumb';
-import { useClientProfile } from '../hooks/useClientProfile';
+import { useClientProfile } from '../hooks/client-profile';
 import { Progress } from '../components/ui/progress';
 import { toast } from 'sonner';
 
@@ -30,11 +29,9 @@ const ClientProfile: React.FC = () => {
     refreshProfile
   } = useClientProfile();
 
-  // Force refresh profile data when navigating to this page and handle component unmounting
   useEffect(() => {
     console.log('ClientProfile component mounted or location changed');
     
-    // Only show long loading message if we're genuinely having trouble
     const longLoadingTimeoutId = setTimeout(() => {
       if (isLoading) {
         toast.info("Profile is taking longer than normal to load. Please be patient...");
@@ -42,16 +39,12 @@ const ClientProfile: React.FC = () => {
     }, 5000);
     
     if (userId) {
-      // Clean start - invalidate the cache first
       invalidateUserDataCache(userId);
-      
-      // Then trigger a refresh with a small delay to ensure the invalidation is processed
       const refreshTimeoutId = setTimeout(() => {
         console.log('Initiating profile refresh');
         refreshProfile();
       }, 300);
       
-      // Cleanup timeouts on unmount
       return () => {
         console.log('ClientProfile component unmounting - cleaning up');
         clearTimeout(longLoadingTimeoutId);
@@ -86,8 +79,6 @@ const ClientProfile: React.FC = () => {
     if (userId) {
       console.log('Retry requested - clearing cache and refreshing');
       invalidateUserDataCache(userId);
-      
-      // Use a small delay to ensure cache invalidation is processed
       setTimeout(() => {
         toast.info("Retrying profile load...");
         refreshProfile();
@@ -96,7 +87,6 @@ const ClientProfile: React.FC = () => {
   };
 
   const handleBack = () => {
-    // Invalidate cache before navigating back to ensure dashboard sees fresh data
     if (userId) {
       console.log('Invalidating cache before navigating back to dashboard');
       invalidateUserDataCache(userId);
@@ -138,11 +128,8 @@ const ClientProfile: React.FC = () => {
     );
   }
 
-  // Calculate profile completion percentage
   const profileCompletionPercentage = client.profileCompletionPercentage || 0;
   
-  // Calculate setup progress - this is different from profile completion
-  // It includes other onboarding steps beyond just profile completion
   const setupSteps = [
     !!client.profileCompleted,             // Profile completed
     !!client.completedFirstSession,        // First session completed 
