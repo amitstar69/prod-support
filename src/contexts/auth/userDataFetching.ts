@@ -30,14 +30,14 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     localStorage.removeItem(`userData_${userId}`);
     localStorage.removeItem(`userDataTime_${userId}`);
   } else {
-    // Check local cache - using a 2-second cache time (reduced from previous 3 seconds)
+    // Check local cache - using a 5-second cache time (increased from previous 2 seconds)
     const cachedDataStr = localStorage.getItem(`userData_${userId}`);
     const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
     
     if (cachedDataStr && cacheTime) {
       const cacheAge = Date.now() - parseInt(cacheTime);
-      // Use 2-second cache time for very fresh data
-      if (cacheAge < 2 * 1000) { 
+      // Use 5-second cache time for very fresh data
+      if (cacheAge < 5 * 1000) { 
         console.log('Using cached user data', cacheAge/1000, 'seconds old');
         return JSON.parse(cachedDataStr);
       } else {
@@ -51,7 +51,7 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
     setTimeout(() => {
       console.warn('getCurrentUserData timeout reached');
       resolve(null);
-    }, 8000); // 8 seconds timeout
+    }, 15000); // 15 seconds timeout (increased from 8 seconds)
   });
   
   if (supabase) {
@@ -65,7 +65,15 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
       
       if (result === null) {
         console.error('Fetching user data timed out, falling back to localStorage');
-        return getUserDataFromLocalStorage(userType, userId);
+        const localData = getUserDataFromLocalStorage(userType, userId);
+        if (localData) {
+          console.log('Found user data in localStorage, using as fallback');
+          return localData;
+        } else {
+          console.error('No user data found in localStorage either');
+          toast.error('Failed to load profile data: Connection timeout');
+        }
+        return null;
       }
       
       console.log('Fresh user data fetched successfully:', result);

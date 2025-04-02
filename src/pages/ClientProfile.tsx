@@ -30,41 +30,41 @@ const ClientProfile: React.FC = () => {
     refreshProfile
   } = useClientProfile();
 
-  // Force refresh profile data when navigating to this page
+  // Force refresh profile data when navigating to this page and handle component unmounting
   useEffect(() => {
     console.log('ClientProfile component mounted or location changed');
     
-    // Add a timeout to show an error toast if the profile still hasn't loaded after 15 seconds
-    const timeoutId = setTimeout(() => {
+    // Only show long loading message if we're genuinely having trouble
+    const longLoadingTimeoutId = setTimeout(() => {
       if (isLoading) {
-        toast.error("Profile is taking too long to load. Please try refreshing the page.");
+        toast.info("Profile is taking longer than normal to load. Please be patient...");
       }
-    }, 15000);
+    }, 5000);
     
     if (userId) {
-      // Invalidate cache first to ensure fresh data
-      console.log('Invalidating cache before refresh');
+      // Clean start - invalidate the cache first
       invalidateUserDataCache(userId);
       
-      // Force refresh with a small delay to ensure cache is cleared
-      setTimeout(() => {
-        console.log('Forcing profile refresh with delay');
+      // Then trigger a refresh with a small delay to ensure the invalidation is processed
+      const refreshTimeoutId = setTimeout(() => {
+        console.log('Initiating profile refresh');
         refreshProfile();
-      }, 100);
+      }, 300);
+      
+      // Cleanup timeouts on unmount
+      return () => {
+        console.log('ClientProfile component unmounting - cleaning up');
+        clearTimeout(longLoadingTimeoutId);
+        clearTimeout(refreshTimeoutId);
+      };
     } else {
       toast.error("User not logged in. Please log in to view your profile.");
       navigate('/login');
+      return () => {
+        clearTimeout(longLoadingTimeoutId);
+      };
     }
-    
-    // Cleanup on unmount - invalidate cache to ensure fresh data on next navigation
-    return () => {
-      console.log('ClientProfile component unmounting - invalidating cache');
-      clearTimeout(timeoutId);
-      if (userId) {
-        invalidateUserDataCache(userId);
-      }
-    };
-  }, [refreshProfile, userId, navigate, isLoading]);
+  }, [userId, navigate, refreshProfile]);
 
   const handleForceLogout = async () => {
     try {
@@ -75,10 +75,23 @@ const ClientProfile: React.FC = () => {
       }
       await logout();
       toast.info("You've been logged out. Please log in again.");
-      window.location.href = '/login';
+      navigate('/login');
     } catch (error) {
       console.error('Error during force logout:', error);
       window.location.href = '/login';
+    }
+  };
+
+  const handleRetry = () => {
+    if (userId) {
+      console.log('Retry requested - clearing cache and refreshing');
+      invalidateUserDataCache(userId);
+      
+      // Use a small delay to ensure cache invalidation is processed
+      setTimeout(() => {
+        toast.info("Retrying profile load...");
+        refreshProfile();
+      }, 300);
     }
   };
 
@@ -105,10 +118,7 @@ const ClientProfile: React.FC = () => {
         <ProfileErrorState 
           title="Loading Timeout"
           message="We couldn't load your profile information in a reasonable time. This could be due to connection issues or server problems."
-          onRetry={() => {
-            if (userId) invalidateUserDataCache(userId);
-            refreshProfile();
-          }}
+          onRetry={handleRetry}
           onForceLogout={handleForceLogout}
         />
       </Layout>
@@ -121,10 +131,7 @@ const ClientProfile: React.FC = () => {
         <ProfileErrorState 
           title="Profile not found"
           message="We couldn't find your profile information. Please try logging out and logging back in."
-          onRetry={() => {
-            if (userId) invalidateUserDataCache(userId);
-            refreshProfile();
-          }}
+          onRetry={handleRetry}
           onForceLogout={handleForceLogout}
         />
       </Layout>

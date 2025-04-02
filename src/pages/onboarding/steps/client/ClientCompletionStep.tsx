@@ -10,11 +10,16 @@ const ClientCompletionStep: React.FC = () => {
   const { userId } = useAuth();
   
   const handleSubmit = async () => {
-    // Invalidate cache before completing onboarding
+    // Force a complete cache invalidation before completing onboarding
     if (userId) {
+      console.log('Invalidating cache before completing onboarding');
       invalidateUserDataCache(userId);
+      
+      // Add a small delay to ensure cache invalidation is processed
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
     
+    // Then complete the onboarding process
     await completeOnboarding();
   };
   

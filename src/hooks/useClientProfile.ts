@@ -73,6 +73,7 @@ export const useClientProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingTimeoutReached, setLoadingTimeoutReached] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [maxRetryCount] = useState(3); // Maximum number of retries
   const [formData, setFormData] = useState<ClientProfileFormData>({
     firstName: '',
     lastName: '',
@@ -100,7 +101,7 @@ export const useClientProfile = () => {
     console.log('Fetching client profile data for user:', userId, 'forceRefresh:', forceRefresh, 'retry:', retryCount);
     
     // Set a loading timeout - make it shorter on retries
-    const timeoutDuration = retryCount > 0 ? 8000 : 15000;
+    const timeoutDuration = retryCount > 0 ? 10000 : 20000; // Increased timeouts (10s for retries, 20s initially)
     const timeoutId = setTimeout(() => {
       console.log('Profile loading timeout reached after', timeoutDuration/1000, 'seconds');
       setLoadingTimeoutReached(true);
@@ -169,36 +170,62 @@ export const useClientProfile = () => {
         // Reset retry count on successful fetch
         setRetryCount(0);
       } else {
-        toast.error("Failed to load profile data: User data not found");
         console.error("User data not found");
         
         // Increment retry count for next attempt
-        setRetryCount(prev => prev + 1);
+        const nextRetryCount = retryCount + 1;
+        setRetryCount(nextRetryCount);
         
-        // Auto-retry once if this is the first failure
-        if (retryCount === 0) {
-          console.log('Auto-retrying fetch after delay...');
+        if (nextRetryCount <= maxRetryCount) {
+          console.log(`Auto-retrying fetch (${nextRetryCount}/${maxRetryCount}) after delay...`);
+          
+          // Exponential backoff for retries (2s, 4s, 8s)
+          const retryDelay = Math.min(2000 * Math.pow(2, retryCount), 8000);
+          
           setTimeout(() => {
+            toast.info(`Retry ${nextRetryCount}/${maxRetryCount}: Attempting to load profile data again...`);
             fetchUserData(true);
-          }, 2000);
+          }, retryDelay);
+        } else {
+          toast.error("Failed to load profile after multiple attempts. Please try refreshing the page.");
+          setLoadingTimeoutReached(true);
         }
       }
     } catch (error) {
       clearTimeout(timeoutId);
       
       console.error("Error fetching user data:", error);
-      toast.error("Failed to load profile data. Please try again later.");
       
       // Increment retry count
-      setRetryCount(prev => prev + 1);
+      const nextRetryCount = retryCount + 1;
+      setRetryCount(nextRetryCount);
+      
+      if (nextRetryCount <= maxRetryCount) {
+        console.log(`Error retry (${nextRetryCount}/${maxRetryCount}) after delay...`);
+        
+        // Exponential backoff for retries
+        const retryDelay = Math.min(2000 * Math.pow(2, retryCount), 8000);
+        
+        toast.error(`Error loading profile. Retrying (${nextRetryCount}/${maxRetryCount})...`);
+        setTimeout(() => {
+          fetchUserData(true);
+        }, retryDelay);
+      } else {
+        toast.error("Failed to load profile after multiple attempts. Please try refreshing the page.");
+        setLoadingTimeoutReached(true);
+      }
     } finally {
-      setIsLoading(false);
+      if (retryCount >= maxRetryCount) {
+        setIsLoading(false);
+      }
     }
-  }, [userId, retryCount]);
+  }, [userId, retryCount, maxRetryCount]);
   
   useEffect(() => {
     if (userId) {
       console.log('Initial client profile data fetch for user:', userId);
+      // Reset retry count when component mounts
+      setRetryCount(0);
       fetchUserData(true);
     } else {
       setIsLoading(false);
@@ -332,6 +359,8 @@ export const useClientProfile = () => {
   const refreshProfile = useCallback(() => {
     if (userId) {
       console.log('Manual profile refresh requested for user:', userId);
+      // Reset retry count when manually refreshing
+      setRetryCount(0);
       fetchUserData(true);
     }
   }, [userId, fetchUserData]);

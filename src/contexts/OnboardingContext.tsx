@@ -119,6 +119,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         onboardingCompletedAt: new Date().toISOString()
       };
       
+      console.log('Completing onboarding with data:', updateData);
       const success = await updateUserData(updateData);
       
       if (success) {
@@ -127,14 +128,20 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         
         // Invalidate cache to ensure fresh data on profile page
         if (userId) {
+          console.log('Invalidating cache after onboarding completion');
           invalidateUserDataCache(userId);
         }
         
+        // Wait a moment to ensure data is invalidated
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // Redirect based on user type - use the specific profile pages
         if (userType === 'client') {
-          navigate('/client-profile');
+          console.log('Redirecting to client dashboard after onboarding');
+          navigate('/client-dashboard');
         } else {
-          navigate('/profile');
+          console.log('Redirecting to developer dashboard after onboarding');
+          navigate('/developer-dashboard');
         }
         
         return true;
