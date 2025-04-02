@@ -57,7 +57,10 @@ const fetchDeveloperProfile = async (userId: string | null, profileData: any): P
     preferredWorkingHours: profileData.preferred_working_hours,
     lastActive: devProfileData.last_active,
     communicationPreferences: devProfileData.communication_preferences,
-    profileCompleted: profileData.profile_completed
+    profileCompleted: profileData.profile_completed,
+    // Map the new fields from snake_case to camelCase
+    portfolioItems: devProfileData.portfolio_items,
+    languagesSpoken: devProfileData.languages_spoken
   } as Developer;
 };
 

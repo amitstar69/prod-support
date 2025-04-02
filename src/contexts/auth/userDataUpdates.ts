@@ -1,4 +1,3 @@
-
 import { supabase } from '../../integrations/supabase';
 import { Developer, Client } from '../../types/product';
 import { toast } from 'sonner';
@@ -105,7 +104,7 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
       if (hasProperty(userData, 'bio')) specificProfileData.bio = userData.bio; // Add bio to developer profile
       if (hasProperty(userData, 'communicationPreferences')) specificProfileData.communication_preferences = userData.communicationPreferences;
       
-      // Add new developer profile fields
+      // Add new developer profile fields with proper snake_case mapping
       if (hasProperty(userData, 'education')) specificProfileData.education = userData.education;
       if (hasProperty(userData, 'certifications')) specificProfileData.certifications = userData.certifications;
       if (hasProperty(userData, 'portfolioItems')) specificProfileData.portfolio_items = userData.portfolioItems;
