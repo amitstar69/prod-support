@@ -90,18 +90,22 @@ const NavLinks: React.FC = () => {
         </>
       )}
 
-      <NavLink
-        to="/search"
-        className={({ isActive }) =>
-          isActive
-            ? 'text-primary font-medium'
-            : 'text-muted-foreground hover:text-foreground'
-        }
-      >
-        Find Developers
-      </NavLink>
+      {/* Only show Find Developers for clients or non-authenticated users */}
+      {(!isAuthenticated || userType === 'client') && (
+        <NavLink
+          to="/search"
+          className={({ isActive }) =>
+            isActive
+              ? 'text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          }
+        >
+          Find Developers
+        </NavLink>
+      )}
 
-      {isAuthenticated && (
+      {/* Only show Get Help for clients */}
+      {isAuthenticated && userType === 'client' && (
         <NavLink
           to="/get-help"
           className={({ isActive }) =>

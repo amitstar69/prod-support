@@ -35,34 +35,23 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
   return (
     <div className="md:hidden border-t border-border/40">
       <div className="p-3">
-        <SearchBar
-          placeholder="Find developers..."
-          className="mb-4"
-        />
+        {/* Only show search for client or non-authenticated users */}
+        {(!isAuthenticated || userType === 'client') && (
+          <SearchBar
+            placeholder="Find developers..."
+            className="mb-4"
+          />
+        )}
         
         <div className="space-y-1">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
-            Find Help
-          </p>
-          
-          <Link
-            to="/search"
-            className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-            onClick={() => setIsOpen(false)}
-          >
-            Search Developers
-          </Link>
-          
-          <Link
-            to="/get-help"
-            className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-            onClick={() => setIsOpen(false)}
-          >
-            Get Instant Help
-          </Link>
-          
+          {/* Show different sections based on user type */}
           {userType === 'developer' ? (
+            // Developer navigation section
             <>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
+                Developer Menu
+              </p>
+              
               <Link
                 to="/developer-dashboard"
                 className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
@@ -78,31 +67,51 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
                 Gigs
               </Link>
             </>
-          ) : userType === 'client' ? (
-            <>
-              <Link
-                to="/client-dashboard"
-                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/client-tickets"
-                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Tickets
-              </Link>
-            </>
           ) : (
-            <Link
-              to="/developer-tickets"
-              className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              Browse Tickets
-            </Link>
+            // Client navigation section or non-authenticated
+            <>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
+                Find Help
+              </p>
+              
+              <Link
+                to="/search"
+                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Search Developers
+              </Link>
+              
+              {/* Only show Get Help for clients */}
+              {isAuthenticated && userType === 'client' && (
+                <Link
+                  to="/get-help"
+                  className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Get Instant Help
+                </Link>
+              )}
+              
+              {userType === 'client' && (
+                <>
+                  <Link
+                    to="/client-dashboard"
+                    className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/client-tickets"
+                    className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Tickets
+                  </Link>
+                </>
+              )}
+            </>
           )}
           
           {isAuthenticated && (

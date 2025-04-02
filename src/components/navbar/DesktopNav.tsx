@@ -36,29 +36,33 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
       {/* Primary Navigation */}
       <nav className="flex items-center">
         <div className="flex space-x-1">
-          {/* Find Developers Dropdown */}
-          <div className="relative group">
-            <button className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors flex items-center">
-              Find Help
-              <ChevronDown className="h-4 w-4 ml-1 text-muted-foreground" />
-            </button>
-            <div className="absolute left-0 mt-1 w-48 rounded-md shadow-lg bg-background border border-border/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
-              <div className="py-1">
-                <Link
-                  to="/search"
-                  className="block px-4 py-2 text-sm hover:bg-secondary transition-colors"
-                >
-                  Search Developers
-                </Link>
-                <Link
-                  to="/get-help"
-                  className="block px-4 py-2 text-sm hover:bg-secondary transition-colors"
-                >
-                  Get Instant Help
-                </Link>
+          {/* Only show Find Help dropdown for clients or non-authenticated users */}
+          {(!isAuthenticated || userType === 'client') && (
+            <div className="relative group">
+              <button className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors flex items-center">
+                Find Help
+                <ChevronDown className="h-4 w-4 ml-1 text-muted-foreground" />
+              </button>
+              <div className="absolute left-0 mt-1 w-48 rounded-md shadow-lg bg-background border border-border/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                <div className="py-1">
+                  <Link
+                    to="/search"
+                    className="block px-4 py-2 text-sm hover:bg-secondary transition-colors"
+                  >
+                    Search Developers
+                  </Link>
+                  {isAuthenticated && userType === 'client' && (
+                    <Link
+                      to="/get-help"
+                      className="block px-4 py-2 text-sm hover:bg-secondary transition-colors"
+                    >
+                      Get Instant Help
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
           
           {/* Show different navigation based on user type */}
           {userType === 'developer' ? (
@@ -114,10 +118,13 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
 
       {/* Right Side - Search and Auth */}
       <div className="flex items-center space-x-3">
-        <SearchBar 
-          className="w-64" 
-          placeholder="Find developers..." 
-        />
+        {/* Only show search for clients or non-authenticated users */}
+        {(!isAuthenticated || userType === 'client') && (
+          <SearchBar 
+            className="w-64" 
+            placeholder="Find developers..." 
+          />
+        )}
         
         {isAuthenticated ? (
           <>
