@@ -41,19 +41,35 @@ export const useLoginForm = () => {
 
   // Redirect on authentication state change
   useEffect(() => {
-    if (isAuthenticated && loginStartTime) {
-      const loginEndTime = Date.now();
-      const loginDuration = loginEndTime - loginStartTime;
-      console.log(`Login process completed in ${loginDuration}ms`);
+    if (isAuthenticated && !isLoading) {
+      console.log(`User is authenticated, redirecting to ${userType === 'client' ? '/client' : '/developer-dashboard'}`);
       
-      setIsLoading(false);
-      setLoginStartTime(null);
-      
-      const destination = userType === 'client' ? '/client' : '/developer-dashboard';
-      console.log(`Redirecting authenticated user to ${destination}`);
-      navigate(destination);
+      // Short timeout to ensure state updates complete
+      setTimeout(() => {
+        const destination = userType === 'client' ? '/client' : '/developer-dashboard';
+        navigate(destination);
+      }, 100);
     }
-  }, [isAuthenticated, loginStartTime, navigate, userType]);
+  }, [isAuthenticated, isLoading, navigate, userType]);
+
+  // New useEffect to detect if login has been stuck for too long
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    if (isLoading && loginStartTime) {
+      // If loading for more than 10 seconds, consider it stuck
+      timeoutId = setTimeout(() => {
+        console.log('Login seems to be stuck, resetting loading state');
+        setIsLoading(false);
+        setLoginStartTime(null);
+        toast.error('Login is taking too long. Please try again.');
+      }, 10000);
+    }
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isLoading, loginStartTime]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,8 +110,8 @@ export const useLoginForm = () => {
       console.log('Login result:', success ? 'Success' : 'Failed');
       
       if (success) {
-        console.log(`Login successful, will redirect on auth state change`);
         toast.success(`Successfully logged in as ${userType}`);
+        // Login successful - will redirect in the useEffect
       } else if (!error) {
         setError('Login failed. Please check your credentials and try again.');
       }
@@ -103,10 +119,11 @@ export const useLoginForm = () => {
       console.error('Login error:', error);
       setError(error.message || 'An unexpected error occurred during login');
       toast.error(error.message || 'Login failed. Please try again later.');
-      setLoginStartTime(null);
     } finally {
+      // Only reset loading if not authenticated yet
       if (!isAuthenticated) {
         setIsLoading(false);
+        setLoginStartTime(null);
       }
     }
   }, [email, password, userType, isLoading, authLoading, login, isAuthenticated]);

@@ -28,19 +28,22 @@ const LoginPage: React.FC = () => {
   // Check auth status only once on initial component mount
   useEffect(() => {
     const checkAuth = async () => {
-      console.time('auth-check');
+      console.log('Checking auth status on login page');
       await checkAuthStatus();
-      console.timeEnd('auth-check');
     };
     checkAuth();
-  }, []);
+  }, [checkAuthStatus]);
   
   // Handle redirect for authenticated users
   useEffect(() => {
     if (isAuthenticated) {
       console.log('User is already authenticated, redirecting to home');
       const destination = userType === 'client' ? '/client' : '/developer-dashboard';
-      navigate(destination);
+      
+      // Add a small delay to ensure state is fully updated
+      setTimeout(() => {
+        navigate(destination);
+      }, 100);
     }
   }, [isAuthenticated, navigate, userType]);
   

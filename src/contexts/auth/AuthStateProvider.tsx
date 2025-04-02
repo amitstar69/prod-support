@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { AuthState, AuthContextType } from './types';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../integrations/supabase/client';
@@ -179,17 +180,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       // Update auth state immediately on successful login to speed up UI response
       if (result.success) {
-        // We'll let the auth listener handle the state update for consistency
-        // but we can immediately set isAuthenticated to true for UI purposes
+        // Set immediate auth state for better UX
         setAuthState(prev => ({
           ...prev,
           isAuthenticated: true,
+          userType: userType,
         }));
+        
+        // We'll let the auth listener update the rest of the state
+        console.log(`Login successful as ${userType}, setting immediate auth state`);
       }
       
       return result.success;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     } finally {
-      setIsLoading(false);
+      // Set a short delay before marking as not loading to prevent UI flicker
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
     }
   };
   
