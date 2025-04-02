@@ -45,8 +45,8 @@ const DeveloperDashboard = () => {
           showFilters={showFilters} 
           setShowFilters={setShowFilters} 
           onRefresh={fetchTickets} 
-          title="Gigs"
-          description="Browse and discover available help requests"
+          title="Available Gigs"
+          description="Find and apply for client help requests that match your skills"
         />
         
         {!isAuthenticated && (
@@ -84,7 +84,7 @@ const DeveloperDashboard = () => {
                 </TabsTrigger>
               )}
               <TabsTrigger value="all" className="flex-1">
-                All Tickets
+                All Gigs
               </TabsTrigger>
             </TabsList>
             
@@ -94,7 +94,7 @@ const DeveloperDashboard = () => {
                   filteredCount={recommendedTickets.length} 
                   totalCount={tickets.length} 
                   dataSource={dataSource}
-                  categoryTitle="Recommended Tickets"
+                  categoryTitle="Recommended Gigs"
                 />
                 
                 {recommendedTickets.length > 0 ? (
@@ -111,7 +111,7 @@ const DeveloperDashboard = () => {
                     isAuthenticated={isAuthenticated}
                     onRefresh={fetchTickets}
                     dataSource={dataSource}
-                    customMessage="No recommended tickets found. We'll suggest tickets that match your skills as they become available."
+                    customMessage="No recommended gigs found. We'll suggest gigs that match your skills as they become available."
                   />
                 )}
               </TabsContent>
@@ -122,7 +122,7 @@ const DeveloperDashboard = () => {
                 filteredCount={filteredTickets.length} 
                 totalCount={tickets.length} 
                 dataSource={dataSource}
-                categoryTitle="All Available Help Requests"
+                categoryTitle="All Available Gigs"
               />
               
               {filteredTickets.length > 0 ? (

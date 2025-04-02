@@ -163,7 +163,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
       }
       
-      const isSuccessful = typeof result === 'boolean' ? result : result.success;
+      const isSuccessful = typeof result === 'boolean' 
+        ? result 
+        : (result && 'success' in result) ? result.success : false;
       
       if (isSuccessful) {
         setAuthState(prev => ({
@@ -173,7 +175,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }));
         console.log(`Login successful as ${userType}, setting immediate auth state`);
       } else {
-        const errorMessage = typeof result === 'object' && 'error' in result ? result.error : 'Login failed';
+        const errorMessage = (typeof result === 'object' && result && 'error' in result) 
+          ? result.error 
+          : 'Login failed';
         console.error('Login failed:', errorMessage);
       }
       
