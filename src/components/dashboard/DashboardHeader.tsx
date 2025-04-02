@@ -7,19 +7,23 @@ interface DashboardHeaderProps {
   showFilters: boolean;
   setShowFilters: (show: boolean) => void;
   onRefresh: () => void;
+  title?: string;
+  description?: string;
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ 
   showFilters, 
   setShowFilters, 
-  onRefresh 
+  onRefresh,
+  title = "Developer Dashboard",
+  description = "Browse and claim available help requests from clients"
 }) => {
   return (
     <div className="flex justify-between items-center mb-4">
       <div>
-        <h1 className="text-xl font-semibold">Developer Dashboard</h1>
+        <h1 className="text-xl font-semibold">{title}</h1>
         <p className="text-muted-foreground text-sm">
-          Browse and claim available help requests from clients
+          {description}
         </p>
       </div>
       <div className="flex items-center gap-2">
