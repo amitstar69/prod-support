@@ -104,18 +104,31 @@ const NavLinks: React.FC = () => {
         </NavLink>
       )}
 
-      {/* Only show Get Help for clients */}
+      {/* Only show Get Help and Session History for clients */}
       {isAuthenticated && userType === 'client' && (
-        <NavLink
-          to="/get-help"
-          className={({ isActive }) =>
-            isActive
-              ? 'text-primary font-medium'
-              : 'text-muted-foreground hover:text-foreground'
-          }
-        >
-          Get Help
-        </NavLink>
+        <>
+          <NavLink
+            to="/get-help"
+            className={({ isActive }) =>
+              isActive
+                ? 'text-primary font-medium'
+                : 'text-muted-foreground hover:text-foreground'
+            }
+          >
+            Get Help
+          </NavLink>
+          
+          <NavLink
+            to="/session-history"
+            className={({ isActive }) =>
+              isActive
+                ? 'text-primary font-medium'
+                : 'text-muted-foreground hover:text-foreground'
+            }
+          >
+            Session History
+          </NavLink>
+        </>
       )}
     </div>
   );

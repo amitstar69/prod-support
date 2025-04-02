@@ -114,7 +114,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
             </>
           )}
           
-          {isAuthenticated && (
+          {/* Session History - only show for clients, not developers */}
+          {isAuthenticated && userType === 'client' && (
             <Link
               to="/session-history"
               className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"

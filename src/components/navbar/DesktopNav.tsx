@@ -104,8 +104,8 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
             </Link>
           )}
           
-          {/* Session History - only show if logged in */}
-          {isAuthenticated && (
+          {/* Session History - only show for clients, not developers */}
+          {isAuthenticated && userType === 'client' && (
             <Link 
               to="/session-history" 
               className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
