@@ -125,45 +125,57 @@ export type Database = {
         Row: {
           availability: boolean | null
           category: string | null
+          certifications: Json | null
           communication_preferences: string[] | null
+          education: Json | null
           experience: string | null
           featured: boolean | null
           hourly_rate: number | null
           id: string
+          languages_spoken: Json | null
           last_active: string | null
           minute_rate: number | null
           online: boolean | null
           phone: string | null
+          portfolio_items: Json | null
           rating: number | null
           skills: string[] | null
         }
         Insert: {
           availability?: boolean | null
           category?: string | null
+          certifications?: Json | null
           communication_preferences?: string[] | null
+          education?: Json | null
           experience?: string | null
           featured?: boolean | null
           hourly_rate?: number | null
           id: string
+          languages_spoken?: Json | null
           last_active?: string | null
           minute_rate?: number | null
           online?: boolean | null
           phone?: string | null
+          portfolio_items?: Json | null
           rating?: number | null
           skills?: string[] | null
         }
         Update: {
           availability?: boolean | null
           category?: string | null
+          certifications?: Json | null
           communication_preferences?: string[] | null
+          education?: Json | null
           experience?: string | null
           featured?: boolean | null
           hourly_rate?: number | null
           id?: string
+          languages_spoken?: Json | null
           last_active?: string | null
           minute_rate?: number | null
           online?: boolean | null
           phone?: string | null
+          portfolio_items?: Json | null
           rating?: number | null
           skills?: string[] | null
         }

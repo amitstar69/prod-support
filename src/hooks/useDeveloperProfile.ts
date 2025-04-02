@@ -20,6 +20,10 @@ interface DeveloperProfileFormData {
   communicationPreferences: string[];
   username: string;
   bio: string;
+  education: any[];
+  certifications: any[];
+  portfolioItems: any[];
+  languagesSpoken: any[];
 }
 
 // Function to calculate profile completion percentage based on filled fields
@@ -31,7 +35,8 @@ const calculateProfileCompletionPercentage = (formData: DeveloperProfileFormData
   
   const optionalFields: (keyof DeveloperProfileFormData)[] = [
     'bio', 'phone', 'experience', 'hourlyRate', 'minuteRate', 
-    'description', 'communicationPreferences', 'availability'
+    'description', 'communicationPreferences', 'availability',
+    'education', 'certifications', 'portfolioItems', 'languagesSpoken'
   ];
   
   // Count completed required fields
@@ -91,7 +96,11 @@ export const useDeveloperProfile = () => {
     description: '',
     communicationPreferences: ['video', 'chat', 'voice'],
     username: '',
-    bio: ''
+    bio: '',
+    education: [],
+    certifications: [],
+    portfolioItems: [],
+    languagesSpoken: []
   });
   
   const fetchUserData = useCallback(async (forceRefresh = true) => {
@@ -148,7 +157,11 @@ export const useDeveloperProfile = () => {
           description: developerData.description || '',
           communicationPreferences: communicationPrefs,
           username: developerData.username || '',
-          bio: developerData.bio || ''
+          bio: developerData.bio || '',
+          education: developerData.education || [],
+          certifications: developerData.certifications || [],
+          portfolioItems: developerData.portfolioItems || [],
+          languagesSpoken: developerData.languagesSpoken || []
         };
         
         setFormData(newFormData);
@@ -238,6 +251,10 @@ export const useDeveloperProfile = () => {
         communicationPreferences: formData.communicationPreferences,
         username: formData.username,
         bio: formData.bio,
+        education: formData.education,
+        certifications: formData.certifications,
+        portfolioItems: formData.portfolioItems,
+        languagesSpoken: formData.languagesSpoken,
         // CRITICAL: These fields ensure profile completion is correctly tracked
         profileCompleted: isProfileComplete,
         profileCompletionPercentage: completionPercentage

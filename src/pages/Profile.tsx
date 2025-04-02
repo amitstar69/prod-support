@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/auth';
-import ProfileCard from '../components/profile/DeveloperProfileCard';
+import DeveloperProfileCard from '../components/profile/DeveloperProfileCard';
 import ProfileLoadingState from '../components/profile/ProfileLoadingState';
 import ProfileErrorState from '../components/profile/ProfileErrorState';
 import ProfileSidebar from '../components/profile/ProfileSidebar';
@@ -129,7 +129,7 @@ const Profile: React.FC = () => {
           
           <div>
             {activeTab === 'profile' && (
-              <ProfileCard 
+              <DeveloperProfileCard 
                 developer={developer}
                 formData={formData}
                 onInputChange={handleInputChange}

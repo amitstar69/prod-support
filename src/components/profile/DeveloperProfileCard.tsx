@@ -1,15 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { Developer } from '../../types/product';
-import ProfileImageUpload from './ProfileImageUpload';
-import DeveloperInfoForm from './DeveloperInfoForm';
-import AboutSection from './AboutSection';
-import BioSection from './BioSection';
-import DeveloperSkillsSection from './DeveloperSkillsSection';
-import DeveloperCommunicationSection from './DeveloperCommunicationSection';
-import ProfileActions from './ProfileActions';
 import { Card, CardContent } from '../ui/card';
 import { toast } from 'sonner';
+import ProfileHeader from './sections/ProfileHeader';
+import AboutSection from './sections/AboutSection';
+import SkillsSection from './sections/SkillsSection';
+import EducationSection from './sections/EducationSection';
+import CertificationsSection from './sections/CertificationsSection';
+import PortfolioSection from './sections/PortfolioSection';
+import ServiceDetailsSection from './sections/ServiceDetailsSection';
+import LanguagesSection from './sections/LanguagesSection';
+import ProfileActions from './ProfileActions';
 
 interface DeveloperProfileCardProps {
   developer: Developer;
@@ -29,6 +31,10 @@ interface DeveloperProfileCardProps {
     communicationPreferences: string[];
     username: string;
     bio: string;
+    education: any[];
+    certifications: any[];
+    portfolioItems: any[];
+    languagesSpoken: any[];
   };
   onInputChange: (field: string, value: any) => void;
   isSaving: boolean;
@@ -81,63 +87,65 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
   };
 
   return (
-    <Card className="max-w-2xl mx-auto border border-border/40 shadow-sm overflow-hidden">
-      <CardContent className="p-0">
-        <div className="p-6 md:p-8">
-          <h2 className="text-xl font-semibold mb-6">Developer Information</h2>
-          
-          <div className="flex flex-col md:flex-row gap-8">
-            <ProfileImageUpload 
-              imageUrl={developer.image} 
-              onImageUpdate={(url) => console.log("Image updated:", url)} 
-            />
-            <DeveloperInfoForm 
-              firstName={formData.firstName}
-              lastName={formData.lastName}
-              email={formData.email}
-              phone={formData.phone}
-              location={formData.location}
-              onChange={(field, value) => onInputChange(field, value)}
-            />
-          </div>
-        </div>
-        
-        <BioSection 
-          username={formData.username}
-          bio={formData.bio}
-          company=""
-          position=""
-          onChange={onInputChange}
-        />
-        
-        <DeveloperSkillsSection 
-          category={formData.category}
-          skills={formData.skills}
-          experience={formData.experience}
-          hourlyRate={formData.hourlyRate}
-          minuteRate={formData.minuteRate}
-          availability={formData.availability}
-          onChange={onInputChange}
-        />
-        
-        <DeveloperCommunicationSection 
-          communicationPreferences={formData.communicationPreferences}
-          onChange={onInputChange}
-        />
-        
-        <AboutSection 
-          description={formData.description} 
-          onChange={(value) => onInputChange('description', value)}
-        />
-        
-        <ProfileActions 
-          isSaving={isSaving} 
-          onSave={handleSave}
-          onCancel={handleCancel}
-          hasChanges={hasChanges}
-        />
-      </CardContent>
-    </Card>
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <ProfileHeader 
+        developer={developer}
+        formData={formData}
+        onChange={onInputChange}
+      />
+      
+      <AboutSection 
+        description={formData.description}
+        bio={formData.bio}
+        onChange={onInputChange}
+      />
+      
+      <ServiceDetailsSection
+        category={formData.category}
+        experience={formData.experience}
+        hourlyRate={formData.hourlyRate}
+        minuteRate={formData.minuteRate}
+        availability={formData.availability}
+        communicationPreferences={formData.communicationPreferences}
+        onChange={onInputChange}
+      />
+      
+      <SkillsSection 
+        skills={formData.skills}
+        onChange={(skills) => onInputChange('skills', skills)}
+      />
+      
+      <EducationSection 
+        education={formData.education || []}
+        onChange={(education) => onInputChange('education', education)}
+      />
+      
+      <CertificationsSection 
+        certifications={formData.certifications || []}
+        onChange={(certifications) => onInputChange('certifications', certifications)}
+      />
+      
+      <LanguagesSection 
+        languages={formData.languagesSpoken || []}
+        onChange={(languages) => onInputChange('languagesSpoken', languages)}
+      />
+      
+      <PortfolioSection 
+        portfolioItems={formData.portfolioItems || []}
+        onChange={(items) => onInputChange('portfolioItems', items)}
+      />
+      
+      <Card className="border border-border/40 shadow-sm overflow-hidden">
+        <CardContent className="p-6">
+          <ProfileActions 
+            isSaving={isSaving} 
+            onSave={handleSave}
+            onCancel={handleCancel}
+            hasChanges={hasChanges}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
