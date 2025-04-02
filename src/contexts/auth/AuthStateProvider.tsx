@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { AuthState, AuthContextType } from './types';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../integrations/supabase/client';
@@ -20,7 +19,7 @@ export const AuthContext = createContext<AuthContextType>({
   register: async () => false,
   logout: async () => {},
   logoutUser: async () => {},
-  isLoading: true, // Add loading state
+  isLoading: true,
 });
 
 // Provider component to wrap the app
@@ -32,26 +31,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
   
   const [authInitialized, setAuthInitialized] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Add loading state
+  const [isLoading, setIsLoading] = useState(true);
   const [mockDevelopers, setMockDevelopers] = useState<any[]>([]);
   const [mockClients, setMockClients] = useState<any[]>([]);
   
-  // Memoize checkSupabaseSession with useCallback to avoid recreating the function on each render
   const checkSession = useCallback(async () => {
     try {
-      // First load from localStorage as a fast initial state (this is synchronous)
       const storedAuthState = localStorage.getItem('authState');
       if (storedAuthState) {
         const parsedState = JSON.parse(storedAuthState);
         setAuthState(parsedState);
       }
       
-      // Then verify with Supabase (which is more reliable but slower)
       if (supabase) {
         const authData = await checkSupabaseSession(setAuthState);
         
-        // If the server indicates we're not authenticated but local storage did,
-        // clear the local storage to prevent stale authentication
         if (!authData?.isAuthenticated && storedAuthState) {
           const parsedState = JSON.parse(storedAuthState);
           if (parsedState.isAuthenticated) {
@@ -67,7 +61,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (error) {
       console.error('Error checking session:', error);
-      // Clear potentially corrupt auth state
       localStorage.removeItem('authState');
       setAuthState({
         isAuthenticated: false,
@@ -80,20 +73,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
   
-  // Load initial state from localStorage on mount and set up auth state listener
   useEffect(() => {
     const initAuth = async () => {
       try {
         setIsLoading(true);
         
-        // Load from localStorage first (fast)
         const storedAuthState = localStorage.getItem('authState');
         if (storedAuthState) {
           const parsedState = JSON.parse(storedAuthState);
           setAuthState(parsedState);
         }
         
-        // Load mock data if needed
         const storedDevelopers = localStorage.getItem('mockDevelopers');
         if (storedDevelopers) {
           setMockDevelopers(JSON.parse(storedDevelopers));
@@ -104,8 +94,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setMockClients(JSON.parse(storedClients));
         }
         
-        // Verify with Supabase (slower but more reliable)
-        // Use a timeout to prevent hanging on this request
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Session check timeout')), 5000)
         );
@@ -114,16 +102,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           await Promise.race([checkSession(), timeoutPromise]);
         } catch (error) {
           console.warn('Session check timed out or failed:', error);
-          // We'll proceed with the localStorage state and recheck later
         }
         
-        // Set up auth state change listener
         if (supabase) {
           setupAuthStateChangeListener(setAuthState);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        // Clear potentially corrupt auth state
         localStorage.removeItem('authState');
         setAuthState({
           isAuthenticated: false,
@@ -131,26 +116,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           userId: null,
         });
       } finally {
-        // Mark auth as initialized even if there was an error
         setIsLoading(false);
         setAuthInitialized(true);
       }
     };
     
     initAuth();
-    
-    // Cleanup function not needed here since subscription is handled in checkSupabaseSession
   }, [checkSession]);
   
-  // Logout function that's passed to the context
   const handleLogout = async () => {
     console.log("Logout triggered from AuthProvider");
     try {
       await logoutUser();
-      // The state updates will be handled by the auth state change listener
     } catch (error) {
       console.error("Error during logout:", error);
-      // Force auth state update in case the listener doesn't work
       setAuthState({
         isAuthenticated: false,
         userType: null,
@@ -160,68 +139,58 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
   
-  // Login handler function with improved performance
   const handleLogin = async (email: string, password: string, userType: 'developer' | 'client'): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Store the login attempt timestamp to help with race conditions
       const loginAttemptTime = Date.now();
       localStorage.setItem('lastLoginAttempt', loginAttemptTime.toString());
       
-      // Set a timeout to prevent indefinite loading state
       const timeoutPromise = new Promise<boolean>((_, reject) => {
         setTimeout(() => reject(new Error('Login request timed out')), 15000);
       });
       
-      // Perform login with a timeout
       const loginPromise = authLogin(email, password, userType);
       
-      // Race between the login and the timeout
       const result = await Promise.race([loginPromise, timeoutPromise])
         .catch(error => {
           console.error('Login error or timeout in handleLogin:', error);
           return { success: false, error: error.message || 'Login timed out' };
         });
       
-      // Check if this is still the most recent login attempt
       const lastAttempt = localStorage.getItem('lastLoginAttempt');
       if (lastAttempt && parseInt(lastAttempt) !== loginAttemptTime) {
         console.log('Ignoring outdated login attempt response');
         return false;
       }
       
-      // Update auth state immediately on successful login to speed up UI response
-      if (result.success) {
-        // Set immediate auth state for better UX
+      const isSuccessful = typeof result === 'boolean' ? result : result.success;
+      
+      if (isSuccessful) {
         setAuthState(prev => ({
           ...prev,
           isAuthenticated: true,
           userType: userType,
         }));
-        
-        // We'll let the auth listener update the rest of the state
         console.log(`Login successful as ${userType}, setting immediate auth state`);
       } else {
-        console.error('Login failed:', result.error);
+        const errorMessage = typeof result === 'object' && 'error' in result ? result.error : 'Login failed';
+        console.error('Login failed:', errorMessage);
       }
       
-      return result.success;
+      return isSuccessful;
     } catch (error: any) {
       console.error('Login exception:', error);
       return false;
     } finally {
-      // Set a short delay before marking as not loading to prevent UI flicker
       setTimeout(() => {
         setIsLoading(false);
       }, 300);
     }
   };
   
-  // Register handler function
   const handleRegister = async (userData: any, userType: 'developer' | 'client'): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Pass all required arguments to the authRegister function
       const result = await authRegister(
         userData, 
         userType,
@@ -245,7 +214,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login: handleLogin,
         register: handleRegister,
         logout: handleLogout,
-        logoutUser: handleLogout, // Use the same handler for both methods
+        logoutUser: handleLogout,
         isLoading,
       }}
     >
@@ -254,5 +223,4 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-// Export alias for backward compatibility
 export const AuthStateProvider = AuthProvider;
