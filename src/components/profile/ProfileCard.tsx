@@ -8,6 +8,7 @@ import TechPreferencesSection from './TechPreferencesSection';
 import BudgetPaymentSection from './BudgetPaymentSection';
 import ProfileActions from './ProfileActions';
 import { Client } from '../../types/product';
+import { Progress } from '../ui/progress';
 
 interface ProfileCardProps {
   client: Client;
@@ -41,11 +42,23 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
   isSaving, 
   onSave
 }) => {
+  // Get the profile completion percentage
+  const completionPercentage = client.profileCompletionPercentage || 0;
+  
   return (
     <div className="max-w-2xl mx-auto">
       <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <div className="p-6 md:p-8">
-          <h2 className="text-xl font-semibold mb-6">Client Information</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold">Client Information</h2>
+            <div className="text-sm text-muted-foreground">
+              Profile Completion: {completionPercentage}%
+            </div>
+          </div>
+          
+          <div className="mb-6">
+            <Progress value={completionPercentage} className="h-2" />
+          </div>
           
           <div className="flex flex-col md:flex-row gap-8">
             <ProfileImageUpload 

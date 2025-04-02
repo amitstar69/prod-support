@@ -12,6 +12,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/components/ui/breadcrumb';
 import { useClientProfile } from '../hooks/useClientProfile';
+import { Progress } from '../components/ui/progress';
 
 const ClientProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -104,6 +105,9 @@ const ClientProfile: React.FC = () => {
     );
   }
 
+  // Calculate profile completion percentage
+  const profileCompletionPercentage = client.profileCompletionPercentage || 0;
+
   return (
     <Layout>
       <div className="bg-secondary/50 py-6">
@@ -129,6 +133,14 @@ const ClientProfile: React.FC = () => {
           </div>
           <h1 className="heading-2 mb-2 text-center">Client Profile</h1>
           <p className="text-center text-muted-foreground">Manage your profile information</p>
+          
+          <div className="max-w-md mx-auto mt-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium">Profile Completion</span>
+              <span className="text-sm">{profileCompletionPercentage}%</span>
+            </div>
+            <Progress value={profileCompletionPercentage} className="h-2" />
+          </div>
         </div>
       </div>
       
