@@ -10,6 +10,9 @@ import { useAuth } from './authHook';
 import { getCurrentUserData, invalidateUserDataCache } from './userDataFetching';
 import { updateUserData } from './userDataUpdates';
 
+// Import registration functions
+import { register } from './registration';
+
 // Export debug functions for backward compatibility
 import { 
   debugCheckProfileExists, 
@@ -22,6 +25,9 @@ export { useAuth };
 
 // Export user data functions
 export { getCurrentUserData, updateUserData, invalidateUserDataCache };
+
+// Export registration function
+export { register };
 
 // Export debug functions
 export { debugCheckProfileExists, debugCreateProfile };
