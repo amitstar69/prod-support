@@ -1,7 +1,7 @@
 
 import { Dispatch, SetStateAction } from 'react';
-import { Developer, Client } from '../../types/product';
-import { AuthState } from '../../types/product';
+import { Developer, Client } from '../../../types/product';
+import { AuthState } from '../../../types/product';
 
 /**
  * Register a user using localStorage (fallback method)

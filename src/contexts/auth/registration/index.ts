@@ -1,9 +1,9 @@
 
 import { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '../../integrations/supabase/client';
-import { Developer, Client, AuthState } from '../../types/product';
-import { debugCheckProfileExists } from '../../integrations/supabase/profiles';
+import { supabase } from '../../../integrations/supabase/client';
+import { Developer, Client, AuthState } from '../../../types/product';
+import { debugCheckProfileExists } from '../../../integrations/supabase/profiles';
 import { registerWithSupabase } from './supabaseRegistration';
 import { createUserProfile, createDeveloperProfile, createClientProfile } from './profileCreation';
 import { registerWithLocalStorage } from './localStorageRegistration';
