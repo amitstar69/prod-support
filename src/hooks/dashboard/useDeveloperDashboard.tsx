@@ -6,6 +6,9 @@ import { useTicketApplications } from './useTicketApplications';
 import { useAuth } from '../../contexts/auth';
 import { toast } from 'sonner';
 
+// Check if we're in development mode
+const isDevelopment = process.env.NODE_ENV === 'development' || import.meta.env.DEV === true;
+
 export const useDeveloperDashboard = () => {
   const { isAuthenticated, userId, userType } = useAuth();
   const [activeTab, setActiveTab] = useState<string>(isAuthenticated ? 'recommended' : 'all');
@@ -55,8 +58,8 @@ export const useDeveloperDashboard = () => {
     setActiveTab(isAuthenticated ? 'recommended' : 'all');
   }, [isAuthenticated]);
 
-  // Add a debug function to check auth status
-  const debugAuthStatus = () => {
+  // Debug function to check auth status - only available in development
+  const debugAuthStatus = isDevelopment ? () => {
     console.log('[useDeveloperDashboard] Debug Auth Status:', {
       isAuthenticated,
       userId,
@@ -72,7 +75,7 @@ export const useDeveloperDashboard = () => {
     
     // Force a refresh of tickets when debugging
     fetchTickets(true);
-  };
+  } : undefined;
 
   return {
     // Ticket data states
@@ -103,9 +106,9 @@ export const useDeveloperDashboard = () => {
     fetchTickets,
     fetchMyApplications,
     
-    // Debug helpers
-    debugAuthStatus,
-    runDatabaseTest
+    // Debug helpers - only available in development
+    debugAuthStatus: isDevelopment ? debugAuthStatus : undefined,
+    runDatabaseTest: isDevelopment ? runDatabaseTest : undefined
   };
 };
 
