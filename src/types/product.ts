@@ -1,3 +1,4 @@
+
 export interface Developer {
   id: string;
   name: string;
@@ -49,6 +50,10 @@ export interface Client {
   completedProjects?: number;
   profileCompletionPercentage?: number;
   profileCompleted?: boolean;
+  // Setup progress related fields
+  completedFirstSession?: boolean;
+  hasZoom?: boolean;
+  paymentMethodAdded?: boolean;
   // New fields for on-demand help
   preferredHelpFormat?: string[];  // ["Chat", "Voice", "Video"]
   budget?: number;  // Budget per session or per minute
