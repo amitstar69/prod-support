@@ -124,8 +124,8 @@ export const useClientProfile = () => {
       clearTimeout(timeoutId);
       
       if (userData) {
-        // Make sure we got client data
-        if (userData.userType !== 'client' && !('budgetPerHour' in userData)) {
+        // Check if this is a client data using properties specific to the Client type
+        if (!('budgetPerHour' in userData) && !('projectTypes' in userData)) {
           console.error('User data is not client data:', userData);
           toast.error("Retrieved user data is not client data. This may indicate an issue with your account type.");
           setIsLoading(false);
