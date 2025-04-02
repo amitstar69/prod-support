@@ -17,6 +17,7 @@ export const useLoginForm = () => {
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loginStartTime, setLoginStartTime] = useState<number | null>(null);
+  const [requestAbortController, setRequestAbortController] = useState<AbortController | null>(null);
 
   // Memoize handlers to prevent unnecessary re-renders
   const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value), []);
@@ -48,7 +49,7 @@ export const useLoginForm = () => {
       setTimeout(() => {
         const destination = userType === 'client' ? '/client' : '/developer-dashboard';
         navigate(destination);
-      }, 100);
+      }, 300); // Increased timeout for more reliable state updates
     }
   }, [isAuthenticated, isLoading, navigate, userType]);
 
@@ -57,19 +58,40 @@ export const useLoginForm = () => {
     let timeoutId: NodeJS.Timeout | null = null;
     
     if (isLoading && loginStartTime) {
-      // If loading for more than 10 seconds, consider it stuck
+      // If loading for more than 15 seconds, consider it stuck and abort
       timeoutId = setTimeout(() => {
-        console.log('Login seems to be stuck, resetting loading state');
+        console.log('Login seems to be stuck, aborting request and resetting state');
+        
+        // Abort any pending request
+        if (requestAbortController) {
+          requestAbortController.abort();
+        }
+        
+        // Reset states
         setIsLoading(false);
         setLoginStartTime(null);
-        toast.error('Login is taking too long. Please try again.');
-      }, 10000);
+        setRequestAbortController(null);
+        
+        // Show error toast
+        toast.error('Login request timed out. Please try again.');
+        setError('Login request timed out. Please try again.');
+      }, 15000); // Increased from 10s to 15s to allow more time for slow connections
     }
     
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [isLoading, loginStartTime]);
+  }, [isLoading, loginStartTime, requestAbortController]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      // Abort any pending request when component unmounts
+      if (requestAbortController) {
+        requestAbortController.abort();
+      }
+    };
+  }, [requestAbortController]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,22 +107,36 @@ export const useLoginForm = () => {
       return;
     }
     
+    // Clear previous error
     setError('');
+    
+    // Create a new AbortController
+    const controller = new AbortController();
+    setRequestAbortController(controller);
+    
+    // Set loading state
     setIsLoading(true);
     const startTime = Date.now();
     setLoginStartTime(startTime);
     console.log(`Attempting to login: ${email} as ${userType} at ${startTime}`);
     
     try {
+      // Pass the abort signal to the login function if possible
       const loginPromise = login(email, password, userType);
       
-      // Add timeout for better UX
+      // Add timeout safety net in case the AbortController doesn't work
       const timeoutPromise = new Promise<boolean>((_, reject) => {
-        setTimeout(() => reject(new Error('Login request timed out')), 10000);
+        setTimeout(() => reject(new Error('Login request timed out')), 14000);
       });
       
       const success = await Promise.race([loginPromise, timeoutPromise])
         .catch(error => {
+          // Check if request was aborted
+          if (error.name === 'AbortError') {
+            console.log('Login request was aborted');
+            return false;
+          }
+          
           console.error('Login error or timeout:', error);
           toast.error(error.message || 'Login timed out. Please try again.');
           setError(error.message || 'Login timed out. Please try again.');
@@ -124,6 +160,7 @@ export const useLoginForm = () => {
       if (!isAuthenticated) {
         setIsLoading(false);
         setLoginStartTime(null);
+        setRequestAbortController(null);
       }
     }
   }, [email, password, userType, isLoading, authLoading, login, isAuthenticated]);

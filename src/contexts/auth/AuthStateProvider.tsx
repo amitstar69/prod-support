@@ -168,8 +168,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const loginAttemptTime = Date.now();
       localStorage.setItem('lastLoginAttempt', loginAttemptTime.toString());
       
-      // Perform login
-      const result = await authLogin(email, password, userType);
+      // Set a timeout to prevent indefinite loading state
+      const timeoutPromise = new Promise<boolean>((_, reject) => {
+        setTimeout(() => reject(new Error('Login request timed out')), 15000);
+      });
+      
+      // Perform login with a timeout
+      const loginPromise = authLogin(email, password, userType);
+      
+      // Race between the login and the timeout
+      const result = await Promise.race([loginPromise, timeoutPromise])
+        .catch(error => {
+          console.error('Login error or timeout in handleLogin:', error);
+          return { success: false, error: error.message || 'Login timed out' };
+        });
       
       // Check if this is still the most recent login attempt
       const lastAttempt = localStorage.getItem('lastLoginAttempt');
@@ -189,11 +201,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         // We'll let the auth listener update the rest of the state
         console.log(`Login successful as ${userType}, setting immediate auth state`);
+      } else {
+        console.error('Login failed:', result.error);
       }
       
       return result.success;
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (error: any) {
+      console.error('Login exception:', error);
       return false;
     } finally {
       // Set a short delay before marking as not loading to prevent UI flicker

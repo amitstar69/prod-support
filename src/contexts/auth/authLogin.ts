@@ -17,10 +17,19 @@ export const loginWithEmailAndPassword = async (
     
     // Step 1: Sign in with credentials
     console.time('auth-signin');
+    
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    // Clear timeout
+    clearTimeout(timeoutId);
+    
     console.timeEnd('auth-signin');
 
     if (error) {
@@ -66,11 +75,20 @@ export const loginWithEmailAndPassword = async (
 
     // If no cache hit, fetch user profile to check their user type
     console.time('profile-fetch');
+    
+    // Add another timeout for profile fetch
+    const profileController = new AbortController();
+    const profileTimeoutId = setTimeout(() => profileController.abort(), 8000);
+    
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('user_type')
       .eq('id', userId)
       .single();
+    
+    // Clear timeout
+    clearTimeout(profileTimeoutId);
+    
     console.timeEnd('profile-fetch');
 
     if (profileError) {
@@ -107,6 +125,15 @@ export const loginWithEmailAndPassword = async (
     const authError = error as AuthError;
     console.error('Exception during login:', authError);
     console.timeEnd('login-process');
+    
+    // Check if this was an abort error (timeout)
+    if (authError.name === 'AbortError' || authError.message?.includes('timeout')) {
+      return {
+        success: false,
+        error: 'Login request timed out. Please check your internet connection and try again.',
+      };
+    }
+    
     return {
       success: false,
       error: authError.message || 'An unexpected error occurred during login.',
