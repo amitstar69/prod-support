@@ -16,82 +16,91 @@ const TechPreferencesSection: React.FC<TechPreferencesSectionProps> = ({
   preferredHelpFormat,
   onChange
 }) => {
-  const helpFormatOptions = ["Chat", "Voice", "Video"];
+  const techOptions = ["React", "Node.js", "Python", "JavaScript", "TypeScript", "Java", "C#", ".NET", "PHP", "Ruby"];
+  const projectTypeOptions = ["Web App", "Mobile App", "Desktop App", "API", "Database", "DevOps", "Machine Learning"];
+  const helpFormatOptions = ["Chat", "Video Call", "Screen Share", "Code Review", "Pair Programming"];
   
-  const handleTechStackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Split by commas and trim each value
-    const techStackArray = value.split(',').map(item => item.trim());
-    onChange('techStack', techStackArray);
+  const handleToggleOption = (field: string, option: string, currentSelection: string[]) => {
+    const newSelection = currentSelection.includes(option)
+      ? currentSelection.filter(item => item !== option)
+      : [...currentSelection, option];
+    onChange(field, newSelection);
   };
-  
-  const handleProjectTypesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Split by commas and trim each value
-    const projectTypesArray = value.split(',').map(item => item.trim());
-    onChange('projectTypes', projectTypesArray);
-  };
-  
-  const handleFormatToggle = (format: string) => {
-    const newFormats = preferredHelpFormat.includes(format)
-      ? preferredHelpFormat.filter(f => f !== format)
-      : [...preferredHelpFormat, format];
-    
-    onChange('preferredHelpFormat', newFormats);
-  };
-  
+
   return (
-    <div className="border-t border-border/40 p-6 md:p-8">
-      <h3 className="font-medium text-lg mb-4">Technical Preferences</h3>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Technical Preferences</h2>
+      <p className="text-muted-foreground text-sm">
+        Let us know your technical background and preferences to match you with the right developers
+      </p>
       
       <div className="space-y-6">
         <div>
-          <label htmlFor="techStack" className="block text-sm font-medium mb-1">
+          <label className="block text-sm font-medium mb-2">
             Tech Stack
           </label>
-          <input
-            id="techStack"
-            name="techStack"
-            type="text"
-            value={techStack.join(', ')}
-            onChange={handleTechStackChange}
-            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-            placeholder="React, Node.js, TypeScript, etc. (comma separated)"
-          />
+          <div className="flex flex-wrap gap-2">
+            {techOptions.map((tech) => (
+              <button
+                key={tech}
+                type="button"
+                onClick={() => handleToggleOption('techStack', tech, techStack)}
+                className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                  techStack.includes(tech)
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                }`}
+              >
+                {tech}
+              </button>
+            ))}
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Enter technologies you're working with, separated by commas
+            Select the technologies you're working with
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="industry" className="block text-sm font-medium mb-1">
-              Industry
-            </label>
-            <input
-              id="industry"
-              name="industry"
-              type="text"
-              value={industry}
-              onChange={(e) => onChange('industry', e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-              placeholder="E.g., FinTech, E-commerce, Healthcare"
-            />
+        <div>
+          <label htmlFor="industry" className="block text-sm font-medium mb-1">
+            Industry
+          </label>
+          <input
+            id="industry"
+            name="industry"
+            type="text"
+            value={industry}
+            onChange={(e) => onChange('industry', e.target.value)}
+            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+            placeholder="e.g. Finance, Healthcare, Education"
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            What industry is your project in?
+          </p>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Project Types
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {projectTypeOptions.map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => handleToggleOption('projectTypes', type, projectTypes)}
+                className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                  projectTypes.includes(type)
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
           </div>
-          <div>
-            <label htmlFor="projectTypes" className="block text-sm font-medium mb-1">
-              Project Types
-            </label>
-            <input
-              id="projectTypes"
-              name="projectTypes"
-              type="text"
-              value={projectTypes.join(', ')}
-              onChange={handleProjectTypesChange}
-              className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-              placeholder="Web App, Mobile App, API, etc."
-            />
-          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            What types of projects are you working on?
+          </p>
         </div>
         
         <div>
@@ -103,8 +112,8 @@ const TechPreferencesSection: React.FC<TechPreferencesSectionProps> = ({
               <button
                 key={format}
                 type="button"
-                onClick={() => handleFormatToggle(format)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                onClick={() => handleToggleOption('preferredHelpFormat', format, preferredHelpFormat)}
+                className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
                   preferredHelpFormat.includes(format)
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
@@ -115,7 +124,7 @@ const TechPreferencesSection: React.FC<TechPreferencesSectionProps> = ({
             ))}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Select all formats you're comfortable with
+            How would you prefer to receive help?
           </p>
         </div>
       </div>

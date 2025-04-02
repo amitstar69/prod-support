@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { User } from 'lucide-react';
+import { User, Camera } from 'lucide-react';
 import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -95,29 +95,25 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ imageUrl, onIma
   };
 
   return (
-    <div className="flex flex-col items-center md:items-start gap-4">
+    <div className="flex flex-col items-center">
       <div className="relative">
-        <div className="h-20 w-20 md:h-24 md:w-24 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+        <Avatar className="h-24 w-24 md:h-32 md:w-32 border-4 border-background">
           {imageUrl ? (
-            <Avatar className="h-full w-full">
-              <AvatarImage src={imageUrl} alt="Profile" className="h-full w-full object-cover" />
-              <AvatarFallback>
-                <User className="h-10 w-10 text-muted-foreground" />
-              </AvatarFallback>
-            </Avatar>
+            <AvatarImage src={imageUrl} alt="Profile" className="object-cover" />
           ) : (
-            <User className="h-10 w-10 text-muted-foreground" />
+            <AvatarFallback className="bg-secondary">
+              <User className="h-12 w-12 md:h-16 md:w-16 text-muted-foreground" />
+            </AvatarFallback>
           )}
-        </div>
+        </Avatar>
         <button 
           type="button" 
-          className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center shadow-sm"
+          className="absolute bottom-1 right-1 h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center shadow-sm hover:bg-primary/90 transition-colors"
           onClick={handleImageButtonClick}
           disabled={isUploading}
+          aria-label="Change profile picture"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-          </svg>
+          <Camera className="h-4 w-4" />
         </button>
       </div>
       <input
@@ -129,11 +125,11 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ imageUrl, onIma
       />
       <button 
         type="button" 
-        className="text-sm text-primary font-medium"
+        className="mt-2 text-sm text-primary font-medium hover:underline"
         onClick={handleImageButtonClick}
         disabled={isUploading}
       >
-        {isUploading ? 'Uploading...' : 'Change Image'}
+        {isUploading ? 'Uploading...' : 'Change Photo'}
       </button>
     </div>
   );

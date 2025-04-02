@@ -8,7 +8,7 @@ import TechPreferencesSection from './TechPreferencesSection';
 import BudgetPaymentSection from './BudgetPaymentSection';
 import ProfileActions from './ProfileActions';
 import { Client } from '../../types/product';
-import { Progress } from '../ui/progress';
+import { Card, CardContent } from '../ui/card';
 
 interface ProfileCardProps {
   client: Client;
@@ -42,25 +42,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
   isSaving, 
   onSave
 }) => {
-  // Get the profile completion percentage
-  const completionPercentage = client.profileCompletionPercentage || 0;
-  
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden">
-        <div className="p-6 md:p-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold">Client Information</h2>
-            <div className="text-sm text-muted-foreground">
-              Profile Completion: {completionPercentage}%
-            </div>
-          </div>
-          
-          <div className="mb-6">
-            <Progress value={completionPercentage} className="h-2" />
-          </div>
-          
-          <div className="flex flex-col md:flex-row gap-8">
+    <div className="space-y-6">
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          <div className="bg-secondary/20 p-6 flex flex-col md:flex-row gap-6 items-center md:items-start">
             <ProfileImageUpload 
               imageUrl={formData.image || client.image} 
               onImageUpdate={(url) => onInputChange('image', url)}
@@ -73,37 +59,53 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
               onChange={(field, value) => onInputChange(field, value)}
             />
           </div>
-        </div>
-        
-        <BioSection 
-          username={formData.username}
-          bio={formData.bio}
-          company={formData.company}
-          position={formData.position}
-          onChange={onInputChange}
-        />
-        
-        <TechPreferencesSection 
-          techStack={formData.techStack}
-          industry={formData.industry}
-          projectTypes={formData.projectTypes}
-          preferredHelpFormat={formData.preferredHelpFormat}
-          onChange={onInputChange}
-        />
-        
-        <BudgetPaymentSection 
-          budgetPerHour={formData.budgetPerHour}
-          paymentMethod={formData.paymentMethod}
-          onChange={onInputChange}
-        />
-        
-        <AboutSection 
-          description={formData.description} 
-          onChange={(value) => onInputChange('description', value)}
-        />
-        
-        <ProfileActions isSaving={isSaving} onSave={onSave} />
-      </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-6">
+          <BioSection 
+            username={formData.username}
+            bio={formData.bio}
+            company={formData.company}
+            position={formData.position}
+            onChange={onInputChange}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-6">
+          <AboutSection 
+            description={formData.description} 
+            onChange={(value) => onInputChange('description', value)}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-6">
+          <TechPreferencesSection 
+            techStack={formData.techStack}
+            industry={formData.industry}
+            projectTypes={formData.projectTypes}
+            preferredHelpFormat={formData.preferredHelpFormat}
+            onChange={onInputChange}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-6">
+          <BudgetPaymentSection 
+            budgetPerHour={formData.budgetPerHour}
+            paymentMethod={formData.paymentMethod}
+            onChange={onInputChange}
+          />
+        </CardContent>
+      </Card>
+
+      <ProfileActions isSaving={isSaving} onSave={onSave} />
     </div>
   );
 };

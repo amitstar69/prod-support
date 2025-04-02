@@ -15,8 +15,11 @@ const BudgetPaymentSection: React.FC<BudgetPaymentSectionProps> = ({
   const paymentOptions = ["Stripe", "PayPal"];
   
   return (
-    <div className="border-t border-border/40 p-6 md:p-8">
-      <h3 className="font-medium text-lg mb-4">Budget & Payment</h3>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Budget & Payment</h2>
+      <p className="text-muted-foreground text-sm">
+        Set your budget preferences and payment methods
+      </p>
       
       <div className="space-y-6">
         <div>

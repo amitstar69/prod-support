@@ -9,16 +9,16 @@ interface ClientInfoFormProps {
   onChange: (field: string, value: string) => void;
 }
 
-const ClientInfoForm: React.FC<ClientInfoFormProps> = ({ 
-  firstName, 
-  lastName, 
-  email, 
+const ClientInfoForm: React.FC<ClientInfoFormProps> = ({
+  firstName,
+  lastName,
+  email,
   location,
   onChange
 }) => {
   return (
-    <div className="flex-1 space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="w-full space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="firstName" className="block text-sm font-medium mb-1">
             First Name
@@ -44,7 +44,6 @@ const ClientInfoForm: React.FC<ClientInfoFormProps> = ({
             value={lastName}
             onChange={(e) => onChange('lastName', e.target.value)}
             className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-            required
           />
         </div>
       </div>
@@ -59,9 +58,12 @@ const ClientInfoForm: React.FC<ClientInfoFormProps> = ({
           type="email"
           value={email}
           onChange={(e) => onChange('email', e.target.value)}
-          className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
-          required
+          className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors bg-secondary/30"
+          disabled
         />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Your email address is managed through your account settings
+        </p>
       </div>
       
       <div>
@@ -75,6 +77,7 @@ const ClientInfoForm: React.FC<ClientInfoFormProps> = ({
           value={location}
           onChange={(e) => onChange('location', e.target.value)}
           className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+          placeholder="City, Country"
         />
       </div>
     </div>

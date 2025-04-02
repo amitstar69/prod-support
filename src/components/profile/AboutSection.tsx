@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 
 interface AboutSectionProps {
   description: string;
@@ -16,10 +17,13 @@ const AboutSection: React.FC<AboutSectionProps> = ({ description, onChange }) =>
   };
 
   return (
-    <div className="border-t border-border/40 p-6 md:p-8">
-      <h2 className="text-xl font-semibold mb-6">About You</h2>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">About You</h2>
+      <p className="text-muted-foreground text-sm">
+        Share some details about yourself, your expertise, and what you're looking for help with
+      </p>
       
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div>
           <label htmlFor="description" className="block text-sm font-medium mb-1">
             Brief Description
@@ -34,6 +38,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ description, onChange }) =>
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+              placeholder="Share some details about your background, interests, and what you're hoping to accomplish..."
               aria-label="Brief description about yourself"
             />
           </div>

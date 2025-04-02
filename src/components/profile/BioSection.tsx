@@ -17,10 +17,13 @@ const BioSection: React.FC<BioSectionProps> = ({
   onChange 
 }) => {
   return (
-    <div className="border-t border-border/40 p-6 md:p-8">
-      <h3 className="font-medium text-lg mb-4">Professional Profile</h3>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Professional Profile</h2>
+      <p className="text-muted-foreground text-sm">
+        Tell us about your professional background and experience
+      </p>
       
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div>
           <label htmlFor="username" className="block text-sm font-medium mb-1">
             Username
