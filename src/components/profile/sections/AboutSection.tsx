@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Input } from '../../ui/input';
 
 interface AboutSectionProps {
   description: string;
@@ -30,7 +31,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({
             rows={3}
             value={bio}
             onChange={(e) => onChange('bio', e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors resize-y min-h-[100px]"
             placeholder="A brief introduction about yourself..."
           />
         </div>
@@ -45,7 +46,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({
             rows={5}
             value={description}
             onChange={(e) => onChange('description', e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors resize-y min-h-[150px]"
             placeholder="Describe your experience, skills, and the services you provide in detail..."
           />
           <p className="mt-1 text-xs text-muted-foreground">

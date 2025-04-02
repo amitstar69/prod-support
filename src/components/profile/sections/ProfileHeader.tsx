@@ -32,12 +32,12 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ developer, formData, onCh
   const fullName = `${formData.firstName} ${formData.lastName}`.trim();
   
   return (
-    <div className="flex-1 space-y-4 w-full">
-      <div className="flex justify-between items-start w-full">
+    <div className="w-full space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-4">
         <div className="flex items-center gap-6">
           <ProfileImageUpload 
             imageUrl={developer.image} 
-            onImageUpdate={(url) => console.log("Image updated:", url)} 
+            onImageUpdate={(url) => onChange('image', url)} 
           />
           
           <div className="space-y-1">

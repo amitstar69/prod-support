@@ -87,20 +87,8 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <Card className="overflow-hidden">
-        <CardContent className="p-0">
-          <div className="bg-secondary/20 p-6 flex flex-col md:flex-row gap-6 items-center md:items-start">
-            <ProfileHeader 
-              developer={developer}
-              formData={formData}
-              onChange={onInputChange}
-            />
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
+    <div className="space-y-6">
+      <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <CardContent className="p-6">
           <AboutSection 
             description={formData.description}
@@ -110,7 +98,7 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <CardContent className="p-6">
           <ServiceDetailsSection
             category={formData.category}
@@ -124,7 +112,7 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <CardContent className="p-6">
           <SkillsSection 
             skills={formData.skills}
@@ -133,7 +121,7 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <CardContent className="p-6">
           <EducationSection 
             education={formData.education || []}
@@ -142,7 +130,7 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <CardContent className="p-6">
           <CertificationsSection 
             certifications={formData.certifications || []}
@@ -151,7 +139,7 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <CardContent className="p-6">
           <LanguagesSection 
             languages={formData.languagesSpoken || []}
@@ -160,7 +148,7 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <CardContent className="p-6">
           <PortfolioSection 
             portfolioItems={formData.portfolioItems || []}
@@ -169,7 +157,7 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
         </CardContent>
       </Card>
       
-      <Card className="border border-border/40 shadow-sm overflow-hidden">
+      <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <CardContent className="p-6">
           <ProfileActions 
             isSaving={isSaving} 

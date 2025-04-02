@@ -2,15 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { useAuth } from '../contexts/auth';
+import { useAuth, invalidateUserDataCache } from '../contexts/auth';
 import DeveloperProfileCard from '../components/profile/DeveloperProfileCard';
 import ProfileLoadingState from '../components/profile/ProfileLoadingState';
 import ProfileErrorState from '../components/profile/ProfileErrorState';
-import ProfileSidebar from '../components/profile/ProfileSidebar';
 import MessagesSection from '../components/chat/MessagesSection';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, User, MessageSquare, History, CreditCard, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/components/ui/breadcrumb';
+import { Progress } from '../components/ui/progress';
+import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDeveloperProfile } from '../hooks/useDeveloperProfile';
 
 const Profile: React.FC = () => {
@@ -91,44 +92,76 @@ const Profile: React.FC = () => {
     );
   }
   
+  const completionPercentage = developer.profileCompletionPercentage || 0;
+  
   return (
     <Layout>
-      <div className="bg-muted/50 py-6">
+      <div className="bg-secondary/30 py-6 border-b border-border/30">
         <div className="container mx-auto px-4">
-          <div className="mb-4">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="p-0 h-auto text-muted-foreground" 
-                      onClick={handleBack}
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
-                    </Button>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
+          <div className="flex items-center mb-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="p-0 h-auto text-muted-foreground" 
+              onClick={handleBack}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
           </div>
-          <h1 className="heading-2 mb-2 text-center">Developer Profile</h1>
-          <p className="text-center text-muted-foreground">Manage your profile information</p>
+          
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+            <div>
+              <h1 className="text-2xl font-bold mb-1">{formData.firstName} {formData.lastName}</h1>
+              <div className="flex items-center text-muted-foreground text-sm">
+                <span className="mr-2">@{formData.username || 'username'}</span>
+                {formData.location && (
+                  <>
+                    <span className="mx-2">•</span>
+                    <span>{formData.location}</span>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex flex-col w-full md:w-auto">
+              <div className="flex justify-between items-center mb-1 w-full md:w-64">
+                <span className="text-sm font-medium">Profile Completion</span>
+                <span className="text-sm font-medium">{completionPercentage}%</span>
+              </div>
+              <Progress value={completionPercentage} className="h-2 w-full md:w-64" />
+            </div>
+          </div>
         </div>
       </div>
       
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-10">
-          <ProfileSidebar 
-            activeTab={activeTab}
-            userType="developer"
-            onTabChange={setActiveTab}
-          />
+      <div className="container mx-auto px-4 py-6">
+        <Tabs defaultValue="profile" className="w-full" onValueChange={setActiveTab} value={activeTab}>
+          <TabsList className="mb-6 bg-card/50 p-1 border border-border/30 rounded-md">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">Profile</span>
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Messages</span>
+            </TabsTrigger>
+            <TabsTrigger value="sessions" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              <span className="hidden sm:inline">Sessions</span>
+            </TabsTrigger>
+            <TabsTrigger value="earnings" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              <span className="hidden sm:inline">Earnings</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Settings</span>
+            </TabsTrigger>
+          </TabsList>
           
-          <div>
-            {activeTab === 'profile' && (
+          <TabsContent value="profile">
+            <div className="max-w-4xl mx-auto">
               <DeveloperProfileCard 
                 developer={developer}
                 formData={formData}
@@ -136,15 +169,19 @@ const Profile: React.FC = () => {
                 isSaving={isSaving}
                 onSave={handleSaveChanges}
               />
-            )}
+            </div>
+          </TabsContent>
 
-            {activeTab === 'messages' && (
+          <TabsContent value="messages">
+            <div className="max-w-4xl mx-auto">
               <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden p-6">
                 <MessagesSection />
               </div>
-            )}
-            
-            {activeTab === 'sessions' && (
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="sessions">
+            <div className="max-w-4xl mx-auto">
               <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden p-6">
                 <h2 className="text-xl font-semibold mb-4">Session History</h2>
                 <p className="text-muted-foreground">View your past and upcoming help sessions.</p>
@@ -158,9 +195,11 @@ const Profile: React.FC = () => {
                   </Button>
                 </div>
               </div>
-            )}
+            </div>
+          </TabsContent>
 
-            {activeTab === 'earnings' && (
+          <TabsContent value="earnings">
+            <div className="max-w-4xl mx-auto">
               <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden p-6">
                 <h2 className="text-xl font-semibold mb-4">Earnings</h2>
                 <p className="text-muted-foreground">Manage your earnings and payment methods.</p>
@@ -171,9 +210,11 @@ const Profile: React.FC = () => {
                   </Button>
                 </div>
               </div>
-            )}
+            </div>
+          </TabsContent>
 
-            {activeTab === 'settings' && (
+          <TabsContent value="settings">
+            <div className="max-w-4xl mx-auto">
               <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden p-6">
                 <h2 className="text-xl font-semibold mb-4">Account Settings</h2>
                 <p className="text-muted-foreground">Manage your account preferences and settings.</p>
@@ -208,9 +249,9 @@ const Profile: React.FC = () => {
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
