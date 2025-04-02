@@ -23,7 +23,7 @@ const NavLinks: React.FC = () => {
       {isAuthenticated && userType === 'client' && (
         <>
           <NavLink
-            to="/client"
+            to="/client-dashboard"
             className={({ isActive }) =>
               isActive
                 ? 'text-primary font-medium'
@@ -33,7 +33,7 @@ const NavLinks: React.FC = () => {
             Dashboard
           </NavLink>
           <NavLink
-            to="/ticket-dashboard"
+            to="/client-tickets"
             className={({ isActive }) =>
               isActive
                 ? 'text-primary font-medium'
@@ -68,7 +68,17 @@ const NavLinks: React.FC = () => {
             Dashboard
           </NavLink>
           <NavLink
-            to="/developer-profile"
+            to="/developer-tickets"
+            className={({ isActive }) =>
+              isActive
+                ? 'text-primary font-medium'
+                : 'text-muted-foreground hover:text-foreground'
+            }
+          >
+            Tickets
+          </NavLink>
+          <NavLink
+            to="/profile"
             className={({ isActive }) =>
               isActive
                 ? 'text-primary font-medium'

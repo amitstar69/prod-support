@@ -15,6 +15,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import NotFound from './pages/NotFound';
 import DeveloperDashboard from './pages/DeveloperDashboard';
+import DeveloperWelcomePage from './pages/DeveloperWelcomePage';
 import ClientDashboard from './pages/ClientDashboard';
 import ClientLanding from './pages/ClientLanding';
 import DeveloperRegistration from './pages/DeveloperRegistration';
@@ -81,7 +82,15 @@ function App() {
             />
             <Route path="/get-help/*" element={<GetHelpPage />} />
             
-            {/* Client Routes */}
+            {/* Client Routes - Standardized with dashboard suffix */}
+            <Route 
+              path="/client-dashboard" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientLanding />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="/client" 
               element={
@@ -91,13 +100,15 @@ function App() {
               } 
             />
             <Route 
-              path="/client-dashboard" 
+              path="/client-tickets" 
               element={
                 <ProtectedRoute requiredUserType="client">
-                  <ClientLanding />
+                  <ClientDashboard />
                 </ProtectedRoute>
               } 
             />
+            
+            {/* Keep old route for backward compatibility */}
             <Route 
               path="/ticket-dashboard" 
               element={
@@ -125,9 +136,19 @@ function App() {
               } 
             />
             
-            {/* Developer Routes */}
+            {/* Developer Routes - Standardized similar to client routes */}
             <Route 
               path="/developer-dashboard" 
+              element={
+                <ProtectedRoute requiredUserType="developer">
+                  <DeveloperWelcomePage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* New route for developer tickets */}
+            <Route 
+              path="/developer-tickets" 
               element={
                 <ProtectedRoute requiredUserType="developer">
                   <DeveloperDashboard />

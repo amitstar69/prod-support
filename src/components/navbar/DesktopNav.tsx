@@ -62,22 +62,30 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
           
           {/* Show different navigation based on user type */}
           {userType === 'developer' ? (
-            <Link 
-              to="/developer-dashboard" 
-              className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
-            >
-              Browse Tickets
-            </Link>
-          ) : userType === 'client' ? (
             <>
               <Link 
-                to="/client" 
+                to="/developer-dashboard" 
                 className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
               >
                 Dashboard
               </Link>
               <Link 
-                to="/ticket-dashboard" 
+                to="/developer-tickets" 
+                className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
+              >
+                Tickets
+              </Link>
+            </>
+          ) : userType === 'client' ? (
+            <>
+              <Link 
+                to="/client-dashboard" 
+                className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
+              >
+                Dashboard
+              </Link>
+              <Link 
+                to="/client-tickets" 
                 className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
               >
                 Tickets
@@ -85,7 +93,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
             </>
           ) : (
             <Link 
-              to="/developer-dashboard" 
+              to="/developer-tickets" 
               className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
             >
               Browse Tickets

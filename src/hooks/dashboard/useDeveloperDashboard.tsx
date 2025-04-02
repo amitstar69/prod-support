@@ -19,8 +19,7 @@ export const useDeveloperDashboard = () => {
     isLoading,
     dataSource,
     fetchTickets,
-    handleForceRefresh,
-    runDatabaseTest
+    handleForceRefresh
   } = useTicketFetching(isAuthenticated, userType);
 
   // Get filtering functionality
@@ -58,25 +57,6 @@ export const useDeveloperDashboard = () => {
     setActiveTab(isAuthenticated ? 'recommended' : 'all');
   }, [isAuthenticated]);
 
-  // Debug function to check auth status - only available in development
-  const debugAuthStatus = isDevelopment ? () => {
-    console.log('[useDeveloperDashboard] Debug Auth Status:', {
-      isAuthenticated,
-      userId,
-      userType
-    });
-    
-    // Log to UI for user feedback
-    if (isAuthenticated) {
-      toast.info(`Auth Status: Logged in as ${userType}, ID: ${userId?.substring(0, 8)}...`);
-    } else {
-      toast.info('Auth Status: Not logged in');
-    }
-    
-    // Force a refresh of tickets when debugging
-    fetchTickets(true);
-  } : undefined;
-
   return {
     // Ticket data states
     tickets,
@@ -104,11 +84,7 @@ export const useDeveloperDashboard = () => {
     handleClaimTicket,
     handleForceRefresh,
     fetchTickets,
-    fetchMyApplications,
-    
-    // Debug helpers - only available in development
-    debugAuthStatus: isDevelopment ? debugAuthStatus : undefined,
-    runDatabaseTest: isDevelopment ? runDatabaseTest : undefined
+    fetchMyApplications
   };
 };
 

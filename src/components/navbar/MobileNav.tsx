@@ -62,24 +62,33 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
           </Link>
           
           {userType === 'developer' ? (
-            <Link
-              to="/developer-dashboard"
-              className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              Browse Tickets
-            </Link>
-          ) : userType === 'client' ? (
             <>
               <Link
-                to="/client"
+                to="/developer-dashboard"
                 className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 Dashboard
               </Link>
               <Link
-                to="/ticket-dashboard"
+                to="/developer-tickets"
+                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Tickets
+              </Link>
+            </>
+          ) : userType === 'client' ? (
+            <>
+              <Link
+                to="/client-dashboard"
+                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/client-tickets"
                 className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
                 onClick={() => setIsOpen(false)}
               >
@@ -88,7 +97,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
             </>
           ) : (
             <Link
-              to="/developer-dashboard"
+              to="/developer-tickets"
               className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
               onClick={() => setIsOpen(false)}
             >
