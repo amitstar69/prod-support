@@ -211,7 +211,7 @@ export const useClientProfile = () => {
       
       if (success) {
         console.log('Profile image update successful');
-        
+        toast.success('Profile image updated successfully');
         invalidateUserDataCache(userId);
       } else {
         toast.error('Failed to update profile image. Please try again.');

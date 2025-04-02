@@ -49,7 +49,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
           
           <div className="flex flex-col md:flex-row gap-8">
             <ProfileImageUpload 
-              imageUrl={client.image} 
+              imageUrl={formData.image || client.image} 
               onImageUpdate={(url) => onInputChange('image', url)}
             />
             <ClientInfoForm 

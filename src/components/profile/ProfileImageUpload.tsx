@@ -51,16 +51,23 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ imageUrl, onIma
       const fileName = `${userId}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `profile-images/${fileName}`;
 
+      console.log('Uploading image to path:', filePath);
+
       // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('profiles')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
         console.error('Upload error:', uploadError);
-        toast.error('Failed to upload image. Please try again.');
+        toast.error(`Failed to upload image: ${uploadError.message}`);
         return;
       }
+
+      console.log('Upload successful:', uploadData);
 
       // Get the public URL
       const { data: urlData } = supabase.storage
@@ -68,6 +75,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ imageUrl, onIma
         .getPublicUrl(filePath);
 
       const publicUrl = urlData.publicUrl;
+      console.log('Generated public URL:', publicUrl);
 
       // Call the callback with the new URL
       if (onImageUpdate) {
