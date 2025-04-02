@@ -90,6 +90,16 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
     <div className="space-y-6">
       <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <CardContent className="p-6">
+          <ProfileHeader 
+            developer={developer}
+            formData={formData}
+            onChange={onInputChange}
+          />
+        </CardContent>
+      </Card>
+      
+      <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
+        <CardContent className="p-6">
           <AboutSection 
             description={formData.description}
             bio={formData.bio}
