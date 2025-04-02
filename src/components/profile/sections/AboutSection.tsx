@@ -1,85 +1,59 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Edit2 } from 'lucide-react';
+import React from 'react';
 
 interface AboutSectionProps {
   description: string;
   bio: string;
-  onChange: (field: string, value: any) => void;
+  onChange: (field: string, value: string) => void;
 }
 
-const AboutSection: React.FC<AboutSectionProps> = ({ description, bio, onChange }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  
-  const handleToggleEdit = () => {
-    setIsEditing(!isEditing);
-  };
-  
-  const handleSave = () => {
-    setIsEditing(false);
-  };
-  
+const AboutSection: React.FC<AboutSectionProps> = ({ 
+  description, 
+  bio, 
+  onChange 
+}) => {
   return (
-    <Card className="border border-border/40 shadow-sm">
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-semibold">About Me</h2>
-          <Button variant="ghost" size="sm" onClick={handleToggleEdit}>
-            <Edit2 className="h-4 w-4 mr-2" />
-            {isEditing ? 'Cancel' : 'Edit'}
-          </Button>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">About You</h2>
+      <p className="text-muted-foreground text-sm">
+        Share some details about yourself, your expertise, and what services you offer
+      </p>
+      
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="bio" className="block text-sm font-medium mb-1">
+            Short Bio
+          </label>
+          <textarea
+            id="bio"
+            name="bio"
+            rows={3}
+            value={bio}
+            onChange={(e) => onChange('bio', e.target.value)}
+            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+            placeholder="A brief introduction about yourself..."
+          />
         </div>
         
-        {isEditing ? (
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="bio" className="block text-sm font-medium mb-1">
-                Short Bio
-              </label>
-              <input
-                id="bio"
-                name="bio"
-                type="text"
-                value={bio}
-                onChange={(e) => onChange('bio', e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-md transition-colors"
-                placeholder="A brief headline about yourself"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium mb-1">
-                Full Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                rows={6}
-                value={description}
-                onChange={(e) => onChange('description', e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-md transition-colors"
-                placeholder="Describe your experience, expertise, and what you can offer to clients"
-              />
-            </div>
-            
-            <Button onClick={handleSave}>Save Changes</Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {bio && <p className="text-lg font-medium">{bio}</p>}
-            {description ? (
-              <div className="whitespace-pre-wrap">{description}</div>
-            ) : (
-              <p className="text-muted-foreground italic">
-                Add a description to tell clients about your experience and expertise
-              </p>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        <div>
+          <label htmlFor="description" className="block text-sm font-medium mb-1">
+            Detailed Description
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            rows={5}
+            value={description}
+            onChange={(e) => onChange('description', e.target.value)}
+            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-colors"
+            placeholder="Describe your experience, skills, and the services you provide in detail..."
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Provide a detailed description of your expertise and the services you offer. This will help clients understand how you can help them.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };
 

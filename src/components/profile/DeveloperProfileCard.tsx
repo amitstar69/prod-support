@@ -88,52 +88,86 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <ProfileHeader 
-        developer={developer}
-        formData={formData}
-        onChange={onInputChange}
-      />
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          <div className="bg-secondary/20 p-6 flex flex-col md:flex-row gap-6 items-center md:items-start">
+            <ProfileHeader 
+              developer={developer}
+              formData={formData}
+              onChange={onInputChange}
+            />
+          </div>
+        </CardContent>
+      </Card>
       
-      <AboutSection 
-        description={formData.description}
-        bio={formData.bio}
-        onChange={onInputChange}
-      />
+      <Card>
+        <CardContent className="p-6">
+          <AboutSection 
+            description={formData.description}
+            bio={formData.bio}
+            onChange={onInputChange}
+          />
+        </CardContent>
+      </Card>
       
-      <ServiceDetailsSection
-        category={formData.category}
-        experience={formData.experience}
-        hourlyRate={formData.hourlyRate}
-        minuteRate={formData.minuteRate}
-        availability={formData.availability}
-        communicationPreferences={formData.communicationPreferences}
-        onChange={onInputChange}
-      />
+      <Card>
+        <CardContent className="p-6">
+          <ServiceDetailsSection
+            category={formData.category}
+            experience={formData.experience}
+            hourlyRate={formData.hourlyRate}
+            minuteRate={formData.minuteRate}
+            availability={formData.availability}
+            communicationPreferences={formData.communicationPreferences}
+            onChange={onInputChange}
+          />
+        </CardContent>
+      </Card>
       
-      <SkillsSection 
-        skills={formData.skills}
-        onChange={(skills) => onInputChange('skills', skills)}
-      />
+      <Card>
+        <CardContent className="p-6">
+          <SkillsSection 
+            skills={formData.skills}
+            onChange={(skills) => onInputChange('skills', skills)}
+          />
+        </CardContent>
+      </Card>
       
-      <EducationSection 
-        education={formData.education || []}
-        onChange={(education) => onInputChange('education', education)}
-      />
+      <Card>
+        <CardContent className="p-6">
+          <EducationSection 
+            education={formData.education || []}
+            onChange={(education) => onInputChange('education', education)}
+          />
+        </CardContent>
+      </Card>
       
-      <CertificationsSection 
-        certifications={formData.certifications || []}
-        onChange={(certifications) => onInputChange('certifications', certifications)}
-      />
+      <Card>
+        <CardContent className="p-6">
+          <CertificationsSection 
+            certifications={formData.certifications || []}
+            onChange={(certifications) => onInputChange('certifications', certifications)}
+          />
+        </CardContent>
+      </Card>
       
-      <LanguagesSection 
-        languages={formData.languagesSpoken || []}
-        onChange={(languages) => onInputChange('languagesSpoken', languages)}
-      />
+      <Card>
+        <CardContent className="p-6">
+          <LanguagesSection 
+            languages={formData.languagesSpoken || []}
+            onChange={(languages) => onInputChange('languagesSpoken', languages)}
+          />
+        </CardContent>
+      </Card>
       
-      <PortfolioSection 
-        portfolioItems={formData.portfolioItems || []}
-        onChange={(items) => onInputChange('portfolioItems', items)}
-      />
+      <Card>
+        <CardContent className="p-6">
+          <PortfolioSection 
+            portfolioItems={formData.portfolioItems || []}
+            onChange={(items) => onInputChange('portfolioItems', items)}
+          />
+        </CardContent>
+      </Card>
       
       <Card className="border border-border/40 shadow-sm overflow-hidden">
         <CardContent className="p-6">
