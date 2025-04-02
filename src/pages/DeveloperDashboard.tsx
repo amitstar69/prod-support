@@ -64,7 +64,8 @@ const DeveloperDashboard = () => {
           <div className="mb-6">
             <TicketFiltersContainer 
               filters={filters} 
-              onFilterChange={handleFilterChange} 
+              onFilterChange={handleFilterChange}
+              onClose={() => setShowFilters(false)}
             />
           </div>
         )}

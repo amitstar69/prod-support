@@ -34,7 +34,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           <Button 
             variant="outline"
             size="sm"
-            className="flex items-center gap-1 h-9"
+            className={`flex items-center gap-1 h-9 ${showFilters ? 'bg-primary/10 text-primary' : ''}`}
             onClick={() => setShowFilters(!showFilters)}
           >
             <Filter className="h-4 w-4" />

@@ -15,6 +15,7 @@ export interface UseTicketFiltersResult {
   setShowFilters: (show: boolean) => void;
   handleFilterChange: (filterType: string, value: string) => void;
   applyFilters: (tickets: HelpRequest[]) => HelpRequest[];
+  resetFilters: () => void;
 }
 
 export const useTicketFilters = (tickets: HelpRequest[]): UseTicketFiltersResult => {
@@ -59,12 +60,21 @@ export const useTicketFilters = (tickets: HelpRequest[]): UseTicketFiltersResult
     }));
   };
 
+  const resetFilters = () => {
+    setFilters({
+      status: 'all',
+      technicalArea: 'all',
+      urgency: 'all',
+    });
+  };
+
   return {
     filters,
     filteredTickets,
     showFilters,
     setShowFilters,
     handleFilterChange,
-    applyFilters
+    applyFilters,
+    resetFilters
   };
 };

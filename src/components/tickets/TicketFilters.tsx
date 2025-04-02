@@ -1,13 +1,15 @@
 
 import React from 'react';
-import { Label } from '../ui/label';
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '../ui/select';
+  Clock, 
+  Code, 
+  AlertCircle 
+} from 'lucide-react';
+import { Badge } from '../ui/badge';
+import { 
+  ToggleGroup, 
+  ToggleGroupItem 
+} from '../ui/toggle-group';
 
 interface TicketFiltersProps {
   filters: {
@@ -26,64 +28,97 @@ const TicketFilters: React.FC<TicketFiltersProps> = ({ filters, onFilterChange }
     'AWS', 'Azure', 'DevOps', 'Database', 'Mobile'
   ];
 
+  // Urgency options with colors
+  const urgencyOptions = [
+    { value: 'all', label: 'All', color: 'bg-gray-200 text-gray-700' },
+    { value: 'low', label: 'Low', color: 'bg-blue-100 text-blue-700' },
+    { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700' },
+    { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-700' },
+    { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-700' },
+  ];
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="flex flex-col space-y-4">
+      {/* Status Filter */}
       <div className="space-y-2">
-        <Label htmlFor="status-filter">Status</Label>
-        <Select
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <Badge variant="outline" className="text-xs py-0 px-1.5">
+            Status
+          </Badge>
+        </div>
+        <ToggleGroup 
+          type="single" 
           value={filters.status}
-          onValueChange={(value) => onFilterChange('status', value)}
+          onValueChange={(value) => value && onFilterChange('status', value)}
+          className="justify-start flex-wrap"
         >
-          <SelectTrigger id="status-filter" className="w-full">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="matching">Matching</SelectItem>
-            <SelectItem value="scheduled">Scheduled</SelectItem>
-            <SelectItem value="in-progress">In Progress</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+          <ToggleGroupItem value="all" aria-label="All Statuses" className="text-xs h-7 px-2">
+            All
+          </ToggleGroupItem>
+          <ToggleGroupItem value="pending" aria-label="Pending" className="text-xs h-7 px-2">
+            Pending
+          </ToggleGroupItem>
+          <ToggleGroupItem value="matching" aria-label="Matching" className="text-xs h-7 px-2">
+            Matching
+          </ToggleGroupItem>
+          <ToggleGroupItem value="scheduled" aria-label="Scheduled" className="text-xs h-7 px-2">
+            Scheduled
+          </ToggleGroupItem>
+          <ToggleGroupItem value="in-progress" aria-label="In Progress" className="text-xs h-7 px-2">
+            In Progress
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
+      {/* Urgency Filter */}
       <div className="space-y-2">
-        <Label htmlFor="area-filter">Technical Area</Label>
-        <Select
-          value={filters.technicalArea}
-          onValueChange={(value) => onFilterChange('technicalArea', value)}
-        >
-          <SelectTrigger id="area-filter" className="w-full">
-            <SelectValue placeholder="Filter by technical area" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Technical Areas</SelectItem>
-            {techAreas.map(area => (
-              <SelectItem key={area} value={area}>{area}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <Clock className="h-4 w-4" />
+          <Badge variant="outline" className="text-xs py-0 px-1.5">
+            Urgency
+          </Badge>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {urgencyOptions.map((option) => (
+            <Badge 
+              key={option.value}
+              variant="outline" 
+              className={`cursor-pointer ${filters.urgency === option.value ? option.color : 'bg-transparent'}`}
+              onClick={() => onFilterChange('urgency', option.value)}
+            >
+              {option.label}
+            </Badge>
+          ))}
+        </div>
       </div>
 
+      {/* Technical Area Filter */}
       <div className="space-y-2">
-        <Label htmlFor="urgency-filter">Urgency</Label>
-        <Select
-          value={filters.urgency}
-          onValueChange={(value) => onFilterChange('urgency', value)}
-        >
-          <SelectTrigger id="urgency-filter" className="w-full">
-            <SelectValue placeholder="Filter by urgency" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Urgency Levels</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <Code className="h-4 w-4" />
+          <Badge variant="outline" className="text-xs py-0 px-1.5">
+            Tech Stack
+          </Badge>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge 
+            variant="outline" 
+            className={`cursor-pointer ${filters.technicalArea === 'all' ? 'bg-gray-200 text-gray-700' : 'bg-transparent'}`}
+            onClick={() => onFilterChange('technicalArea', 'all')}
+          >
+            All
+          </Badge>
+          {techAreas.map((area) => (
+            <Badge 
+              key={area}
+              variant="outline" 
+              className={`cursor-pointer ${filters.technicalArea === area ? 'bg-primary/10 text-primary' : 'bg-transparent'}`}
+              onClick={() => onFilterChange('technicalArea', area)}
+            >
+              {area}
+            </Badge>
+          ))}
+        </div>
       </div>
     </div>
   );

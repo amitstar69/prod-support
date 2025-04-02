@@ -1,6 +1,8 @@
 
 import React from 'react';
 import TicketFilters from '../tickets/TicketFilters';
+import { X } from 'lucide-react';
+import { Button } from '../ui/button';
 
 interface TicketFiltersContainerProps {
   filters: {
@@ -9,14 +11,23 @@ interface TicketFiltersContainerProps {
     urgency: string;
   };
   onFilterChange: (filterType: string, value: string) => void;
+  onClose: () => void;
 }
 
 const TicketFiltersContainer: React.FC<TicketFiltersContainerProps> = ({ 
   filters, 
-  onFilterChange 
+  onFilterChange,
+  onClose
 }) => {
   return (
-    <div className="mb-6 p-4 bg-muted/30 border border-border/30 rounded-md">
+    <div className="mb-6 p-4 bg-background border border-border/30 rounded-md shadow-sm animate-fade-in">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-medium">Filter Gigs</h3>
+        <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </Button>
+      </div>
       <TicketFilters 
         filters={filters} 
         onFilterChange={onFilterChange} 
