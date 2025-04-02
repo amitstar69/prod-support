@@ -73,7 +73,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
                 to="/developer-tickets" 
                 className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
               >
-                Tickets
+                Gigs
               </Link>
             </>
           ) : userType === 'client' ? (

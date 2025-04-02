@@ -75,7 +75,7 @@ const NavLinks: React.FC = () => {
                 : 'text-muted-foreground hover:text-foreground'
             }
           >
-            Tickets
+            Gigs
           </NavLink>
           <NavLink
             to="/profile"
