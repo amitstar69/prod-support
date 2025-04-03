@@ -34,6 +34,14 @@ const LoginPage: React.FC = () => {
     checkAuth();
   }, [checkAuthStatus]);
   
+  // Add debug logging for render cycles
+  console.log('LoginPage render cycle. Auth state:', { 
+    isAuthenticated, 
+    isLoading, 
+    error,
+    userType 
+  });
+  
   // Handle redirect for authenticated users
   useEffect(() => {
     if (isAuthenticated) {

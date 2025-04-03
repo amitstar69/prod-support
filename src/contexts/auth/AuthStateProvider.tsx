@@ -1,230 +1,93 @@
-import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { AuthState, AuthContextType } from './types';
-import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../integrations/supabase/client';
-import { login as authLogin } from './authLogin';
-import { register as authRegister } from './authRegister';
-import { logoutUser, checkSupabaseSession, setupAuthStateChangeListener } from './authUtils';
 
-// Log Supabase configuration information
-console.log('AuthContext: Supabase URL:', SUPABASE_URL ? 'URL is set' : 'URL is missing');
-console.log('AuthContext: Supabase Key:', SUPABASE_ANON_KEY ? 'Key is set' : 'Key is missing');
-console.log('AuthContext: Supabase Client:', supabase ? 'Client is initialized' : 'Client is not initialized');
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import { AuthState, AuthContextType } from './types';
+import { checkSupabaseSession, setupAuthStateChangeListener, logoutUser } from './authUtils';
+import { supabase } from '../../integrations/supabase/client';
 
 // Create the auth context
 export const AuthContext = createContext<AuthContextType>({
-  isAuthenticated: false,
-  userType: null,
-  userId: null,
+  authState: { isAuthenticated: false, userType: null, userId: null },
+  setAuthState: () => {},
+  logout: async () => {},
   login: async () => false,
   register: async () => false,
-  logout: async () => {},
-  logoutUser: async () => {},
-  isLoading: true,
+  isLoading: false
 });
 
-// Provider component to wrap the app
+// AuthProvider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     userType: null,
-    userId: null,
+    userId: null
   });
-  
-  const [authInitialized, setAuthInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [mockDevelopers, setMockDevelopers] = useState<any[]>([]);
-  const [mockClients, setMockClients] = useState<any[]>([]);
-  
-  const checkSession = useCallback(async () => {
+
+  // Initialize auth state from localStorage on mount
+  useEffect(() => {
+    console.log('AuthProvider: Initializing auth state');
+    
     try {
+      // Load auth state from localStorage
       const storedAuthState = localStorage.getItem('authState');
       if (storedAuthState) {
-        const parsedState = JSON.parse(storedAuthState);
-        setAuthState(parsedState);
+        const parsedAuthState = JSON.parse(storedAuthState);
+        console.log('AuthProvider: Loaded stored auth state:', parsedAuthState);
+        setAuthState(parsedAuthState);
+      } else {
+        console.log('AuthProvider: No stored auth state found');
       }
       
-      if (supabase) {
-        const authData = await checkSupabaseSession(setAuthState);
-        
-        if (!authData?.isAuthenticated && storedAuthState) {
-          const parsedState = JSON.parse(storedAuthState);
-          if (parsedState.isAuthenticated) {
-            console.log('Local auth state conflicts with server state. Resetting...');
-            localStorage.removeItem('authState');
-            setAuthState({
-              isAuthenticated: false,
-              userType: null,
-              userId: null,
-            });
-          }
+      // Check Supabase session
+      checkSupabaseSession(setAuthState)
+        .then((supabaseAuthState) => {
+          console.log('AuthProvider: Supabase session check result:', supabaseAuthState);
+          setIsLoading(false);
+        })
+        .catch(error => {
+          console.error('AuthProvider: Error checking Supabase session:', error);
+          setIsLoading(false);
+        });
+      
+      // Subscribe to auth state changes
+      const subscription = setupAuthStateChangeListener(setAuthState);
+      
+      return () => {
+        // Cleanup subscription on unmount
+        if (subscription && typeof subscription.unsubscribe === 'function') {
+          subscription.unsubscribe();
         }
-      }
+      };
     } catch (error) {
-      console.error('Error checking session:', error);
-      localStorage.removeItem('authState');
-      setAuthState({
-        isAuthenticated: false,
-        userType: null,
-        userId: null,
-      });
-    } finally {
+      console.error('AuthProvider: Error in auth initialization:', error);
       setIsLoading(false);
-      setAuthInitialized(true);
     }
   }, []);
   
+  // Log auth state changes
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        setIsLoading(true);
-        
-        const storedAuthState = localStorage.getItem('authState');
-        if (storedAuthState) {
-          const parsedState = JSON.parse(storedAuthState);
-          setAuthState(parsedState);
-        }
-        
-        const storedDevelopers = localStorage.getItem('mockDevelopers');
-        if (storedDevelopers) {
-          setMockDevelopers(JSON.parse(storedDevelopers));
-        }
-        
-        const storedClients = localStorage.getItem('mockClients');
-        if (storedClients) {
-          setMockClients(JSON.parse(storedClients));
-        }
-        
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 5000)
-        );
-        
-        try {
-          await Promise.race([checkSession(), timeoutPromise]);
-        } catch (error) {
-          console.warn('Session check timed out or failed:', error);
-        }
-        
-        if (supabase) {
-          setupAuthStateChangeListener(setAuthState);
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        localStorage.removeItem('authState');
-        setAuthState({
-          isAuthenticated: false,
-          userType: null,
-          userId: null,
-        });
-      } finally {
-        setIsLoading(false);
-        setAuthInitialized(true);
-      }
-    };
-    
-    initAuth();
-  }, [checkSession]);
-  
-  const handleLogout = async () => {
-    console.log("Logout triggered from AuthProvider");
-    try {
-      await logoutUser();
-    } catch (error) {
-      console.error("Error during logout:", error);
-      setAuthState({
-        isAuthenticated: false,
-        userType: null,
-        userId: null,
-      });
-      localStorage.removeItem('authState');
-    }
+    console.log('AuthProvider: Auth state changed:', authState);
+  }, [authState]);
+
+  // Import or define login and register functions here
+  const { login } = require('./authLogin');
+  const { register: registerUser } = require('./authRegister');
+
+  // Prepare context value
+  const contextValue: AuthContextType = {
+    authState,
+    setAuthState,
+    logout: logoutUser,
+    login: (email, password, userType) => login(email, password, userType, setAuthState),
+    register: (userData, userType) => registerUser(userData, userType, [], [], () => {}, () => {}, setAuthState),
+    isLoading
   };
-  
-  const handleLogin = async (email: string, password: string, userType: 'developer' | 'client'): Promise<boolean> => {
-    setIsLoading(true);
-    try {
-      const loginAttemptTime = Date.now();
-      localStorage.setItem('lastLoginAttempt', loginAttemptTime.toString());
-      
-      const timeoutPromise = new Promise<boolean>((_, reject) => {
-        setTimeout(() => reject(new Error('Login request timed out')), 15000);
-      });
-      
-      const loginPromise = authLogin(email, password, userType);
-      
-      const result = await Promise.race([loginPromise, timeoutPromise])
-        .catch(error => {
-          console.error('Login error or timeout in handleLogin:', error);
-          return { success: false, error: error.message || 'Login timed out' };
-        });
-      
-      const lastAttempt = localStorage.getItem('lastLoginAttempt');
-      if (lastAttempt && parseInt(lastAttempt) !== loginAttemptTime) {
-        console.log('Ignoring outdated login attempt response');
-        return false;
-      }
-      
-      const isSuccessful = typeof result === 'boolean' 
-        ? result 
-        : (result && 'success' in result) ? result.success : false;
-      
-      if (isSuccessful) {
-        setAuthState(prev => ({
-          ...prev,
-          isAuthenticated: true,
-          userType: userType,
-        }));
-        console.log(`Login successful as ${userType}, setting immediate auth state`);
-      } else {
-        const errorMessage = (typeof result === 'object' && result && 'error' in result) 
-          ? result.error 
-          : 'Login failed';
-        console.error('Login failed:', errorMessage);
-      }
-      
-      return isSuccessful;
-    } catch (error: any) {
-      console.error('Login exception:', error);
-      return false;
-    } finally {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 300);
-    }
-  };
-  
-  const handleRegister = async (userData: any, userType: 'developer' | 'client'): Promise<boolean> => {
-    setIsLoading(true);
-    try {
-      const result = await authRegister(
-        userData, 
-        userType,
-        mockDevelopers,
-        mockClients,
-        setMockDevelopers,
-        setMockClients,
-        setAuthState
-      );
-      
-      return result;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
+
   return (
-    <AuthContext.Provider
-      value={{
-        ...authState,
-        login: handleLogin,
-        register: handleRegister,
-        logout: handleLogout,
-        logoutUser: handleLogout,
-        isLoading,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const AuthStateProvider = AuthProvider;
+export { AuthProvider as AuthStateProvider };
