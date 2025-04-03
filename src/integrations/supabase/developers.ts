@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { Developer } from '../../types/product';
 
@@ -81,10 +82,9 @@ export const fetchDevelopersWithPagination = async (
       }
     }
     
-    // Add pagination
+    // Add pagination - removed the order by created_at which doesn't exist
     const { data, error, count } = await query
-      .range(offset, offset + pageSize - 1)
-      .order('created_at', { ascending: false });
+      .range(offset, offset + pageSize - 1);
       
     if (error) {
       console.error('Error fetching developers:', error);
