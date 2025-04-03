@@ -4,10 +4,39 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import SearchBar from '../components/SearchBar';
 import ProductGrid from '../components/ProductGrid';
-import { searchDevelopers, getProductsByCategory, developers } from '../data/products';
 import { categories } from '../data/categories';
-import { Filter, X, Star } from 'lucide-react';
+import { Filter, X, Star, Code, Award, MapPin, Globe } from 'lucide-react';
 import { Developer, Product } from '../types/product';
+import { useDeveloperSearch, DeveloperFilters } from '../hooks/useDeveloperSearch';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+
+// Common skills for filter options
+const commonSkills = [
+  'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 
+  'AWS', 'Docker', 'SQL', 'Flutter', 'Java', 'CSS', 'HTML',
+  'GraphQL', 'Next.js', 'Vue.js', 'Angular', 'MongoDB', 'Firebase'
+];
+
+// Experience levels
+const experienceLevels = [
+  { value: 'all', label: 'Any Experience' },
+  { value: 'beginner', label: 'Entry Level (1-2 years)' },
+  { value: 'intermediate', label: 'Intermediate (3-5 years)' },
+  { value: 'expert', label: 'Expert (5+ years)' }
+];
+
+// Common locations
+const locations = [
+  { value: 'all', label: 'Any Location' },
+  { value: 'remote', label: 'Remote' },
+  { value: 'us', label: 'United States' },
+  { value: 'europe', label: 'Europe' },
+  { value: 'asia', label: 'Asia' },
+  { value: 'uk', label: 'United Kingdom' },
+  { value: 'canada', label: 'Canada' },
+  { value: 'australia', label: 'Australia' }
+];
 
 const Search: React.FC = () => {
   const location = useLocation();
@@ -16,76 +45,82 @@ const Search: React.FC = () => {
   const searchQuery = queryParams.get('q') || '';
   const categoryFilter = queryParams.get('category') || '';
   
-  const [filteredDevelopers, setFilteredDevelopers] = useState<Developer[]>([]);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  const [hourlyRateRange, setHourlyRateRange] = useState<[number, number]>([0, 200]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    categoryFilter ? [categoryFilter] : []
-  );
-  const [minRating, setMinRating] = useState(0);
-  const [availableOnly, setAvailableOnly] = useState(false);
   
-  useEffect(() => {
-    // Reset mobile filter state on location change
-    setIsMobileFilterOpen(false);
-    
-    // Update selected categories when categoryFilter changes
-    if (categoryFilter && !selectedCategories.includes(categoryFilter)) {
-      setSelectedCategories([...selectedCategories, categoryFilter]);
-    }
-    
-    // Filter developers based on search query and filters
-    let results = searchQuery 
-      ? searchDevelopers(searchQuery) 
-      : [...developers];
-    
-    // Apply category filter
-    if (selectedCategories.length > 0) {
-      results = results.filter(dev => selectedCategories.includes(dev.category));
-    }
-    
-    // Apply hourly rate range filter
-    results = results.filter(
-      dev => dev.hourlyRate >= hourlyRateRange[0] && dev.hourlyRate <= hourlyRateRange[1]
-    );
-    
-    // Apply rating filter
-    if (minRating > 0) {
-      results = results.filter(dev => dev.rating >= minRating);
-    }
-    
-    // Apply availability filter
-    if (availableOnly) {
-      results = results.filter(dev => dev.availability);
-    }
-    
-    setFilteredDevelopers(results);
-  }, [location.search, selectedCategories, hourlyRateRange, minRating, availableOnly]);
+  // Initial filters state
+  const initialFilters: DeveloperFilters = {
+    selectedCategories: categoryFilter ? [categoryFilter] : [],
+    hourlyRateRange: [0, 200],
+    availableOnly: false,
+    searchQuery,
+    selectedSkills: [],
+    experienceLevel: 'all',
+    location: 'all'
+  };
   
+  // Use our custom hook
+  const { 
+    filteredDevelopers, 
+    filters, 
+    updateFilter,
+    isLoading,
+    error,
+    loadMore,
+    hasMore,
+    refreshDevelopers
+  } = useDeveloperSearch(initialFilters);
+  
+  // Handle category selection
   const handleCategoryChange = (categoryId: string) => {
-    if (selectedCategories.includes(categoryId)) {
-      setSelectedCategories(selectedCategories.filter(id => id !== categoryId));
-    } else {
-      setSelectedCategories([...selectedCategories, categoryId]);
+    const updatedCategories = filters.selectedCategories.includes(categoryId)
+      ? filters.selectedCategories.filter(id => id !== categoryId)
+      : [...filters.selectedCategories, categoryId];
+      
+    updateFilter('selectedCategories', updatedCategories);
+    
+    // Update URL if necessary
+    if (categoryId === categoryFilter) {
+      const params = new URLSearchParams(location.search);
+      params.delete('category');
+      navigate({ search: params.toString() });
     }
   };
   
+  // Handle hourly rate change
   const handleHourlyRateChange = (event: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const value = parseInt(event.target.value);
-    const newRange = [...hourlyRateRange] as [number, number];
+    const newRange = [...filters.hourlyRateRange] as [number, number];
     newRange[index] = value;
-    setHourlyRateRange(newRange);
+    updateFilter('hourlyRateRange', newRange);
   };
   
-  const handleRatingChange = (rating: number) => {
-    setMinRating(rating === minRating ? 0 : rating);
+  // Handle skill selection
+  const handleSkillChange = (skill: string) => {
+    const updatedSkills = filters.selectedSkills.includes(skill)
+      ? filters.selectedSkills.filter(s => s !== skill)
+      : [...filters.selectedSkills, skill];
+      
+    updateFilter('selectedSkills', updatedSkills);
   };
   
+  // Handle experience level change
+  const handleExperienceLevelChange = (level: string) => {
+    updateFilter('experienceLevel', level);
+  };
+  
+  // Handle location change
+  const handleLocationChange = (loc: string) => {
+    updateFilter('location', loc);
+  };
+  
+  // Clear all filters
   const clearAllFilters = () => {
-    setSelectedCategories([]);
-    setHourlyRateRange([0, 200]);
-    setMinRating(0);
-    setAvailableOnly(false);
+    updateFilter('selectedCategories', []);
+    updateFilter('hourlyRateRange', [0, 200]);
+    updateFilter('availableOnly', false);
+    updateFilter('selectedSkills', []);
+    updateFilter('experienceLevel', 'all');
+    updateFilter('location', 'all');
     
     // If there was a category in the URL, remove it
     if (categoryFilter) {
@@ -95,7 +130,26 @@ const Search: React.FC = () => {
     }
   };
   
-  const hasActiveFilters = selectedCategories.length > 0 || hourlyRateRange[0] > 0 || hourlyRateRange[1] < 200 || minRating > 0 || availableOnly;
+  // Check if any filters are active
+  const hasActiveFilters = 
+    filters.selectedCategories.length > 0 || 
+    filters.hourlyRateRange[0] > 0 || 
+    filters.hourlyRateRange[1] < 200 || 
+    filters.availableOnly || 
+    filters.selectedSkills.length > 0 ||
+    filters.experienceLevel !== 'all' ||
+    filters.location !== 'all';
+  
+  // Update searchQuery when URL search parameter changes
+  useEffect(() => {
+    if (searchQuery !== filters.searchQuery) {
+      updateFilter('searchQuery', searchQuery);
+    }
+    
+    if (categoryFilter && !filters.selectedCategories.includes(categoryFilter)) {
+      updateFilter('selectedCategories', [...filters.selectedCategories, categoryFilter]);
+    }
+  }, [searchQuery, categoryFilter]);
   
   return (
     <Layout>
@@ -115,7 +169,10 @@ const Search: React.FC = () => {
           {/* Mobile Filter Button */}
           <div className="lg:hidden flex justify-between items-center mb-4">
             <p className="text-sm text-muted-foreground">
-              Showing {filteredDevelopers.length} results
+              {isLoading 
+                ? 'Loading developers...' 
+                : `Showing ${filteredDevelopers.length} results`
+              }
             </p>
             <button
               onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
@@ -140,7 +197,7 @@ const Search: React.FC = () => {
             />
             
             {/* Filter Content */}
-            <div className="fixed right-0 top-0 h-full w-[300px] border-l border-border bg-background p-6 shadow-lg animate-slide-in-right lg:animate-none lg:relative lg:right-auto lg:top-auto lg:h-auto lg:w-auto lg:border-none lg:bg-transparent lg:p-0 lg:shadow-none">
+            <div className="fixed right-0 top-0 h-full w-[300px] border-l border-border bg-background p-6 shadow-lg animate-slide-in-right lg:animate-none lg:relative lg:right-auto lg:top-auto lg:h-auto lg:w-auto lg:border-none lg:bg-transparent lg:p-0 lg:shadow-none overflow-auto">
               <div className="flex items-center justify-between mb-6 lg:hidden">
                 <h3 className="text-lg font-semibold">Filters</h3>
                 <button
@@ -169,8 +226,8 @@ const Search: React.FC = () => {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={availableOnly}
-                      onChange={() => setAvailableOnly(!availableOnly)}
+                      checked={filters.availableOnly}
+                      onChange={() => updateFilter('availableOnly', !filters.availableOnly)}
                       className="rounded border-border/70 text-primary focus:ring-primary/20"
                     />
                     <span className="text-sm font-medium">Available now</span>
@@ -188,11 +245,85 @@ const Search: React.FC = () => {
                       >
                         <input
                           type="checkbox"
-                          checked={selectedCategories.includes(category.id)}
+                          checked={filters.selectedCategories.includes(category.id)}
                           onChange={() => handleCategoryChange(category.id)}
                           className="rounded border-border/70 text-primary focus:ring-primary/20"
                         />
                         <span className="text-sm">{category.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Skills Filter - NEW */}
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold mb-3">
+                    <Code className="h-4 w-4" />
+                    <h3>Skills & Technologies</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {commonSkills.map(skill => (
+                      <Badge 
+                        key={skill}
+                        variant="outline" 
+                        className={`cursor-pointer ${
+                          filters.selectedSkills.includes(skill) 
+                            ? 'bg-primary/10 text-primary' 
+                            : 'bg-transparent'
+                        }`}
+                        onClick={() => handleSkillChange(skill)}
+                      >
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Experience Level Filter - NEW */}
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold mb-3">
+                    <Award className="h-4 w-4" />
+                    <h3>Experience Level</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {experienceLevels.map(level => (
+                      <label 
+                        key={level.value} 
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="radio"
+                          name="experienceLevel"
+                          checked={filters.experienceLevel === level.value}
+                          onChange={() => handleExperienceLevelChange(level.value)}
+                          className="rounded-full border-border/70 text-primary focus:ring-primary/20"
+                        />
+                        <span className="text-sm">{level.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Location Filter - NEW */}
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold mb-3">
+                    <MapPin className="h-4 w-4" />
+                    <h3>Location</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {locations.map(loc => (
+                      <label 
+                        key={loc.value} 
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="radio"
+                          name="location"
+                          checked={filters.location === loc.value}
+                          onChange={() => handleLocationChange(loc.value)}
+                          className="rounded-full border-border/70 text-primary focus:ring-primary/20"
+                        />
+                        <span className="text-sm">{loc.label}</span>
                       </label>
                     ))}
                   </div>
@@ -207,10 +338,10 @@ const Search: React.FC = () => {
                         <span className="px-2 bg-muted text-muted-foreground text-sm">$</span>
                         <input
                           type="number"
-                          value={hourlyRateRange[0]}
+                          value={filters.hourlyRateRange[0]}
                           onChange={(e) => handleHourlyRateChange(e, 0)}
                           min={0}
-                          max={hourlyRateRange[1]}
+                          max={filters.hourlyRateRange[1]}
                           className="w-16 h-8 text-sm border-0 focus:ring-0"
                         />
                       </div>
@@ -219,9 +350,9 @@ const Search: React.FC = () => {
                         <span className="px-2 bg-muted text-muted-foreground text-sm">$</span>
                         <input
                           type="number"
-                          value={hourlyRateRange[1]}
+                          value={filters.hourlyRateRange[1]}
                           onChange={(e) => handleHourlyRateChange(e, 1)}
-                          min={hourlyRateRange[0]}
+                          min={filters.hourlyRateRange[0]}
                           className="w-16 h-8 text-sm border-0 focus:ring-0"
                         />
                       </div>
@@ -232,37 +363,11 @@ const Search: React.FC = () => {
                         type="range"
                         min={0}
                         max={200}
-                        value={hourlyRateRange[1]}
+                        value={filters.hourlyRateRange[1]}
                         onChange={(e) => handleHourlyRateChange(e, 1)}
                         className="w-full"
                       />
                     </div>
-                  </div>
-                </div>
-                
-                {/* Rating */}
-                <div>
-                  <h3 className="text-sm font-semibold mb-3">Rating</h3>
-                  <div className="space-y-2">
-                    {[4, 3, 2, 1].map(rating => (
-                      <button 
-                        key={rating}
-                        onClick={() => handleRatingChange(rating)} 
-                        className={`flex items-center w-full py-1 px-2 rounded-md ${
-                          minRating === rating ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
-                        }`}
-                      >
-                        <div className="flex text-amber-500">
-                          {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              className={`h-4 w-4 ${i < rating ? 'fill-current' : ''}`}
-                            />
-                          ))}
-                        </div>
-                        <span className="ml-2 text-sm">& Up</span>
-                      </button>
-                    ))}
                   </div>
                 </div>
               </div>
@@ -273,7 +378,10 @@ const Search: React.FC = () => {
           <div>
             <div className="hidden lg:flex justify-between items-center mb-6">
               <p className="text-sm text-muted-foreground">
-                Showing {filteredDevelopers.length} results
+                {isLoading 
+                  ? 'Loading developers...' 
+                  : `Showing ${filteredDevelopers.length} results`
+                }
               </p>
               {hasActiveFilters && (
                 <button
@@ -285,8 +393,38 @@ const Search: React.FC = () => {
               )}
             </div>
             
-            {filteredDevelopers.length > 0 ? (
-              <ProductGrid products={filteredDevelopers as Product[]} />
+            {isLoading ? (
+              <div className="py-20 text-center">
+                <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading developers...</p>
+              </div>
+            ) : error ? (
+              <div className="py-20 text-center">
+                <h3 className="heading-3 mb-2">Error loading developers</h3>
+                <p className="text-muted-foreground mb-6">{error}</p>
+                <button 
+                  onClick={refreshDevelopers}
+                  className="button-secondary"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : filteredDevelopers.length > 0 ? (
+              <>
+                <ProductGrid products={filteredDevelopers as Product[]} />
+                
+                {hasMore && (
+                  <div className="mt-8 flex justify-center">
+                    <Button 
+                      onClick={loadMore}
+                      variant="outline"
+                      className="px-8"
+                    >
+                      Load More
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="py-20 text-center">
                 <h3 className="heading-3 mb-2">No developers found</h3>

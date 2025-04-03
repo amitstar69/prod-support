@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types/product';
@@ -9,6 +8,17 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const displaySkills = product.skills || [];
+  
+  const formattedHourlyRate = typeof product.hourlyRate === 'number' 
+    ? product.hourlyRate.toFixed(2) 
+    : '0.00';
+  
+  const isOnline = product.online === true;
+  const availability = typeof product.availability === 'boolean' 
+    ? product.availability 
+    : false;
+  
   return (
     <div 
       className="group relative overflow-hidden rounded-xl bg-white border border-border/40 card-hover"
@@ -48,7 +58,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </h3>
           
           <div className="flex items-center justify-between">
-            <p className="text-base font-semibold">${product.hourlyRate.toFixed(2)}</p>
+            <p className="text-base font-semibold">${formattedHourlyRate}</p>
             <button 
               className="text-xs font-medium text-primary py-1 px-3 rounded-full bg-primary/5 hover:bg-primary/10 transition-colors"
             >
