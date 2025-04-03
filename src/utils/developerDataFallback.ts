@@ -1,6 +1,7 @@
 
 import { supabase } from '../integrations/supabase/client';
 import { Developer } from '../types/product';
+import { v4 as uuidv4 } from 'uuid';
 
 export const createSampleDeveloperProfiles = async () => {
   // Only run this in development
@@ -65,18 +66,22 @@ export const createSampleDeveloperProfiles = async () => {
   
   // Create sample developers
   for (const dev of sampleDevelopers) {
-    // 1. Create auth user (in real app) - skipped here
-    // 2. Create profile record
+    // Generate a UUID for the developer
+    const userId = uuidv4();
+    
+    // 1. Create profile record with the required id field
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .insert({
+        id: userId,
         name: dev.name,
         email: dev.email,
         image: dev.image,
         description: dev.description,
         location: dev.location,
         user_type: 'developer',
-        profile_completed: true
+        profile_completed: true,
+        username: dev.name.toLowerCase().replace(/\s+/g, '_')
       })
       .select()
       .single();
@@ -88,11 +93,11 @@ export const createSampleDeveloperProfiles = async () => {
     
     console.log('Created profile:', profileData);
     
-    // 3. Create developer_profile record
+    // 2. Create developer_profile record
     const { data: devProfileData, error: devProfileError } = await supabase
       .from('developer_profiles')
       .insert({
-        id: profileData.id,
+        id: userId, // Use the same UUID as the profile record
         category: dev.category,
         skills: dev.skills,
         experience: dev.experience,
