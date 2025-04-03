@@ -22,3 +22,22 @@ export interface DeveloperSearchResult {
   hasMore: boolean;
   refreshDevelopers: () => Promise<void>;
 }
+
+// New types for better API response handling
+export interface DeveloperSearchResponse {
+  success: boolean;
+  data?: Developer[];
+  error?: string;
+  metadata?: {
+    total: number;
+    hasMore: boolean;
+  };
+}
+
+export interface FilterOptions {
+  categories: string[];
+  skills: string[];
+  experienceLevels: string[];
+  locations: string[];
+  maxHourlyRate: number;
+}

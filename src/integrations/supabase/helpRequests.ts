@@ -5,7 +5,8 @@ import {
   getHelpRequestsForClient,
   getAllPublicHelpRequests,
   getHelpRequest,
-  updateHelpRequest
+  updateHelpRequest,
+  handleError
 } from './helpRequestsCore';
 import { testHelpRequestsTableAccess as testDatabaseAccess } from './helpRequestsDebug';
 import { submitDeveloperApplication, getDeveloperApplicationsForRequest } from './helpRequestsApplications';
@@ -31,11 +32,7 @@ export const getHelpRequestHistory = async (requestId: string) => {
     
     return { success: true, data };
   } catch (error) {
-    console.error('Exception fetching help request history:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error fetching history' 
-    };
+    return handleError(error, 'Unknown error fetching history');
   }
 };
 
