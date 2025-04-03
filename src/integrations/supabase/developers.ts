@@ -231,7 +231,7 @@ export const fetchDeveloperById = async (developerId: string): Promise<{
 /**
  * Create a bridge to the fetchUtils file to maintain backward compatibility
  */
-<lov-write file_path="src/integrations/supabase/developerSearch/fetchUtils.ts">
+export { fetchDevelopers } from './developerSearch/fetchUtils';
 import { supabase } from '../client';
 import { Developer } from '../../../types/product';
 
