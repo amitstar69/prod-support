@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import { useAuth, getCurrentUserData, updateUserData } from '../../../../contexts/auth';
+import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from '../../../../contexts/auth';
 import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
 import { Label } from '../../../../components/ui/label';
 import { Switch } from '../../../../components/ui/switch';

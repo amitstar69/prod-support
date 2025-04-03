@@ -1,112 +1,97 @@
-
-import { useState, useCallback } from 'react';
-import { useAuth, updateUserData, invalidateUserDataCache } from '../../contexts/auth';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../../contexts/auth';
 import { Client } from '../../types/product';
+import { updateUserData } from '../../contexts/auth/userDataUpdates';
 import { toast } from 'sonner';
-import { ClientProfileFormData } from './useClientProfileForm';
-import { calculateProfileCompletionPercentage } from './useProfileCompletion';
+import { invalidateUserDataCache } from '../../contexts/auth/authUserDataCache';
 
-export const useProfileUpdates = (client: Client | null, formData: ClientProfileFormData) => {
-  const { userId } = useAuth();
-  const [isSaving, setIsSaving] = useState(false);
+export const useProfileUpdates = () => {
+  const { authState } = useAuth();
+  const [currentProfile, setCurrentProfile] = useState<Client | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleImageUpdate = async (imageUrl: string) => {
-    if (!userId) {
-      toast.error("User ID not found. Please try logging in again.");
-      return;
+  useEffect(() => {
+    if (authState.userType === 'client' && authState.userId) {
+      // You might want to fetch the profile data here if needed
+      // and set it to currentProfile state
     }
-    
-    setIsSaving(true);
-    console.log('Saving profile image update for user:', userId);
-    console.log('New image URL:', imageUrl);
-    
+  }, [authState.userType, authState.userId]);
+
+  const currentUserId = authState.userId;
+
+  // Fix updateUserProfile function to accept userData as parameter
+  export const updateUserProfile = async (userData: Partial<Client>) => {
     try {
-      const updatedData: Partial<Client> = {
-        image: imageUrl
-      };
-      
-      const success = await updateUserData(updatedData);
-      
-      if (success) {
-        console.log('Profile image update successful');
-        toast.success('Profile image updated successfully');
-        invalidateUserDataCache(userId);
-      } else {
-        toast.error('Failed to update profile image. Please try again.');
+      setIsLoading(true);
+      setError(null);
+
+      if (!currentUserId) {
+        setError('User not authenticated.');
+        return;
       }
-    } catch (error) {
-      console.error('Error updating profile image:', error);
-      toast.error('An error occurred while updating your profile image');
+
+      const success = await updateUserData({ id: currentUserId, ...userData });
+
+      if (success) {
+        toast.success('Profile updated successfully!');
+        setCurrentProfile(prevProfile => ({ ...prevProfile, ...userData } as Client));
+      } else {
+        setError('Failed to update profile.');
+        toast.error('Failed to update profile.');
+      }
+      
+      // Fix invalidateUserDataCache call by passing userId
+      if (currentProfile && currentProfile.id) {
+        invalidateUserDataCache(currentProfile.id);
+      }
+    } catch (error: any) {
+      setError(error.message || 'An unexpected error occurred.');
+      toast.error(error.message || 'An unexpected error occurred.');
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
   };
-  
-  const handleSaveChanges = useCallback(async () => {
-    if (!userId) {
-      toast.error("User ID not found. Please try logging in again.");
-      return;
-    }
-    
-    setIsSaving(true);
-    console.log('Saving client profile changes for user:', userId);
-    
-    try {
-      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
-      console.log(`Updating client name from "${client?.name}" to "${fullName}"`);
-      
-      const completionPercentage = calculateProfileCompletionPercentage(formData);
-      console.log(`Calculated profile completion percentage: ${completionPercentage}%`);
-      
-      const isProfileComplete = completionPercentage >= 80;
-      console.log(`Profile will be marked as complete: ${isProfileComplete} (${completionPercentage}% >= 80%)`);
-      
-      const updatedData: Partial<Client> = {
-        name: fullName,
-        email: formData.email,
-        location: formData.location,
-        description: formData.description,
-        username: formData.username,
-        bio: formData.bio,
-        company: formData.company,
-        position: formData.position,
-        techStack: formData.techStack,
-        industry: formData.industry,
-        projectTypes: formData.projectTypes,
-        preferredHelpFormat: formData.preferredHelpFormat,
-        budgetPerHour: formData.budgetPerHour,
-        paymentMethod: formData.paymentMethod,
-        profileCompleted: isProfileComplete,
-        profileCompletionPercentage: completionPercentage
-      };
-      
-      console.log("Submitting client profile update:", updatedData);
-      
-      const success = await updateUserData(updatedData);
-      
-      if (success) {
-        console.log('Profile update successful, forcing data refresh');
-        
-        invalidateUserDataCache(userId);
-        
-        // Add a small delay before showing success message
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        toast.success('Profile updated successfully');
-      } else {
-        toast.error('Failed to update profile. Please verify your connection and try again.');
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('An error occurred while updating your profile');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [client, formData, userId]);
 
-  return { 
-    isSaving, 
-    handleSaveChanges, 
-    handleImageUpdate 
+  // Fix updateProfileSection function to accept section and data parameters
+  export const updateProfileSection = async (section: string, data: any) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      if (!currentUserId) {
+        setError('User not authenticated.');
+        return;
+      }
+
+      const userData = { [section]: data };
+      const success = await updateUserData({ id: currentUserId, ...userData });
+
+      if (success) {
+        toast.success(`${section} updated successfully!`);
+        setCurrentProfile(prevProfile => ({ ...prevProfile, ...userData } as Client));
+      } else {
+        setError(`Failed to update ${section}.`);
+        toast.error(`Failed to update ${section}.`);
+      }
+      
+      // Fix invalidateUserDataCache call by passing userId
+      if (currentProfile && currentProfile.id) {
+        invalidateUserDataCache(currentProfile.id);
+      }
+    } catch (error: any) {
+      setError(error.message || 'An unexpected error occurred.');
+      toast.error(error.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    currentProfile,
+    isLoading,
+    error,
+    updateUserProfile,
+    updateProfileSection,
   };
 };

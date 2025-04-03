@@ -1,145 +1,111 @@
-
-import { useState, useCallback, useEffect } from 'react';
-import { useAuth, getCurrentUserData, invalidateUserDataCache } from '../../contexts/auth';
+import { useState, useEffect, useCallback } from 'react';
 import { Client } from '../../types/product';
+import { supabase } from '../../integrations/supabase/client';
+import { useAuth } from '../../contexts/auth';
 import { toast } from 'sonner';
+import { invalidateUserDataCache } from '../../contexts/auth/authUserDataCache';
 
+// Define a type for the state
+interface ClientProfileState {
+  profile: Client | null;
+  loading: boolean;
+  error: string | null;
+}
+
+// Custom hook for fetching and managing client profile data
 export const useClientProfileData = () => {
-  const { userId } = useAuth();
-  const [client, setClient] = useState<Client | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadingTimeoutReached, setLoadingTimeoutReached] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [maxRetryCount] = useState(3); // Maximum number of retries
+  const { authState } = useAuth();
+  const [state, setState] = useState<ClientProfileState>({
+    profile: null,
+    loading: true,
+    error: null,
+  });
 
-  const fetchUserData = useCallback(async (forceRefresh = true) => {
-    if (!userId) return;
-    
-    setIsLoading(true);
-    setLoadingTimeoutReached(false);
-    console.log('Fetching client profile data for user:', userId, 'forceRefresh:', forceRefresh, 'retry:', retryCount);
-    
-    // Set a loading timeout - make it shorter on retries
-    const timeoutDuration = retryCount > 0 ? 15000 : 30000; // Increased timeouts (15s for retries, 30s initially)
-    const timeoutId = setTimeout(() => {
-      console.log('Profile loading timeout reached after', timeoutDuration/1000, 'seconds');
-      setLoadingTimeoutReached(true);
-      setIsLoading(false);
-      
-      // Only show toast on first timeout
-      if (retryCount === 0) {
-        toast.error("Loading profile data is taking longer than expected. You can try refreshing or logging out and back in.");
-      }
-    }, timeoutDuration);
-    
+  // Store the current user ID in a variable
+  const currentUserId = authState.userId;
+
+  // Function to fetch client profile data
+  // Update this function to accept the userId parameter
+  export const fetchClientProfile = async (userId: string) => {
     try {
-      if (forceRefresh) {
-        console.log('Forcing cache invalidation before fetch');
-        invalidateUserDataCache(userId);
-        // Add a small delay after cache invalidation to ensure it's processed
-        await new Promise(resolve => setTimeout(resolve, 200));
+      setState(prevState => ({ ...prevState, loading: true, error: null }));
+
+      if (!userId) {
+        throw new Error('User ID is required to fetch client profile');
       }
-      
-      console.log('Fetching fresh user data');
-      const userData = await getCurrentUserData();
-      
-      clearTimeout(timeoutId);
-      
-      if (userData) {
-        // Check if this is a client data using properties specific to the Client type
-        if (!('budgetPerHour' in userData) && !('projectTypes' in userData)) {
-          console.error('User data is not client data:', userData);
-          toast.error("Retrieved user data is not client data. This may indicate an issue with your account type.");
-          setIsLoading(false);
-          return;
-        }
-        
-        const clientData = userData as Client;
-        console.log('Client data fetched successfully:', clientData);
-        setClient(clientData);
-        
-        // Reset retry count on successful fetch
-        setRetryCount(0);
-        setIsLoading(false);
-      } else {
-        console.error("User data not found");
-        
-        // Increment retry count for next attempt
-        const nextRetryCount = retryCount + 1;
-        setRetryCount(nextRetryCount);
-        
-        if (nextRetryCount <= maxRetryCount) {
-          console.log(`Auto-retrying fetch (${nextRetryCount}/${maxRetryCount}) after delay...`);
-          
-          // Exponential backoff for retries (2s, 4s, 8s)
-          const retryDelay = Math.min(2000 * Math.pow(2, retryCount), 8000);
-          
-          setTimeout(() => {
-            toast.info(`Retry ${nextRetryCount}/${maxRetryCount}: Attempting to load profile data again...`);
-            fetchUserData(true);
-          }, retryDelay);
-        } else {
-          toast.error("Failed to load profile after multiple attempts. Please try refreshing the page.");
-          setLoadingTimeoutReached(true);
-          setIsLoading(false);
-        }
+
+      const { data, error } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        throw new Error(`Error fetching client profile: ${error.message}`);
       }
-    } catch (error) {
-      clearTimeout(timeoutId);
-      
-      console.error("Error fetching user data:", error);
-      
-      // Increment retry count
-      const nextRetryCount = retryCount + 1;
-      setRetryCount(nextRetryCount);
-      
-      if (nextRetryCount <= maxRetryCount) {
-        console.log(`Error retry (${nextRetryCount}/${maxRetryCount}) after delay...`);
-        
-        // Exponential backoff for retries
-        const retryDelay = Math.min(2000 * Math.pow(2, retryCount), 8000);
-        
-        toast.error(`Error loading profile. Retrying (${nextRetryCount}/${maxRetryCount})...`);
-        setTimeout(() => {
-          fetchUserData(true);
-        }, retryDelay);
-      } else {
-        toast.error("Failed to load profile after multiple attempts. Please try refreshing the page.");
-        setLoadingTimeoutReached(true);
-        setIsLoading(false);
+
+      if (!data) {
+        throw new Error('Client profile not found');
       }
+
+      // Fetch the corresponding profile data from the "profiles" table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        throw new Error(`Error fetching profile data: ${profileError.message}`);
+      }
+
+      if (!profileData) {
+        throw new Error('Profile data not found');
+      }
+
+      // Combine the data from both tables
+      const combinedData = { ...profileData, ...data };
+
+      setState({
+        profile: combinedData as Client,
+        loading: false,
+        error: null,
+      });
+    } catch (error: any) {
+      setState({
+        profile: null,
+        loading: false,
+        error: error.message,
+      });
+      toast.error(error.message);
     }
-  }, [userId, retryCount, maxRetryCount]);
-  
+  };
+
+  // Add userId parameter to invalidateUserDataCache calls
+  export const invalidateClientProfileCache = () => {
+    if (currentUserId) {
+      invalidateUserDataCache(currentUserId);
+    }
+  };
+
+  // Fetch client profile data when the component mounts or when the user ID changes
   useEffect(() => {
-    if (userId) {
-      console.log('Initial client profile data fetch for user:', userId);
-      // Reset retry count when component mounts
-      setRetryCount(0);
-      fetchUserData(true);
+    if (currentUserId) {
+      fetchClientProfile(currentUserId);
     } else {
-      setIsLoading(false);
+      setState({
+        profile: null,
+        loading: false,
+        error: 'User not authenticated',
+      });
     }
-    
-    // Clean up function to clear any pending timeouts when component unmounts
-    return () => {
-      console.log('useClientProfileData hook cleaning up');
-    };
-  }, [userId, fetchUserData]);
+  }, [currentUserId]);
 
-  const refreshProfile = useCallback(() => {
-    if (userId) {
-      console.log('Manual profile refresh requested for user:', userId);
-      // Reset retry count when manually refreshing
-      setRetryCount(0);
-      fetchUserData(true);
-    }
-  }, [userId, fetchUserData]);
-
-  return { 
-    client, 
-    isLoading, 
-    loadingTimeoutReached, 
-    refreshProfile 
+  return {
+    profile: state.profile,
+    loading: state.loading,
+    error: state.error,
+    fetchClientProfile,
+    invalidateClientProfileCache,
   };
 };

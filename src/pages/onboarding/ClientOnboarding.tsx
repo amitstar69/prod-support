@@ -1,91 +1,60 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { OnboardingProvider } from '../../contexts/OnboardingContext';
-import { useAuth, getCurrentUserData } from '../../contexts/auth';
-import ClientBasicInfoStep from './steps/client/ClientBasicInfoStep';
-import ClientPreferencesStep from './steps/client/ClientPreferencesStep';
-import ClientProjectsStep from './steps/client/ClientProjectsStep';
-import ClientCompletionStep from './steps/client/ClientCompletionStep';
-import ProfileLoadingState from '../../components/profile/ProfileLoadingState';
+import { useAuth } from '../../contexts/auth';
+import { useOnboarding } from '../../contexts/OnboardingContext';
+import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
+import ClientDetailsStep from './steps/client/ClientDetailsStep';
+import ProjectDetailsStep from './steps/client/ProjectDetailsStep';
+import BudgetStep from './steps/client/BudgetStep';
+import ReviewAndSubmitStep from './steps/client/ReviewAndSubmitStep';
+import { toast } from 'sonner';
+import { invalidateUserDataCache } from '../../contexts/auth/authUserDataCache';
 
 const ClientOnboarding: React.FC = () => {
-  const { userId, logout } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentStep, setCurrentStep] = useState(1);
-  
+  const { authState } = useAuth();
+  const { state: onboardingState, goToNextStep, goToPreviousStep, goToStep, setStepData, completeOnboarding } = useOnboarding();
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
-    const checkProfileStatus = async () => {
-      setIsLoading(true);
-      try {
-        const userData = await getCurrentUserData();
-        
-        if (!userData) {
-          // No user data found, possibly not logged in
-          navigate('/login');
-          return;
-        }
-        
-        if (userData.profileCompleted) {
-          // Profile already completed, redirect to dashboard
-          navigate('/client-dashboard');
-          return;
-        }
-        
-        // Determine starting step based on any existing profile data
-        if (userData.name && userData.email) {
-          // Use type guards to check for client-specific properties
-          if ('techStack' in userData && 'industry' in userData &&
-              ((userData.techStack && userData.techStack.length > 0) || userData.industry)) {
-            if ('projectTypes' in userData && userData.projectTypes && userData.projectTypes.length > 0) {
-              setCurrentStep(4); // Almost complete, go to final step
-            } else {
-              setCurrentStep(3); // Has preferences, go to projects step
-            }
-          } else {
-            setCurrentStep(2); // Has basic info, go to preferences step
-          }
-        } else {
-          setCurrentStep(1); // Start from beginning
-        }
-      } catch (error) {
-        console.error('Error checking profile status:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    if (userId) {
-      checkProfileStatus();
-    } else {
-      navigate('/login');
+    if (authState.userId) {
+      invalidateUserDataCache(authState.userId);
     }
-  }, [userId, navigate]);
-  
-  if (isLoading) {
-    return <ProfileLoadingState onForceLogout={logout} />;
-  }
-  
-  const renderCurrentStep = () => {
-    switch (currentStep) {
+  }, [authState.userId]);
+
+  useEffect(() => {
+    if (onboardingState.isCompleted) {
+      toast.success('Onboarding completed! Redirecting to your profile...');
+      setTimeout(() => {
+        navigate('/client-profile');
+      }, 2000);
+    }
+  }, [onboardingState.isCompleted, navigate]);
+
+  const renderStepContent = () => {
+    switch (onboardingState.currentStep) {
       case 1:
-        return <ClientBasicInfoStep />;
+        return <ClientDetailsStep goToNextStep={goToNextStep} setStepData={setStepData} />;
       case 2:
-        return <ClientPreferencesStep />;
+        return <ProjectDetailsStep goToNextStep={goToNextStep} goToPreviousStep={goToPreviousStep} setStepData={setStepData} />;
       case 3:
-        return <ClientProjectsStep />;
+        return <BudgetStep goToNextStep={goToNextStep} goToPreviousStep={goToPreviousStep} setStepData={setStepData} />;
       case 4:
-        return <ClientCompletionStep />;
+        return <ReviewAndSubmitStep 
+                  goToPreviousStep={goToPreviousStep} 
+                  completeOnboarding={completeOnboarding} 
+                  isLoading={isLoading} 
+                  setIsLoading={setIsLoading} 
+                />;
       default:
-        return <ClientBasicInfoStep />;
+        return <div>Unknown step</div>;
     }
   };
-  
+
   return (
-    <OnboardingProvider userType="client" totalSteps={4}>
-      {renderCurrentStep()}
-    </OnboardingProvider>
+    <OnboardingLayout currentStep={onboardingState.currentStep} totalSteps={onboardingState.totalSteps} goToStep={goToStep}>
+      {renderStepContent()}
+    </OnboardingLayout>
   );
 };
 

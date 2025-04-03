@@ -1,6 +1,8 @@
+
 import { supabase } from '../../integrations/supabase';
 import { Developer, Client } from '../../types/product';
 import { toast } from 'sonner';
+import { invalidateUserDataCache } from './authUserDataCache';
 
 type UserData = Partial<Developer | Client>;
 
@@ -141,7 +143,7 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     let specificProfileResult = null;
     
     // Only update the specific profile table if there are fields to update
-    if (Object.keys(specificProfileData).length > 0) {
+    if (Object.keys(specificProfileData).length > 0 && userType) {
       // Update the type-specific profile table
       const tableName = userType === 'developer' ? 'developer_profiles' : 'client_profiles';
       console.log(`Updating ${tableName} data:`, specificProfileData);
@@ -169,6 +171,7 @@ export const updateUserData = async (userData: UserData): Promise<boolean> => {
     
     // Force a complete cache invalidation
     console.log('Clearing cache for user:', user.user.id);
+    invalidateUserDataCache(user.user.id);
     localStorage.removeItem(`userData_${user.user.id}`);
     localStorage.removeItem(`userDataTime_${user.user.id}`);
     localStorage.setItem(`forceRefresh_${user.user.id}`, 'true');

@@ -1,5 +1,4 @@
 
-// This file might not exist, so we'll create a minimal version that exports the needed functions
 import { supabase } from '../../integrations/supabase/client';
 
 // User data cache to reduce database queries

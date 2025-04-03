@@ -3,6 +3,8 @@ import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { AuthState, AuthContextType } from './types';
 import { checkSupabaseSession, setupAuthStateChangeListener, logoutUser } from './authUtils';
 import { supabase } from '../../integrations/supabase/client';
+import { login } from './authLogin';
+import { register } from './registration';
 
 // Create the auth context
 export const AuthContext = createContext<AuthContextType>({
@@ -69,17 +71,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log('AuthProvider: Auth state changed:', authState);
   }, [authState]);
 
-  // Import or define login and register functions here
-  const { login } = require('./authLogin');
-  const { register: registerUser } = require('./authRegister');
-
-  // Prepare context value
+  // Prepare context value using imported functions instead of require
   const contextValue: AuthContextType = {
     authState,
     setAuthState,
     logout: logoutUser,
     login: (email, password, userType) => login(email, password, userType, setAuthState),
-    register: (userData, userType) => registerUser(userData, userType, [], [], () => {}, () => {}, setAuthState),
+    register: (userData, userType) => register(userData, userType, [], [], () => {}, () => {}, setAuthState),
     isLoading
   };
 
