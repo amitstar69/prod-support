@@ -75,7 +75,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         
         <div className="p-4">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="text-sm font-medium text-primary">
               {product.category ? (product.category.charAt(0).toUpperCase() + product.category.slice(1)) : 'Developer'}
             </p>
             <div className="flex items-center text-amber-500">
@@ -84,7 +84,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </div>
           </div>
           
-          <h3 className="text-base font-medium text-foreground line-clamp-1 mb-2">
+          <h3 className="text-base font-semibold text-foreground/90 line-clamp-1 mb-2">
             {developerName}
           </h3>
           
@@ -107,7 +107,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           )}
           
           <div className="flex items-center justify-between">
-            <p className="text-base font-semibold">${formattedHourlyRate}/hr</p>
+            <p className="text-base font-semibold text-primary">${formattedHourlyRate}/hr</p>
             <div className={`text-xs px-2 py-1 rounded-full ${availability ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
               {availability ? 'Available' : 'Unavailable'}
             </div>
