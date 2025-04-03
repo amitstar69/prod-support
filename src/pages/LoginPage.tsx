@@ -38,7 +38,7 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated) {
       console.log('User is already authenticated, redirecting to home');
-      const destination = userType === 'client' ? '/client' : '/developer-dashboard';
+      const destination = userType === 'client' ? '/client-dashboard' : '/developer-dashboard';
       
       // Add a small delay to ensure state is fully updated
       setTimeout(() => {
