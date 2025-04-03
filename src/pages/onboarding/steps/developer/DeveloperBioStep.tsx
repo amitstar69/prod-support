@@ -1,140 +1,147 @@
 
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
 import { Textarea } from '../../../../components/ui/textarea';
 import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
+import { Button } from '../../../../components/ui/button';
+import { Card, CardContent } from '../../../../components/ui/card';
+import { useAuth } from '../../../../contexts/auth';
 import { toast } from 'sonner';
 
-interface DeveloperBioStepProps {
-  step: number;
-}
-
-const DeveloperBioStep: React.FC<DeveloperBioStepProps> = ({ step }) => {
-  const { state, goToPreviousStep, completeOnboarding, setStepData } = useOnboarding();
-  const [formData, setFormData] = useState({
-    bio: '',
-    linkedin: '',
-    github: '',
-    portfolio: ''
-  });
+const DeveloperBioStep = () => {
+  const { state, setStepData, saveProgress, completeOnboarding } = useOnboarding();
+  const { authState } = useAuth();
+  const [bio, setBio] = useState('');
+  const [title, setTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load saved data if available
   useEffect(() => {
-    if (state.stepData[step]) {
-      setFormData({
-        ...formData,
-        ...state.stepData[step]
-      });
+    const stepNumber = 5;
+    if (state.stepData[stepNumber]) {
+      const data = state.stepData[stepNumber];
+      if (data.bio) setBio(data.bio);
+      if (data.title) setTitle(data.title);
     }
-  }, [state.stepData, step]);
+  }, [state.stepData]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setBio(e.target.value);
+    updateStepData(e.target.value, title);
   };
 
-  const handleSubmit = async () => {
-    if (!formData.bio || formData.bio.length < 50) {
-      toast.error('Please provide a detailed bio of at least 50 characters');
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value);
+    updateStepData(bio, e.target.value);
+  };
+
+  const updateStepData = (bioText: string, titleText: string) => {
+    const data = {
+      bio: bioText,
+      title: titleText
+    };
+    
+    // Save to onboarding context
+    setStepData(5, data);
+  };
+
+  const handleSaveAndComplete = async () => {
+    if (!title.trim()) {
+      toast.error('Please add a professional title');
+      return;
+    }
+
+    if (!bio.trim() || bio.length < 20) {
+      toast.error('Please add a bio with at least 20 characters');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Save step data
-      setStepData(step, formData);
-
-      // Prepare social links
-      const socialLinks = {
-        linkedin: formData.linkedin || '',
-        github: formData.github || '',
-        portfolio: formData.portfolio || ''
+      // Save the final data
+      const data = {
+        bio,
+        title,
+        profileCompleted: true,
+        onboardingCompletedAt: new Date().toISOString()
       };
-
-      // Complete the onboarding process
+      
+      await saveProgress(data);
       await completeOnboarding();
-
-      toast.success('Your developer profile has been completed!');
+      
+      toast.success('Profile completed successfully!');
     } catch (error) {
-      console.error('Error completing onboarding:', error);
-      toast.error('Failed to complete the profile setup');
+      console.error('Error completing profile:', error);
+      toast.error('There was a problem completing your profile. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <OnboardingLayout
-      title="About You"
-      subtitle="Tell clients about yourself and share your professional profiles"
-      onNextStep={handleSubmit}
-      onBackStep={goToPreviousStep}
-      nextDisabled={isSubmitting}
-      nextLabel="Complete Setup"
-    >
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="bio">Professional Bio</Label>
-          <Textarea
-            id="bio"
-            name="bio"
-            value={formData.bio}
-            onChange={handleChange}
-            placeholder="Share your professional journey, what you specialize in, and what makes you unique as a developer..."
-            className="min-h-[200px]"
-            required
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium">About You</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Tell clients about your expertise and what makes you stand out
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="professional-title" className="text-base">Professional Title</Label>
+          <Input
+            id="professional-title"
+            placeholder="e.g., Senior React Developer, Full Stack Engineer"
+            value={title}
+            onChange={handleTitleChange}
+            className="mt-1"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            {formData.bio.length < 50 
-              ? `Please write at least 50 characters. Currently: ${formData.bio.length}/50`
-              : `Character count: ${formData.bio.length}`}
+            This will be displayed at the top of your profile
           </p>
         </div>
 
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium">Professional Profiles (Optional)</h3>
-          
-          <div className="space-y-2">
-            <Label htmlFor="linkedin">LinkedIn Profile</Label>
-            <Input
-              id="linkedin"
-              name="linkedin"
-              value={formData.linkedin}
-              onChange={handleChange}
-              placeholder="https://linkedin.com/in/yourusername"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="github">GitHub Profile</Label>
-            <Input
-              id="github"
-              name="github"
-              value={formData.github}
-              onChange={handleChange}
-              placeholder="https://github.com/yourusername"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="portfolio">Portfolio Website</Label>
-            <Input
-              id="portfolio"
-              name="portfolio"
-              value={formData.portfolio}
-              onChange={handleChange}
-              placeholder="https://yourportfolio.com"
-            />
+        <div className="mt-4">
+          <Label htmlFor="bio" className="text-base">Professional Bio</Label>
+          <Textarea
+            id="bio"
+            placeholder="Share your professional journey, expertise, and what you enjoy working on..."
+            value={bio}
+            onChange={handleBioChange}
+            className="mt-1 min-h-[150px]"
+          />
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+            <span>Min. 20 characters</span>
+            <span>{bio.length} characters</span>
           </div>
         </div>
       </div>
-    </OnboardingLayout>
+
+      <Card className="bg-muted/50">
+        <CardContent className="p-4">
+          <h4 className="font-medium">Tips for a great bio:</h4>
+          <ul className="text-sm mt-2 space-y-1 list-disc pl-4">
+            <li>Highlight your key skills and specialties</li>
+            <li>Mention years of experience and notable achievements</li>
+            <li>Explain what kind of projects you enjoy working on</li>
+            <li>Share your communication style and work approach</li>
+            <li>Keep it professional but let your personality show</li>
+          </ul>
+        </CardContent>
+      </Card>
+
+      <div className="pt-4 flex justify-end">
+        <Button
+          onClick={handleSaveAndComplete}
+          disabled={isSubmitting || !title.trim() || !bio.trim() || bio.length < 20}
+        >
+          {isSubmitting ? 'Saving...' : 'Complete Profile'}
+        </Button>
+      </div>
+    </div>
   );
 };
 

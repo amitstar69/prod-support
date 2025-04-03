@@ -1,145 +1,206 @@
 
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
+import { useAuth } from '../../../../contexts/auth';
 import { Button } from '../../../../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
+import { Separator } from '../../../../components/ui/separator';
+import { CheckCircle2, Edit, User, Building, Briefcase, MapPin, Code, DollarSign } from 'lucide-react';
+import { Badge } from '../../../../components/ui/badge';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
 interface ReviewAndSubmitStepProps {
-  goToPreviousStep: () => void;
-  completeOnboarding: () => Promise<void>;
   isLoading: boolean;
-  setIsLoading: (isLoading: boolean) => void;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const ReviewAndSubmitStep: React.FC<ReviewAndSubmitStepProps> = ({
-  goToPreviousStep,
-  completeOnboarding,
-  isLoading,
-  setIsLoading
-}) => {
-  const { state } = useOnboarding();
-  const navigate = useNavigate();
-  const [profileData, setProfileData] = useState<Record<string, any>>({});
-  
+const ReviewAndSubmitStep: React.FC<ReviewAndSubmitStepProps> = ({ isLoading, setIsLoading }) => {
+  const { state, completeOnboarding, goToStep } = useOnboarding();
+  const { authState } = useAuth();
+  const [profileData, setProfileData] = useState<any>({});
+
+  // Combine all step data
   useEffect(() => {
-    // Combine all step data
     const combinedData = {
       ...state.stepData[1],
       ...state.stepData[2],
       ...state.stepData[3]
     };
-    
     setProfileData(combinedData);
   }, [state.stepData]);
 
-  const formatList = (items: string[] | undefined) => {
-    if (!items || items.length === 0) return 'None selected';
-    
-    return items.map(item => {
-      // Convert kebab-case or snake_case to readable format
-      return item.replace(/[-_]/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-    }).join(', ');
-  };
-  
-  const handleCompleteProfile = async () => {
+  const handleCompleteOnboarding = async () => {
     setIsLoading(true);
-    
     try {
       await completeOnboarding();
-      toast.success('Profile setup completed!');
-      
-      setTimeout(() => {
-        navigate('/client-dashboard');
-      }, 1500);
     } catch (error) {
-      console.error('Error completing profile:', error);
-      toast.error('There was an error completing your profile. Please try again.');
+      console.error('Error completing onboarding:', error);
+      toast.error('There was a problem completing your profile. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <OnboardingLayout
-      title="Review Your Profile"
-      subtitle="Please review your information before completing your profile setup"
-      onNextStep={handleCompleteProfile}
-      onBackStep={goToPreviousStep}
-      nextDisabled={isLoading}
-      nextLabel="Complete Setup"
-    >
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium">Review Your Profile</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Please review your information before completing your profile setup
+        </p>
+      </div>
+
       <div className="space-y-6">
-        <div className="bg-muted rounded-lg p-4">
-          <h3 className="font-semibold mb-3 text-lg">Your Profile Summary</h3>
-          
-          <div className="space-y-4">
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground">Company & Role</h4>
-              <p>{profileData.company || 'Not specified'} {profileData.position ? `- ${profileData.position}` : ''}</p>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex justify-between items-center">
+              <span className="flex items-center">
+                <User className="h-5 w-5 mr-2" />
+                Personal Information
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => goToStep(1)}
+                className="h-8 px-2"
+              >
+                <Edit className="h-4 w-4 mr-1" /> Edit
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex items-start">
+              <span className="font-medium w-1/3">Name:</span>
+              <span className="w-2/3">{profileData.name || 'Not provided'}</span>
             </div>
-            
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground">Industry</h4>
-              <p>{profileData.industry || 'Not specified'}</p>
-            </div>
-            
-            {profileData.bio && (
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground">Introduction</h4>
-                <p className="text-sm">{profileData.bio}</p>
+            {profileData.company && (
+              <div className="flex items-start">
+                <span className="font-medium w-1/3">Company:</span>
+                <span className="w-2/3 flex items-center">
+                  <Building className="h-4 w-4 mr-1 text-muted-foreground" />
+                  {profileData.company}
+                </span>
               </div>
             )}
-            
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground">Project Types</h4>
-              <p>{formatList(profileData.projectTypes)}</p>
+            {profileData.position && (
+              <div className="flex items-start">
+                <span className="font-medium w-1/3">Position:</span>
+                <span className="w-2/3 flex items-center">
+                  <Briefcase className="h-4 w-4 mr-1 text-muted-foreground" />
+                  {profileData.position}
+                </span>
+              </div>
+            )}
+            {profileData.location && (
+              <div className="flex items-start">
+                <span className="font-medium w-1/3">Location:</span>
+                <span className="w-2/3 flex items-center">
+                  <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
+                  {profileData.location}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex justify-between items-center">
+              <span className="flex items-center">
+                <Code className="h-5 w-5 mr-2" />
+                Project Information
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => goToStep(2)}
+                className="h-8 px-2"
+              >
+                <Edit className="h-4 w-4 mr-1" /> Edit
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <span className="font-medium">Project Description:</span>
+              <p className="text-sm">{profileData.description || 'Not provided'}</p>
             </div>
             
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground">Tech Stack</h4>
-              <p>{formatList(profileData.techStack)}</p>
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground">Budget Preference</h4>
-              {profileData.budgetPreference === 'hourly' ? (
-                <p>${profileData.hourlyBudget || '0'} per hour</p>
+            <div className="space-y-2">
+              <span className="font-medium">Technical Areas of Interest:</span>
+              {profileData.techInterests && profileData.techInterests.length > 0 ? (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {profileData.techInterests.map((tech: string) => (
+                    <Badge key={tech} variant="secondary">
+                      {tech}
+                    </Badge>
+                  ))}
+                </div>
               ) : (
-                <p>${profileData.totalBudget || '0'} fixed budget</p>
+                <p className="text-sm text-muted-foreground">No technologies specified</p>
               )}
             </div>
-          </div>
-        </div>
-        
-        <div className="flex flex-col space-y-3">
-          <p className="text-sm text-muted-foreground">
-            You can always update your profile information later from your profile settings.
-          </p>
-          
-          <div className="flex justify-between">
-            <Button 
-              variant="outline" 
-              onClick={goToPreviousStep}
-              disabled={isLoading}
-            >
-              Back to Edit
-            </Button>
-            
-            <Button 
-              onClick={handleCompleteProfile}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Completing...' : 'Complete Setup'}
-            </Button>
-          </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex justify-between items-center">
+              <span className="flex items-center">
+                <DollarSign className="h-5 w-5 mr-2" />
+                Budget Preferences
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => goToStep(3)}
+                className="h-8 px-2"
+              >
+                <Edit className="h-4 w-4 mr-1" /> Edit
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {profileData.budgetPreference === 'hourly' ? (
+              <div className="space-y-1">
+                <p>
+                  <span className="font-medium">Hourly Budget:</span> ${profileData.budgetPerHour || '0'}/hour
+                </p>
+                {profileData.budgetPerHour && (
+                  <p className="text-sm text-muted-foreground">
+                    Per-minute rate: ${(Number(profileData.budgetPerHour) / 60).toFixed(2)}/minute
+                  </p>
+                )}
+              </div>
+            ) : profileData.budgetPreference === 'project' ? (
+              <p>
+                <span className="font-medium">Project Budget:</span> ${profileData.customBudget || '0'}
+              </p>
+            ) : (
+              <p className="text-muted-foreground">No budget preference specified</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Separator />
+
+        <div className="flex justify-center pt-4">
+          <Button
+            onClick={handleCompleteOnboarding}
+            disabled={isLoading}
+            className="w-full max-w-md"
+            size="lg"
+          >
+            {isLoading ? 'Completing Profile...' : (
+              <span className="flex items-center">
+                <CheckCircle2 className="mr-2 h-5 w-5" />
+                Complete Profile Setup
+              </span>
+            )}
+          </Button>
         </div>
       </div>
-    </OnboardingLayout>
+    </div>
   );
 };
 

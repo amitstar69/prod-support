@@ -1,172 +1,177 @@
 
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
-import { Label } from '../../../../components/ui/label';
+import { useAuth } from '../../../../contexts/auth';
 import { RadioGroup, RadioGroupItem } from '../../../../components/ui/radio-group';
+import { Label } from '../../../../components/ui/label';
 import { Input } from '../../../../components/ui/input';
-import { toast } from 'sonner';
+import { Card, CardContent } from '../../../../components/ui/card';
+import { Separator } from '../../../../components/ui/separator';
+import { DollarSign, Clock } from 'lucide-react';
 
-const BudgetStep: React.FC<{
-  goToNextStep: () => void;
-  goToPreviousStep: () => void;
-  setStepData: (step: number, data: any) => void;
-}> = ({
-  goToNextStep,
-  goToPreviousStep,
-  setStepData
-}) => {
-  const [budgetPreference, setBudgetPreference] = useState<'hourly' | 'fixed'>('hourly');
-  const [hourlyBudget, setHourlyBudget] = useState<string>('');
-  const [totalBudget, setTotalBudget] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Load existing data if available
-  const { state, saveProgress } = useOnboarding();
-  
+const BudgetStep = () => {
+  const { state, setStepData, saveProgress } = useOnboarding();
+  const { authState } = useAuth();
+  const [budgetPerHour, setBudgetPerHour] = useState<string>('');
+  const [budgetPreference, setBudgetPreference] = useState<string>('hourly');
+  const [customBudget, setCustomBudget] = useState<string>('');
+
+  // Load saved data if available
   useEffect(() => {
-    if (state.stepData[3]) {
-      if (state.stepData[3].budgetPreference) {
-        setBudgetPreference(state.stepData[3].budgetPreference);
+    const stepNumber = 3;
+    if (state.stepData[stepNumber]) {
+      const data = state.stepData[stepNumber];
+      if (data.budgetPerHour) {
+        setBudgetPerHour(String(data.budgetPerHour));
       }
-      if (state.stepData[3].hourlyBudget) {
-        setHourlyBudget(state.stepData[3].hourlyBudget);
+      if (data.budgetPreference) {
+        setBudgetPreference(data.budgetPreference);
       }
-      if (state.stepData[3].totalBudget) {
-        setTotalBudget(state.stepData[3].totalBudget);
+      if (data.customBudget) {
+        setCustomBudget(String(data.customBudget));
       }
     }
   }, [state.stepData]);
 
-  const validateForm = () => {
-    if (budgetPreference === 'hourly' && (!hourlyBudget || isNaN(Number(hourlyBudget)))) {
-      toast.error("Please enter a valid hourly budget");
-      return false;
-    }
-    
-    if (budgetPreference === 'fixed' && (!totalBudget || isNaN(Number(totalBudget)))) {
-      toast.error("Please enter a valid total budget");
-      return false;
-    }
-    
-    return true;
+  const handleBudgetPreferenceChange = (value: string) => {
+    setBudgetPreference(value);
+    updateData({ budgetPreference: value });
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
+  const handleBudgetPerHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setBudgetPerHour(value);
+    updateData({ budgetPerHour: value ? Number(value) : '' });
+  };
+
+  const handleCustomBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCustomBudget(value);
+    updateData({ customBudget: value ? Number(value) : '' });
+  };
+
+  const updateData = (newData: any) => {
+    const currentData = state.stepData[3] || {};
+    const updatedData = { ...currentData, ...newData };
     
-    setIsSubmitting(true);
+    // Save to onboarding context
+    setStepData(3, updatedData);
     
-    try {
-      // Save to context
-      setStepData(3, {
-        budgetPreference,
-        hourlyBudget,
-        totalBudget
-      });
-      
-      // Save to database
-      await saveProgress({
-        budget_per_hour: budgetPreference === 'hourly' ? Number(hourlyBudget) : null,
-        budget: budgetPreference === 'fixed' ? Number(totalBudget) : null,
-        profileCompletionPercentage: 75
-      });
-      
-      goToNextStep();
-    } catch (error) {
-      console.error('Error saving budget information:', error);
-      toast.error("Failed to save your budget preferences. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+    // Save to database
+    saveProgress(updatedData).catch(error => {
+      console.error('Error saving budget data:', error);
+    });
+  };
+
+  const getBudgetHelpText = () => {
+    if (budgetPreference === 'hourly' && budgetPerHour) {
+      const hourlyRate = Number(budgetPerHour);
+      return (
+        <div className="text-sm text-muted-foreground space-y-1 mt-2">
+          <p>Your per-minute rate: ${(hourlyRate / 60).toFixed(2)}/minute</p>
+          <p>1 hour session: ${hourlyRate}</p>
+          <p>30 minute session: ${(hourlyRate / 2).toFixed(2)}</p>
+        </div>
+      );
     }
+    return null;
   };
 
   return (
-    <OnboardingLayout
-      title="Budget Preferences"
-      subtitle="Set your budget preferences for hiring developers"
-      onNextStep={handleSubmit}
-      onBackStep={goToPreviousStep}
-      nextDisabled={isSubmitting}
-    >
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium">Budget Preferences</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Let us know your budget preferences for working with developers
+        </p>
+      </div>
+
       <div className="space-y-6">
-        <div className="space-y-3">
-          <Label className="text-base">How would you prefer to pay developers?</Label>
-          
+        <div>
+          <Label className="text-base">How would you like to budget for help?</Label>
           <RadioGroup 
             value={budgetPreference} 
-            onValueChange={(value) => setBudgetPreference(value as 'hourly' | 'fixed')}
-            className="space-y-3"
+            onValueChange={handleBudgetPreferenceChange}
+            className="mt-2 space-y-3"
           >
-            <div className="flex items-start space-x-2">
-              <RadioGroupItem value="hourly" id="hourly" className="mt-1" />
-              <div>
-                <Label htmlFor="hourly" className="text-base cursor-pointer">Hourly Rate</Label>
-                <p className="text-sm text-muted-foreground">
-                  Pay developers based on the time they spend helping you
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-2">
-              <RadioGroupItem value="fixed" id="fixed" className="mt-1" />
-              <div>
-                <Label htmlFor="fixed" className="text-base cursor-pointer">Fixed Budget</Label>
-                <p className="text-sm text-muted-foreground">
-                  Set a total budget for your projects regardless of time spent
-                </p>
-              </div>
-            </div>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="hourly" id="budget-hourly" />
+                  <Label htmlFor="budget-hourly" className="flex items-center">
+                    <Clock className="h-4 w-4 mr-2" />
+                    <span>Hourly Rate</span>
+                  </Label>
+                </div>
+                {budgetPreference === 'hourly' && (
+                  <div className="mt-3 ml-6">
+                    <div className="flex items-center">
+                      <span className="mr-2">$</span>
+                      <Input
+                        id="hourly-budget"
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={budgetPerHour}
+                        onChange={handleBudgetPerHourChange}
+                        placeholder="e.g., 75"
+                        className="max-w-[120px]"
+                      />
+                      <span className="ml-2">/ hour</span>
+                    </div>
+                    {getBudgetHelpText()}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="project" id="budget-project" />
+                  <Label htmlFor="budget-project" className="flex items-center">
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    <span>Project-based Budget</span>
+                  </Label>
+                </div>
+                {budgetPreference === 'project' && (
+                  <div className="mt-3 ml-6">
+                    <div className="flex items-center">
+                      <span className="mr-2">$</span>
+                      <Input
+                        id="project-budget"
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={customBudget}
+                        onChange={handleCustomBudgetChange}
+                        placeholder="Enter your budget"
+                        className="max-w-[150px]"
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      This is your estimated budget for the entire project
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </RadioGroup>
         </div>
-        
-        {budgetPreference === 'hourly' ? (
-          <div className="space-y-2">
-            <Label htmlFor="hourlyBudget">What's your hourly budget?</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2">$</span>
-              <Input
-                id="hourlyBudget"
-                type="number"
-                min="1"
-                value={hourlyBudget}
-                onChange={(e) => setHourlyBudget(e.target.value)}
-                className="pl-8"
-                placeholder="75"
-              />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              The average hourly rate on our platform is $75/hour
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <Label htmlFor="totalBudget">What's your total project budget?</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2">$</span>
-              <Input
-                id="totalBudget"
-                type="number"
-                min="1"
-                value={totalBudget}
-                onChange={(e) => setTotalBudget(e.target.value)}
-                className="pl-8"
-                placeholder="500"
-              />
-            </div>
-          </div>
-        )}
-        
-        <div className="p-4 bg-muted rounded-lg">
-          <h3 className="font-medium text-sm mb-2">Budget Tips</h3>
-          <ul className="text-sm text-muted-foreground space-y-1">
-            <li>• More complex problems typically require higher budgets</li>
-            <li>• Setting a competitive budget attracts higher quality developers</li>
-            <li>• You can always adjust your budget for specific help requests</li>
+
+        <Separator />
+
+        <div>
+          <h4 className="font-medium">What to expect</h4>
+          <ul className="text-sm mt-2 space-y-1 list-disc pl-4">
+            <li>Developer rates typically range from $40 to $150 per hour based on experience</li>
+            <li>You can adjust your budget before starting any session</li>
+            <li>For urgent issues, you might need to offer a higher rate</li>
+            <li>Set a budget that matches the complexity of your project</li>
           </ul>
         </div>
       </div>
-    </OnboardingLayout>
+    </div>
   );
 };
 

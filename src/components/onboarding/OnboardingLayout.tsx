@@ -7,7 +7,7 @@ export interface OnboardingLayoutProps {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
-  onNextStep: (e?: React.FormEvent) => void | Promise<void>;
+  onNextStep?: (e?: React.FormEvent) => void | Promise<void>;
   onBackStep?: () => void;
   nextDisabled?: boolean;
   showSkip?: boolean;
@@ -23,7 +23,7 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   children,
   title,
   subtitle = "",
-  onNextStep,
+  onNextStep = () => {},
   onBackStep,
   nextDisabled = false,
   showSkip = false,

@@ -1,132 +1,135 @@
 
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
+import { useAuth } from '../../../../contexts/auth';
 import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
-import { Textarea } from '../../../../components/ui/textarea';
 import { toast } from 'sonner';
 
-const ClientDetailsStep: React.FC<{ goToNextStep: () => void; setStepData: (step: number, data: any) => void }> = ({ 
-  goToNextStep, 
-  setStepData 
-}) => {
-  const [formData, setFormData] = useState({
-    company: '',
-    position: '',
-    industry: '',
-    bio: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const ClientDetailsStep = () => {
+  const { state, setStepData, saveProgress } = useOnboarding();
+  const { authState } = useAuth();
+  const [name, setName] = useState('');
+  const [company, setCompany] = useState('');
+  const [position, setPosition] = useState('');
+  const [location, setLocation] = useState('');
 
-  // Load existing data if available
-  const { state, saveProgress } = useOnboarding();
-  
+  // Load saved data if available
   useEffect(() => {
-    if (state.stepData[1]) {
-      setFormData({
-        ...formData,
-        ...state.stepData[1]
-      });
+    const stepNumber = 1;
+    if (state.stepData[stepNumber]) {
+      const data = state.stepData[stepNumber];
+      if (data.name) setName(data.name);
+      if (data.company) setCompany(data.company);
+      if (data.position) setPosition(data.position);
+      if (data.location) setLocation(data.location);
     }
   }, [state.stepData]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
+    updateData({ name: e.target.value });
   };
 
-  const validateForm = () => {
-    if (!formData.industry.trim()) {
-      toast.error("Please enter your industry");
-      return false;
-    }
-    
-    return true;
+  const handleCompanyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCompany(e.target.value);
+    updateData({ company: e.target.value });
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
+  const handlePositionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPosition(e.target.value);
+    updateData({ position: e.target.value });
+  };
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocation(e.target.value);
+    updateData({ location: e.target.value });
+  };
+
+  const updateData = (newData: any) => {
+    const currentData = state.stepData[1] || {};
+    const updatedData = { ...currentData, ...newData };
     
-    setIsSubmitting(true);
+    // Save to onboarding context
+    setStepData(1, updatedData);
     
-    try {
-      // Save to context
-      setStepData(1, formData);
-      
-      // Save to database
-      await saveProgress({
-        company: formData.company,
-        position: formData.position,
-        industry: formData.industry,
-        bio: formData.bio,
-        profileCompletionPercentage: 25
-      });
-      
-      goToNextStep();
-    } catch (error) {
+    // We don't need to save to the database on every keystroke
+    // We'll rely on the auto-save when moving to the next step
+  };
+
+  const handleBlur = () => {
+    // Save to database when user stops typing (blur event)
+    const data = {
+      name,
+      company,
+      position,
+      location
+    };
+    
+    saveProgress(data).catch(error => {
       console.error('Error saving client details:', error);
-      toast.error("Failed to save your details. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   };
 
   return (
-    <OnboardingLayout
-      title="About You"
-      subtitle="Let's start with some basic information about you and your company"
-      onNextStep={handleSubmit}
-      nextDisabled={isSubmitting}
-    >
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="company">Company Name (Optional)</Label>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium">Personal Information</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Tell us a bit about yourself
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="name">Full Name</Label>
+          <Input
+            id="name"
+            placeholder="Your name"
+            value={name}
+            onChange={handleNameChange}
+            onBlur={handleBlur}
+            className="mt-1"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="company">Company (Optional)</Label>
           <Input
             id="company"
-            name="company"
-            value={formData.company}
-            onChange={handleChange}
             placeholder="Your company name"
+            value={company}
+            onChange={handleCompanyChange}
+            onBlur={handleBlur}
+            className="mt-1"
           />
         </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="position">Your Position (Optional)</Label>
+
+        <div>
+          <Label htmlFor="position">Job Title (Optional)</Label>
           <Input
             id="position"
-            name="position"
-            value={formData.position}
-            onChange={handleChange}
-            placeholder="Your job title"
+            placeholder="Your position"
+            value={position}
+            onChange={handlePositionChange}
+            onBlur={handleBlur}
+            className="mt-1"
           />
         </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="industry">Industry <span className="text-destructive">*</span></Label>
+
+        <div>
+          <Label htmlFor="location">Location (Optional)</Label>
           <Input
-            id="industry"
-            name="industry"
-            value={formData.industry}
-            onChange={handleChange}
-            placeholder="E.g., Technology, Healthcare, E-commerce"
-            required
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="bio">Brief Introduction (Optional)</Label>
-          <Textarea
-            id="bio"
-            name="bio"
-            value={formData.bio}
-            onChange={handleChange}
-            placeholder="Tell us a bit about yourself or your company..."
-            rows={4}
+            id="location"
+            placeholder="City, Country"
+            value={location}
+            onChange={handleLocationChange}
+            onBlur={handleBlur}
+            className="mt-1"
           />
         </div>
       </div>
-    </OnboardingLayout>
+    </div>
   );
 };
 

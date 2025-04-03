@@ -1,185 +1,162 @@
 
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
+import { Textarea } from '../../../../components/ui/textarea';
 import { Label } from '../../../../components/ui/label';
-import { Checkbox } from '../../../../components/ui/checkbox';
+import { Badge } from '../../../../components/ui/badge';
+import { Button } from '../../../../components/ui/button';
+import { Input } from '../../../../components/ui/input';
+import { PlusCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-const PROJECT_TYPES = [
-  { value: 'website', label: 'Website Development' },
-  { value: 'mobile-app', label: 'Mobile Application' },
-  { value: 'web-app', label: 'Web Application' },
-  { value: 'ecommerce', label: 'E-commerce Platform' },
-  { value: 'api-integration', label: 'API Integration' },
-  { value: 'devops', label: 'DevOps & Infrastructure' },
-  { value: 'debugging', label: 'Debugging & Bug Fixing' },
-  { value: 'refactoring', label: 'Code Refactoring' },
-  { value: 'legacy-maintenance', label: 'Legacy System Maintenance' },
-  { value: 'security', label: 'Security Improvements' },
-  { value: 'other', label: 'Other Technical Projects' }
-];
+const ProjectDetailsStep = () => {
+  const { state, setStepData, saveProgress } = useOnboarding();
+  const [description, setDescription] = useState('');
+  const [techInterests, setTechInterests] = useState<string[]>([]);
+  const [newInterest, setNewInterest] = useState('');
 
-const TECH_STACK = [
-  { value: 'react', label: 'React / React Native' },
-  { value: 'angular', label: 'Angular' },
-  { value: 'vue', label: 'Vue.js' },
-  { value: 'node', label: 'Node.js' },
-  { value: 'python', label: 'Python' },
-  { value: 'java', label: 'Java' },
-  { value: 'dotnet', label: '.NET / C#' },
-  { value: 'php', label: 'PHP' },
-  { value: 'ruby', label: 'Ruby' },
-  { value: 'golang', label: 'Go' },
-  { value: 'aws', label: 'AWS' },
-  { value: 'azure', label: 'Azure' },
-  { value: 'gcp', label: 'Google Cloud' },
-  { value: 'devops', label: 'DevOps Tools' },
-  { value: 'wordpress', label: 'WordPress' },
-  { value: 'shopify', label: 'Shopify' },
-  { value: 'other', label: 'Other' }
-];
-
-const ProjectDetailsStep: React.FC<{ 
-  goToNextStep: () => void;
-  goToPreviousStep: () => void;
-  setStepData: (step: number, data: any) => void;
-}> = ({ 
-  goToNextStep, 
-  goToPreviousStep,
-  setStepData 
-}) => {
-  const [selectedProjectTypes, setSelectedProjectTypes] = useState<string[]>([]);
-  const [selectedTechStack, setSelectedTechStack] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Load existing data if available
-  const { state, saveProgress } = useOnboarding();
-  
+  // Load saved data if available
   useEffect(() => {
-    if (state.stepData[2]) {
-      if (state.stepData[2].projectTypes) {
-        setSelectedProjectTypes(state.stepData[2].projectTypes);
-      }
-      if (state.stepData[2].techStack) {
-        setSelectedTechStack(state.stepData[2].techStack);
+    const stepNumber = 2;
+    if (state.stepData[stepNumber]) {
+      const data = state.stepData[stepNumber];
+      if (data.description) setDescription(data.description);
+      if (data.techInterests && Array.isArray(data.techInterests)) {
+        setTechInterests(data.techInterests);
       }
     }
   }, [state.stepData]);
 
-  const toggleProjectType = (value: string) => {
-    setSelectedProjectTypes(prev => 
-      prev.includes(value) 
-        ? prev.filter(item => item !== value)
-        : [...prev, value]
-    );
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setDescription(e.target.value);
+    updateData({ description: e.target.value });
   };
 
-  const toggleTechStack = (value: string) => {
-    setSelectedTechStack(prev => 
-      prev.includes(value) 
-        ? prev.filter(item => item !== value)
-        : [...prev, value]
-    );
-  };
-
-  const validateForm = () => {
-    if (selectedProjectTypes.length === 0) {
-      toast.error("Please select at least one project type");
-      return false;
+  const handleAddInterest = () => {
+    if (!newInterest.trim()) {
+      return;
     }
+
+    const interest = newInterest.trim();
     
-    return true;
+    // Check if interest already exists
+    if (techInterests.includes(interest)) {
+      toast.error('Item already added');
+      return;
+    }
+
+    const updatedInterests = [...techInterests, interest];
+    setTechInterests(updatedInterests);
+    setNewInterest('');
+    
+    updateData({ techInterests: updatedInterests });
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
+  const handleRemoveInterest = (interestToRemove: string) => {
+    const updatedInterests = techInterests.filter(interest => interest !== interestToRemove);
+    setTechInterests(updatedInterests);
     
-    setIsSubmitting(true);
+    updateData({ techInterests: updatedInterests });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddInterest();
+    }
+  };
+
+  const updateData = (newData: any) => {
+    const currentData = state.stepData[2] || {};
+    const updatedData = { ...currentData, ...newData };
     
-    try {
-      // Save to context
-      setStepData(2, {
-        projectTypes: selectedProjectTypes,
-        techStack: selectedTechStack
-      });
-      
-      // Save to database
-      await saveProgress({
-        project_types: selectedProjectTypes,
-        tech_stack: selectedTechStack,
-        profileCompletionPercentage: 50
-      });
-      
-      goToNextStep();
-    } catch (error) {
+    // Save to onboarding context
+    setStepData(2, updatedData);
+  };
+
+  const handleBlur = () => {
+    // Save to database when user stops typing (blur event)
+    const data = {
+      description,
+      technical_interests: techInterests
+    };
+    
+    saveProgress(data).catch(error => {
       console.error('Error saving project details:', error);
-      toast.error("Failed to save your project preferences. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   };
 
   return (
-    <OnboardingLayout
-      title="Project Details"
-      subtitle="Tell us about the types of projects you're looking for help with"
-      onNextStep={handleSubmit}
-      onBackStep={goToPreviousStep}
-      nextDisabled={isSubmitting}
-    >
-      <div className="space-y-6">
-        <div className="space-y-3">
-          <Label className="block text-base font-medium">Project Types <span className="text-destructive">*</span></Label>
-          <p className="text-sm text-muted-foreground">
-            Select the types of projects you need help with
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-            {PROJECT_TYPES.map((type) => (
-              <div key={type.value} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={`project-${type.value}`} 
-                  checked={selectedProjectTypes.includes(type.value)}
-                  onCheckedChange={() => toggleProjectType(type.value)}
-                />
-                <label
-                  htmlFor={`project-${type.value}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                >
-                  {type.label}
-                </label>
-              </div>
-            ))}
-          </div>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium">Project Information</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Tell us about the projects you'll need help with
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="description">Project Description</Label>
+          <Textarea
+            id="description"
+            placeholder="Describe the types of projects or tasks you need help with..."
+            value={description}
+            onChange={handleDescriptionChange}
+            onBlur={handleBlur}
+            className="mt-1 min-h-[100px]"
+          />
         </div>
-        
-        <div className="space-y-3">
-          <Label className="block text-base font-medium">Tech Stack (Optional)</Label>
-          <p className="text-sm text-muted-foreground">
-            Select the technologies you're working with
+
+        <div className="mt-6">
+          <Label>Technical Areas of Interest</Label>
+          <p className="text-sm text-muted-foreground mt-1 mb-2">
+            What technologies are you working with or interested in?
           </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-            {TECH_STACK.map((tech) => (
-              <div key={tech.value} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={`tech-${tech.value}`} 
-                  checked={selectedTechStack.includes(tech.value)}
-                  onCheckedChange={() => toggleTechStack(tech.value)}
-                />
-                <label
-                  htmlFor={`tech-${tech.value}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                >
-                  {tech.label}
-                </label>
-              </div>
-            ))}
+
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Input
+                placeholder="Add technologies (e.g., React, AWS, Machine Learning)"
+                value={newInterest}
+                onChange={(e) => setNewInterest(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+            </div>
+            <Button 
+              type="button" 
+              onClick={handleAddInterest}
+              size="icon"
+              variant="outline"
+            >
+              <PlusCircle className="h-4 w-4" />
+            </Button>
           </div>
+
+          {techInterests.length > 0 ? (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {techInterests.map((interest) => (
+                <Badge key={interest} variant="secondary" className="pl-2 py-1.5">
+                  {interest}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-5 w-5 p-0 ml-1"
+                    onClick={() => handleRemoveInterest(interest)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-muted/50 rounded-md p-4 text-center mt-4">
+              <p className="text-sm text-muted-foreground">No technologies added yet</p>
+            </div>
+          )}
         </div>
       </div>
-    </OnboardingLayout>
+    </div>
   );
 };
 

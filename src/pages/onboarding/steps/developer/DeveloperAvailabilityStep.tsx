@@ -1,167 +1,172 @@
+
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from '../../../../contexts/auth';
-import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
-import { Label } from '../../../../components/ui/label';
+import { useAuth } from '../../../../contexts/auth';
 import { Switch } from '../../../../components/ui/switch';
-import { Checkbox } from '../../../../components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { toast } from 'sonner';
+import { Label } from '../../../../components/ui/label';
+import { Card, CardContent } from '../../../../components/ui/card';
+import { Button } from '../../../../components/ui/button';
+import { Separator } from '../../../../components/ui/separator';
+import { Clock, Calendar } from 'lucide-react';
 
-const DAYS_OF_WEEK = [
-  'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
-];
-
-const DeveloperAvailabilityStep: React.FC = () => {
-  const { goToNextStep } = useOnboarding();
-  const { userId } = useAuth();
-  
+const DeveloperAvailabilityStep = () => {
+  const { state, setStepData, saveProgress } = useOnboarding();
+  const { authState } = useAuth();
   const [isAvailable, setIsAvailable] = useState(true);
-  const [workingDays, setWorkingDays] = useState<string[]>([
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'
-  ]);
-  const [workingHours, setWorkingHours] = useState('Standard (9 AM - 5 PM)');
-  const [isLoading, setIsLoading] = useState(false);
-  
+  const [daysAvailable, setDaysAvailable] = useState<string[]>([]);
+  const [prefTimeZone, setPrefTimeZone] = useState('UTC');
+
+  const days = [
+    { value: 'monday', label: 'Monday' },
+    { value: 'tuesday', label: 'Tuesday' },
+    { value: 'wednesday', label: 'Wednesday' },
+    { value: 'thursday', label: 'Thursday' },
+    { value: 'friday', label: 'Friday' },
+    { value: 'saturday', label: 'Saturday' },
+    { value: 'sunday', label: 'Sunday' }
+  ];
+
+  // Load saved data if available
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userData = await getCurrentUserData();
-        if (userData) {
-          // Handle availability which could be a boolean or an object
-          if (typeof userData.availability === 'boolean') {
-            setIsAvailable(userData.availability);
-          } else if (userData.availability) {
-            setIsAvailable(true);
-            if (userData.availability.days) {
-              setWorkingDays(userData.availability.days);
-            }
-            if (userData.availability.hours) {
-              setWorkingHours(userData.availability.hours);
-            }
-          }
+    const stepNumber = 4;
+    if (state.stepData[stepNumber]) {
+      const data = state.stepData[stepNumber];
+      if (typeof data.availability === 'boolean') {
+        setIsAvailable(data.availability);
+      } else if (data.availability && typeof data.availability === 'object') {
+        setIsAvailable(true);
+        if (data.availability.days && Array.isArray(data.availability.days)) {
+          setDaysAvailable(data.availability.days);
         }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
       }
+      if (data.timeZone) {
+        setPrefTimeZone(data.timeZone);
+      }
+    }
+  }, [state.stepData]);
+
+  const handleAvailabilityChange = (available: boolean) => {
+    setIsAvailable(available);
+    updateAndSave(available, daysAvailable, prefTimeZone);
+  };
+
+  const toggleDay = (day: string) => {
+    const updatedDays = daysAvailable.includes(day)
+      ? daysAvailable.filter(d => d !== day)
+      : [...daysAvailable, day];
+    
+    setDaysAvailable(updatedDays);
+    updateAndSave(isAvailable, updatedDays, prefTimeZone);
+  };
+
+  const handleSelectAllDays = () => {
+    const allDays = days.map(day => day.value);
+    setDaysAvailable(allDays);
+    updateAndSave(isAvailable, allDays, prefTimeZone);
+  };
+
+  const handleClearAllDays = () => {
+    setDaysAvailable([]);
+    updateAndSave(isAvailable, [], prefTimeZone);
+  };
+
+  const updateAndSave = (available: boolean, selectedDays: string[], timezone: string) => {
+    const data = {
+      availability: available ? (selectedDays.length > 0 ? { days: selectedDays } : true) : false,
+      timeZone: timezone
     };
     
-    if (userId) {
-      fetchUserData();
-    }
-  }, [userId]);
-  
-  const toggleDay = (day: string) => {
-    if (workingDays.includes(day)) {
-      setWorkingDays(workingDays.filter(d => d !== day));
-    } else {
-      setWorkingDays([...workingDays, day]);
-    }
+    // Save to onboarding context
+    setStepData(4, data);
+    
+    // Save to database
+    saveProgress(data).catch(error => {
+      console.error('Error saving availability data:', error);
+    });
   };
-  
-  const handleSubmit = async () => {
-    setIsLoading(true);
-    try {
-      const updatedUserData = {
-        availability: isAvailable ? {
-          days: workingDays,
-          hours: workingHours
-        } : false,
-        profileCompletionPercentage: 80 // 4/5 steps completed
-      };
-      
-      const success = await updateUserData(updatedUserData);
-      
-      if (success) {
-        toast.success('Availability saved successfully');
-        goToNextStep();
-      } else {
-        toast.error('Failed to save availability');
-      }
-    } catch (error) {
-      console.error('Error saving availability:', error);
-      toast.error('An error occurred while saving');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
+
   return (
-    <OnboardingLayout
-      title="Your Availability"
-      subtitle="Let clients know when you're available to help"
-      nextDisabled={isLoading}
-      onNextStep={handleSubmit}
-    >
-      <div className="space-y-8 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <Label htmlFor="available" className="text-base">Available for work</Label>
-            <p className="text-sm text-muted-foreground">
-              Turn this off if you're not currently accepting new clients
-            </p>
-          </div>
-          <Switch
-            id="available"
-            checked={isAvailable}
-            onCheckedChange={setIsAvailable}
-          />
-        </div>
-        
-        {isAvailable && (
-          <>
-            <div className="space-y-4">
-              <Label>Working Days</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {DAYS_OF_WEEK.map((day) => (
-                  <div key={day} className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={day} 
-                      checked={workingDays.includes(day)}
-                      onCheckedChange={() => toggleDay(day)}
-                    />
-                    <label
-                      htmlFor={day}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {day}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <Label>Working Hours</Label>
-              <Select 
-                value={workingHours} 
-                onValueChange={setWorkingHours}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your working hours" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Standard (9 AM - 5 PM)">Standard (9 AM - 5 PM)</SelectItem>
-                  <SelectItem value="Early (6 AM - 2 PM)">Early (6 AM - 2 PM)</SelectItem>
-                  <SelectItem value="Late (2 PM - 10 PM)">Late (2 PM - 10 PM)</SelectItem>
-                  <SelectItem value="Night (9 PM - 5 AM)">Night (9 PM - 5 AM)</SelectItem>
-                  <SelectItem value="Flexible">Flexible</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </>
-        )}
-        
-        {!isAvailable && (
-          <div className="p-4 bg-muted rounded-lg">
-            <p className="text-sm">
-              You're currently set as unavailable. Clients won't be able to request your help
-              until you change your availability status.
-            </p>
-          </div>
-        )}
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium">Availability Settings</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Let clients know when you're available to help them with their projects
+        </p>
       </div>
-    </OnboardingLayout>
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium">Available for Work</h4>
+              <p className="text-sm text-muted-foreground">Show your profile to clients looking for help</p>
+            </div>
+            <Switch 
+              checked={isAvailable} 
+              onCheckedChange={handleAvailabilityChange} 
+              aria-label="Toggle availability"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {isAvailable && (
+        <div className="space-y-6">
+          <div>
+            <h4 className="font-medium flex items-center">
+              <Calendar className="h-4 w-4 mr-2" />
+              Days Available
+            </h4>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <div className="w-full flex justify-between mb-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  type="button" 
+                  onClick={handleSelectAllDays}
+                >
+                  Select All
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  type="button" 
+                  onClick={handleClearAllDays}
+                >
+                  Clear All
+                </Button>
+              </div>
+              {days.map((day) => (
+                <Button
+                  key={day.value}
+                  variant={daysAvailable.includes(day.value) ? "default" : "outline"}
+                  className="flex-1 min-w-[100px]"
+                  onClick={() => toggleDay(day.value)}
+                  type="button"
+                >
+                  {day.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          <div>
+            <h4 className="font-medium flex items-center">
+              <Clock className="h-4 w-4 mr-2" />
+              Time Zone
+            </h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              This helps clients know when to expect your availability
+            </p>
+            <div className="text-sm">
+              Your timezone appears to be: <span className="font-medium">{Intl.DateTimeFormat().resolvedOptions().timeZone}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
