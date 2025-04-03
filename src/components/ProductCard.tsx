@@ -84,7 +84,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </div>
           </div>
           
-          <h3 className="text-base font-semibold text-foreground/90 line-clamp-1 mb-2">
+          <h3 className="text-base font-bold text-gray-900 line-clamp-1 mb-2">
             {developerName}
           </h3>
           
