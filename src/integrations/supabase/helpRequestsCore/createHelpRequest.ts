@@ -1,0 +1,72 @@
+
+import { supabase } from '../client';
+import { HelpRequest } from '../../../types/helpRequest';
+import { isLocalId, isValidUUID, saveLocalHelpRequests, getLocalHelpRequests, handleError } from './utils';
+import { toast } from 'sonner';
+
+// Core function to create a help request
+export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'created_at' | 'updated_at' | 'ticket_number'>) => {
+  try {
+    const { client_id } = helpRequest;
+    
+    // Validate client ID
+    if (!client_id) {
+      return { success: false, error: 'Client ID is required' };
+    }
+    
+    // Determine if we should use local storage or Supabase
+    const useLocalStorage = isLocalId(client_id);
+    const useSupabase = isValidUUID(client_id);
+    
+    if (!useLocalStorage && !useSupabase) {
+      return { success: false, error: 'Invalid client ID format' };
+    }
+    
+    // For local storage
+    if (useLocalStorage) {
+      const localHelpRequests = getLocalHelpRequests();
+      
+      // Generate a ticket number for local storage (simulating the DB sequence)
+      const existingNumbers = localHelpRequests.map((req: HelpRequest) => 
+        req.ticket_number || 0
+      );
+      const maxNumber = Math.max(0, ...existingNumbers);
+      const newTicketNumber = maxNumber >= 1000 ? maxNumber + 1 : 1000;
+      
+      const newRequest = {
+        ...helpRequest,
+        id: `help-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        status: 'open',
+        ticket_number: newTicketNumber
+      };
+      
+      localHelpRequests.push(newRequest);
+      saveLocalHelpRequests(localHelpRequests);
+      console.log('Help request stored locally:', newRequest);
+      
+      return { success: true, data: newRequest, storageMethod: 'localStorage' };
+    }
+    
+    // For Supabase
+    const { data, error } = await supabase
+      .from('help_requests')
+      .insert({
+        ...helpRequest,
+        status: 'open' // Set default status to 'open'
+      })
+      .select();
+      
+    if (error) {
+      console.error('Error creating help request in Supabase:', error);
+      return { success: false, error: error.message };
+    }
+    
+    console.log('Help request created successfully in Supabase:', data);
+    return { success: true, data: data[0], storageMethod: 'Supabase' };
+    
+  } catch (error) {
+    return handleError(error, 'Exception creating help request:');
+  }
+};
