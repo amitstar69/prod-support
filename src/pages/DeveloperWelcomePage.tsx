@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, Plus, Clock, Award, Activity, Users, BellRing } from 'lucide-react';
@@ -5,7 +6,7 @@ import Layout from '../components/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
-import { useAuth, getCurrentUserData, invalidateUserDataCache } from '../contexts/auth';
+import { useAuth, getCurrentUserData } from '../contexts/auth';
 import { toast } from 'sonner';
 
 const DeveloperWelcomePage = () => {
@@ -53,12 +54,6 @@ const DeveloperWelcomePage = () => {
 
     fetchDeveloperData();
   }, [userId]);
-
-  useEffect(() => {
-    if (authState.userId) {
-      invalidateUserDataCache(authState.userId);
-    }
-  }, [authState.userId]);
 
   if (isLoading) {
     return (

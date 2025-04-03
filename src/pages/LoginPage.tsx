@@ -34,19 +34,11 @@ const LoginPage: React.FC = () => {
     checkAuth();
   }, [checkAuthStatus]);
   
-  // Add debug logging for render cycles
-  console.log('LoginPage render cycle. Auth state:', { 
-    isAuthenticated, 
-    isLoading, 
-    error,
-    userType 
-  });
-  
   // Handle redirect for authenticated users
   useEffect(() => {
     if (isAuthenticated) {
       console.log('User is already authenticated, redirecting to home');
-      const destination = userType === 'client' ? '/client-dashboard' : '/developer-dashboard';
+      const destination = userType === 'client' ? '/client' : '/developer-dashboard';
       
       // Add a small delay to ensure state is fully updated
       setTimeout(() => {

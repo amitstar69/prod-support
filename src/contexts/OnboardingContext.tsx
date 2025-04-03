@@ -1,226 +1,186 @@
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { useAuth } from '../contexts/auth';
-import { updateUserData, invalidateUserDataCache } from '../contexts/auth/userDataFetching';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from './auth';
+import { Developer, Client } from '../types/product';
+import { toast } from 'sonner';
 
-// Define types for onboarding state
-interface OnboardingState {
+interface OnboardingContextType {
   currentStep: number;
   totalSteps: number;
-  isCompleted: boolean;
-  stepData: Record<number, any>;
-}
-
-// Define types for context value
-interface OnboardingContextType {
-  state: OnboardingState;
   goToNextStep: () => void;
   goToPreviousStep: () => void;
   goToStep: (step: number) => void;
-  setStepData: (step: number, data: any) => void;
-  completeOnboarding: () => Promise<void>;
-  saveProgress: (data: any) => Promise<void>;
-  userData: any;
-  updateUserDataAndProceed: (data: any) => Promise<void>;
+  completeOnboarding: () => Promise<boolean>;
+  skipOnboarding: () => void;
+  isOnboardingComplete: boolean;
   isLoading: boolean;
-  skipOnboarding: () => Promise<void>;
+  userData: Partial<Developer | Client>;
+  updateUserDataAndProceed: (data: Partial<Developer | Client>) => Promise<void>;
 }
 
-// Create context with default values
-const OnboardingContext = createContext<OnboardingContextType>({
-  state: {
-    currentStep: 1,
-    totalSteps: 5,
-    isCompleted: false,
-    stepData: {}
-  },
-  goToNextStep: () => {},
-  goToPreviousStep: () => {},
-  goToStep: () => {},
-  setStepData: () => {},
-  completeOnboarding: async () => {},
-  saveProgress: async () => {},
-  userData: null,
-  updateUserDataAndProceed: async () => {},
-  isLoading: false,
-  skipOnboarding: async () => {}
-});
+const OnboardingContext = createContext<OnboardingContextType | null>(null);
 
-// Hook to use the onboarding context
-export const useOnboarding = () => useContext(OnboardingContext);
+export const useOnboarding = () => {
+  const context = useContext(OnboardingContext);
+  if (!context) {
+    throw new Error('useOnboarding must be used within an OnboardingProvider');
+  }
+  return context;
+};
 
-// Provider component
-export const OnboardingProvider: React.FC<{
-  children: ReactNode;
-  totalSteps: number;
+interface OnboardingProviderProps {
+  children: React.ReactNode;
   userType: 'client' | 'developer';
-}> = ({ children, totalSteps, userType }) => {
-  const { authState } = useAuth();
-  const [userData, setUserData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [state, setState] = useState<OnboardingState>({
-    currentStep: 1,
-    totalSteps,
-    isCompleted: false,
-    stepData: {}
-  });
+  totalSteps: number;
+}
 
-  // Navigation functions
+export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ 
+  children, 
+  userType,
+  totalSteps
+}) => {
+  const { userId } = useAuth();
+  const navigate = useNavigate();
+  
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isOnboardingComplete, setIsOnboardingComplete] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userData, setUserData] = useState<Partial<Developer | Client>>({});
+  
+  useEffect(() => {
+    const fetchUserData = async () => {
+      setIsLoading(true);
+      try {
+        const data = await getCurrentUserData();
+        if (data) {
+          setUserData(data);
+          setIsOnboardingComplete(!!data.profileCompleted);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    if (userId) {
+      fetchUserData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [userId]);
+  
   const goToNextStep = () => {
-    if (state.currentStep < totalSteps) {
-      setState(prev => ({
-        ...prev,
-        currentStep: prev.currentStep + 1
-      }));
+    if (currentStep < totalSteps) {
+      setCurrentStep(prev => prev + 1);
     }
   };
-
+  
   const goToPreviousStep = () => {
-    if (state.currentStep > 1) {
-      setState(prev => ({
-        ...prev,
-        currentStep: prev.currentStep - 1
-      }));
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
     }
   };
-
+  
   const goToStep = (step: number) => {
     if (step >= 1 && step <= totalSteps) {
-      setState(prev => ({
-        ...prev,
-        currentStep: step
-      }));
+      setCurrentStep(step);
     }
   };
-
-  const setStepData = (step: number, data: any) => {
-    setState(prev => ({
-      ...prev,
-      stepData: {
-        ...prev.stepData,
-        [step]: data
-      }
-    }));
-  };
-
-  // Complete the onboarding process
-  const completeOnboarding = async () => {
-    if (authState.userId) {
-      try {
-        setIsLoading(true);
-        // Mark onboarding as completed
-        const userData = {
-          profileCompleted: true,
-          onboardingCompletedAt: new Date().toISOString(),
-          profileCompletionPercentage: 100
-        };
-        
-        await updateUserData(authState.userId, userData);
-        invalidateUserDataCache(authState.userId);
-        
-        setState(prev => ({
-          ...prev,
-          isCompleted: true
-        }));
-        
-        return Promise.resolve();
-      } catch (error) {
-        console.error('Error completing onboarding:', error);
-        return Promise.reject(error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    return Promise.resolve();
-  };
-
-  // Skip onboarding process
-  const skipOnboarding = async () => {
-    if (authState.userId) {
-      try {
-        setIsLoading(true);
-        const userData = {
-          profileCompleted: true,
-          onboardingSkipped: true,
-          onboardingCompletedAt: new Date().toISOString(),
-          profileCompletionPercentage: 50 // Partial completion
-        };
-        
-        await updateUserData(authState.userId, userData);
-        invalidateUserDataCache(authState.userId);
-        
-        setState(prev => ({
-          ...prev,
-          isCompleted: true
-        }));
-        
-        return Promise.resolve();
-      } catch (error) {
-        console.error('Error skipping onboarding:', error);
-        return Promise.reject(error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    return Promise.resolve();
-  };
-
-  // Save progress during onboarding
-  const saveProgress = async (data: any) => {
-    if (authState.userId) {
-      try {
-        setIsLoading(true);
-        // Calculate completion percentage based on current step
-        const completionPercentage = Math.round((state.currentStep / totalSteps) * 100);
-        
-        const userData = {
-          ...data,
-          profileCompletionPercentage: completionPercentage
-        };
-        
-        await updateUserData(authState.userId, userData);
-        invalidateUserDataCache(authState.userId);
-        
-        return Promise.resolve();
-      } catch (error) {
-        console.error('Error saving onboarding progress:', error);
-        return Promise.reject(error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    return Promise.resolve();
-  };
-
-  // Combined function to update user data and proceed to next step
-  const updateUserDataAndProceed = async (data: any) => {
+  
+  const updateUserDataAndProceed = async (data: Partial<Developer | Client>) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      await saveProgress(data);
+      // Update userData state
+      const updatedUserData = { ...userData, ...data };
+      setUserData(updatedUserData);
+      
+      // Update in database
+      await updateUserData(data);
+      
+      // Go to next step
       goToNextStep();
-      return Promise.resolve();
     } catch (error) {
-      console.error('Error updating data and proceeding:', error);
-      return Promise.reject(error);
+      console.error('Error updating user data:', error);
+      toast.error('Failed to update your information');
     } finally {
       setIsLoading(false);
     }
   };
-
+  
+  const completeOnboarding = async (): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      // Create the update data with the ISO string date
+      const updateData = {
+        profileCompleted: true,
+        profileCompletionPercentage: 100,
+        onboardingCompletedAt: new Date().toISOString()
+      };
+      
+      console.log('Completing onboarding with data:', updateData);
+      const success = await updateUserData(updateData);
+      
+      if (success) {
+        setIsOnboardingComplete(true);
+        toast.success('Onboarding completed successfully!');
+        
+        // Invalidate cache to ensure fresh data on profile page
+        if (userId) {
+          console.log('Invalidating cache after onboarding completion');
+          invalidateUserDataCache(userId);
+          
+          // Wait a moment to ensure data is invalidated
+          await new Promise(resolve => setTimeout(resolve, 800));
+        }
+        
+        // Redirect based on user type - use the specific path names
+        if (userType === 'client') {
+          console.log('Redirecting to client dashboard after onboarding');
+          navigate('/client-dashboard', { replace: true });
+        } else {
+          console.log('Redirecting to developer dashboard after onboarding');
+          navigate('/developer-dashboard', { replace: true });
+        }
+        
+        return true;
+      } else {
+        toast.error('Failed to complete onboarding. Please try again.');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      toast.error('An error occurred while completing onboarding');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const skipOnboarding = () => {
+    toast.info('You can complete your profile later from your settings');
+    if (userType === 'client') {
+      navigate('/client-dashboard');
+    } else {
+      navigate('/developer-dashboard');
+    }
+  };
+  
   return (
     <OnboardingContext.Provider
       value={{
-        state,
+        currentStep,
+        totalSteps,
         goToNextStep,
         goToPreviousStep,
         goToStep,
-        setStepData,
         completeOnboarding,
-        saveProgress,
-        userData,
-        updateUserDataAndProceed,
+        skipOnboarding,
+        isOnboardingComplete,
         isLoading,
-        skipOnboarding
+        userData,
+        updateUserDataAndProceed
       }}
     >
       {children}

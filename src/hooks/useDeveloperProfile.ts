@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from '../contexts/auth';
 import { Developer } from '../types/product';
@@ -314,83 +315,4 @@ export const useDeveloperProfile = () => {
     handleSaveChanges,
     refreshProfile
   };
-};
-
-export const invalidateProfileCache = () => {
-  if (currentUserId) {
-    invalidateUserDataCache(currentUserId);
-  }
-};
-
-export const updateDeveloperProfile = async (developer: Partial<Developer>) => {
-  try {
-    const fullName = `${developer.name}`.trim();
-    console.log(`Updating developer name from "${developer.name}" to "${fullName}"`);
-    
-    // Calculate profile completion percentage
-    const completionPercentage = calculateProfileCompletionPercentage(developer);
-    console.log(`Calculated developer profile completion percentage: ${completionPercentage}%`);
-    
-    // Determine if profile should be marked as complete (if completion is >= 85%)
-    const isProfileComplete = completionPercentage >= 85;
-    console.log(`Developer profile will be marked as complete: ${isProfileComplete} (${completionPercentage}% >= 85%)`);
-    
-    const updatedData: Partial<Developer> = {
-      name: fullName,
-      email: developer.email,
-      phone: developer.phone,
-      location: developer.location,
-      category: developer.category,
-      skills: developer.skills,
-      experience: developer.experience,
-      hourlyRate: developer.hourlyRate,
-      minuteRate: developer.minuteRate,
-      availability: developer.availability,
-      description: developer.description,
-      communicationPreferences: developer.communicationPreferences,
-      username: developer.username,
-      bio: developer.bio,
-      education: developer.education,
-      certifications: developer.certifications,
-      portfolioItems: developer.portfolioItems,
-      languagesSpoken: developer.languagesSpoken,
-      // CRITICAL: These fields ensure profile completion is correctly tracked
-      profileCompleted: isProfileComplete,
-      profileCompletionPercentage: completionPercentage
-    };
-    
-    console.log("Submitting developer profile update:", updatedData);
-    
-    // First update the local state before the API call to ensure UI is responsive
-    if (developer) {
-      const updatedDeveloper = {
-        ...developer,
-        ...updatedData
-      };
-      setDeveloper(updatedDeveloper);
-    }
-    
-    const success = await updateUserData(updatedData);
-    
-    if (success) {
-      console.log('Profile update successful, forcing data refresh');
-      toast.success('Profile updated successfully');
-      
-      // Force a refresh of the cache for this user
-      invalidateUserDataCache(currentProfile.id);
-      
-      // Fetch fresh data immediately after a successful update
-      console.log('Fetching latest data after successful update');
-      await fetchUserData(true);
-    } else {
-      toast.error('Failed to update profile. Please verify your connection and try again.');
-      // Revert developer state to original if update failed
-      await fetchUserData(true);
-    }
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    toast.error('An error occurred while updating your profile');
-    // Revert developer state if there was an exception
-    await fetchUserData(true);
-  }
 };

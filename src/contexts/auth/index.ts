@@ -1,19 +1,35 @@
 
-// Export core authentication functionality
-export * from './authLogin';
-export * from './authHook';
-export * from './authUtils';
-export * from './authRegister';
-export * from './authProfileData';
-export * from './AuthStateProvider';
-export * from './types';
+import { AuthState } from './types';
+import { AuthContextType } from './types';
+
+// Import the authentication provider
+import { AuthProvider, AuthStateProvider } from './AuthStateProvider';
+import { useAuth } from './authHook';
+
+// Import the user data fetching functions
+import { getCurrentUserData, invalidateUserDataCache } from './userDataFetching';
+import { updateUserData } from './userDataUpdates';
+
+// Import registration functions
+import { register } from './registration';
+
+// Export debug functions for backward compatibility
+import { 
+  debugCheckProfileExists, 
+  debugCreateProfile 
+} from './authDebug';
+
+// Export auth context and hook
+export { AuthProvider, AuthStateProvider };
+export { useAuth };
 
 // Export user data functions
-export { getCurrentUserData, updateUserData, invalidateUserDataCache } from './userDataFetching';
-export { updateUserData as updateUserDataDirect } from './userDataUpdates';
+export { getCurrentUserData, updateUserData, invalidateUserDataCache };
 
-// Export registration functions
-export { register } from './registration';
+// Export registration function
+export { register };
 
-// Export debug functions that are used in RegisterPage.tsx
-export { debugCheckProfileExists, debugCreateProfile } from './authDebug';
+// Export debug functions
+export { debugCheckProfileExists, debugCreateProfile };
+
+export type { AuthState, AuthContextType };

@@ -1,84 +1,90 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/auth';
-import { OnboardingProvider, useOnboarding } from '../../contexts/OnboardingContext';
-import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
-import ClientDetailsStep from './steps/client/ClientDetailsStep';
-import ProjectDetailsStep from './steps/client/ProjectDetailsStep';
-import BudgetStep from './steps/client/BudgetStep';
-import ReviewAndSubmitStep from './steps/client/ReviewAndSubmitStep';
-import { toast } from 'sonner';
-import { invalidateUserDataCache } from '../../contexts/auth/authUserDataCache';
+import { OnboardingProvider } from '../../contexts/OnboardingContext';
+import { useAuth, getCurrentUserData } from '../../contexts/auth';
+import ClientBasicInfoStep from './steps/client/ClientBasicInfoStep';
+import ClientPreferencesStep from './steps/client/ClientPreferencesStep';
+import ClientProjectsStep from './steps/client/ClientProjectsStep';
+import ClientCompletionStep from './steps/client/ClientCompletionStep';
+import ProfileLoadingState from '../../components/profile/ProfileLoadingState';
 
-const ClientOnboardingContent = () => {
+const ClientOnboarding: React.FC = () => {
+  const { userId, logout } = useAuth();
   const navigate = useNavigate();
-  const { authState } = useAuth();
-  const { 
-    state: onboardingState, 
-    goToNextStep, 
-    goToPreviousStep, 
-    goToStep, 
-    setStepData, 
-    completeOnboarding 
-  } = useOnboarding();
-  const [isLoading, setIsLoading] = useState(false);
-
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentStep, setCurrentStep] = useState(1);
+  
   useEffect(() => {
-    if (authState.userId) {
-      invalidateUserDataCache(authState.userId);
-    }
+    const checkProfileStatus = async () => {
+      setIsLoading(true);
+      try {
+        const userData = await getCurrentUserData();
+        
+        if (!userData) {
+          // No user data found, possibly not logged in
+          navigate('/login');
+          return;
+        }
+        
+        if (userData.profileCompleted) {
+          // Profile already completed, redirect to dashboard
+          navigate('/client-dashboard');
+          return;
+        }
+        
+        // Determine starting step based on any existing profile data
+        if (userData.name && userData.email) {
+          // Use type guards to check for client-specific properties
+          if ('techStack' in userData && 'industry' in userData &&
+              ((userData.techStack && userData.techStack.length > 0) || userData.industry)) {
+            if ('projectTypes' in userData && userData.projectTypes && userData.projectTypes.length > 0) {
+              setCurrentStep(4); // Almost complete, go to final step
+            } else {
+              setCurrentStep(3); // Has preferences, go to projects step
+            }
+          } else {
+            setCurrentStep(2); // Has basic info, go to preferences step
+          }
+        } else {
+          setCurrentStep(1); // Start from beginning
+        }
+      } catch (error) {
+        console.error('Error checking profile status:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    // Redirect if not authenticated or wrong user type
-    if (!authState.isAuthenticated || authState.userType !== 'client') {
+    if (userId) {
+      checkProfileStatus();
+    } else {
       navigate('/login');
     }
-  }, [authState.isAuthenticated, authState.userType, authState.userId, navigate]);
-
-  useEffect(() => {
-    if (onboardingState.isCompleted) {
-      toast.success('Onboarding completed! Redirecting to your profile...');
-      setTimeout(() => {
-        navigate('/client-profile');
-      }, 2000);
-    }
-  }, [onboardingState.isCompleted, navigate]);
-
-  const renderStepContent = () => {
-    switch (onboardingState.currentStep) {
+  }, [userId, navigate]);
+  
+  if (isLoading) {
+    return <ProfileLoadingState onForceLogout={logout} />;
+  }
+  
+  const renderCurrentStep = () => {
+    switch (currentStep) {
       case 1:
-        return <ClientDetailsStep />;
+        return <ClientBasicInfoStep />;
       case 2:
-        return <ProjectDetailsStep />;
+        return <ClientPreferencesStep />;
       case 3:
-        return <BudgetStep />;
+        return <ClientProjectsStep />;
       case 4:
-        return <ReviewAndSubmitStep isLoading={isLoading} setIsLoading={setIsLoading} />;
+        return <ClientCompletionStep />;
       default:
-        return <div>Unknown step</div>;
+        return <ClientBasicInfoStep />;
     }
   };
-
+  
   return (
-    <OnboardingLayout
-      title="Client Profile Setup"
-      subtitle="Complete your profile to start finding developers"
-      currentStep={onboardingState.currentStep}
-      totalSteps={onboardingState.totalSteps}
-      goToStep={goToStep}
-      onNextStep={goToNextStep}
-      onBackStep={onboardingState.currentStep > 1 ? goToPreviousStep : undefined}
-      nextLabel={onboardingState.currentStep === onboardingState.totalSteps ? "Complete" : "Next"}
-    >
-      {renderStepContent()}
-    </OnboardingLayout>
-  );
-};
-
-const ClientOnboarding = () => {
-  return (
-    <OnboardingProvider totalSteps={4} userType="client">
-      <ClientOnboardingContent />
+    <OnboardingProvider userType="client" totalSteps={4}>
+      {renderCurrentStep()}
     </OnboardingProvider>
   );
 };

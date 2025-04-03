@@ -28,7 +28,6 @@ export const useLoginForm = () => {
   // Performance optimization: Use cached session first
   const checkAuthStatus = useCallback(async () => {
     try {
-      console.log('Checking auth status in useLoginForm');
       const cachedSession = localStorage.getItem('supabase.auth.token');
       if (cachedSession) {
         console.log('Found cached session, assuming authenticated until backend check completes');
@@ -44,11 +43,11 @@ export const useLoginForm = () => {
   // Redirect on authentication state change
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      console.log(`User is authenticated, redirecting to ${userType === 'client' ? '/client-dashboard' : '/developer-dashboard'}`);
+      console.log(`User is authenticated, redirecting to ${userType === 'client' ? '/client' : '/developer-dashboard'}`);
       
       // Short timeout to ensure state updates complete
       setTimeout(() => {
-        const destination = userType === 'client' ? '/client-dashboard' : '/developer-dashboard';
+        const destination = userType === 'client' ? '/client' : '/developer-dashboard';
         navigate(destination);
       }, 300); // Increased timeout for more reliable state updates
     }

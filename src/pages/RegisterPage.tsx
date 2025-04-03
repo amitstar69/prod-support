@@ -6,7 +6,6 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
 import { supabase } from '../integrations/supabase/client';
-// Import from the correct location
 import { debugCheckProfileExists, debugCreateProfile } from '../contexts/auth';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
