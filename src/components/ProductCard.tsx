@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types/product';
-import { Heart, Star } from 'lucide-react';
+import { Heart, Star, UserCircle } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -21,6 +21,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     ? product.availability 
     : false;
   
+  // Safely handle image loading
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.target as HTMLImageElement;
+    target.src = '/placeholder.svg';
+    target.onerror = null; // Prevent infinite fallback loops
+  };
+
+  // Determine if we need to use a fallback image
+  const imageUrl = product.image && product.image !== '/placeholder.svg' 
+    ? product.image 
+    : '/placeholder.svg';
+
   return (
     <div 
       className="group relative overflow-hidden rounded-xl bg-white border border-border/40 card-hover"
@@ -43,16 +55,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               </span>
             </div>
           )}
-          <img
-            src={product.image}
-            alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            loading="lazy"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = '/placeholder.svg';
-            }}
-          />
+          {imageUrl === '/placeholder.svg' ? (
+            <div className="h-full w-full flex items-center justify-center bg-secondary/30">
+              <UserCircle className="h-32 w-32 text-muted-foreground/40" />
+            </div>
+          ) : (
+            <img
+              src={imageUrl}
+              alt={product.name || 'Developer'}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              loading="lazy"
+              onError={handleImageError}
+            />
+          )}
         </div>
         
         <div className="p-4">

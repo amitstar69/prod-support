@@ -34,16 +34,15 @@ export const useDeveloperSearch = (initialFilters: DeveloperFilters) => {
       // First fetch all developer profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, name, username, email, image, location, description')
-        .eq('user_type', 'developer')
-        .eq('profile_completed', true);
+        .select('id, name, username, email, image, location, description, user_type')
+        .eq('user_type', 'developer');
       
       if (profilesError) {
         console.error("Error fetching profiles:", profilesError);
         throw profilesError;
       }
       
-      console.log(`Found ${profilesData?.length || 0} developer profiles`);
+      console.log(`Found ${profilesData?.length || 0} developer profiles`, profilesData);
       
       if (!profilesData || profilesData.length === 0) {
         setDevelopers([]);
@@ -62,13 +61,29 @@ export const useDeveloperSearch = (initialFilters: DeveloperFilters) => {
           
           if (devDetailsError) {
             console.error(`Error fetching details for developer ${dev.id}:`, devDetailsError);
-            return null;
+            // Instead of returning null, return basic profile with defaults
+            return {
+              id: dev.id,
+              name: dev.name || 'Anonymous Developer',
+              hourlyRate: 0,
+              minuteRate: 0,
+              image: dev.image || '/placeholder.svg',
+              category: '',
+              skills: [],
+              experience: '',
+              description: dev.description || '',
+              rating: 4.5,
+              availability: false,
+              online: false,
+              lastActive: 'Recently',
+              featured: false,
+              location: dev.location || 'Global',
+              email: dev.email,
+              username: dev.username,
+            } as Developer;
           }
           
-          if (!devDetails) {
-            console.log(`No developer_profiles record found for ${dev.id}`);
-            return null;
-          }
+          console.log(`Developer details for ${dev.id}:`, devDetails);
           
           // Map the DB structure to our Developer type
           return {
@@ -93,13 +108,10 @@ export const useDeveloperSearch = (initialFilters: DeveloperFilters) => {
         })
       );
       
-      // Filter out any null values (failed fetches)
-      const validDevelopers = developersWithDetails.filter(
-        (dev): dev is Developer => dev !== null
-      );
+      console.log(`Successfully processed ${developersWithDetails.length} developer profiles`);
+      console.log("Developers with details:", developersWithDetails);
       
-      console.log(`Successfully processed ${validDevelopers.length} developer profiles`);
-      setDevelopers(validDevelopers);
+      setDevelopers(developersWithDetails);
     } catch (err) {
       console.error('Error fetching developers:', err);
       setError('Failed to load developers. Please try again later.');

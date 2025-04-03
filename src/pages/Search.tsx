@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -10,15 +9,15 @@ import { Developer, Product } from '../types/product';
 import { useDeveloperSearch, DeveloperFilters } from '../hooks/useDeveloperSearch';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { createSampleDeveloperProfiles } from '../utils/developerDataFallback';
+import { toast } from 'sonner';
 
-// Common skills for filter options
 const commonSkills = [
   'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 
   'AWS', 'Docker', 'SQL', 'Flutter', 'Java', 'CSS', 'HTML',
   'GraphQL', 'Next.js', 'Vue.js', 'Angular', 'MongoDB', 'Firebase'
 ];
 
-// Experience levels
 const experienceLevels = [
   { value: 'all', label: 'Any Experience' },
   { value: 'beginner', label: 'Entry Level (1-2 years)' },
@@ -26,7 +25,6 @@ const experienceLevels = [
   { value: 'expert', label: 'Expert (5+ years)' }
 ];
 
-// Common locations
 const locations = [
   { value: 'all', label: 'Any Location' },
   { value: 'remote', label: 'Remote' },
@@ -46,8 +44,8 @@ const Search: React.FC = () => {
   const categoryFilter = queryParams.get('category') || '';
   
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [hasAttemptedDevFallback, setHasAttemptedDevFallback] = useState(false);
   
-  // Initial filters state
   const initialFilters: DeveloperFilters = {
     selectedCategories: categoryFilter ? [categoryFilter] : [],
     hourlyRateRange: [0, 200],
@@ -58,7 +56,6 @@ const Search: React.FC = () => {
     location: 'all'
   };
   
-  // Use our custom hook
   const { 
     filteredDevelopers, 
     filters, 
@@ -70,7 +67,32 @@ const Search: React.FC = () => {
     refreshDevelopers
   } = useDeveloperSearch(initialFilters);
   
-  // Handle category selection
+  useEffect(() => {
+    const checkAndCreateFallbacks = async () => {
+      if (!isLoading && filteredDevelopers.length === 0 && !error && !hasAttemptedDevFallback) {
+        setHasAttemptedDevFallback(true);
+        console.log('No developers found, attempting to create fallbacks...');
+        
+        try {
+          await createSampleDeveloperProfiles();
+          refreshDevelopers();
+        } catch (err) {
+          console.error('Error creating fallback developers:', err);
+        }
+      }
+    };
+    
+    checkAndCreateFallbacks();
+  }, [isLoading, filteredDevelopers, error, hasAttemptedDevFallback, refreshDevelopers]);
+  
+  useEffect(() => {
+    if (error) {
+      toast.error('Error loading developers', {
+        description: error
+      });
+    }
+  }, [error]);
+
   const handleCategoryChange = (categoryId: string) => {
     const updatedCategories = filters.selectedCategories.includes(categoryId)
       ? filters.selectedCategories.filter(id => id !== categoryId)
@@ -78,7 +100,6 @@ const Search: React.FC = () => {
       
     updateFilter('selectedCategories', updatedCategories);
     
-    // Update URL if necessary
     if (categoryId === categoryFilter) {
       const params = new URLSearchParams(location.search);
       params.delete('category');
@@ -86,7 +107,6 @@ const Search: React.FC = () => {
     }
   };
   
-  // Handle hourly rate change
   const handleHourlyRateChange = (event: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const value = parseInt(event.target.value);
     const newRange = [...filters.hourlyRateRange] as [number, number];
@@ -94,7 +114,6 @@ const Search: React.FC = () => {
     updateFilter('hourlyRateRange', newRange);
   };
   
-  // Handle skill selection
   const handleSkillChange = (skill: string) => {
     const updatedSkills = filters.selectedSkills.includes(skill)
       ? filters.selectedSkills.filter(s => s !== skill)
@@ -103,17 +122,14 @@ const Search: React.FC = () => {
     updateFilter('selectedSkills', updatedSkills);
   };
   
-  // Handle experience level change
   const handleExperienceLevelChange = (level: string) => {
     updateFilter('experienceLevel', level);
   };
   
-  // Handle location change
   const handleLocationChange = (loc: string) => {
     updateFilter('location', loc);
   };
   
-  // Clear all filters
   const clearAllFilters = () => {
     updateFilter('selectedCategories', []);
     updateFilter('hourlyRateRange', [0, 200]);
@@ -122,7 +138,6 @@ const Search: React.FC = () => {
     updateFilter('experienceLevel', 'all');
     updateFilter('location', 'all');
     
-    // If there was a category in the URL, remove it
     if (categoryFilter) {
       const params = new URLSearchParams(location.search);
       params.delete('category');
@@ -130,7 +145,6 @@ const Search: React.FC = () => {
     }
   };
   
-  // Check if any filters are active
   const hasActiveFilters = 
     filters.selectedCategories.length > 0 || 
     filters.hourlyRateRange[0] > 0 || 
@@ -140,7 +154,6 @@ const Search: React.FC = () => {
     filters.experienceLevel !== 'all' ||
     filters.location !== 'all';
   
-  // Update searchQuery when URL search parameter changes
   useEffect(() => {
     if (searchQuery !== filters.searchQuery) {
       updateFilter('searchQuery', searchQuery);
@@ -166,7 +179,6 @@ const Search: React.FC = () => {
       
       <div className="container mx-auto px-4 py-8">
         <div className="lg:grid lg:grid-cols-[280px_1fr] gap-8">
-          {/* Mobile Filter Button */}
           <div className="lg:hidden flex justify-between items-center mb-4">
             <p className="text-sm text-muted-foreground">
               {isLoading 
@@ -183,20 +195,17 @@ const Search: React.FC = () => {
             </button>
           </div>
           
-          {/* Filters Sidebar */}
           <div 
             className={`
               fixed inset-0 z-40 lg:relative lg:z-0 lg:block
               ${isMobileFilterOpen ? 'block' : 'hidden'}
             `}
           >
-            {/* Mobile Filter Backdrop */}
             <div 
               className="fixed inset-0 bg-background/80 backdrop-blur-sm lg:hidden"
               onClick={() => setIsMobileFilterOpen(false)}
             />
             
-            {/* Filter Content */}
             <div className="fixed right-0 top-0 h-full w-[300px] border-l border-border bg-background p-6 shadow-lg animate-slide-in-right lg:animate-none lg:relative lg:right-auto lg:top-auto lg:h-auto lg:w-auto lg:border-none lg:bg-transparent lg:p-0 lg:shadow-none overflow-auto">
               <div className="flex items-center justify-between mb-6 lg:hidden">
                 <h3 className="text-lg font-semibold">Filters</h3>
@@ -209,7 +218,6 @@ const Search: React.FC = () => {
               </div>
               
               <div className="space-y-6">
-                {/* Clear All Filters */}
                 {hasActiveFilters && (
                   <div className="pb-4 border-b border-border/60">
                     <button
@@ -221,7 +229,6 @@ const Search: React.FC = () => {
                   </div>
                 )}
                 
-                {/* Availability Filter */}
                 <div>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -234,7 +241,6 @@ const Search: React.FC = () => {
                   </label>
                 </div>
                 
-                {/* Categories */}
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Specialization</h3>
                   <div className="space-y-2">
@@ -255,7 +261,6 @@ const Search: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Skills Filter - NEW */}
                 <div>
                   <div className="flex items-center gap-2 text-sm font-semibold mb-3">
                     <Code className="h-4 w-4" />
@@ -279,7 +284,6 @@ const Search: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Experience Level Filter - NEW */}
                 <div>
                   <div className="flex items-center gap-2 text-sm font-semibold mb-3">
                     <Award className="h-4 w-4" />
@@ -304,7 +308,6 @@ const Search: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Location Filter - NEW */}
                 <div>
                   <div className="flex items-center gap-2 text-sm font-semibold mb-3">
                     <MapPin className="h-4 w-4" />
@@ -329,7 +332,6 @@ const Search: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Hourly Rate Range */}
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Hourly Rate Range</h3>
                   <div className="space-y-4">
@@ -374,7 +376,6 @@ const Search: React.FC = () => {
             </div>
           </div>
           
-          {/* Developer Grid */}
           <div>
             <div className="hidden lg:flex justify-between items-center mb-6">
               <p className="text-sm text-muted-foreground">
@@ -432,10 +433,13 @@ const Search: React.FC = () => {
                   Try adjusting your search or filter criteria
                 </p>
                 <button 
-                  onClick={clearAllFilters}
+                  onClick={() => {
+                    clearAllFilters();
+                    refreshDevelopers();
+                  }}
                   className="button-secondary"
                 >
-                  Clear all filters
+                  Clear all filters and refresh
                 </button>
               </div>
             )}
