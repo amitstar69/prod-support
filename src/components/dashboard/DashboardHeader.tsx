@@ -1,60 +1,40 @@
 
 import React from 'react';
-import { Filter, RefreshCw, TrendingUp } from 'lucide-react';
 import { Button } from '../ui/button';
+import { PlusCircle } from 'lucide-react';
+import { Badge } from '../ui/badge';
 
 interface DashboardHeaderProps {
-  showFilters: boolean;
-  setShowFilters: (show: boolean) => void;
-  onRefresh: () => void;
-  title?: string;
-  description?: string;
-  hideFilterButton?: boolean;
+  activeRequestsCount: number;
+  completedRequestsCount: number;
+  onCreateRequest: () => void;
+  totalNewApplicationsCount: number;
 }
 
-const DashboardHeader: React.FC<DashboardHeaderProps> = ({ 
-  showFilters, 
-  setShowFilters, 
-  onRefresh,
-  title = "Available Gigs",
-  description = "Browse and apply for help requests from clients",
-  hideFilterButton = false
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({
+  activeRequestsCount,
+  completedRequestsCount,
+  onCreateRequest,
+  totalNewApplicationsCount,
 }) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-border/30">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold">{title}</h2>
-          </div>
-          <p className="text-muted-foreground text-sm mt-1">
-            {description}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          {!hideFilterButton && (
-            <Button 
-              variant="outline"
-              size="sm"
-              className={`flex items-center gap-1 h-9 ${showFilters ? 'bg-primary/10 text-primary' : ''}`}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="h-4 w-4" />
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
-            </Button>
-          )}
-          <Button 
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1 h-9"
-            onClick={onRefresh}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
-        </div>
+    <div className="flex justify-between items-center mb-6">
+      <div>
+        <h2 className="text-xl font-semibold">Your Help Requests</h2>
+        <p className="text-sm text-muted-foreground">
+          {activeRequestsCount} active, {completedRequestsCount} completed
+        </p>
       </div>
+      
+      <Button onClick={onCreateRequest} size="sm">
+        <PlusCircle className="h-4 w-4 mr-2" />
+        New Help Request
+        {totalNewApplicationsCount > 0 && (
+          <Badge variant="secondary" className="ml-2 bg-primary text-white">
+            {totalNewApplicationsCount}
+          </Badge>
+        )}
+      </Button>
     </div>
   );
 };

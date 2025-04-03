@@ -1,198 +1,90 @@
 
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from './components/ui/toaster';
-
-import Index from './pages/Index';
-import Search from './pages/Search';
-import ProductDetail from './pages/ProductDetail';
+import { Toaster as SonnerToaster } from 'sonner';
+import { ThemeProvider } from './components/ui/theme-provider';
 import ProtectedRoute from './components/ProtectedRoute';
-import Profile from './pages/Profile';
-import ClientProfile from './pages/ClientProfile';
-import ClientOnboarding from './pages/onboarding/ClientOnboarding';
-import DeveloperOnboarding from './pages/onboarding/DeveloperOnboarding';
-import GetHelpPage from './pages/GetHelpPage';
+import ErrorBoundary from './components/errors/ErrorBoundary';
+
+// Pages
+import Index from './pages/Index';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import NotFound from './pages/NotFound';
-import DeveloperDashboard from './pages/DeveloperDashboard';
-import DeveloperWelcomePage from './pages/DeveloperWelcomePage';
+import ClientProfile from './pages/ClientProfile';
 import ClientDashboard from './pages/ClientDashboard';
-import ClientLanding from './pages/ClientLanding';
+import DeveloperDashboard from './pages/DeveloperDashboard';
+import GetHelpPage from './pages/GetHelpPage';
+import NotFound from './pages/NotFound';
+import Profile from './pages/Profile';
+import Search from './pages/Search';
+import ProductDetail from './pages/ProductDetail';
 import DeveloperRegistration from './pages/DeveloperRegistration';
-import SessionHistory from './pages/SessionHistory';
+import DeveloperWelcomePage from './pages/DeveloperWelcomePage';
+import ClientLanding from './pages/ClientLanding';
 import DeveloperTicketDetail from './pages/DeveloperTicketDetail';
 import MyApplicationsPage from './pages/MyApplicationsPage';
+import SessionHistory from './pages/SessionHistory';
 
-import { AuthProvider } from './contexts/auth';
-import { HelpRequestProvider } from './contexts/HelpRequestContext';
+// Onboarding
+import ClientOnboarding from './pages/onboarding/ClientOnboarding';
+import DeveloperOnboarding from './pages/onboarding/DeveloperOnboarding';
 
-import './App.css';
+// Create QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
-function App() {
-  // Check if dark mode is enabled
-  const [darkMode, setDarkMode] = React.useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
-    return false;
-  });
-
-  React.useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('theme', darkMode ? 'dark' : 'light');
-    }
-  }, [darkMode]);
-
+const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <HelpRequestProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            
-            {/* Route for developer registration */}
-            <Route path="/developer" element={<DeveloperRegistration />} />
-            
-            {/* Add this alias route to prevent 404 */}
-            <Route path="/developer-registration" element={<DeveloperRegistration />} />
-            
-            <Route path="/search" element={<Search />} />
-            <Route path="/product/:id" element={<ProductDetail />} />
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/client-profile" 
-              element={
-                <ProtectedRoute>
-                  <ClientProfile />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/get-help/*" element={<GetHelpPage />} />
-            
-            {/* Client Routes - Standardized with dashboard suffix */}
-            <Route 
-              path="/client-dashboard" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientLanding />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/client" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientLanding />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/client-tickets" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Keep old route for backward compatibility */}
-            <Route 
-              path="/ticket-dashboard" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Onboarding Routes */}
-            <Route 
-              path="/onboarding/client" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientOnboarding />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/onboarding/developer" 
-              element={
-                <ProtectedRoute userType="developer">
-                  <DeveloperOnboarding />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Developer Routes - Standardized similar to client routes */}
-            <Route 
-              path="/developer-dashboard" 
-              element={
-                <ProtectedRoute requiredUserType="developer">
-                  <DeveloperWelcomePage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Route for developer tickets (Gigs) */}
-            <Route 
-              path="/developer-tickets" 
-              element={
-                <ProtectedRoute requiredUserType="developer">
-                  <DeveloperDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* New route for My Applications */}
-            <Route 
-              path="/my-applications" 
-              element={
-                <ProtectedRoute requiredUserType="developer">
-                  <MyApplicationsPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Route for developer ticket details */}
-            <Route 
-              path="/developer/tickets/:ticketId" 
-              element={
-                <ProtectedRoute requiredUserType="developer">
-                  <DeveloperTicketDetail />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/session-history" 
-              element={
-                <ProtectedRoute>
-                  <SessionHistory />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-        </BrowserRouter>
-      </HelpRequestProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+          <Router>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
+              
+              {/* Client Routes */}
+              <Route path="/client-landing" element={<ClientLanding />} />
+              <Route path="/client-profile" element={<ProtectedRoute element={<ClientProfile />} />} />
+              <Route path="/client-dashboard" element={<ProtectedRoute element={<ClientDashboard />} />} />
+              <Route path="/get-help" element={<GetHelpPage />} />
+              <Route path="/get-help/request/:id" element={<ProtectedRoute element={<DeveloperTicketDetail />} />} />
+              
+              {/* Developer Routes */}
+              <Route path="/developer-welcome" element={<DeveloperWelcomePage />} />
+              <Route path="/developer-register" element={<DeveloperRegistration />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/developer-dashboard" element={<ProtectedRoute element={<DeveloperDashboard />} />} />
+              <Route path="/my-applications" element={<ProtectedRoute element={<MyApplicationsPage />} />} />
+              <Route path="/sessions-history" element={<ProtectedRoute element={<SessionHistory />} />} />
+              
+              {/* Onboarding Routes */}
+              <Route path="/onboarding/client" element={<ProtectedRoute element={<ClientOnboarding />} />} />
+              <Route path="/onboarding/developer" element={<ProtectedRoute element={<DeveloperOnboarding />} />} />
+              
+              {/* Product Routes */}
+              <Route path="/products/:id" element={<ProductDetail />} />
+              
+              {/* 404 route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+            <SonnerToaster position="top-right" richColors closeButton />
+          </Router>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
-}
+};
 
 export default App;
