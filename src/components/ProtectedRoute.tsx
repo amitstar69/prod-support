@@ -5,7 +5,8 @@ import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  element?: React.ReactElement;
   userType?: 'developer' | 'client';
   requiredUserType?: 'developer' | 'client';
   allowPublicAccess?: boolean;
@@ -13,6 +14,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
+  element,
   userType, // This property is deprecated, use requiredUserType instead
   requiredUserType,
   allowPublicAccess = false
@@ -32,7 +34,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Allow public access routes to be viewed by anyone
   if (allowPublicAccess) {
-    return <>{children}</>;
+    return <>{children || element}</>;
   }
 
   // Redirect unauthenticated users to login
@@ -47,7 +49,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // User is authenticated and has the correct role
-  return <>{children}</>;
+  return <>{children || element}</>;
 };
 
 export default ProtectedRoute;

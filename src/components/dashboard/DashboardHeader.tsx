@@ -1,40 +1,43 @@
 
 import React from 'react';
+import { Filter } from 'lucide-react';
 import { Button } from '../ui/button';
-import { PlusCircle } from 'lucide-react';
-import { Badge } from '../ui/badge';
 
 interface DashboardHeaderProps {
-  activeRequestsCount: number;
-  completedRequestsCount: number;
-  onCreateRequest: () => void;
-  totalNewApplicationsCount: number;
+  title: string;
+  description: string;
+  showFilters?: boolean;
+  setShowFilters?: (show: boolean) => void;
+  onRefresh?: (showLoading?: boolean) => Promise<void>;
+  hideFilterButton?: boolean;
 }
 
-const DashboardHeader: React.FC<DashboardHeaderProps> = ({
-  activeRequestsCount,
-  completedRequestsCount,
-  onCreateRequest,
-  totalNewApplicationsCount,
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ 
+  title,
+  description,
+  showFilters,
+  setShowFilters,
+  onRefresh,
+  hideFilterButton = false
 }) => {
   return (
-    <div className="flex justify-between items-center mb-6">
+    <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h2 className="text-xl font-semibold">Your Help Requests</h2>
-        <p className="text-sm text-muted-foreground">
-          {activeRequestsCount} active, {completedRequestsCount} completed
-        </p>
+        <h1 className="text-2xl font-semibold">{title}</h1>
+        <p className="text-muted-foreground mt-1">{description}</p>
       </div>
       
-      <Button onClick={onCreateRequest} size="sm">
-        <PlusCircle className="h-4 w-4 mr-2" />
-        New Help Request
-        {totalNewApplicationsCount > 0 && (
-          <Badge variant="secondary" className="ml-2 bg-primary text-white">
-            {totalNewApplicationsCount}
-          </Badge>
-        )}
-      </Button>
+      {!hideFilterButton && setShowFilters && (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2 self-start sm:self-center"
+        >
+          <Filter className="h-4 w-4" />
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </Button>
+      )}
     </div>
   );
 };

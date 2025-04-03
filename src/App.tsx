@@ -51,26 +51,89 @@ const App: React.FC = () => {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
+              <Route 
+                path="/profile" 
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } 
+              />
               
               {/* Client Routes */}
               <Route path="/client-landing" element={<ClientLanding />} />
-              <Route path="/client-profile" element={<ProtectedRoute element={<ClientProfile />} />} />
-              <Route path="/client-dashboard" element={<ProtectedRoute element={<ClientDashboard />} />} />
+              <Route 
+                path="/client-profile" 
+                element={
+                  <ProtectedRoute>
+                    <ClientProfile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/client-dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <ClientDashboard />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="/get-help" element={<GetHelpPage />} />
-              <Route path="/get-help/request/:id" element={<ProtectedRoute element={<DeveloperTicketDetail />} />} />
+              <Route 
+                path="/get-help/request/:id" 
+                element={
+                  <ProtectedRoute>
+                    <DeveloperTicketDetail />
+                  </ProtectedRoute>
+                } 
+              />
               
               {/* Developer Routes */}
               <Route path="/developer-welcome" element={<DeveloperWelcomePage />} />
               <Route path="/developer-register" element={<DeveloperRegistration />} />
               <Route path="/search" element={<Search />} />
-              <Route path="/developer-dashboard" element={<ProtectedRoute element={<DeveloperDashboard />} />} />
-              <Route path="/my-applications" element={<ProtectedRoute element={<MyApplicationsPage />} />} />
-              <Route path="/sessions-history" element={<ProtectedRoute element={<SessionHistory />} />} />
+              <Route 
+                path="/developer-dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <DeveloperDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/my-applications" 
+                element={
+                  <ProtectedRoute>
+                    <MyApplicationsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/sessions-history" 
+                element={
+                  <ProtectedRoute>
+                    <SessionHistory />
+                  </ProtectedRoute>
+                } 
+              />
               
               {/* Onboarding Routes */}
-              <Route path="/onboarding/client" element={<ProtectedRoute element={<ClientOnboarding />} />} />
-              <Route path="/onboarding/developer" element={<ProtectedRoute element={<DeveloperOnboarding />} />} />
+              <Route 
+                path="/onboarding/client" 
+                element={
+                  <ProtectedRoute>
+                    <ClientOnboarding />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/onboarding/developer" 
+                element={
+                  <ProtectedRoute>
+                    <DeveloperOnboarding />
+                  </ProtectedRoute>
+                } 
+              />
               
               {/* Product Routes */}
               <Route path="/products/:id" element={<ProductDetail />} />
