@@ -21,6 +21,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     ? product.availability 
     : false;
   
+  // Get developer's name (either full name or username as fallback)
+  const developerName = product.name || 'Developer';
+  
   // Safely handle image loading
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.target as HTMLImageElement;
@@ -62,7 +65,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           ) : (
             <img
               src={imageUrl}
-              alt={product.name || 'Developer'}
+              alt={developerName}
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               loading="lazy"
               onError={handleImageError}
@@ -82,7 +85,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
           
           <h3 className="text-base font-medium text-foreground line-clamp-1 mb-2">
-            {product.name || 'Developer'}
+            {developerName}
           </h3>
           
           {displaySkills.length > 0 && (
