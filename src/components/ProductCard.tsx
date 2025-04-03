@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types/product';
-import { Heart, Star, UserCircle } from 'lucide-react';
+import { Heart, UserCircle } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -78,10 +78,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <p className="text-sm font-medium text-primary">
               {product.category ? (product.category.charAt(0).toUpperCase() + product.category.slice(1)) : 'Developer'}
             </p>
-            <div className="flex items-center text-amber-500">
-              <Star className="h-3.5 w-3.5 fill-current" />
-              <span className="ml-1 text-xs font-medium">{product.rating || 4.5}</span>
-            </div>
           </div>
           
           <h3 className="text-base font-bold text-gray-900 line-clamp-1 mb-2">
