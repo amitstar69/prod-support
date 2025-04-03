@@ -11,6 +11,7 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { createSampleDeveloperProfiles } from '../utils/developerDataFallback';
 import { toast } from 'sonner';
+import DeveloperPagination from '../components/ui/DeveloperPagination';
 
 const commonSkills = [
   'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 
@@ -44,7 +45,6 @@ const Search: React.FC = () => {
   const categoryFilter = queryParams.get('category') || '';
   
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  const [hasAttemptedDevFallback, setHasAttemptedDevFallback] = useState(false);
   
   const initialFilters: DeveloperFilters = {
     selectedCategories: categoryFilter ? [categoryFilter] : [],
@@ -62,9 +62,9 @@ const Search: React.FC = () => {
     updateFilter,
     isLoading,
     error,
-    loadMore,
-    hasMore,
-    refreshDevelopers
+    refreshDevelopers,
+    pagination,
+    setPage
   } = useDeveloperSearch(initialFilters);
   
   useEffect(() => {
@@ -183,7 +183,7 @@ const Search: React.FC = () => {
             <p className="text-sm text-muted-foreground">
               {isLoading 
                 ? 'Loading developers...' 
-                : `Showing ${filteredDevelopers.length} results`
+                : `Showing ${filteredDevelopers.length} of ${pagination.totalCount} developers`
               }
             </p>
             <button
@@ -381,7 +381,7 @@ const Search: React.FC = () => {
               <p className="text-sm text-muted-foreground">
                 {isLoading 
                   ? 'Loading developers...' 
-                  : `Showing ${filteredDevelopers.length} results`
+                  : `Showing ${filteredDevelopers.length} of ${pagination.totalCount} developers`
                 }
               </p>
               {hasActiveFilters && (
@@ -394,7 +394,7 @@ const Search: React.FC = () => {
               )}
             </div>
             
-            {isLoading ? (
+            {isLoading && pagination.page === 1 ? (
               <div className="py-20 text-center">
                 <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
                 <p className="text-muted-foreground">Loading developers...</p>
@@ -414,17 +414,12 @@ const Search: React.FC = () => {
               <>
                 <ProductGrid products={filteredDevelopers as Product[]} />
                 
-                {hasMore && (
-                  <div className="mt-8 flex justify-center">
-                    <Button 
-                      onClick={loadMore}
-                      variant="outline"
-                      className="px-8"
-                    >
-                      Load More
-                    </Button>
-                  </div>
-                )}
+                <DeveloperPagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  onPageChange={setPage}
+                  isLoading={isLoading}
+                />
               </>
             ) : (
               <div className="py-20 text-center">
@@ -441,6 +436,13 @@ const Search: React.FC = () => {
                 >
                   Clear all filters and refresh
                 </button>
+              </div>
+            )}
+            
+            {isLoading && pagination.page > 1 && (
+              <div className="py-8 text-center">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                <p className="text-sm text-muted-foreground">Loading more developers...</p>
               </div>
             )}
           </div>
