@@ -1,6 +1,6 @@
 
-// Remove the import and re-export since we're declaring AuthState directly in this file
-// This was causing the conflict
+// Import the Developer and Client types from the product types file
+import { Developer, Client } from '../../types/product';
 
 export interface AuthState {
   isAuthenticated: boolean;
