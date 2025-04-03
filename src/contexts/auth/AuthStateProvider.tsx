@@ -71,13 +71,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log('AuthProvider: Auth state changed:', authState);
   }, [authState]);
 
-  // Prepare context value using imported functions instead of require
+  // Prepare context value with imported functions
   const contextValue: AuthContextType = {
     authState,
     setAuthState,
     logout: logoutUser,
     login: (email, password, userType) => login(email, password, userType, setAuthState),
-    register: (userData, userType) => register(userData, userType, [], [], () => {}, () => {}, setAuthState),
+    register: (userData, userType, skills = [], categories = [], onSuccess = () => {}, onError = () => {}) => {
+      return register(userData, userType, skills, categories, onSuccess, onError, setAuthState);
+    },
     isLoading
   };
 

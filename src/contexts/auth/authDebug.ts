@@ -1,111 +1,61 @@
 
 import { supabase } from '../../integrations/supabase/client';
 
-// Debug function to check if a profile exists
-export const debugCheckProfileExists = async (userId: string): Promise<{exists: boolean, error?: string, profileData?: any, typeProfileExists?: boolean, typeProfileData?: any, typeProfileError?: any}> => {
-  if (!supabase) {
-    console.error('Supabase client not initialized');
-    return { exists: false, error: 'Supabase client not initialized' };
+export const debugCheckProfileExists = async (userId: string): Promise<boolean> => {
+  if (!userId) {
+    console.error('debugCheckProfileExists: No userId provided');
+    return false;
   }
-
+  
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, user_type')
+      .select('id')
       .eq('id', userId)
       .single();
-    
+      
     if (error) {
-      console.error('Error checking profile:', error.message);
-      return { exists: false, error: error.message };
+      console.error('debugCheckProfileExists error:', error);
+      return false;
     }
     
-    // If profile exists, also check for type-specific profile
-    if (data) {
-      const { data: typeProfileData, error: typeProfileError } = data.user_type === 'developer' 
-        ? await supabase.from('developer_profiles').select('*').eq('id', userId).single()
-        : await supabase.from('client_profiles').select('*').eq('id', userId).single();
-        
-      return { 
-        exists: true, 
-        profileData: data,
-        typeProfileExists: !!typeProfileData,
-        typeProfileData,
-        typeProfileError: typeProfileError?.message
-      };
-    }
-    
-    return { exists: false };
-  } catch (error: any) {
-    console.error('Exception checking profile:', error);
-    return { exists: false, error: error.message };
+    return !!data;
+  } catch (error) {
+    console.error('Exception in debugCheckProfileExists:', error);
+    return false;
   }
 };
 
-// Debug function to create a profile
-export const debugCreateProfile = async (
-  userId: string, 
-  userType: 'developer' | 'client',
-  email: string,
-  name?: string
-): Promise<{success: boolean, error?: string, baseProfileCreated?: boolean, typeProfileCreated?: boolean, profileData?: any, typeProfileData?: any}> => {
-  if (!supabase) {
-    console.error('Supabase client not initialized');
-    return { success: false, error: 'Supabase client not initialized' };
+export const debugCreateProfile = async (userId: string, userType: 'developer' | 'client', email?: string): Promise<boolean> => {
+  if (!userId) {
+    console.error('debugCreateProfile: No userId provided');
+    return false;
   }
-
+  
   try {
-    console.log(`Creating profile for user ID: ${userId}, type: ${userType}`);
-    
-    // Create base profile with correctly typed properties
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: userId,
-        user_type: userType,
-        email: email,
-        name: name || email.split('@')[0],
-        image: '/placeholder.svg',
-        profile_completed: false,
-        username: (name || email.split('@')[0]).toLowerCase().replace(/\s+/g, ''),
-        joined_date: new Date().toISOString()
-      })
-      .select();
-    
-    if (profileError) {
-      console.error('Error creating base profile:', profileError.message);
-      return { success: false, error: profileError.message };
-    }
-    
-    // Create type-specific profile
-    const tableName = userType === 'developer' ? 'developer_profiles' : 'client_profiles';
-    const { data: typeProfileData, error: typeProfileError } = await supabase
-      .from(tableName)
-      .insert({
-        id: userId,
-      })
-      .select();
-    
-    if (typeProfileError) {
-      console.error(`Error creating ${userType} profile:`, typeProfileError.message);
-      return { 
-        success: true, 
-        baseProfileCreated: true,
-        typeProfileCreated: false,
-        profileData,
-        error: typeProfileError.message 
-      };
-    }
-    
-    return { 
-      success: true, 
-      baseProfileCreated: true,
-      typeProfileCreated: true,
-      profileData,
-      typeProfileData
+    // Generate default profile data
+    const profileData = {
+      id: userId,
+      user_type: userType,
+      name: 'New User',
+      email: email || `user_${userId.slice(0, 8)}@example.com`,
+      description: '',
+      image: '/placeholder.svg'
     };
-  } catch (error: any) {
-    console.error('Exception creating profile:', error);
-    return { success: false, error: error.message };
+    
+    const { error } = await supabase
+      .from('profiles')
+      .insert([profileData]);
+      
+    if (error) {
+      console.error('debugCreateProfile error:', error);
+      return false;
+    }
+    
+    console.log('Debug profile created successfully:', profileData);
+    return true;
+  } catch (error) {
+    console.error('Exception in debugCreateProfile:', error);
+    return false;
   }
 };

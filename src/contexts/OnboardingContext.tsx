@@ -20,6 +20,10 @@ interface OnboardingContextType {
   setStepData: (step: number, data: any) => void;
   completeOnboarding: () => Promise<void>;
   saveProgress: (data: any) => Promise<void>;
+  userData: any;
+  updateUserDataAndProceed: (data: any) => Promise<void>;
+  isLoading: boolean;
+  skipOnboarding: () => Promise<void>;
 }
 
 // Create context with default values
@@ -35,7 +39,11 @@ const OnboardingContext = createContext<OnboardingContextType>({
   goToStep: () => {},
   setStepData: () => {},
   completeOnboarding: async () => {},
-  saveProgress: async () => {}
+  saveProgress: async () => {},
+  userData: null,
+  updateUserDataAndProceed: async () => {},
+  isLoading: false,
+  skipOnboarding: async () => {}
 });
 
 // Hook to use the onboarding context
@@ -48,6 +56,8 @@ export const OnboardingProvider: React.FC<{
   userType: 'client' | 'developer';
 }> = ({ children, totalSteps, userType }) => {
   const { authState } = useAuth();
+  const [userData, setUserData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [state, setState] = useState<OnboardingState>({
     currentStep: 1,
     totalSteps,
@@ -97,6 +107,7 @@ export const OnboardingProvider: React.FC<{
   const completeOnboarding = async () => {
     if (authState.userId) {
       try {
+        setIsLoading(true);
         // Mark onboarding as completed
         const userData = {
           profileCompleted: true,
@@ -111,16 +122,54 @@ export const OnboardingProvider: React.FC<{
           ...prev,
           isCompleted: true
         }));
+        
+        return Promise.resolve();
       } catch (error) {
         console.error('Error completing onboarding:', error);
+        return Promise.reject(error);
+      } finally {
+        setIsLoading(false);
       }
     }
+    return Promise.resolve();
+  };
+
+  // Skip onboarding process
+  const skipOnboarding = async () => {
+    if (authState.userId) {
+      try {
+        setIsLoading(true);
+        const userData = {
+          profileCompleted: true,
+          onboardingSkipped: true,
+          onboardingCompletedAt: new Date().toISOString(),
+          profileCompletionPercentage: 50 // Partial completion
+        };
+        
+        await updateUserData(authState.userId, userData);
+        invalidateUserDataCache(authState.userId);
+        
+        setState(prev => ({
+          ...prev,
+          isCompleted: true
+        }));
+        
+        return Promise.resolve();
+      } catch (error) {
+        console.error('Error skipping onboarding:', error);
+        return Promise.reject(error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    return Promise.resolve();
   };
 
   // Save progress during onboarding
   const saveProgress = async (data: any) => {
     if (authState.userId) {
       try {
+        setIsLoading(true);
         // Calculate completion percentage based on current step
         const completionPercentage = Math.round((state.currentStep / totalSteps) * 100);
         
@@ -131,9 +180,30 @@ export const OnboardingProvider: React.FC<{
         
         await updateUserData(authState.userId, userData);
         invalidateUserDataCache(authState.userId);
+        
+        return Promise.resolve();
       } catch (error) {
         console.error('Error saving onboarding progress:', error);
+        return Promise.reject(error);
+      } finally {
+        setIsLoading(false);
       }
+    }
+    return Promise.resolve();
+  };
+
+  // Combined function to update user data and proceed to next step
+  const updateUserDataAndProceed = async (data: any) => {
+    try {
+      setIsLoading(true);
+      await saveProgress(data);
+      goToNextStep();
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Error updating data and proceeding:', error);
+      return Promise.reject(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -146,7 +216,11 @@ export const OnboardingProvider: React.FC<{
         goToStep,
         setStepData,
         completeOnboarding,
-        saveProgress
+        saveProgress,
+        userData,
+        updateUserDataAndProceed,
+        isLoading,
+        skipOnboarding
       }}
     >
       {children}
