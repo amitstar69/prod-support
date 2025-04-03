@@ -30,7 +30,7 @@ export const fetchDevelopersWithPagination = async (
   try {
     const offset = (page - 1) * pageSize;
     
-    // Start building the query
+    // Start building the query - use correct foreign key referencing
     let query = supabase
       .from('profiles')
       .select(`
@@ -42,7 +42,7 @@ export const fetchDevelopersWithPagination = async (
         location,
         description,
         user_type,
-        developer_profiles:id (
+        developer_profiles!id (
           hourly_rate,
           minute_rate,
           category,
@@ -55,8 +55,7 @@ export const fetchDevelopersWithPagination = async (
           last_active
         )
       `, { count: 'exact' })
-      .eq('user_type', 'developer')
-      .is('developer_profiles.id', 'not.null');
+      .eq('user_type', 'developer');
 
     // Apply filters if provided
     if (filters) {
@@ -80,9 +79,6 @@ export const fetchDevelopersWithPagination = async (
       if (filters.availableOnly) {
         query = query.eq('developer_profiles.availability', true);
       }
-      
-      // Note: Skills and other array-based filters are more complex and would
-      // require custom SQL or RPC functions for optimal performance
     }
     
     // Add pagination
@@ -158,7 +154,7 @@ export const fetchDeveloperById = async (developerId: string): Promise<{
         location,
         description,
         user_type,
-        developer_profiles:id (
+        developer_profiles!id (
           hourly_rate,
           minute_rate,
           category,
@@ -230,5 +226,5 @@ export const fetchDeveloperById = async (developerId: string): Promise<{
   }
 };
 
-// Keep the old function for backward compatibility
-export { fetchDevelopers } from './developerSearch/fetchUtils';
+// Keep the old function for backward compatibility by forwarding the export
+export * from './developerSearch/fetchUtils';

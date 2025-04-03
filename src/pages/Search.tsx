@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -45,6 +46,7 @@ const Search: React.FC = () => {
   const categoryFilter = queryParams.get('category') || '';
   
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [hasAttemptedDevFallback, setHasAttemptedDevFallback] = useState(false);
   
   const initialFilters: DeveloperFilters = {
     selectedCategories: categoryFilter ? [categoryFilter] : [],
