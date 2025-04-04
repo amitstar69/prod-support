@@ -36,8 +36,8 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
       {/* Primary Navigation */}
       <nav className="flex items-center">
         <div className="flex space-x-1">
-          {/* Only show Find Help dropdown for authenticated clients */}
-          {isAuthenticated && userType === 'client' && (
+          {/* Only show Find Help dropdown for clients or non-authenticated users */}
+          {(!isAuthenticated || userType === 'client') && (
             <div className="relative group">
               <button className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors flex items-center">
                 Find Help
@@ -51,12 +51,14 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
                   >
                     Search Developers
                   </Link>
-                  <Link
-                    to="/get-help"
-                    className="block px-4 py-2 text-sm hover:bg-secondary transition-colors"
-                  >
-                    Get Instant Help
-                  </Link>
+                  {isAuthenticated && userType === 'client' && (
+                    <Link
+                      to="/get-help"
+                      className="block px-4 py-2 text-sm hover:bg-secondary transition-colors"
+                    >
+                      Get Instant Help
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -122,8 +124,8 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
 
       {/* Right Side - Search and Auth */}
       <div className="flex items-center space-x-3">
-        {/* Only show search for authenticated clients */}
-        {isAuthenticated && userType === 'client' && (
+        {/* Only show search for clients or non-authenticated users */}
+        {(!isAuthenticated || userType === 'client') && (
           <SearchBar 
             className="w-64" 
             placeholder="Find developers..." 

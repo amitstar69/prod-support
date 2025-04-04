@@ -2,22 +2,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Category } from '../types/product';
-import { categories as defaultCategories } from '../data/categories';
 
 interface CategoryListProps {
-  categories?: Category[];
+  categories: Category[];
 }
 
-const CategoryList: React.FC<CategoryListProps> = ({ categories = defaultCategories }) => {
-  if (!categories) {
-    return (
-      <div className="text-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-2 text-muted-foreground">Loading categories...</p>
-      </div>
-    );
-  }
-
+const CategoryList: React.FC<CategoryListProps> = ({ categories }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
       {categories.map((category) => (
@@ -26,7 +16,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ categories = defaultCategor
           to={`/search?category=${category.id}`}
           className="group relative overflow-hidden rounded-xl aspect-[4/3] shadow-sm card-hover"
         >
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10 z-10"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/5 z-10"></div>
           <img 
             src={category.image} 
             alt={category.name}
@@ -36,7 +26,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ categories = defaultCategor
             <h3 className="text-xl font-semibold text-white">{category.name}</h3>
             <p className="mt-1 text-sm text-white/80">
               <span className="relative inline-block">
-                Browse developers
+                Shop now 
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white/70 transition-all duration-300 group-hover:w-full"></span>
               </span>
             </p>

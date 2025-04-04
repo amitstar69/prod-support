@@ -7,14 +7,12 @@ interface SearchBarProps {
   className?: string;
   placeholder?: string;
   initialValue?: string;
-  onSearch?: (query: string) => void;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ 
   className = "", 
   placeholder = "Find a developer for support...",
-  initialValue = "",
-  onSearch
+  initialValue = ""
 }) => {
   const [query, setQuery] = useState(initialValue);
   const navigate = useNavigate();
@@ -22,11 +20,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      if (onSearch) {
-        onSearch(query.trim());
-      } else {
-        navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-      }
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
     }
   };
 
@@ -39,7 +33,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
-          className="w-full pl-10 pr-4 py-2 h-11 rounded-md border border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/10 bg-background transition-colors"
+          className="w-full pl-10 pr-4 py-2 h-9 rounded-md border border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/10 bg-background transition-colors text-sm"
         />
       </div>
     </form>

@@ -35,8 +35,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
   return (
     <div className="md:hidden border-t border-border/40">
       <div className="p-3">
-        {/* Only show search for authenticated clients */}
-        {isAuthenticated && userType === 'client' && (
+        {/* Only show search for client or non-authenticated users */}
+        {(!isAuthenticated || userType === 'client') && (
           <SearchBar
             placeholder="Find developers..."
             className="mb-4"
@@ -81,16 +81,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
                 Find Help
               </p>
               
-              {/* Only show search link for authenticated clients */}
-              {isAuthenticated && userType === 'client' && (
-                <Link
-                  to="/search"
-                  className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Search Developers
-                </Link>
-              )}
+              <Link
+                to="/search"
+                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Search Developers
+              </Link>
               
               {/* Only show Get Help for clients */}
               {isAuthenticated && userType === 'client' && (

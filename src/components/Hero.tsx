@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
@@ -33,22 +32,6 @@ const Hero: React.FC = () => {
   
   const handleBrowseRequests = () => {
     navigate('/developer-dashboard');
-  };
-
-  // Redirect search to login for non-authenticated users
-  const handleSearch = (query: string) => {
-    if (!isAuthenticated) {
-      toast.info('Please log in as a client to search for developers');
-      navigate('/login', { state: { returnTo: '/search' } });
-      return;
-    }
-    
-    if (isAuthenticated && userType !== 'client') {
-      toast.info('Only clients can search for developers');
-      return;
-    }
-    
-    navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
   return (
@@ -104,7 +87,6 @@ const Hero: React.FC = () => {
             <SearchBar 
               className="shadow-md" 
               placeholder="Search for any development service..."
-              onSearch={handleSearch}
             />
           </div>
           
