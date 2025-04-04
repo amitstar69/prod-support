@@ -1,116 +1,95 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Star, Clock, MapPin } from 'lucide-react';
+import { Badge } from './ui/badge';
+import { Card, CardContent, CardFooter } from './ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Product } from '../types/product';
-import { Heart, UserCircle } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
+  featuredSize?: 'normal' | 'large';
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  // Ensure we have valid data with fallbacks
-  const displaySkills = product.skills || [];
-  
-  const formattedHourlyRate = typeof product.hourlyRate === 'number' 
-    ? product.hourlyRate.toFixed(2) 
-    : '0.00';
-  
-  const isOnline = product.online === true;
-  const availability = typeof product.availability === 'boolean' 
-    ? product.availability 
-    : false;
-  
-  // Get developer's name (either full name or username as fallback)
-  const developerName = product.name || 'Developer';
-  
-  // Safely handle image loading
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    const target = e.target as HTMLImageElement;
-    target.src = '/placeholder.svg';
-    target.onerror = null; // Prevent infinite fallback loops
+const ProductCard: React.FC<ProductCardProps> = ({ product, featuredSize = 'normal' }) => {
+  const { 
+    id, 
+    name, 
+    hourlyRate, 
+    image, 
+    category, 
+    skills = [], 
+    rating, 
+    availability,
+    featured,
+    online,
+    lastActive,
+    location
+  } = product;
+
+  // Generate initials for avatar fallback
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
-  // Determine if we need to use a fallback image
-  const imageUrl = product.image && product.image !== '/placeholder.svg' 
-    ? product.image 
-    : '/placeholder.svg';
+  // Get displayed skills (limit to 3)
+  const displayedSkills = skills.slice(0, 3);
+  const hasMoreSkills = skills.length > 3;
 
   return (
-    <div 
-      className="group relative overflow-hidden rounded-xl bg-white border border-border/40 card-hover"
-    >
-      <div className="absolute top-3 right-3 z-10">
-        <button 
-          className="p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-sm hover:bg-white transition-colors"
-          aria-label="Add to wishlist"
-        >
-          <Heart className="h-4 w-4 text-foreground/70 hover:text-rose-500 transition-colors" />
-        </button>
-      </div>
-      
-      <Link to={`/products/${product.id}`} className="block">
-        <div className="aspect-square overflow-hidden bg-secondary/30 relative">
-          {isOnline && (
-            <div className="absolute top-3 left-3 z-10">
-              <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                Online now
-              </span>
+    <Card className={`overflow-hidden transition-shadow hover:shadow-md ${featured ? 'border-primary/50 bg-primary/5' : ''}`}>
+      <Link to={`/developer/${id}`} className="block">
+        <div className="p-6">
+          <div className="flex items-start gap-4">
+            <Avatar className={`border-2 border-background ${featuredSize === 'large' ? 'h-16 w-16' : 'h-12 w-12'}`}>
+              <AvatarImage src={image} alt={name} />
+              <AvatarFallback>{getInitials(name)}</AvatarFallback>
+            </Avatar>
+            
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium text-lg leading-none line-clamp-1">{name}</h3>
+                <div className="flex items-center">
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  <span className="ml-1 text-sm">{rating}</span>
+                </div>
+              </div>
+              
+              <p className="text-muted-foreground">{category}</p>
+              
+              <div className="flex flex-wrap gap-2 mt-2">
+                {displayedSkills.map((skill, i) => (
+                  <Badge key={i} variant="secondary" className="px-1.5 py-0 text-xs">{skill}</Badge>
+                ))}
+                {hasMoreSkills && <Badge variant="outline" className="px-1.5 py-0 text-xs">+{skills.length - 3}</Badge>}
+              </div>
             </div>
-          )}
-          {imageUrl === '/placeholder.svg' ? (
-            <div className="h-full w-full flex items-center justify-center bg-secondary/30">
-              <UserCircle className="h-32 w-32 text-muted-foreground/40" />
-            </div>
-          ) : (
-            <img
-              src={imageUrl}
-              alt={developerName}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-              loading="lazy"
-              onError={handleImageError}
-            />
-          )}
+          </div>
         </div>
         
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-medium text-primary">
-              {product.category ? (product.category.charAt(0).toUpperCase() + product.category.slice(1)) : 'Developer'}
-            </p>
+        <CardFooter className="flex justify-between bg-muted/50 px-6 py-3">
+          <div className="flex items-center text-sm">
+            <MapPin className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
+            <span>{location || 'Global'}</span>
           </div>
           
-          <h3 className="text-base font-bold text-gray-900 line-clamp-1 mb-2">
-            {developerName}
-          </h3>
-          
-          {displaySkills.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-3">
-              {displaySkills.slice(0, 3).map((skill, index) => (
-                <span 
-                  key={index} 
-                  className="px-1.5 py-0.5 text-xs rounded-full bg-secondary/70 text-foreground/80"
-                >
-                  {skill}
-                </span>
-              ))}
-              {displaySkills.length > 3 && (
-                <span className="px-1.5 py-0.5 text-xs rounded-full bg-secondary/70 text-foreground/80">
-                  +{displaySkills.length - 3}
-                </span>
-              )}
-            </div>
-          )}
-          
-          <div className="flex items-center justify-between">
-            <p className="text-base font-semibold text-primary">${formattedHourlyRate}/hr</p>
-            <div className={`text-xs px-2 py-1 rounded-full ${availability ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-              {availability ? 'Available' : 'Unavailable'}
-            </div>
+          <div className="flex items-center space-x-2">
+            {online && (
+              <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-500 border-green-500/20 text-xs">
+                Online
+              </Badge>
+            )}
+            <div className="text-lg font-medium">${hourlyRate}/hr</div>
           </div>
-        </div>
+        </CardFooter>
       </Link>
-    </div>
+    </Card>
   );
 };
 

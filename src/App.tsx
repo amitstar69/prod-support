@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
@@ -6,6 +5,7 @@ import { Toaster } from './components/ui/toaster';
 import Index from './pages/Index';
 import Search from './pages/Search';
 import ProductDetail from './pages/ProductDetail';
+import DeveloperProfilePage from './pages/DeveloperProfilePage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Profile from './pages/Profile';
 import ClientProfile from './pages/ClientProfile';
@@ -66,6 +66,10 @@ function App() {
             
             <Route path="/search" element={<Search />} />
             <Route path="/product/:id" element={<ProductDetail />} />
+            
+            {/* New route for developer profile */}
+            <Route path="/developer/:id" element={<DeveloperProfilePage />} />
+            
             <Route 
               path="/profile" 
               element={
