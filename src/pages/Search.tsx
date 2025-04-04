@@ -1,6 +1,5 @@
-
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import SearchBar from '../components/SearchBar';
 import ProductGrid from '../components/ProductGrid';
@@ -8,13 +7,20 @@ import CategoryList from '../components/CategoryList';
 import { useAuth } from '../contexts/auth';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
+import { categories } from '../data/categories';
+import { searchDevelopers, getDevelopers } from '../data/products';
+import { Developer } from '../types/product';
 
 const Search: React.FC = () => {
   const { isAuthenticated, userType } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [developers, setDevelopers] = useState<Developer[]>([]);
+  
+  const query = searchParams.get('q') || '';
+  const categoryId = searchParams.get('category');
 
   useEffect(() => {
-    // Redirect if not authenticated or not a client
     if (!isAuthenticated) {
       toast.error('Please log in as a client to find developers');
       navigate('/login', { state: { returnTo: '/search' } });
@@ -25,10 +31,18 @@ const Search: React.FC = () => {
       toast.error('Only clients can search for developers');
       navigate('/');
     }
-  }, [isAuthenticated, userType, navigate]);
+    
+    if (query) {
+      setDevelopers(searchDevelopers(query));
+    } else if (categoryId) {
+      setDevelopers(getDevelopers().filter(dev => dev.category === categoryId));
+    } else {
+      setDevelopers(getDevelopers());
+    }
+  }, [isAuthenticated, userType, navigate, query, categoryId]);
 
   if (!isAuthenticated || userType !== 'client') {
-    return null; // Don't render anything while redirecting
+    return null;
   }
 
   return (
@@ -42,13 +56,13 @@ const Search: React.FC = () => {
         </div>
 
         <div className="max-w-3xl mx-auto mb-8">
-          <SearchBar />
+          <SearchBar initialValue={query} />
         </div>
 
-        <CategoryList />
+        <CategoryList categories={categories} />
         
         <div className="mt-12">
-          <ProductGrid />
+          <ProductGrid products={developers} />
         </div>
       </div>
     </Layout>
