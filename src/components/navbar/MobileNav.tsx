@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, LogIn, Search } from 'lucide-react';
+import { User, LogIn, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import LogoutButton from './LogoutButton';
 import SearchBar from '../SearchBar';
@@ -14,6 +14,15 @@ interface MobileNavProps {
 export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
   const { isAuthenticated, userType } = useAuth();
   const navigate = useNavigate();
+  const [expandedMenus, setExpandedMenus] = React.useState<string[]>([]);
+  
+  const toggleMenu = (menuName: string) => {
+    setExpandedMenus(prev => 
+      prev.includes(menuName) 
+        ? prev.filter(item => item !== menuName)
+        : [...prev, menuName]
+    );
+  };
   
   const handleLoginClick = () => {
     navigate('/login');
@@ -27,6 +36,11 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
   
   const handleProfileClick = () => {
     navigate(userType === 'developer' ? '/profile' : '/client-profile');
+    setIsOpen(false);
+  };
+  
+  const handleNavigation = (path: string) => {
+    navigate(path);
     setIsOpen(false);
   };
 
@@ -44,95 +58,127 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
         )}
         
         <div className="space-y-1">
+          <Link 
+            to="/"
+            className="block px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            Home
+          </Link>
+          
           {/* Show different sections based on user type */}
-          {userType === 'developer' ? (
-            // Developer navigation section
+          {isAuthenticated && userType === 'client' && (
             <>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
-                Developer Menu
-              </p>
+              <div className="mt-4">
+                <button 
+                  onClick={() => toggleMenu('find-talent')}
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+                >
+                  <span className="font-medium">Find Talent</span>
+                  {expandedMenus.includes('find-talent') ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+                
+                {expandedMenus.includes('find-talent') && (
+                  <div className="ml-4 pl-2 border-l border-border/40 mt-1">
+                    <Link
+                      to="/search"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Browse Developers
+                    </Link>
+                    <Link
+                      to="/get-help"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Get Instant Help
+                    </Link>
+                  </div>
+                )}
+              </div>
+              
+              <Link
+                to="/client-dashboard"
+                className="block px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Dashboard
+              </Link>
+              
+              <Link
+                to="/client-profile"
+                className="block px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Profile
+              </Link>
+              
+              <Link
+                to="/session-history"
+                className="block px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Session History
+              </Link>
+            </>
+          )}
+          
+          {isAuthenticated && userType === 'developer' && (
+            <>
+              <div className="mt-4">
+                <button 
+                  onClick={() => toggleMenu('find-work')}
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-md hover:bg-secondary transition-colors"
+                >
+                  <span className="font-medium">Find Work</span>
+                  {expandedMenus.includes('find-work') ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+                
+                {expandedMenus.includes('find-work') && (
+                  <div className="ml-4 pl-2 border-l border-border/40 mt-1">
+                    <Link
+                      to="/developer-tickets"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Browse Available Gigs
+                    </Link>
+                    <Link
+                      to="/my-applications"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      My Applications
+                    </Link>
+                  </div>
+                )}
+              </div>
               
               <Link
                 to="/developer-dashboard"
-                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                className="block px-3 py-2 rounded-md hover:bg-secondary transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 My Dashboard
               </Link>
+              
               <Link
-                to="/developer-tickets"
-                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+                to="/profile"
+                className="block px-3 py-2 rounded-md hover:bg-secondary transition-colors"
                 onClick={() => setIsOpen(false)}
               >
-                Gigs
-              </Link>
-              <Link
-                to="/my-applications"
-                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                My Applications
+                Profile
               </Link>
             </>
-          ) : (
-            // Client navigation section or non-authenticated
-            <>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
-                Find Help
-              </p>
-              
-              {/* Only show search link for authenticated clients */}
-              {isAuthenticated && userType === 'client' && (
-                <Link
-                  to="/search"
-                  className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Search Developers
-                </Link>
-              )}
-              
-              {/* Only show Get Help for clients */}
-              {isAuthenticated && userType === 'client' && (
-                <Link
-                  to="/get-help"
-                  className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Get Instant Help
-                </Link>
-              )}
-              
-              {userType === 'client' && (
-                <>
-                  <Link
-                    to="/client-dashboard"
-                    className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    to="/client-tickets"
-                    className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Tickets
-                  </Link>
-                </>
-              )}
-            </>
-          )}
-          
-          {/* Session History - only show for clients, not developers */}
-          {isAuthenticated && userType === 'client' && (
-            <Link
-              to="/session-history"
-              className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              Session History
-            </Link>
           )}
         </div>
         
