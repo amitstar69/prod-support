@@ -64,11 +64,27 @@ function App() {
             {/* Add this alias route to prevent 404 */}
             <Route path="/developer-registration" element={<DeveloperRegistration />} />
             
-            <Route path="/search" element={<Search />} />
+            {/* Protected search route - only for clients */}
+            <Route 
+              path="/search" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <Search />
+                </ProtectedRoute>
+              } 
+            />
+            
             <Route path="/product/:id" element={<ProductDetail />} />
             
-            {/* New route for developer profile */}
-            <Route path="/developer/:id" element={<DeveloperProfilePage />} />
+            {/* Also protect the developer profile view */}
+            <Route 
+              path="/developer/:id" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <DeveloperProfilePage />
+                </ProtectedRoute>
+              } 
+            />
             
             <Route 
               path="/profile" 

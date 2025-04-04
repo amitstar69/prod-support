@@ -100,8 +100,8 @@ const NavLinks: React.FC = () => {
         </>
       )}
 
-      {/* Only show Find Developers for clients or non-authenticated users */}
-      {(!isAuthenticated || userType === 'client') && (
+      {/* Only show Find Developers for authenticated clients */}
+      {isAuthenticated && userType === 'client' && (
         <NavLink
           to="/search"
           className={({ isActive }) =>
