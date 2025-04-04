@@ -1,17 +1,33 @@
 
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import SearchBar from '../components/SearchBar';
 import ProductGrid from '../components/ProductGrid';
 import CategoryList from '../components/CategoryList';
 import { useAuth } from '../contexts/auth';
-import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
+import { categories } from '../data/categories';
+import { getDevelopers, searchDevelopers } from '../data/products';
+import { Developer } from '../types/product';
 
 const Search: React.FC = () => {
   const { isAuthenticated, userType } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [developers, setDevelopers] = useState<Developer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Get search parameters
+  const searchQuery = searchParams.get('q') || '';
+  const categoryId = searchParams.get('category') || '';
+
+  // Handle search from search bar
+  const handleSearch = (query: string) => {
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    }
+  };
 
   useEffect(() => {
     // Redirect if not authenticated or not a client
@@ -26,6 +42,25 @@ const Search: React.FC = () => {
       navigate('/');
     }
   }, [isAuthenticated, userType, navigate]);
+
+  useEffect(() => {
+    // Load developers based on search criteria
+    setIsLoading(true);
+
+    let filteredDevelopers: Developer[] = [];
+    
+    // Apply search and/or category filters
+    if (searchQuery) {
+      filteredDevelopers = searchDevelopers(searchQuery);
+    } else if (categoryId) {
+      filteredDevelopers = getDevelopers().filter(dev => dev.category === categoryId);
+    } else {
+      filteredDevelopers = getDevelopers();
+    }
+
+    setDevelopers(filteredDevelopers);
+    setIsLoading(false);
+  }, [searchQuery, categoryId]);
 
   if (!isAuthenticated || userType !== 'client') {
     return null; // Don't render anything while redirecting
@@ -42,13 +77,22 @@ const Search: React.FC = () => {
         </div>
 
         <div className="max-w-3xl mx-auto mb-8">
-          <SearchBar />
+          <SearchBar 
+            initialValue={searchQuery} 
+            onSearch={handleSearch} 
+          />
         </div>
 
-        <CategoryList />
+        <CategoryList categories={categories} />
         
         <div className="mt-12">
-          <ProductGrid />
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <ProductGrid products={developers} />
+          )}
         </div>
       </div>
     </Layout>

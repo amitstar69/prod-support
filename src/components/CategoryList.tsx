@@ -2,12 +2,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Category } from '../types/product';
+import { categories as defaultCategories } from '../data/categories';
 
 interface CategoryListProps {
-  categories: Category[];
+  categories?: Category[];
 }
 
-const CategoryList: React.FC<CategoryListProps> = ({ categories }) => {
+const CategoryList: React.FC<CategoryListProps> = ({ categories = defaultCategories }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
       {categories.map((category) => (
