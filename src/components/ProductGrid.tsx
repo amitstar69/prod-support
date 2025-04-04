@@ -26,7 +26,18 @@ const ProductGrid: React.FC<ProductGridProps> = ({
     }
   };
 
-  if (!products || products.length === 0) {
+  // Handle loading state
+  if (!products) {
+    return (
+      <div className="text-center p-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <p className="mt-4 text-muted-foreground">Loading developers...</p>
+      </div>
+    );
+  }
+
+  // Handle empty state
+  if (products.length === 0) {
     return (
       <div className="text-center p-12 border border-dashed rounded-lg">
         <h3 className="text-lg font-medium mb-2">No developers found</h3>

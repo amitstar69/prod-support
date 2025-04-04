@@ -80,10 +80,16 @@ const Search: React.FC = () => {
           <SearchBar 
             initialValue={searchQuery} 
             onSearch={handleSearch} 
+            placeholder="Find a developer for support..."
           />
         </div>
 
-        <CategoryList categories={categories} />
+        {!searchQuery && !categoryId && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-semibold mb-6">Developer Specializations</h2>
+            <CategoryList categories={categories} />
+          </div>
+        )}
         
         <div className="mt-12">
           {isLoading ? (
@@ -91,7 +97,16 @@ const Search: React.FC = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
           ) : (
-            <ProductGrid products={developers} />
+            <>
+              <h2 className="text-2xl font-semibold mb-6">
+                {searchQuery 
+                  ? `Search results for "${searchQuery}"` 
+                  : categoryId 
+                    ? `${categories.find(c => c.id === categoryId)?.name || 'Developers'}`
+                    : 'All Developers'}
+              </h2>
+              <ProductGrid products={developers} />
+            </>
           )}
         </div>
       </div>
