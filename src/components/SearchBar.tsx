@@ -11,7 +11,7 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ 
   className = "", 
-  placeholder = "Find a developer for support...",
+  placeholder = "Search for developers by skills, expertise...",
   initialValue = ""
 }) => {
   const [query, setQuery] = useState(initialValue);

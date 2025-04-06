@@ -9,6 +9,25 @@ interface ProductGridProps {
 }
 
 const ProductGrid: React.FC<ProductGridProps> = ({ products, columns = 4 }) => {
+  // Guard against undefined products
+  if (!products) {
+    return (
+      <div className="bg-muted/20 rounded-lg p-6 text-center">
+        <p className="text-muted-foreground">Loading developers...</p>
+      </div>
+    );
+  }
+  
+  // Empty state
+  if (products.length === 0) {
+    return (
+      <div className="bg-muted/20 rounded-lg p-8 text-center">
+        <h3 className="text-xl font-medium mb-2">No developers found</h3>
+        <p className="text-muted-foreground">Try adjusting your search filters</p>
+      </div>
+    );
+  }
+
   const getGridClass = () => {
     switch (columns) {
       case 2:

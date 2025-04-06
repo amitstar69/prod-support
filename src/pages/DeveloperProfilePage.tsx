@@ -6,11 +6,18 @@ import { Developer } from '../types/product';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
-import AboutSection from '../components/profile/AboutSection';
-import { ArrowLeft, Star, Clock, Briefcase, Award, Globe, Mail, MapPin, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Star, Clock, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import ProfileSidebar from '../components/profile/sections/ProfileSidebar';
+import ProfileHeader from '../components/profile/sections/ProfileHeader';
+import AboutSection from '../components/profile/sections/AboutSection';
+import SkillsSection from '../components/profile/sections/SkillsSection';
+import EducationSection from '../components/profile/sections/EducationSection';
+import CertificationsSection from '../components/profile/sections/CertificationsSection';
+import PortfolioSection from '../components/profile/sections/PortfolioSection';
+import LanguagesSection from '../components/profile/sections/LanguagesSection';
 
 const DeveloperProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -152,24 +159,7 @@ const DeveloperProfilePage: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-4 p-6 bg-card rounded-lg border shadow-sm">
-            <div className="flex flex-col">
-              <span className="text-3xl font-bold">${developer.hourlyRate}</span>
-              <span className="text-muted-foreground">per hour</span>
-            </div>
-            {developer.minuteRate && (
-              <div className="flex flex-col">
-                <span className="text-lg font-medium">${developer.minuteRate}</span>
-                <span className="text-muted-foreground">per minute</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 text-sm mt-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span>{developer.availability ? 'Available for work' : 'Limited availability'}</span>
-            </div>
-            <Button className="mt-4" size="lg">Contact Developer</Button>
-            <Button variant="outline" size="lg">Schedule a Session</Button>
-          </div>
+          <ProfileSidebar developer={developer} />
         </div>
 
         {/* Main content and sidebar */}
@@ -187,67 +177,9 @@ const DeveloperProfilePage: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Experience */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Experience</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-start gap-3">
-                  <Briefcase className="w-5 h-5 text-primary mt-0.5" />
-                  <div>
-                    <h3 className="font-medium">{developer.experience || 'Experience level not specified'}</h3>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Education */}
-            {developer.education && developer.education.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Education</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {developer.education.map((edu: any, index: number) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <Award className="w-5 h-5 text-primary mt-0.5" />
-                      <div>
-                        <h3 className="font-medium">{edu.degree}</h3>
-                        <p className="text-sm text-muted-foreground">{edu.institution}, {edu.year}</p>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
             {/* Portfolio */}
             {developer.portfolioItems && developer.portfolioItems.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Portfolio</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {developer.portfolioItems.map((item: any, index: number) => (
-                    <div key={index} className="border-b border-border pb-4 last:border-0 last:pb-0">
-                      <h3 className="font-medium mb-1">{item.title}</h3>
-                      <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
-                      {item.link && (
-                        <a 
-                          href={item.link} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline inline-flex items-center"
-                        >
-                          <Globe className="w-3.5 h-3.5 mr-1" />
-                          View Project
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+              <PortfolioSection portfolioItems={developer.portfolioItems} />
             )}
           </div>
 
@@ -272,61 +204,13 @@ const DeveloperProfilePage: React.FC = () => {
 
             {/* Languages spoken */}
             {developer.languagesSpoken && developer.languagesSpoken.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Languages</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {developer.languagesSpoken.map((language: string, index: number) => (
-                      <Badge key={index} variant="outline">{language}</Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <LanguagesSection languages={developer.languagesSpoken} />
             )}
 
             {/* Certifications */}
             {developer.certifications && developer.certifications.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Certifications</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {developer.certifications.map((cert: any, index: number) => (
-                    <div key={index}>
-                      <h3 className="font-medium">{cert.name}</h3>
-                      <p className="text-sm text-muted-foreground">{cert.issuer}, {cert.year}</p>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+              <CertificationsSection certifications={developer.certifications} />
             )}
-
-            {/* Contact info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Contact</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {developer.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span>{developer.email}</span>
-                  </div>
-                )}
-                {developer.communicationPreferences && developer.communicationPreferences.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium mb-1">Preferred Communication</p>
-                    <div className="flex flex-wrap gap-2">
-                      {developer.communicationPreferences.map((pref: string, index: number) => (
-                        <Badge key={index} variant="outline" className="capitalize">{pref}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
