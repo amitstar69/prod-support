@@ -4,7 +4,21 @@ import { supabase } from '../../integrations/supabase/client';
 import { useAuth } from '../../contexts/auth';
 import { HelpRequest } from '../../types/helpRequest';
 import { toast } from 'sonner';
-import { Loader2, ExternalLink, Clock, AlertCircle, CheckCircle2, Calendar, FileEdit, Play, PauseCircle, UserCheck2, Check } from 'lucide-react';
+import { 
+  Loader2, 
+  ExternalLink, 
+  Clock, 
+  AlertCircle, 
+  CheckCircle2, 
+  Calendar, 
+  FileEdit, 
+  Play, 
+  PauseCircle, 
+  UserCheck2, 
+  Check,
+  ClipboardCheck,
+  ThumbsUp
+} from 'lucide-react';
 
 const statusColors = {
   'requirements': 'bg-purple-100 text-purple-800',
@@ -18,7 +32,9 @@ const statusColors = {
   'pending': 'bg-yellow-100 text-yellow-800',
   'matching': 'bg-blue-100 text-blue-800',
   'scheduled': 'bg-purple-100 text-purple-800',
-  'in-progress': 'bg-green-100 text-green-800'
+  'in-progress': 'bg-green-100 text-green-800',
+  'developer-qa': 'bg-indigo-100 text-indigo-800',
+  'client-approved': 'bg-emerald-100 text-emerald-800'
 };
 
 const statusIcons = {
@@ -33,7 +49,9 @@ const statusIcons = {
   'pending': <Clock className="h-4 w-4" />,
   'matching': <Loader2 className="h-4 w-4" />,
   'scheduled': <Calendar className="h-4 w-4" />,
-  'in-progress': <Loader2 className="h-4 w-4 animate-spin" />
+  'in-progress': <Loader2 className="h-4 w-4 animate-spin" />,
+  'developer-qa': <ClipboardCheck className="h-4 w-4" />,
+  'client-approved': <ThumbsUp className="h-4 w-4" />
 };
 
 const statusLabels = {
@@ -48,7 +66,9 @@ const statusLabels = {
   'pending': 'Pending',
   'matching': 'Matching',
   'scheduled': 'Scheduled',
-  'in-progress': 'In Progress'
+  'in-progress': 'In Progress',
+  'developer-qa': 'Developer QA',
+  'client-approved': 'Client Approved'
 };
 
 const HelpRequestsTracking: React.FC = () => {
@@ -196,7 +216,7 @@ const HelpRequestsTracking: React.FC = () => {
               setError('No active session. Please log in again.');
             }
           } catch (supabaseError) {
-            console.error('Exception fetching from Supabase:', supabaseError);
+            console.error('Exception fetching from Supabase:', supababError);
             setHelpRequests(userLocalHelpRequests);
             setDataSource('local');
             setError('Failed to connect to database, showing local requests only');

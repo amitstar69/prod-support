@@ -7,18 +7,33 @@ import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
-import { Clock, Edit, AlertCircle, ClipboardList, Calendar, DollarSign } from 'lucide-react';
+import { 
+  Clock, 
+  Edit, 
+  AlertCircle, 
+  ClipboardList, 
+  Calendar, 
+  DollarSign, 
+  ClipboardCheck, 
+  UserCheck, 
+  ThumbsUp, 
+  CheckCircle 
+} from 'lucide-react';
 import CancelHelpRequestDialog from './CancelHelpRequestDialog';
 import HelpRequestHistoryDialog from './HelpRequestHistoryDialog';
+import ClientReviewDialog from './ClientReviewDialog';
+import { useAuth } from '../../contexts/auth';
 
 const HelpRequestDetail: React.FC = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
+  const { userId, userType } = useAuth();
   
   const [helpRequest, setHelpRequest] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
   
   useEffect(() => {
     if (requestId) {
@@ -58,8 +73,51 @@ const HelpRequestDetail: React.FC = () => {
     toast.info('Edit functionality will be implemented soon');
   };
   
+  const handleReviewWork = () => {
+    setShowReviewDialog(true);
+  };
+  
+  const handleCompleteRequest = async () => {
+    if (!helpRequest || !requestId) return;
+    
+    try {
+      const { error } = await updateHelpRequest(requestId, {
+        status: 'completed'
+      });
+      
+      if (error) {
+        toast.error('Failed to complete the request');
+        return;
+      }
+      
+      toast.success('Request marked as completed!');
+      fetchHelpRequest(requestId);
+    } catch (error) {
+      console.error('Error completing request:', error);
+      toast.error('An error occurred');
+    }
+  };
+  
   const handleRequestCancelled = () => {
     fetchHelpRequest(requestId!);
+  };
+  
+  const handleReviewSubmitted = () => {
+    fetchHelpRequest(requestId!);
+  };
+  
+  const getStatusIcon = (status: string) => {
+    switch(status) {
+      case 'open': return <Clock className="h-5 w-5" />;
+      case 'claimed': return <AlertCircle className="h-5 w-5" />;
+      case 'in-progress': return <Clock className="h-5 w-5 animate-spin" />;
+      case 'developer-qa': return <ClipboardCheck className="h-5 w-5 text-indigo-600" />;
+      case 'client-review': return <UserCheck className="h-5 w-5 text-orange-600" />;
+      case 'client-approved': return <ThumbsUp className="h-5 w-5 text-emerald-600" />;
+      case 'completed': return <CheckCircle className="h-5 w-5 text-green-600" />;
+      case 'cancelled': return <AlertCircle className="h-5 w-5 text-red-600" />;
+      default: return <Clock className="h-5 w-5" />;
+    }
   };
   
   if (isLoading) {
@@ -83,7 +141,11 @@ const HelpRequestDetail: React.FC = () => {
   }
   
   const canCancel = ['open', 'pending', 'matching'].includes(helpRequest.status);
+  const canEdit = ['open', 'pending', 'matching'].includes(helpRequest.status);
+  const canReview = helpRequest.status === 'developer-qa' && userType === 'client';
+  const canComplete = helpRequest.status === 'client-approved' && (userType === 'client' || userType === 'admin');
   const isCancelled = helpRequest.status === 'cancelled';
+  const isCompleted = helpRequest.status === 'completed';
   
   return (
     <div className="space-y-6">
@@ -96,19 +158,25 @@ const HelpRequestDetail: React.FC = () => {
                 Ticket #{helpRequest.ticket_number} · Created {new Date(helpRequest.created_at).toLocaleDateString()}
               </CardDescription>
             </div>
-            <Badge 
-              className={`
-                px-3 py-1 text-sm
-                ${helpRequest.status === 'open' ? 'bg-blue-500' : ''}
-                ${helpRequest.status === 'pending' ? 'bg-yellow-500' : ''}
-                ${helpRequest.status === 'matching' ? 'bg-purple-500' : ''}
-                ${helpRequest.status === 'in-progress' ? 'bg-green-500' : ''}
-                ${helpRequest.status === 'completed' ? 'bg-green-700' : ''}
-                ${helpRequest.status === 'cancelled' ? 'bg-red-500' : ''}
-              `}
-            >
-              {helpRequest.status?.charAt(0).toUpperCase() + helpRequest.status?.slice(1)}
-            </Badge>
+            <div className="flex flex-col items-end">
+              <Badge 
+                className={`
+                  px-3 py-1 text-sm flex items-center gap-1
+                  ${helpRequest.status === 'open' ? 'bg-blue-500' : ''}
+                  ${helpRequest.status === 'pending' ? 'bg-yellow-500' : ''}
+                  ${helpRequest.status === 'matching' ? 'bg-purple-500' : ''}
+                  ${helpRequest.status === 'in-progress' ? 'bg-green-500' : ''}
+                  ${helpRequest.status === 'developer-qa' ? 'bg-indigo-500' : ''}
+                  ${helpRequest.status === 'client-review' ? 'bg-orange-500' : ''}
+                  ${helpRequest.status === 'client-approved' ? 'bg-emerald-500' : ''}
+                  ${helpRequest.status === 'completed' ? 'bg-green-700' : ''}
+                  ${helpRequest.status === 'cancelled' ? 'bg-red-500' : ''}
+                `}
+              >
+                {getStatusIcon(helpRequest.status)}
+                {helpRequest.status?.charAt(0).toUpperCase() + helpRequest.status?.slice(1)}
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         
@@ -177,6 +245,28 @@ const HelpRequestDetail: React.FC = () => {
             </div>
           )}
           
+          {/* QA Notes Section */}
+          {helpRequest.developer_qa_notes && (
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-900/30 rounded-md p-4">
+              <h3 className="text-lg font-medium text-indigo-800 dark:text-indigo-400 flex items-center gap-2 mb-2">
+                <ClipboardCheck className="h-5 w-5" />
+                Developer QA Notes
+              </h3>
+              <p className="text-indigo-700 dark:text-indigo-300 whitespace-pre-line">{helpRequest.developer_qa_notes}</p>
+            </div>
+          )}
+          
+          {/* Client Feedback Section */}
+          {helpRequest.client_feedback && (
+            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-900/30 rounded-md p-4">
+              <h3 className="text-lg font-medium text-orange-800 dark:text-orange-400 flex items-center gap-2 mb-2">
+                <UserCheck className="h-5 w-5" />
+                Client Feedback
+              </h3>
+              <p className="text-orange-700 dark:text-orange-300 whitespace-pre-line">{helpRequest.client_feedback}</p>
+            </div>
+          )}
+          
           {isCancelled && helpRequest.cancellation_reason && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-md p-4">
               <h3 className="text-lg font-medium text-red-800 dark:text-red-400 flex items-center gap-2 mb-2">
@@ -199,7 +289,7 @@ const HelpRequestDetail: React.FC = () => {
           </Button>
           
           <div className="space-x-2">
-            {!isCancelled && (
+            {!isCancelled && !isCompleted && canEdit && (
               <Button 
                 variant="outline" 
                 onClick={handleEditRequest}
@@ -207,6 +297,28 @@ const HelpRequestDetail: React.FC = () => {
               >
                 <Edit className="h-4 w-4" />
                 Edit
+              </Button>
+            )}
+            
+            {canReview && (
+              <Button 
+                variant="default" 
+                onClick={handleReviewWork}
+                className="gap-2"
+              >
+                <UserCheck className="h-4 w-4" />
+                Review Work
+              </Button>
+            )}
+            
+            {canComplete && (
+              <Button 
+                variant="default" 
+                onClick={handleCompleteRequest}
+                className="gap-2 bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Complete Request
               </Button>
             )}
             
@@ -239,6 +351,16 @@ const HelpRequestDetail: React.FC = () => {
         onClose={() => setShowHistoryDialog(false)}
         requestId={requestId || ''}
         requestTitle={helpRequest.title}
+      />
+      
+      {/* Client Review Dialog */}
+      <ClientReviewDialog 
+        isOpen={showReviewDialog}
+        onClose={() => setShowReviewDialog(false)}
+        requestId={requestId || ''}
+        requestTitle={helpRequest.title}
+        developerQANotes={helpRequest.developer_qa_notes}
+        onReviewSubmitted={handleReviewSubmitted}
       />
     </div>
   );

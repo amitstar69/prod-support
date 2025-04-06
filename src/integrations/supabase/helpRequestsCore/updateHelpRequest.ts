@@ -6,8 +6,41 @@ import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, ha
 // Function to update a help request
 export const updateHelpRequest = async (requestId: string, updates: Partial<Omit<HelpRequest, 'ticket_number'>>) => {
   try {
+    // Check if this is a status update and handle special status transitions
+    if (updates.status) {
+      const now = new Date().toISOString();
+      
+      // Set additional fields based on status transitions
+      switch(updates.status) {
+        case 'developer-qa':
+          updates.qa_start_time = updates.qa_start_time || now;
+          break;
+          
+        case 'client-review':
+          updates.client_review_start_time = updates.client_review_start_time || now;
+          break;
+          
+        case 'client-approved':
+          updates.client_review_complete_time = updates.client_review_complete_time || now;
+          break;
+          
+        case 'completed':
+          // If completing from client-approved status, update appropriate timestamps
+          const { data: currentRequest } = await supabase
+            .from('help_requests')
+            .select('status')
+            .eq('id', requestId)
+            .single();
+            
+          if (currentRequest?.status === 'client-approved') {
+            // No additional fields needed currently
+          }
+          break;
+      }
+    }
+    
     // For local help request ID
-    if (requestId.startsWith('help-')) {
+    if (isLocalId(requestId)) {
       const localHelpRequests = getLocalHelpRequests();
       const requestIndex = localHelpRequests.findIndex(
         (request: HelpRequest) => request.id === requestId
@@ -33,7 +66,10 @@ export const updateHelpRequest = async (requestId: string, updates: Partial<Omit
     if (isValidUUID(requestId)) {
       const { data, error } = await supabase
         .from('help_requests')
-        .update(updates)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', requestId)
         .select()
         .single();

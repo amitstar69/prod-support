@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Badge } from '../ui/badge';
@@ -10,7 +9,10 @@ import {
   DollarSign, 
   Zap, 
   CheckCircle, 
-  MessageCircle 
+  MessageCircle,
+  ClipboardCheck,
+  UserCheck,
+  ThumbsUp 
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -42,10 +44,13 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
     `TICKET-${ticket.ticket_number}` : 
     `TICKET-${Math.floor(Math.random() * 900) + 100}`;
     
-  // Check if the ticket is available for apply/claim actions
   const isOpen = ticket.status === 'open' || ticket.status === 'pending';
   const isClaimed = ticket.status === 'claimed';
-  const isActionable = isOpen || isClaimed;
+  const isInProgress = ticket.status === 'in-progress';
+  const isDeveloperQA = ticket.status === 'developer-qa';
+  const isClientReview = ticket.status === 'client-review';
+  const isClientApproved = ticket.status === 'client-approved';
+  const isActionable = isOpen || isClaimed || isInProgress || isDeveloperQA || isClientReview;
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return 'N/A';
@@ -80,6 +85,9 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
       case 'open': return 'bg-green-50 text-green-800 border-green-200';
       case 'claimed': return 'bg-blue-50 text-blue-800 border-blue-200';
       case 'in-progress': return 'bg-yellow-50 text-yellow-800 border-yellow-200';
+      case 'developer-qa': return 'bg-indigo-50 text-indigo-800 border-indigo-200';
+      case 'client-review': return 'bg-orange-50 text-orange-800 border-orange-200';
+      case 'client-approved': return 'bg-emerald-50 text-emerald-800 border-emerald-200';
       case 'resolved': return 'bg-purple-50 text-purple-800 border-purple-200';
       case 'completed': return 'bg-slate-50 text-slate-800 border-slate-200';
       case 'cancelled': return 'bg-red-50 text-red-800 border-red-200';
@@ -87,6 +95,15 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
       case 'pending': return 'bg-yellow-50 text-yellow-800 border-yellow-200';
       case 'scheduled': return 'bg-purple-50 text-purple-800 border-purple-200';
       default: return 'bg-gray-50 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status?: string) => {
+    switch(status) {
+      case 'developer-qa': return <ClipboardCheck className="h-3.5 w-3.5 mr-1 text-indigo-600" />;
+      case 'client-review': return <UserCheck className="h-3.5 w-3.5 mr-1 text-orange-600" />;
+      case 'client-approved': return <ThumbsUp className="h-3.5 w-3.5 mr-1 text-emerald-600" />;
+      default: return null;
     }
   };
 
@@ -126,7 +143,10 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
             variant="outline"
             className={getStatusClass(ticket.status)}
           >
-            {ticket.status || 'open'}
+            <span className="flex items-center">
+              {getStatusIcon(ticket.status)}
+              {ticket.status || 'open'}
+            </span>
           </Badge>
         </div>
         
@@ -234,6 +254,18 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
                   Start Work
                   <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
                 </Button>
+              ) : isInProgress || isDeveloperQA || isClientReview || isClientApproved ? (
+                <Button 
+                  size="sm"
+                  className="h-8 bg-primary text-white hover:bg-primary/90"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    ticket.id && onClaimClick(ticket.id);
+                  }}
+                >
+                  View Progress
+                  <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
               ) : (
                 <Button 
                   size="sm" 
@@ -241,9 +273,9 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
                   variant="outline"
                   className="h-8"
                 >
-                  {ticket.status === 'in-progress' ? 'In Progress' : 
-                   ticket.status === 'resolved' ? 'Resolved' :
-                   ticket.status === 'completed' ? 'Completed' : 'Unavailable'}
+                  {ticket.status === 'resolved' ? 'Resolved' :
+                   ticket.status === 'completed' ? 'Completed' :
+                   ticket.status === 'cancelled' ? 'Cancelled' : 'Unavailable'}
                 </Button>
               )}
               

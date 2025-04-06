@@ -289,17 +289,23 @@ export type Database = {
           attachments: Json | null
           budget_range: string
           cancellation_reason: string | null
+          client_feedback: string | null
           client_id: string
+          client_review_complete_time: string | null
+          client_review_start_time: string | null
           code_snippet: string | null
           communication_preference: string[]
           complexity_level: string | null
           created_at: string
           description: string
+          developer_qa_notes: string | null
           estimated_duration: number
           id: string
           nda_required: boolean | null
           preferred_developer_experience: string | null
           preferred_developer_location: string | null
+          qa_complete_time: string | null
+          qa_start_time: string | null
           status: string
           technical_area: string[]
           ticket_number: number
@@ -311,17 +317,23 @@ export type Database = {
           attachments?: Json | null
           budget_range: string
           cancellation_reason?: string | null
+          client_feedback?: string | null
           client_id: string
+          client_review_complete_time?: string | null
+          client_review_start_time?: string | null
           code_snippet?: string | null
           communication_preference: string[]
           complexity_level?: string | null
           created_at?: string
           description: string
+          developer_qa_notes?: string | null
           estimated_duration: number
           id?: string
           nda_required?: boolean | null
           preferred_developer_experience?: string | null
           preferred_developer_location?: string | null
+          qa_complete_time?: string | null
+          qa_start_time?: string | null
           status?: string
           technical_area: string[]
           ticket_number?: never
@@ -333,17 +345,23 @@ export type Database = {
           attachments?: Json | null
           budget_range?: string
           cancellation_reason?: string | null
+          client_feedback?: string | null
           client_id?: string
+          client_review_complete_time?: string | null
+          client_review_start_time?: string | null
           code_snippet?: string | null
           communication_preference?: string[]
           complexity_level?: string | null
           created_at?: string
           description?: string
+          developer_qa_notes?: string | null
           estimated_duration?: number
           id?: string
           nda_required?: boolean | null
           preferred_developer_experience?: string | null
           preferred_developer_location?: string | null
+          qa_complete_time?: string | null
+          qa_start_time?: string | null
           status?: string
           technical_area?: string[]
           ticket_number?: never

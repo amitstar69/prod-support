@@ -1,8 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, Clock, Zap, DollarSign, Code, MessageSquare, CalendarClock, FileCode, Users, Award } from 'lucide-react';
+import { 
+  ArrowLeft, Clock, Zap, DollarSign, Code, MessageSquare, 
+  CalendarClock, FileCode, Users, Award, ClipboardCheck, Loader2 
+} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/button';
@@ -14,6 +16,7 @@ import { useAuth } from '../contexts/auth';
 import { supabase } from '../integrations/supabase/client';
 import { HelpRequest, HelpRequestMatch } from '../types/helpRequest';
 import DeveloperApplicationModal from '../components/apply/DeveloperApplicationModal';
+import DeveloperQADialog from '../components/help/DeveloperQADialog';
 
 const DeveloperTicketDetail: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -24,8 +27,8 @@ const DeveloperTicketDetail: React.FC = () => {
   const [hasApplied, setHasApplied] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [showQADialog, setShowQADialog] = useState(false);
   
-  // Redirect if not authenticated or not a developer
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || userType !== 'developer')) {
       toast.error('You must be logged in as a developer to view this page');
@@ -33,7 +36,6 @@ const DeveloperTicketDetail: React.FC = () => {
     }
   }, [isAuthenticated, userType, isLoading, navigate, ticketId]);
 
-  // Fetch ticket details
   useEffect(() => {
     const fetchTicketDetails = async () => {
       if (!ticketId) {
@@ -45,7 +47,6 @@ const DeveloperTicketDetail: React.FC = () => {
       try {
         setIsLoading(true);
         
-        // Fetch the ticket details
         const { data: ticketData, error: ticketError } = await supabase
           .from('help_requests')
           .select('*')
@@ -60,7 +61,6 @@ const DeveloperTicketDetail: React.FC = () => {
         
         setTicket(ticketData as HelpRequest);
         
-        // Check if developer has already applied
         if (isAuthenticated && userId) {
           const { data: matchData, error: matchError } = await supabase
             .from('help_request_matches')
@@ -111,7 +111,6 @@ const DeveloperTicketDetail: React.FC = () => {
     setApplicationStatus('pending');
     toast.success('Your application has been submitted successfully!');
     
-    // Refresh the application status
     if (isAuthenticated && userId && ticketId) {
       const { data } = await supabase
         .from('help_request_matches')
@@ -132,6 +131,27 @@ const DeveloperTicketDetail: React.FC = () => {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
     } catch (e) {
       return 'Invalid date';
+    }
+  };
+  
+  const handleSubmitQA = () => {
+    setShowQADialog(true);
+  };
+  
+  const handleQASubmitted = async () => {
+    setShowQADialog(false);
+    toast.success('QA submitted successfully');
+    
+    if (ticketId) {
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*')
+        .eq('id', ticketId)
+        .single();
+        
+      if (!error && data) {
+        setTicket(data as HelpRequest);
+      }
     }
   };
   
@@ -191,8 +211,13 @@ const DeveloperTicketDetail: React.FC = () => {
     );
   }
   
-  // Create a more friendly ticket ID from UUID
-  const shortTicketId = ticket.id ? `HELP-${ticket.id.substring(0, 4)}` : 'Unknown ID';
+  const shortTicketId = ticket?.id ? `HELP-${ticket.id.substring(0, 4)}` : 'Unknown ID';
+  
+  const isInProgress = ticket?.status === 'in-progress';
+  const canSubmitQA = isInProgress && userType === 'developer';
+  const isInQA = ticket?.status === 'developer-qa';
+  const isInClientReview = ticket?.status === 'client-review';
+  const isClientApproved = ticket?.status === 'client-approved';
   
   return (
     <Layout>
@@ -211,11 +236,14 @@ const DeveloperTicketDetail: React.FC = () => {
               <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
                 {shortTicketId}
               </Badge>
-              {ticket.status && (
+              {ticket?.status && (
                 <Badge 
                   variant="outline"
                   className={`
                     ${ticket.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
+                      ticket.status === 'developer-qa' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
+                      ticket.status === 'client-review' ? 'bg-orange-50 text-orange-800 border-orange-200' :
+                      ticket.status === 'client-approved' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                       ticket.status === 'completed' ? 'bg-slate-50 text-slate-800 border-slate-200' :
                       ticket.status === 'cancelled' ? 'bg-red-50 text-red-800 border-red-200' :
                       ticket.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
@@ -226,12 +254,57 @@ const DeveloperTicketDetail: React.FC = () => {
                 </Badge>
               )}
             </div>
-            <h1 className="text-2xl font-bold mt-1">{ticket.title}</h1>
+            <h1 className="text-2xl font-bold mt-1">{ticket?.title}</h1>
           </div>
         </div>
         
+        {(isInQA || isInClientReview || isClientApproved) && (
+          <div className={`mb-6 p-4 rounded-md ${
+            isInQA ? 'bg-indigo-50 border border-indigo-200' :
+            isInClientReview ? 'bg-orange-50 border border-orange-200' :
+            'bg-emerald-50 border border-emerald-200'
+          }`}>
+            <div className="flex items-center">
+              {isInQA && (
+                <>
+                  <ClipboardCheck className="h-5 w-5 text-indigo-600 mr-3" />
+                  <div>
+                    <h3 className="font-medium text-indigo-800">Quality Assurance Submitted</h3>
+                    <p className="text-sm text-indigo-700">
+                      Your QA has been submitted and is waiting for client review.
+                    </p>
+                  </div>
+                </>
+              )}
+              
+              {isInClientReview && (
+                <>
+                  <Users className="h-5 w-5 text-orange-600 mr-3" />
+                  <div>
+                    <h3 className="font-medium text-orange-800">In Client Review</h3>
+                    <p className="text-sm text-orange-700">
+                      The client is currently reviewing your work.
+                    </p>
+                  </div>
+                </>
+              )}
+              
+              {isClientApproved && (
+                <>
+                  <Award className="h-5 w-5 text-emerald-600 mr-3" />
+                  <div>
+                    <h3 className="font-medium text-emerald-800">Client Approved</h3>
+                    <p className="text-sm text-emerald-700">
+                      The client has approved your work! The request will be marked as complete soon.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main content */}
           <div className="lg:col-span-2">
             <Card className="mb-6">
               <CardHeader>
@@ -328,9 +401,42 @@ const DeveloperTicketDetail: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+            
+            {ticket?.developer_qa_notes && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ClipboardCheck className="h-5 w-5 text-indigo-600" />
+                    Quality Assurance Notes
+                  </CardTitle>
+                  <CardDescription>QA notes provided by the developer</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="whitespace-pre-line">
+                    {ticket.developer_qa_notes}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {ticket?.client_feedback && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-orange-600" />
+                    Client Feedback
+                  </CardTitle>
+                  <CardDescription>Feedback provided by the client</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="whitespace-pre-line">
+                    {ticket.client_feedback}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
           
-          {/* Sidebar */}
           <div>
             <Card className="mb-6">
               <CardHeader>
@@ -416,19 +522,45 @@ const DeveloperTicketDetail: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+            
+            {canSubmitQA && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Submit for QA</CardTitle>
+                  <CardDescription>Mark your work as ready for review</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    When you've completed the requested work, submit it for QA and client review.
+                  </p>
+                  <Button 
+                    className="w-full" 
+                    onClick={handleSubmitQA}
+                  >
+                    <ClipboardCheck className="h-4 w-4 mr-2" />
+                    Submit for QA
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
       
-      {/* Developer Application Modal */}
-      {ticket && (
-        <DeveloperApplicationModal 
-          isOpen={showApplicationModal}
-          onClose={() => setShowApplicationModal(false)}
-          ticket={ticket}
-          onApplicationSuccess={handleApplicationSuccess}
-        />
-      )}
+      <DeveloperQADialog 
+        isOpen={showQADialog}
+        onClose={() => setShowQADialog(false)}
+        requestId={ticketId || ''}
+        requestTitle={ticket?.title || ''}
+        onQASubmitted={handleQASubmitted}
+      />
+      
+      <DeveloperApplicationModal 
+        isOpen={showApplicationModal}
+        onClose={() => setShowApplicationModal(false)}
+        ticket={ticket}
+        onApplicationSuccess={handleApplicationSuccess}
+      />
     </Layout>
   );
 };

@@ -20,6 +20,12 @@ export interface HelpRequest {
   nda_required?: boolean;
   preferred_developer_location?: string;
   cancellation_reason?: string;
+  qa_start_time?: string;
+  qa_complete_time?: string;
+  client_review_start_time?: string;
+  client_review_complete_time?: string;
+  developer_qa_notes?: string;
+  client_feedback?: string;
 }
 
 export interface HelpRequestMatch {
@@ -124,6 +130,9 @@ export const requestStatusOptions = [
   { value: 'open', label: 'Open' },
   { value: 'claimed', label: 'Claimed' },
   { value: 'in-progress', label: 'In Progress' },
+  { value: 'developer-qa', label: 'Developer QA' },
+  { value: 'client-review', label: 'Client Review' },
+  { value: 'client-approved', label: 'Client Approved' },
   { value: 'resolved', label: 'Resolved' },
   { value: 'pending', label: 'Pending' },
   { value: 'matching', label: 'Matching' },
