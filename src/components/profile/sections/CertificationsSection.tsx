@@ -10,9 +10,10 @@ interface Certification {
 
 interface CertificationsSectionProps {
   certifications: Certification[];
+  onChange?: (certifications: Certification[]) => void;
 }
 
-const CertificationsSection: React.FC<CertificationsSectionProps> = ({ certifications }) => {
+const CertificationsSection: React.FC<CertificationsSectionProps> = ({ certifications, onChange }) => {
   if (!certifications || certifications.length === 0) return null;
 
   return (

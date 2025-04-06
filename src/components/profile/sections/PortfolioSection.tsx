@@ -11,9 +11,10 @@ interface PortfolioItem {
 
 interface PortfolioSectionProps {
   portfolioItems: PortfolioItem[];
+  onChange?: (items: PortfolioItem[]) => void;
 }
 
-const PortfolioSection: React.FC<PortfolioSectionProps> = ({ portfolioItems }) => {
+const PortfolioSection: React.FC<PortfolioSectionProps> = ({ portfolioItems, onChange }) => {
   if (!portfolioItems || portfolioItems.length === 0) return null;
   
   return (

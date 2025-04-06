@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 
 interface LanguagesSectionProps {
   languages: string[];
+  onChange?: (languages: string[]) => void;
 }
 
-const LanguagesSection: React.FC<LanguagesSectionProps> = ({ languages }) => {
+const LanguagesSection: React.FC<LanguagesSectionProps> = ({ languages, onChange }) => {
   if (!languages || languages.length === 0) return null;
 
   return (

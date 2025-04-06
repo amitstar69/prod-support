@@ -1,6 +1,6 @@
 
 import { useContext } from 'react';
-import { AuthContext } from './AuthStateProvider';
+import { AuthContext } from './AuthContext';
 import { AuthContextType } from './types';
 
 // Export the useAuth hook that allows components to access the auth context
