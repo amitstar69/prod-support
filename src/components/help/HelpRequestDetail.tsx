@@ -143,7 +143,7 @@ const HelpRequestDetail: React.FC = () => {
   const canCancel = ['open', 'pending', 'matching'].includes(helpRequest.status);
   const canEdit = ['open', 'pending', 'matching'].includes(helpRequest.status);
   const canReview = helpRequest.status === 'developer-qa' && userType === 'client';
-  const canComplete = helpRequest.status === 'client-approved' && (userType === 'client' || userType === 'admin');
+  const canComplete = helpRequest.status === 'client-approved' && (userType === 'client' || userType === 'admin' as string);
   const isCancelled = helpRequest.status === 'cancelled';
   const isCompleted = helpRequest.status === 'completed';
   

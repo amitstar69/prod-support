@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
@@ -216,7 +217,7 @@ const HelpRequestsTracking: React.FC = () => {
               setError('No active session. Please log in again.');
             }
           } catch (supabaseError) {
-            console.error('Exception fetching from Supabase:', supababError);
+            console.error('Exception fetching from Supabase:', supabaseError);
             setHelpRequests(userLocalHelpRequests);
             setDataSource('local');
             setError('Failed to connect to database, showing local requests only');
