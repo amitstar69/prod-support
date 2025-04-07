@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '../ui/button';
-import { Envelope, RefreshCw } from 'lucide-react';
+import { Mail, RefreshCw } from 'lucide-react';
 import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -36,7 +36,7 @@ const EmailVerificationMessage: React.FC<EmailVerificationMessageProps> = ({ ema
     <div className="p-6 bg-blue-50 border border-blue-100 rounded-lg">
       <div className="flex flex-col items-center text-center">
         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-          <Envelope className="h-8 w-8 text-blue-600" />
+          <Mail className="h-8 w-8 text-blue-600" />
         </div>
         <h2 className="text-xl font-semibold text-gray-800 mb-2">Verify your email address</h2>
         <p className="text-gray-600 mb-4">

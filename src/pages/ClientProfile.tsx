@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -31,7 +30,7 @@ const ClientProfile: React.FC = () => {
     refreshProfile
   } = useClientProfile();
   
-  const { calculateProfileCompletionPercentage } = useProfileCompletion();
+  const { completionPercentage } = useProfileCompletion(formData);
 
   useEffect(() => {
     console.log('ClientProfile component mounted or location changed');
@@ -132,9 +131,6 @@ const ClientProfile: React.FC = () => {
     );
   }
 
-  const completionPercentage = client.profileCompletionPercentage || 
-    calculateProfileCompletionPercentage(formData);
-  
   const setupSteps = [
     !!client.profileCompleted,
     !!client.completedFirstSession,

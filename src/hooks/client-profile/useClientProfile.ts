@@ -2,18 +2,27 @@
 import { useClientProfileData } from './useClientProfileData';
 import { useClientProfileForm } from './useClientProfileForm';
 import { useProfileUpdates } from './useProfileUpdates';
-import { useProfileCompletion } from './useProfileCompletion';
+import { useProfileCompletion, calculateProfileCompletionPercentage } from './useProfileCompletion';
 
 export const useClientProfile = () => {
   const { client, isLoading, loadingTimeoutReached, refreshProfile } = useClientProfileData();
   const { formData, handleInputChange } = useClientProfileForm(client);
-  const { isSaving, handleSaveChanges, handleImageUpdate } = useProfileUpdates(client, formData);
-  const { calculateProfileCompletionPercentage } = useProfileCompletion();
-
+  const { isUpdating: isSaving, updateProfile } = useProfileUpdates(client);
+  
   // Calculate profile completion if not already provided
   if (client && !client.profileCompletionPercentage) {
     client.profileCompletionPercentage = calculateProfileCompletionPercentage(formData);
   }
+  
+  const handleSaveChanges = () => {
+    return updateProfile(formData);
+  };
+
+  const handleImageUpdate = (value: string) => {
+    if (client) {
+      updateProfile({ ...client, image: value });
+    }
+  };
 
   // Handle image update through input change
   const handleFormInputChange = (field: string, value: any) => {
@@ -32,6 +41,7 @@ export const useClientProfile = () => {
     loadingTimeoutReached,
     handleInputChange: handleFormInputChange,
     handleSaveChanges,
-    refreshProfile
+    refreshProfile,
+    handleImageUpdate
   };
 };

@@ -51,7 +51,10 @@ const ProfileCompletionBanner: React.FC<ProfileCompletionBannerProps> = ({
               <span>Profile completion</span>
               <span className="font-medium">{completionPercentage}%</span>
             </div>
-            <Progress value={completionPercentage} className="h-2 bg-amber-200" indicatorClassName="bg-amber-500" />
+            <Progress 
+              value={completionPercentage} 
+              className="h-2 bg-amber-200" 
+            />
           </div>
           
           <Button

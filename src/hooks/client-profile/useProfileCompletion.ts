@@ -20,9 +20,9 @@ interface ProfileData {
   [key: string]: any;
 }
 
-export const useProfileCompletion = (profileData: ProfileData | null) => {
-  const [completionPercentage, setCompletionPercentage] = useState(0);
-
+export const calculateProfileCompletionPercentage = (profileData: ProfileData | null) => {
+  if (!profileData) return 0;
+  
   const fieldWeights = {
     // Basic info (40%)
     name: 10,
@@ -48,38 +48,42 @@ export const useProfileCompletion = (profileData: ProfileData | null) => {
     projectTypes: 3,
     industry: 3,
   };
-
-  const calculateCompletion = useMemo(() => {
-    if (!profileData) return 0;
+  
+  let totalScore = 0;
+  let maxPossibleScore = 0;
+  
+  Object.entries(fieldWeights).forEach(([field, weight]) => {
+    maxPossibleScore += weight;
     
-    let totalScore = 0;
-    let maxPossibleScore = 0;
-    
-    Object.entries(fieldWeights).forEach(([field, weight]) => {
-      maxPossibleScore += weight;
-      
-      const value = profileData[field];
-      if (value) {
-        if (Array.isArray(value) && value.length > 0) {
-          // For array fields, give partial credit based on how many items are added
-          // But at least 1 item gives 50% of the weight
-          totalScore += weight * Math.min(1, (0.5 + (value.length * 0.1)));
-        } else if (typeof value === 'string' && value.trim() !== '') {
-          totalScore += weight;
-        } else if (typeof value === 'number' || typeof value === 'boolean') {
-          totalScore += weight;
-        } else if (typeof value === 'object' && value !== null && Object.keys(value).length > 0) {
-          totalScore += weight;
-        }
+    const value = profileData[field];
+    if (value) {
+      if (Array.isArray(value) && value.length > 0) {
+        // For array fields, give partial credit based on how many items are added
+        // But at least 1 item gives 50% of the weight
+        totalScore += weight * Math.min(1, (0.5 + (value.length * 0.1)));
+      } else if (typeof value === 'string' && value.trim() !== '') {
+        totalScore += weight;
+      } else if (typeof value === 'number' || typeof value === 'boolean') {
+        totalScore += weight;
+      } else if (typeof value === 'object' && value !== null && Object.keys(value).length > 0) {
+        totalScore += weight;
       }
-    });
-    
-    return Math.round((totalScore / maxPossibleScore) * 100);
+    }
+  });
+  
+  return Math.round((totalScore / maxPossibleScore) * 100);
+};
+
+export const useProfileCompletion = (profileData: ProfileData | null) => {
+  const [completionPercentage, setCompletionPercentage] = useState(0);
+
+  const calculatedCompletion = useMemo(() => {
+    return calculateProfileCompletionPercentage(profileData);
   }, [profileData]);
   
   useEffect(() => {
-    setCompletionPercentage(calculateCompletion);
-  }, [calculateCompletion]);
+    setCompletionPercentage(calculatedCompletion);
+  }, [calculatedCompletion]);
   
   return {
     completionPercentage,
