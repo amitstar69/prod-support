@@ -3,19 +3,24 @@ import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
+import ProtectedProfileRoute from './ProtectedProfileRoute';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   userType?: 'developer' | 'client';
   requiredUserType?: 'developer' | 'client';
   allowPublicAccess?: boolean;
+  requireProfileCompletion?: boolean;
+  requiredCompletionPercentage?: number;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
   userType, // This property is deprecated, use requiredUserType instead
   requiredUserType,
-  allowPublicAccess = false
+  allowPublicAccess = false,
+  requireProfileCompletion = false,
+  requiredCompletionPercentage = 50
 }) => {
   // If userType is provided but requiredUserType is not, use userType for backwards compatibility
   const actualRequiredUserType = requiredUserType || userType;
@@ -47,6 +52,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // User is authenticated and has the correct role
+  if (requireProfileCompletion) {
+    return (
+      <ProtectedProfileRoute requiredCompletionPercentage={requiredCompletionPercentage}>
+        {children}
+      </ProtectedProfileRoute>
+    );
+  }
+
   return <>{children}</>;
 };
 

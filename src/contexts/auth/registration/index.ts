@@ -24,7 +24,7 @@ export const register = async (
   if (supabase) {
     try {
       // 1. Register the user with Supabase
-      const { success, userId, error } = await registerWithSupabase(userData, userType);
+      const { success, userId, error, emailVerificationSent } = await registerWithSupabase(userData, userType);
       
       if (!success || !userId) {
         console.error('Supabase registration failed:', error);
@@ -70,6 +70,13 @@ export const register = async (
       // 5. Verify profile creation with our debug function
       const profileCheck = await debugCheckProfileExists(userId);
       console.log('Profile creation verification:', profileCheck);
+      
+      // 6. Show verification message if email verification is required
+      if (emailVerificationSent) {
+        toast.success('Account created successfully. Please check your email to verify your account.');
+      } else {
+        toast.success('Account created successfully');
+      }
       
       return true;
     } catch (error) {

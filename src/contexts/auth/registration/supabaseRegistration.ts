@@ -9,7 +9,7 @@ import { Developer, Client } from '../../../types/product';
 export const registerWithSupabase = async (
   userData: Partial<Developer | Client>,
   userType: 'developer' | 'client'
-): Promise<{ success: boolean; userId?: string; error?: string }> => {
+): Promise<{ success: boolean; userId?: string; error?: string; emailVerificationSent?: boolean }> => {
   if (!userData.email || !userData.password) {
     console.error('Registration failed: Email and password are required');
     return { success: false, error: 'Email and password are required' };
@@ -52,15 +52,21 @@ export const registerWithSupabase = async (
       console.error('No user data returned from Supabase');
       return { success: false, error: 'No user data returned' };
     }
+
+    // Check if email confirmation is needed based on Supabase settings
+    // If emailConfirm is true, it means the user needs to verify their email
+    const emailVerificationSent = !!data.session === false && data.user.email_confirmed_at === null;
     
     console.log('User created in Auth system with ID:', data.user.id);
+    console.log('Email verification status:', emailVerificationSent ? 'Verification required' : 'No verification required');
     
     // Need to wait a bit for auth to fully process
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     return {
       success: true,
-      userId: data.user.id
+      userId: data.user.id,
+      emailVerificationSent
     };
   } catch (error: any) {
     console.error('Supabase registration exception:', error);

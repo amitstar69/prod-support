@@ -1,112 +1,95 @@
 
-import { useState, useCallback } from 'react';
-import { useAuth, updateUserData, invalidateUserDataCache } from '../../contexts/auth';
-import { Client } from '../../types/product';
+import { useState } from 'react';
+import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
-import { ClientProfileFormData } from './useClientProfileForm';
-import { calculateProfileCompletionPercentage } from './useProfileCompletion';
+import { useProfileCompletion } from './useProfileCompletion';
+import { Client } from '../../types/product';
+import { useAuth } from '../../contexts/auth';
 
-export const useProfileUpdates = (client: Client | null, formData: ClientProfileFormData) => {
+export const useProfileUpdates = (profileData: Partial<Client> | null) => {
+  const [isUpdating, setIsUpdating] = useState(false);
   const { userId } = useAuth();
-  const [isSaving, setIsSaving] = useState(false);
-
-  const handleImageUpdate = async (imageUrl: string) => {
+  const { completionPercentage } = useProfileCompletion(profileData);
+  
+  const updateProfile = async (updatedData: Partial<Client>): Promise<boolean> => {
     if (!userId) {
-      toast.error("User ID not found. Please try logging in again.");
-      return;
+      toast.error('User ID is missing. Please log in again.');
+      return false;
     }
     
-    setIsSaving(true);
-    console.log('Saving profile image update for user:', userId);
-    console.log('New image URL:', imageUrl);
+    setIsUpdating(true);
     
     try {
-      const updatedData: Partial<Client> = {
-        image: imageUrl
-      };
+      // First update the profiles table with basic info
+      const basicInfo: Record<string, any> = {};
       
-      const success = await updateUserData(updatedData);
+      if (updatedData.name) basicInfo.name = updatedData.name;
+      if (updatedData.image) basicInfo.image = updatedData.image;
+      if (updatedData.location) basicInfo.location = updatedData.location;
+      if (updatedData.description) basicInfo.description = updatedData.description;
+      if (updatedData.languages) basicInfo.languages = updatedData.languages;
+      if (updatedData.preferredWorkingHours) basicInfo.preferred_working_hours = updatedData.preferredWorkingHours;
+      if (updatedData.username) basicInfo.username = updatedData.username;
       
-      if (success) {
-        console.log('Profile image update successful');
-        toast.success('Profile image updated successfully');
-        invalidateUserDataCache(userId);
-      } else {
-        toast.error('Failed to update profile image. Please try again.');
+      // Only update profiles if we have data to update
+      if (Object.keys(basicInfo).length > 0) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update(basicInfo)
+          .eq('id', userId);
+          
+        if (profileError) {
+          console.error('Error updating basic profile:', profileError);
+          toast.error('Error updating profile: ' + profileError.message);
+          return false;
+        }
       }
-    } catch (error) {
-      console.error('Error updating profile image:', error);
-      toast.error('An error occurred while updating your profile image');
+      
+      // Now update client_profiles table with client-specific data
+      const clientData: Record<string, any> = {};
+      
+      if (updatedData.lookingFor) clientData.looking_for = updatedData.lookingFor;
+      if (updatedData.preferredHelpFormat) clientData.preferred_help_format = updatedData.preferredHelpFormat;
+      if (updatedData.techStack) clientData.tech_stack = updatedData.techStack;
+      if (updatedData.budget) clientData.budget = updatedData.budget;
+      if (updatedData.budgetPerHour) clientData.budget_per_hour = updatedData.budgetPerHour;
+      if (updatedData.paymentMethod) clientData.payment_method = updatedData.paymentMethod;
+      if (updatedData.bio) clientData.bio = updatedData.bio;
+      if (updatedData.company) clientData.company = updatedData.company;
+      if (updatedData.position) clientData.position = updatedData.position;
+      if (updatedData.projectTypes) clientData.project_types = updatedData.projectTypes;
+      if (updatedData.industry) clientData.industry = updatedData.industry;
+      if (updatedData.communicationPreferences) clientData.communication_preferences = updatedData.communicationPreferences;
+      
+      // Always update the completion percentage
+      clientData.profile_completion_percentage = completionPercentage;
+      
+      // Update the client_profiles table
+      const { error: clientProfileError } = await supabase
+        .from('client_profiles')
+        .update(clientData)
+        .eq('id', userId);
+        
+      if (clientProfileError) {
+        console.error('Error updating client profile:', clientProfileError);
+        toast.error('Error updating profile: ' + clientProfileError.message);
+        return false;
+      }
+      
+      toast.success('Profile updated successfully');
+      return true;
+    } catch (error: any) {
+      console.error('Error in profile update:', error);
+      toast.error('An unexpected error occurred');
+      return false;
     } finally {
-      setIsSaving(false);
+      setIsUpdating(false);
     }
   };
   
-  const handleSaveChanges = useCallback(async () => {
-    if (!userId) {
-      toast.error("User ID not found. Please try logging in again.");
-      return;
-    }
-    
-    setIsSaving(true);
-    console.log('Saving client profile changes for user:', userId);
-    
-    try {
-      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
-      console.log(`Updating client name from "${client?.name}" to "${fullName}"`);
-      
-      const completionPercentage = calculateProfileCompletionPercentage(formData);
-      console.log(`Calculated profile completion percentage: ${completionPercentage}%`);
-      
-      const isProfileComplete = completionPercentage >= 80;
-      console.log(`Profile will be marked as complete: ${isProfileComplete} (${completionPercentage}% >= 80%)`);
-      
-      const updatedData: Partial<Client> = {
-        name: fullName,
-        email: formData.email,
-        location: formData.location,
-        description: formData.description,
-        username: formData.username,
-        bio: formData.bio,
-        company: formData.company,
-        position: formData.position,
-        techStack: formData.techStack,
-        industry: formData.industry,
-        projectTypes: formData.projectTypes,
-        preferredHelpFormat: formData.preferredHelpFormat,
-        budgetPerHour: formData.budgetPerHour,
-        paymentMethod: formData.paymentMethod,
-        profileCompleted: isProfileComplete,
-        profileCompletionPercentage: completionPercentage
-      };
-      
-      console.log("Submitting client profile update:", updatedData);
-      
-      const success = await updateUserData(updatedData);
-      
-      if (success) {
-        console.log('Profile update successful, forcing data refresh');
-        
-        invalidateUserDataCache(userId);
-        
-        // Add a small delay before showing success message
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        toast.success('Profile updated successfully');
-      } else {
-        toast.error('Failed to update profile. Please verify your connection and try again.');
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('An error occurred while updating your profile');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [client, formData, userId]);
-
-  return { 
-    isSaving, 
-    handleSaveChanges, 
-    handleImageUpdate 
+  return {
+    updateProfile,
+    isUpdating,
+    completionPercentage
   };
 };

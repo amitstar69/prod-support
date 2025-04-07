@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
@@ -14,6 +15,8 @@ import DeveloperOnboarding from './pages/onboarding/DeveloperOnboarding';
 import GetHelpPage from './pages/GetHelpPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import NotFound from './pages/NotFound';
 import DeveloperDashboard from './pages/DeveloperDashboard';
 import DeveloperWelcomePage from './pages/DeveloperWelcomePage';
@@ -57,6 +60,8 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             
             {/* Route for developer registration */}
             <Route path="/developer" element={<DeveloperRegistration />} />

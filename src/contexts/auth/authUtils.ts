@@ -1,4 +1,3 @@
-
 import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -265,5 +264,43 @@ export const setAppLoadingState = (isLoading: boolean): void => {
     }));
   } else {
     localStorage.removeItem('appLoadingState');
+  }
+};
+
+// Add reset password functionality
+export const resetPassword = async (email: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    
+    if (error) {
+      console.error('Error sending reset password email:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Exception during password reset request:', error);
+    return false;
+  }
+};
+
+// Add update password functionality
+export const updatePassword = async (newPassword: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
+    if (error) {
+      console.error('Error updating user password:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Exception during password update:', error);
+    return false;
   }
 };
