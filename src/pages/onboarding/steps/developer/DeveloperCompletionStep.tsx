@@ -1,83 +1,97 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useOnboarding } from '../../../../contexts/OnboardingContext';
-import OnboardingLayout from '../../../../components/onboarding/OnboardingLayout';
-import { CheckCircle } from 'lucide-react';
+import { BadgeCheck, Users, Sparkles } from 'lucide-react';
+import { Button } from '../../../../components/ui/button';
+import DeveloperVerificationPayment from '../../../../components/auth/DeveloperVerificationPayment';
 
-const DeveloperCompletionStep: React.FC = () => {
-  const { completeOnboarding, userData, skipOnboarding } = useOnboarding();
-  
-  const handleSubmit = async () => {
+const DeveloperCompletionStep = () => {
+  const [step, setStep] = useState<'complete' | 'verification'>('complete');
+  const { completeOnboarding, skipOnboarding, isLoading } = useOnboarding();
+  const navigate = useNavigate();
+
+  const handleCompleteOnboarding = async () => {
     await completeOnboarding();
   };
-  
+
+  const handleSkipVerification = async () => {
+    toast.info('You can verify your account later from your profile settings');
+    await completeOnboarding();
+  };
+
+  const handleShowVerification = () => {
+    setStep('verification');
+  };
+
+  if (step === 'verification') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <DeveloperVerificationPayment 
+          onSkip={handleSkipVerification}
+          onSuccess={() => {
+            // This will be called after returning from successful payment
+            completeOnboarding();
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
-    <OnboardingLayout 
-      title="Profile Complete!"
-      subtitle="Your developer profile is ready to be listed"
-      onNextStep={handleSubmit}
-      nextLabel="Complete Profile"
-      showSkip={true}
-      onSkip={skipOnboarding}
-    >
-      <div className="space-y-8">
-        <div className="flex items-center justify-center p-8">
-          <div className="text-center">
-            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">Profile Information Ready</h3>
-            <p className="text-muted-foreground">
-              You've completed all the steps to set up your developer profile!
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-xl mx-auto">
+        <div className="flex justify-center mb-8">
+          <div className="bg-primary/10 p-4 rounded-full">
+            <BadgeCheck className="h-16 w-16 text-primary" />
+          </div>
+        </div>
+        
+        <h1 className="text-3xl font-semibold text-center mb-2">Profile Complete!</h1>
+        <p className="text-center text-muted-foreground mb-8">
+          Congratulations! You've successfully set up your developer profile.
+        </p>
+        
+        <div className="space-y-6">
+          <div className="bg-card border border-border p-6 rounded-xl">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-yellow-500" />
+              Verify Your Developer Account
+            </h2>
+            <p className="mb-4">
+              Get a verified badge on your profile, priority placement in search results, 
+              and access to premium clients by completing verification.
             </p>
+            <Button 
+              onClick={handleShowVerification}
+              className="w-full"
+            >
+              Verify My Account
+            </Button>
           </div>
-        </div>
-        
-        <div className="bg-muted rounded-lg p-6 space-y-4">
-          <div>
-            <h4 className="text-sm font-medium text-muted-foreground">Your Name</h4>
-            <p className="text-base">{userData.name}</p>
+          
+          <div className="bg-card border border-border p-6 rounded-xl">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Users className="h-5 w-5 text-blue-500" />
+              Start Helping Clients
+            </h2>
+            <p className="mb-4">
+              Skip verification for now and start browsing help requests. 
+              You can always verify your account later from your profile settings.
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={handleCompleteOnboarding}
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Completing Profile...' : 'Complete Setup & Continue'}
+            </Button>
           </div>
-          
-          {userData && 'category' in userData && userData.category && (
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground">Primary Specialization</h4>
-              <p className="text-base">{userData.category}</p>
-            </div>
-          )}
-          
-          {userData && 'skills' in userData && userData.skills && userData.skills.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground">Skills</h4>
-              <p className="text-base">{userData.skills.join(', ')}</p>
-            </div>
-          )}
-          
-          {userData && 'hourlyRate' in userData && userData.hourlyRate && (
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground">Rates</h4>
-              <p className="text-base">${userData.hourlyRate}/hour • ${userData.minuteRate}/minute</p>
-            </div>
-          )}
-          
-          {userData && 'availability' in userData && userData.availability && (
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground">Availability</h4>
-              <p className="text-base">
-                {typeof userData.availability === 'boolean' 
-                  ? (userData.availability ? 'Available for work' : 'Not currently available') 
-                  : `${userData.availability.days?.join(', ')} • ${userData.availability.hours}`}
-              </p>
-            </div>
-          )}
-        </div>
-        
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-700">
-            After completing your profile, you'll be able to receive help requests from clients
-            and start providing assistance through chat, voice, or video sessions.
-          </p>
         </div>
       </div>
-    </OnboardingLayout>
+    </div>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
@@ -26,6 +25,8 @@ import DeveloperRegistration from './pages/DeveloperRegistration';
 import SessionHistory from './pages/SessionHistory';
 import DeveloperTicketDetail from './pages/DeveloperTicketDetail';
 import MyApplicationsPage from './pages/MyApplicationsPage';
+import VerificationSuccessPage from './pages/VerificationSuccessPage';
+import VerificationCanceledPage from './pages/VerificationCanceledPage';
 
 import { AuthProvider } from './contexts/auth';
 import { HelpRequestProvider } from './contexts/HelpRequestContext';
@@ -195,6 +196,8 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route path="/verification-success" element={<VerificationSuccessPage />} />
+            <Route path="/verification-canceled" element={<VerificationCanceledPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />

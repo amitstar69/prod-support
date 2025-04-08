@@ -121,6 +121,39 @@ export type Database = {
           },
         ]
       }
+      developer_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          developer_id: string
+          id: string
+          payment_intent_id: string | null
+          payment_status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          developer_id: string
+          id?: string
+          payment_intent_id?: string | null
+          payment_status: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          developer_id?: string
+          id?: string
+          payment_intent_id?: string | null
+          payment_status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       developer_profiles: {
         Row: {
           availability: boolean | null
@@ -136,8 +169,10 @@ export type Database = {
           last_active: string | null
           minute_rate: number | null
           online: boolean | null
+          payment_completed_at: string | null
           phone: string | null
           portfolio_items: Json | null
+          premium_verified: boolean | null
           rating: number | null
           skills: string[] | null
         }
@@ -155,8 +190,10 @@ export type Database = {
           last_active?: string | null
           minute_rate?: number | null
           online?: boolean | null
+          payment_completed_at?: string | null
           phone?: string | null
           portfolio_items?: Json | null
+          premium_verified?: boolean | null
           rating?: number | null
           skills?: string[] | null
         }
@@ -174,8 +211,10 @@ export type Database = {
           last_active?: string | null
           minute_rate?: number | null
           online?: boolean | null
+          payment_completed_at?: string | null
           phone?: string | null
           portfolio_items?: Json | null
+          premium_verified?: boolean | null
           rating?: number | null
           skills?: string[] | null
         }
