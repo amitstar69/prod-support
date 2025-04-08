@@ -63,7 +63,42 @@ export const logoutUser = async (): Promise<void> => {
   }
 };
 
-// Check Supabase session and get user profile
+// Add a function to check if email is verified
+export const isEmailVerified = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    
+    if (error || !data.user) {
+      return false;
+    }
+    
+    return data.user.email_confirmed_at !== null;
+  } catch (error) {
+    console.error('Error checking email verification:', error);
+    return false;
+  }
+};
+
+// Add update password functionality
+export const updatePassword = async (newPassword: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
+    if (error) {
+      console.error('Error updating user password:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Exception during password update:', error);
+    return false;
+  }
+};
+
+// Enhance existing checkout session with email verification check
 export const checkSupabaseSession = async (setAuthState: (state: any) => void) => {
   if (!supabase) {
     console.error('Supabase client is not available. Authentication will not work properly.');
@@ -81,6 +116,12 @@ export const checkSupabaseSession = async (setAuthState: (state: any) => void) =
     
     if (data.session) {
       const userId = data.session.user.id;
+      
+      // Check if email is verified
+      if (data.session.user.email_confirmed_at === null) {
+        console.log('User email is not verified');
+        // We don't sign out here to allow for custom handling
+      }
       
       // Check the cache first to avoid unnecessary database queries
       const cachedProfile = userProfileCache.get(userId);
@@ -282,25 +323,6 @@ export const resetPassword = async (email: string): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error('Exception during password reset request:', error);
-    return false;
-  }
-};
-
-// Add update password functionality
-export const updatePassword = async (newPassword: string): Promise<boolean> => {
-  try {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
-    
-    if (error) {
-      console.error('Error updating user password:', error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Exception during password update:', error);
     return false;
   }
 };

@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
@@ -15,15 +15,91 @@ export const useLoginForm = () => {
   const [userType, setUserType] = useState<UserType>('client');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loginStartTime, setLoginStartTime] = useState<number | null>(null);
   const [requestAbortController, setRequestAbortController] = useState<AbortController | null>(null);
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+  const unmounted = useRef(false);
+
+  // Prevent state updates after unmount
+  useEffect(() => {
+    return () => {
+      unmounted.current = true;
+    };
+  }, []);
 
   // Memoize handlers to prevent unnecessary re-renders
-  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value), []);
-  const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value), []);
-  const handleUserTypeChange = useCallback((type: UserType) => setUserType(type), []);
+  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    setEmailError('');
+  }, []);
+
+  const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    setPasswordError('');
+  }, []);
+
+  const handleUserTypeChange = useCallback((type: UserType) => {
+    setUserType(type);
+    setError('');
+  }, []);
+
   const handleRememberMeChange = useCallback(() => setRememberMe(prev => !prev), []);
+
+  // Validation functions
+  const validateEmail = useCallback(() => {
+    if (!email) {
+      setEmailError('Email is required');
+      return false;
+    }
+    
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+      setEmailError('Please enter a valid email address');
+      return false;
+    }
+    
+    setEmailError('');
+    return true;
+  }, [email]);
+
+  const validatePassword = useCallback(() => {
+    if (!password) {
+      setPasswordError('Password is required');
+      return false;
+    }
+    
+    if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return false;
+    }
+    
+    setPasswordError('');
+    return true;
+  }, [password]);
+
+  // Check if email is verified
+  const checkEmailVerified = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      
+      if (error) {
+        console.error('Error getting user:', error);
+        return false;
+      }
+      
+      if (data.user) {
+        return data.user.email_confirmed_at !== null;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking email verification:', error);
+      return false;
+    }
+  }, []);
 
   // Performance optimization: Use cached session first
   const checkAuthStatus = useCallback(async () => {
@@ -43,13 +119,36 @@ export const useLoginForm = () => {
   // Redirect on authentication state change
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      console.log(`User is authenticated, redirecting to ${userType === 'client' ? '/client' : '/developer-dashboard'}`);
+      console.log(`User is authenticated, redirecting to dashboard`);
       
-      // Short timeout to ensure state updates complete
-      setTimeout(() => {
-        const destination = userType === 'client' ? '/client' : '/developer-dashboard';
-        navigate(destination);
-      }, 300); // Increased timeout for more reliable state updates
+      // First check if their profile is complete
+      const checkProfileCompletion = async () => {
+        try {
+          // For demonstration, we're fetching from profiles table
+          // You would need to implement this based on your specific schema
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('profileCompletionPercentage')
+            .eq('id', (await supabase.auth.getUser()).data.user?.id)
+            .single();
+            
+          if (!error && data && data.profileCompletionPercentage < 50) {
+            // Profile is incomplete, redirect to complete profile
+            navigate(userType === 'client' ? '/onboarding/client' : '/onboarding/developer');
+            return;
+          }
+        } catch (error) {
+          console.error('Error checking profile completion:', error);
+        }
+        
+        // Short timeout to ensure state updates complete
+        setTimeout(() => {
+          const destination = userType === 'client' ? '/client-dashboard' : '/developer-dashboard';
+          navigate(destination);
+        }, 300);
+      };
+      
+      checkProfileCompletion();
     }
   }, [isAuthenticated, isLoading, navigate, userType]);
 
@@ -68,13 +167,15 @@ export const useLoginForm = () => {
         }
         
         // Reset states
-        setIsLoading(false);
-        setLoginStartTime(null);
-        setRequestAbortController(null);
-        
-        // Show error toast
-        toast.error('Login request timed out. Please try again.');
-        setError('Login request timed out. Please try again.');
+        if (!unmounted.current) {
+          setIsLoading(false);
+          setLoginStartTime(null);
+          setRequestAbortController(null);
+          
+          // Show error toast
+          toast.error('Login request timed out. Please try again.');
+          setError('Login request timed out. Please try again.');
+        }
       }, 15000); // Increased from 10s to 15s to allow more time for slow connections
     }
     
@@ -96,9 +197,16 @@ export const useLoginForm = () => {
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
-      setError('Email and password are required');
-      toast.error('Please enter both email and password');
+    // Clear previous errors
+    setError('');
+    setEmailError('');
+    setPasswordError('');
+    
+    // Validate form inputs
+    const isEmailValid = validateEmail();
+    const isPasswordValid = validatePassword();
+    
+    if (!isEmailValid || !isPasswordValid) {
       return;
     }
     
@@ -106,9 +214,6 @@ export const useLoginForm = () => {
       console.log('Login already in progress, preventing double submission');
       return;
     }
-    
-    // Clear previous error
-    setError('');
     
     // Create a new AbortController
     const controller = new AbortController();
@@ -121,7 +226,33 @@ export const useLoginForm = () => {
     console.log(`Attempting to login: ${email} as ${userType} at ${startTime}`);
     
     try {
-      // Pass the abort signal to the login function if possible
+      // First check if this user has a verified email
+      // For this to work properly, Supabase must have "Confirm email" enabled
+      // in Authentication > Email settings
+      const { data: userData } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      const user = userData?.user;
+      
+      // Check if email is verified
+      if (user && user.email_confirmed_at === null) {
+        await supabase.auth.signOut();
+        
+        // Show verification required message
+        setError('Please verify your email before logging in.');
+        
+        // Add email to URL params and show verification component
+        navigate(`/login?error=email-verification&email=${encodeURIComponent(email)}`);
+        
+        setIsLoading(false);
+        setLoginStartTime(null);
+        setRequestAbortController(null);
+        return;
+      }
+      
+      // Proceed with normal login flow
       const loginPromise = login(email, password, userType);
       
       // Add timeout safety net in case the AbortController doesn't work
@@ -157,13 +288,13 @@ export const useLoginForm = () => {
       toast.error(error.message || 'Login failed. Please try again later.');
     } finally {
       // Only reset loading if not authenticated yet
-      if (!isAuthenticated) {
+      if (!unmounted.current && !isAuthenticated) {
         setIsLoading(false);
         setLoginStartTime(null);
         setRequestAbortController(null);
       }
     }
-  }, [email, password, userType, isLoading, authLoading, login, isAuthenticated]);
+  }, [email, password, userType, isLoading, authLoading, login, isAuthenticated, validateEmail, validatePassword, navigate]);
 
   return {
     email,
@@ -171,11 +302,15 @@ export const useLoginForm = () => {
     userType,
     isLoading: isLoading || authLoading,
     error,
+    emailError,
+    passwordError,
     rememberMe,
     handleEmailChange,
     handlePasswordChange,
     handleUserTypeChange,
     handleRememberMeChange,
+    validateEmail,
+    validatePassword,
     handleSubmit,
     checkAuthStatus,
     isAuthenticated

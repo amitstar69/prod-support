@@ -1,16 +1,17 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Mail, RefreshCw } from 'lucide-react';
 import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '../ui/alert';
 
 interface EmailVerificationMessageProps {
   email: string;
 }
 
 const EmailVerificationMessage: React.FC<EmailVerificationMessageProps> = ({ email }) => {
-  const [isResending, setIsResending] = React.useState(false);
+  const [isResending, setIsResending] = useState(false);
   
   const handleResendEmail = async () => {
     setIsResending(true);
@@ -38,10 +39,10 @@ const EmailVerificationMessage: React.FC<EmailVerificationMessageProps> = ({ ema
         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
           <Mail className="h-8 w-8 text-blue-600" />
         </div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-2">Verify your email address</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">Please verify your email address</h2>
         <p className="text-gray-600 mb-4">
           We've sent a verification email to <span className="font-medium">{email}</span>.
-          <br />Please check your inbox and click on the verification link.
+          <br />Please check your inbox and click on the verification link to continue.
         </p>
         <div className="text-sm text-gray-500 mb-6">
           If you don't see the email, check your spam folder or request a new verification link.

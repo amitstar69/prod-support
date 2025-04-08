@@ -1,6 +1,7 @@
 
 import { supabase } from '../../integrations/supabase/client';
 import { AuthError } from '@supabase/supabase-js';
+import { toast } from 'sonner';
 
 // Cache for user profiles to reduce database queries
 const profileCache = new Map<string, { user_type: string | null, timestamp: number }>();
@@ -10,7 +11,7 @@ export const loginWithEmailAndPassword = async (
   email: string,
   password: string,
   userType: 'client' | 'developer'
-): Promise<{ success: boolean; error?: string }> => {
+): Promise<{ success: boolean; error?: string; requiresVerification?: boolean }> => {
   try {
     console.time('login-process');
     console.log(`Attempting to log in as ${userType} with email:`, email);
@@ -45,6 +46,19 @@ export const loginWithEmailAndPassword = async (
       return {
         success: false,
         error: 'Login failed. Please try again.',
+      };
+    }
+    
+    // Check if email is verified
+    if (data.user.email_confirmed_at === null) {
+      console.log('User email is not verified');
+      // Sign out user since email is not verified
+      await supabase.auth.signOut();
+      
+      return {
+        success: false,
+        error: 'Please verify your email before logging in.',
+        requiresVerification: true
       };
     }
 

@@ -7,7 +7,8 @@ import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { User, Code, RefreshCw } from 'lucide-react';
+import { User, Code, RefreshCw, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '../ui/alert';
 
 interface LoginFormProps {
   email: string;
@@ -15,12 +16,16 @@ interface LoginFormProps {
   userType: 'client' | 'developer';
   isLoading: boolean;
   error: string;
+  emailError: string;
+  passwordError: string;
   rememberMe: boolean;
   onEmailChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onPasswordChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onUserTypeChange: (value: 'client' | 'developer') => void;
   onRememberMeChange: () => void;
   onSubmit: (e: React.FormEvent) => void;
+  onEmailBlur?: () => void;
+  onPasswordBlur?: () => void;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({
@@ -29,12 +34,16 @@ const LoginForm: React.FC<LoginFormProps> = ({
   userType,
   isLoading,
   error,
+  emailError,
+  passwordError,
   rememberMe,
   onEmailChange,
   onPasswordChange,
   onUserTypeChange,
   onRememberMeChange,
-  onSubmit
+  onSubmit,
+  onEmailBlur,
+  onPasswordBlur
 }) => {
   return (
     <Card className="border border-border/40 shadow-sm">
@@ -60,9 +69,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4 pt-4">
           {error && (
-            <div className="p-3 text-sm rounded bg-destructive/10 border border-destructive/20 text-destructive">
-              {error}
-            </div>
+            <Alert variant="destructive" className="py-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           
           <div className="space-y-1">
@@ -72,10 +82,15 @@ const LoginForm: React.FC<LoginFormProps> = ({
               type="email"
               value={email}
               onChange={onEmailChange}
+              onBlur={onEmailBlur}
               placeholder="you@example.com"
               autoComplete="email"
+              className={emailError ? "border-destructive" : ""}
               required
             />
+            {emailError && (
+              <p className="text-xs text-destructive mt-1">{emailError}</p>
+            )}
           </div>
           
           <div className="space-y-1">
@@ -93,10 +108,15 @@ const LoginForm: React.FC<LoginFormProps> = ({
               type="password"
               value={password}
               onChange={onPasswordChange}
+              onBlur={onPasswordBlur}
               placeholder="••••••••"
               autoComplete="current-password"
+              className={passwordError ? "border-destructive" : ""}
               required
             />
+            {passwordError && (
+              <p className="text-xs text-destructive mt-1">{passwordError}</p>
+            )}
           </div>
           
           <div className="flex items-center space-x-2">
