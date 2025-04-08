@@ -1,41 +1,29 @@
 export interface Developer {
   id: string;
+  firstName?: string;
+  lastName?: string;
   name: string;
-  hourlyRate: number;
-  image: string;
-  category: string;
-  skills: string[];
-  experience: string;
-  description: string;
-  rating: number;
-  availability: boolean | {
-    days?: string[];
-    hours?: string;
-  };
-  featured?: boolean;
-  minuteRate?: number;  // Field for per-minute billing
-  online?: boolean;     // Field to show current online status
-  lastActive?: string;  // Field to show when the developer was last active
-  // Auth-related properties
-  email?: string;
-  password?: string;    // Added password field
-  phone?: string;
+  email: string;
+  password?: string;
   location?: string;
-  joinedDate?: string;
-  languages?: string[];
-  preferredWorkingHours?: string;
-  communicationPreferences?: string[];  // ["chat", "voice", "video"]
-  profileCompleted?: boolean;
-  // Fields needed for both Developer and Client
+  image?: string;
+  skills?: string[];
+  category?: string;
+  experience?: string;
+  hourlyRate?: number;
+  minuteRate?: number;
+  availability?: boolean;
+  rating?: number;
+  communicationPreferences?: string[];
+  description?: string;
   username?: string;
+  profileCompleted?: boolean;
   bio?: string;
-  profileCompletionPercentage?: number;
-  onboardingCompletedAt?: string;
-  // New fields for enhanced profile
   education?: any[];
   certifications?: any[];
   portfolioItems?: any[];
   languagesSpoken?: any[];
+  premiumVerified?: boolean;
 }
 
 export interface Client {
@@ -43,29 +31,26 @@ export interface Client {
   name: string;
   username?: string;
   email: string;
-  password?: string;    // Added password field
+  password?: string;
   image?: string;
   location?: string;
   joinedDate?: string;
   languages?: string[];
   preferredWorkingHours?: string;
   description?: string;
-  lookingFor?: string[];  // Skills/categories the client is interested in
+  lookingFor?: string[];
   completedProjects?: number;
   profileCompletionPercentage?: number;
   profileCompleted?: boolean;
-  // Setup progress related fields
   completedFirstSession?: boolean;
   hasZoom?: boolean;
   paymentMethodAdded?: boolean;
-  // New fields for on-demand help
-  preferredHelpFormat?: string[];  // ["Chat", "Voice", "Video"]
-  budget?: number;  // Budget per session or per minute
-  paymentMethod?: string; // ["Stripe", "PayPal"]
+  preferredHelpFormat?: string[];
+  budget?: number;
+  paymentMethod?: string;
   bio?: string;
   techStack?: string[];
   budgetPerHour?: number;
-  // Additional fields
   company?: string;
   position?: string;
   projectTypes?: string[];
@@ -80,14 +65,14 @@ export interface Client {
   availability?: {
     days?: string[];
     hours?: string;
-  } | boolean;  // Updated to allow boolean for compatibility
+  } | boolean;
   communicationPreferences?: string[];
   onboardingCompletedAt?: string;
-  skills?: string[];  // For compatibility
-  hourlyRate?: number; // For compatibility
-  minuteRate?: number; // For compatibility
-  experience?: string; // For compatibility
-  category?: string;   // For compatibility
+  skills?: string[];
+  hourlyRate?: number;
+  minuteRate?: number;
+  experience?: string;
+  category?: string;
 }
 
 export interface Category {
@@ -96,11 +81,8 @@ export interface Category {
   image?: string;
 }
 
-// We'll keep Product type as an alias to Developer for backward compatibility
-// This will help us avoid breaking changes in components that use Product
 export type Product = Developer;
 
-// Auth-related interfaces
 export interface AuthState {
   isAuthenticated: boolean;
   userType: 'developer' | 'client' | null;
@@ -122,5 +104,5 @@ export interface AuthContextType extends AuthState {
   login: (email: string, password: string, userType: 'developer' | 'client') => Promise<boolean>;
   register: (userData: any, userType: 'developer' | 'client') => Promise<boolean>;
   logout: () => Promise<void>; 
-  logoutUser: () => Promise<void>; // Added for explicit clarity
+  logoutUser: () => Promise<void>;
 }

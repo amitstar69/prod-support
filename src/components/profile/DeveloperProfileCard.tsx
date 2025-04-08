@@ -12,6 +12,7 @@ import PortfolioSection from './sections/PortfolioSection';
 import ServiceDetailsSection from './sections/ServiceDetailsSection';
 import LanguagesSection from './sections/LanguagesSection';
 import ProfileActions from './ProfileActions';
+import VerificationProfileSection from '../../pages/VerificationProfileSection';
 
 interface DeveloperProfileCardProps {
   developer: Developer;
@@ -94,6 +95,16 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
             developer={developer}
             formData={formData}
             onChange={onInputChange}
+          />
+        </CardContent>
+      </Card>
+      
+      {/* Add Verification Section */}
+      <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
+        <CardContent className="p-6">
+          <VerificationProfileSection 
+            isVerified={developer.premiumVerified || false} 
+            userId={developer.id}
           />
         </CardContent>
       </Card>
