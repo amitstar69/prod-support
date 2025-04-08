@@ -1,10 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth';
 import { supabase } from '../../integrations/supabase/client';
 import { Skeleton } from '../ui/skeleton';
-import { ProfileCompletionBanner } from '../profile/ProfileCompletionBanner';
+import ProfileCompletionBanner from '../profile/ProfileCompletionBanner';
 
 interface ProtectedRouteProps {
   children?: React.ReactNode;
@@ -22,20 +21,36 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const [profileCompletionPercentage, setProfileCompletionPercentage] = useState<number | null>(null);
   const [checkingCompletion, setCheckingCompletion] = useState(requireProfileCompletion);
   
-  // Check profile completion if required
   useEffect(() => {
     const checkProfileCompletion = async () => {
       if (requireProfileCompletion && isAuthenticated) {
         setCheckingCompletion(true);
         try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('profileCompletionPercentage')
-            .eq('id', (await supabase.auth.getUser()).data.user?.id)
-            .single();
+          const userId = (await supabase.auth.getUser()).data.user?.id;
+          const { userType } = useAuth();
+          
+          let data, error;
+          
+          if (userType === 'developer') {
+            const result = await supabase
+              .from('developer_profiles')
+              .select('profile_completion_percentage')
+              .eq('id', userId)
+              .single();
+            data = result.data;
+            error = result.error;
+          } else {
+            const result = await supabase
+              .from('client_profiles')
+              .select('profile_completion_percentage')
+              .eq('id', userId)
+              .single();
+            data = result.data;
+            error = result.error;
+          }
             
           if (!error && data) {
-            setProfileCompletionPercentage(data.profileCompletionPercentage || 0);
+            setProfileCompletionPercentage(data.profile_completion_percentage || 0);
           } else {
             // Default to 0 if we can't get the percentage
             setProfileCompletionPercentage(0);
@@ -54,7 +69,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     checkProfileCompletion();
   }, [isAuthenticated, requireProfileCompletion]);
   
-  // Show loading state while checking auth
   if (isLoading || checkingCompletion) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -68,12 +82,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
   
-  // If not authenticated, redirect to login
   if (!isAuthenticated) {
     return <Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname)}`} replace />;
   }
   
-  // If profile completion is required but not met, show warning banner
   if (requireProfileCompletion && 
       profileCompletionPercentage !== null && 
       profileCompletionPercentage < minCompletionPercentage) {
@@ -82,19 +94,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       'client': '/onboarding/client'
     };
     
-    // Only redirect if we're not already on the completion path
     const completionPath = userType ? completionPathMap[userType] : '/';
     if (location.pathname !== completionPath) {
       return <Navigate to={completionPath} replace />;
     }
   }
   
-  // If profile completion percentage is available but not critical, show banner but allow access
   const showBanner = profileCompletionPercentage !== null && 
                      profileCompletionPercentage < 80 &&
                      profileCompletionPercentage >= minCompletionPercentage;
   
-  // Authenticated and meets minimum requirements
   return (
     <>
       {showBanner && userType && (
