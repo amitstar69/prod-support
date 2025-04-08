@@ -27,7 +27,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         setCheckingCompletion(true);
         try {
           const userId = (await supabase.auth.getUser()).data.user?.id;
-          const { userType } = useAuth();
           
           let data, error;
           
@@ -52,7 +51,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           if (!error && data) {
             setProfileCompletionPercentage(data.profile_completion_percentage || 0);
           } else {
-            // Default to 0 if we can't get the percentage
             setProfileCompletionPercentage(0);
           }
         } catch (err) {
@@ -67,7 +65,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     };
     
     checkProfileCompletion();
-  }, [isAuthenticated, requireProfileCompletion]);
+  }, [isAuthenticated, requireProfileCompletion, userType]);
   
   if (isLoading || checkingCompletion) {
     return (
