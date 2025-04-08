@@ -1,19 +1,18 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { User, Code } from 'lucide-react';
+import { User, Code, ArrowRight, Upload, Mail } from 'lucide-react';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
 import { supabase } from '../integrations/supabase/client';
-import { debugCheckProfileExists, debugCreateProfile } from '../contexts/auth';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Checkbox } from '../components/ui/checkbox';
+import EmailVerificationMessage from '../components/auth/EmailVerificationMessage';
 
 const RegisterPage: React.FC = () => {
-  
   const navigate = useNavigate();
   const location = useLocation();
   const { register, isAuthenticated } = useAuth();
@@ -22,11 +21,17 @@ const RegisterPage: React.FC = () => {
   const [userType, setUserType] = useState<'client' | 'developer'>(defaultUserType);
   
   const [isLoading, setIsLoading] = useState(false);
-  const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
   const [termsAgreed, setTermsAgreed] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formValues, setFormValues] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
+  const [showVerification, setShowVerification] = useState(false);
   
   useEffect(() => {
     if (isAuthenticated) {
@@ -50,21 +55,20 @@ const RegisterPage: React.FC = () => {
     }
   }, []);
   
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setProfileImage(file);
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormValues(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    if (name === 'confirmPassword' || name === 'password') {
+      if (name === 'confirmPassword') {
+        setPasswordsMatch(value === formValues.password);
+      } else {
+        setPasswordsMatch(value === formValues.confirmPassword);
+      }
     }
-  };
-  
-  const handleImageClick = () => {
-    fileInputRef.current?.click();
   };
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -79,13 +83,9 @@ const RegisterPage: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const form = e.currentTarget;
-      const formData = new FormData(form);
-      const firstName = formData.get('firstName') as string;
-      const lastName = formData.get('lastName') as string;
-      const email = formData.get('email') as string;
-      const password = formData.get('password') as string;
+      const { firstName, lastName, email, password, confirmPassword } = formValues;
       
+      // Validation
       if (!firstName || !lastName || !email || !password) {
         const errorMsg = 'Please fill out all required fields';
         setFormError(errorMsg);
@@ -102,6 +102,14 @@ const RegisterPage: React.FC = () => {
         return;
       }
       
+      if (password !== confirmPassword) {
+        const errorMsg = 'Passwords do not match';
+        setFormError(errorMsg);
+        toast.error(errorMsg);
+        setIsLoading(false);
+        return;
+      }
+      
       if (!termsAgreed) {
         const errorMsg = 'You must agree to the Terms of Service and Privacy Policy';
         setFormError(errorMsg);
@@ -110,23 +118,17 @@ const RegisterPage: React.FC = () => {
         return;
       }
       
-      let imageUrl = '/placeholder.svg';
-      if (profileImage) {
-        imageUrl = imagePreview || '/placeholder.svg';
-      }
-      
       console.log(`Registering as ${userType} with:`, {
         name: `${firstName} ${lastName}`,
         email,
         hasPassword: !!password,
-        imageUrl
       });
       
       const userData = {
         name: `${firstName} ${lastName}`,
         email,
         password,
-        image: imageUrl,
+        image: '/placeholder.svg',
         profileCompleted: false,
         firstName,
         lastName,
@@ -165,37 +167,8 @@ const RegisterPage: React.FC = () => {
       console.log('Registration result:', success ? 'Success' : 'Failed');
       
       if (success) {
-        toast.success('Account created successfully');
-        
-        const authData = JSON.parse(localStorage.getItem('authState') || '{}');
-        if (authData.userId) {
-          const profileCheck = await debugCheckProfileExists(authData.userId);
-          console.log('Post-registration profile check:', profileCheck);
-          
-          if (!profileCheck.exists) {
-            console.log('Profile does not exist after registration, attempting direct creation...');
-            const directCreation = await debugCreateProfile(
-              authData.userId, 
-              userType, 
-              email, 
-              `${firstName} ${lastName}`
-            );
-            console.log('Direct profile creation result:', directCreation);
-            
-            if (directCreation.success) {
-              toast.success('Profile created successfully via direct creation');
-            } else {
-              toast.error('Failed to create profile directly: ' + directCreation.error);
-            }
-          }
-        }
-        
-        // Updated navigation paths to align with onboarding flows
-        if (userType === 'developer') {
-          navigate('/onboarding/developer'); // Direct to developer onboarding flow
-        } else {
-          navigate('/client-profile');
-        }
+        toast.success('Account created successfully! Please verify your email.');
+        setShowVerification(true);
       } else {
         const errorMsg = 'Registration failed. Please try with a different email.';
         setFormError(errorMsg);
@@ -210,6 +183,29 @@ const RegisterPage: React.FC = () => {
       setIsLoading(false);
     }
   };
+  
+  if (showVerification) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-md mx-auto">
+            <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden">
+              <div className="p-6 md:p-8 text-center">
+                <EmailVerificationMessage email={formValues.email} />
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={() => navigate('/login')}
+                >
+                  Go to Login
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
   
   return (
     <Layout>
@@ -232,120 +228,115 @@ const RegisterPage: React.FC = () => {
               
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
-                  <div className="flex flex-col items-center space-y-2">
-                    <div 
-                      onClick={handleImageClick}
-                      className="relative w-24 h-24 rounded-full border-2 border-primary/50 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center bg-secondary"
-                    >
-                      {imagePreview ? (
-                        <img 
-                          src={imagePreview} 
-                          alt="Profile Preview" 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="text-primary/70 text-sm font-medium text-center">
-                          <span className="block text-xs">Add Profile Photo</span>
-                        </div>
-                      )}
-                    </div>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      Click to upload profile picture
-                    </span>
-                  </div>
-                  
                   <div className="space-y-4 mb-4">
-                    <Label className="block text-sm font-medium mb-2">
-                      I want to:
-                    </Label>
-                    <div className="grid grid-cols-2 gap-4">
+                    <h2 className="font-medium text-lg mb-2">I want to join as:</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <button
                         type="button"
-                        className={`p-4 border rounded-md flex flex-col items-center text-center transition-colors ${
+                        className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
                           userType === 'client' 
-                            ? 'border-primary bg-primary/5 text-primary' 
-                            : 'border-border hover:bg-secondary/50'
-                        }`}
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-border hover:border-primary/30'
+                        } h-[120px]`}
                         onClick={() => setUserType('client')}
                       >
-                        <User className="h-6 w-6 mb-2" />
-                        <span className="text-sm font-medium">Find a Developer</span>
-                        <span className="text-xs text-muted-foreground mt-1">Get technical help</span>
+                        <User className={`h-8 w-8 mb-2 ${userType === 'client' ? 'text-primary' : ''}`} />
+                        <div className="text-center">
+                          <p className="font-medium">Client</p>
+                          <p className="text-xs text-muted-foreground mt-1">I need help from developers</p>
+                        </div>
                       </button>
                       
                       <button
                         type="button"
-                        className={`p-4 border rounded-md flex flex-col items-center text-center transition-colors ${
+                        className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
                           userType === 'developer' 
-                            ? 'border-primary bg-primary/5 text-primary' 
-                            : 'border-border hover:bg-secondary/50'
-                        }`}
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-border hover:border-primary/30'
+                        } h-[120px]`}
                         onClick={() => setUserType('developer')}
                       >
-                        <Code className="h-6 w-6 mb-2" />
-                        <span className="text-sm font-medium">I am a Developer</span>
-                        <span className="text-xs text-muted-foreground mt-1">Offer my services</span>
+                        <Code className={`h-8 w-8 mb-2 ${userType === 'developer' ? 'text-primary' : ''}`} />
+                        <div className="text-center">
+                          <p className="font-medium">Developer</p>
+                          <p className="text-xs text-muted-foreground mt-1">I want to offer my services</p>
+                        </div>
                       </button>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <Label htmlFor="firstName">
-                        First Name
-                      </Label>
-                      <Input
-                        id="firstName"
-                        name="firstName"
-                        type="text"
-                        required
-                      />
-                    </div>
+                  <div className="pt-4 border-t border-border/30">
+                    <h2 className="font-medium text-lg mb-4">Account Information</h2>
                     
-                    <div className="space-y-1">
-                      <Label htmlFor="lastName">
-                        Last Name
-                      </Label>
-                      <Input
-                        id="lastName"
-                        name="lastName"
-                        type="text"
-                        required
-                      />
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="firstName">First Name*</Label>
+                          <Input
+                            id="firstName"
+                            name="firstName"
+                            type="text"
+                            value={formValues.firstName}
+                            onChange={handleInputChange}
+                            required
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="lastName">Last Name*</Label>
+                          <Input
+                            id="lastName"
+                            name="lastName"
+                            type="text"
+                            value={formValues.lastName}
+                            onChange={handleInputChange}
+                            required
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email Address*</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          value={formValues.email}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Password*</Label>
+                        <Input
+                          id="password"
+                          name="password"
+                          type="password"
+                          value={formValues.password}
+                          onChange={handleInputChange}
+                          required
+                          minLength={6}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Password must be at least 6 characters</p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm Password*</Label>
+                        <Input
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          type="password"
+                          value={formValues.confirmPassword}
+                          onChange={handleInputChange}
+                          required
+                          className={!passwordsMatch && formValues.confirmPassword ? 'border-destructive focus:border-destructive' : ''}
+                        />
+                        {!passwordsMatch && formValues.confirmPassword && (
+                          <p className="text-xs text-destructive mt-1">Passwords do not match</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <Label htmlFor="email">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <Label htmlFor="password">
-                      Password
-                    </Label>
-                    <Input
-                      id="password"
-                      name="password"
-                      type="password"
-                      required
-                      minLength={6}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Password must be at least 6 characters</p>
                   </div>
                   
                   <div className="flex items-start gap-2">
@@ -364,18 +355,23 @@ const RegisterPage: React.FC = () => {
                   <div>
                     <Button
                       type="submit"
-                      className="button-primary w-full"
-                      disabled={isLoading}
+                      className="w-full gap-2"
+                      disabled={isLoading || !passwordsMatch}
                     >
                       {isLoading ? (
                         <span className="flex items-center">
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <svg className="animate-spin mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
                           Creating account...
                         </span>
-                      ) : 'Create Account'}
+                      ) : (
+                        <>
+                          Create Account
+                          <ArrowRight className="h-4 w-4" />
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>
