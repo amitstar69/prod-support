@@ -75,7 +75,7 @@ export const useAuthState = (): AuthContextType => {
     console.log('handleLogin called');
     setIsLoading(true);
     try {
-      // Here's the problematic line that's causing the error - we're only passing email, password and userType
+      // Call login with just the required arguments (email, password, userType)
       const result = await login(email, password, userType);
       
       const isSuccessful = typeof result === 'boolean' 

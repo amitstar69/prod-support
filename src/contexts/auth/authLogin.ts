@@ -1,4 +1,3 @@
-
 import { supabase } from '../../integrations/supabase/client';
 import { AuthError } from '@supabase/supabase-js';
 import { toast } from 'sonner';
@@ -155,7 +154,7 @@ export const loginWithEmailAndPassword = async (
   }
 };
 
-// Export login function with a simpler signature to match what's expected in useAuthState
+// Export login function with a fixed signature that matches how it's called in useAuthState
 export const login = async (
   email: string, 
   password: string, 
