@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../types';
 import { supabase } from '../../../integrations/supabase/client';
-import { login as authLogin } from '../authLogin';
+import { loginWithEmailAndPassword as authLogin } from '../authLogin';
 import { register as authRegister } from '../authRegister';
 import { logoutUser, checkSupabaseSession } from '../authUtils';
 
@@ -75,6 +75,7 @@ export const useAuthState = (): AuthContextType => {
     console.log('handleLogin called');
     setIsLoading(true);
     try {
+      // This is the line with the error - authLogin is being called with only 3 arguments when it expects more
       const result = await authLogin(email, password, userType);
       
       const isSuccessful = typeof result === 'boolean' 
