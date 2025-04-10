@@ -75,7 +75,7 @@ export const useAuthState = (): AuthContextType => {
     console.log('handleLogin called');
     setIsLoading(true);
     try {
-      // Call login with just the required arguments (email, password, userType)
+      // Call login with just the required arguments, the rest will use default values
       const result = await login(email, password, userType);
       
       const isSuccessful = typeof result === 'boolean' 

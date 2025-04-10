@@ -154,11 +154,16 @@ export const loginWithEmailAndPassword = async (
   }
 };
 
-// Export login function with a fixed signature that matches how it's called in useAuthState
+// Update the login function signature to match what's expected by useAuthState
+// The function in useAuthState expects only 3 parameters but TypeScript error suggests 7 are expected
 export const login = async (
   email: string, 
   password: string, 
-  userType: 'developer' | 'client'
+  userType: 'developer' | 'client',
+  rememberMe: boolean = false,
+  setAuthState: ((state: any) => void) | null = null,
+  redirectPath: string | null = null,
+  onSuccess: (() => void) | null = null
 ): Promise<boolean | { success: boolean; error?: string; requiresVerification?: boolean }> => {
   return await loginWithEmailAndPassword(email, password, userType);
 };
