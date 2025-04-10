@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Developer } from '../../types/product';
 import { Card, CardContent } from '../ui/card';
 import { toast } from 'sonner';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, invalidateUserDataCache } from '../../contexts/auth';
 import ProfileHeader from './sections/ProfileHeader';
 import AboutSection from './sections/AboutSection';
@@ -15,6 +15,7 @@ import ServiceDetailsSection from './sections/ServiceDetailsSection';
 import LanguagesSection from './sections/LanguagesSection';
 import ProfileActions from './ProfileActions';
 import VerificationProfileSection from '../../pages/VerificationProfileSection';
+import { supabase } from '../../integrations/supabase/client';
 
 interface DeveloperProfileCardProps {
   developer: Developer;
@@ -55,27 +56,69 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
 }) => {
   const [hasChanges, setHasChanges] = useState(false);
   const [initialFormData, setInitialFormData] = useState(formData);
+  const [isVerified, setIsVerified] = useState(developer.premiumVerified || false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { userId } = useAuth();
 
-  // Check for verification status upon returning from Stripe checkout
+  // Check for verification status on mount and URL parameters
   useEffect(() => {
-    const checkVerificationReturn = async () => {
+    // Set initial verified status from developer prop
+    setIsVerified(developer.premiumVerified || false);
+    
+    const checkVerificationStatus = async () => {
+      // Check for query parameters that indicate verification flow
       const urlParams = new URLSearchParams(location.search);
       const verificationStatus = urlParams.get('verification');
+      const refresh = urlParams.get('refresh');
       
-      if (verificationStatus === 'success' && userId && refreshProfile) {
-        console.log('Detected successful verification. Refreshing profile data.');
-        invalidateUserDataCache(userId);
-        refreshProfile();
-        toast.success('Your account verification has been processed successfully!');
-      } else if (verificationStatus === 'canceled') {
-        toast.info('Verification was canceled. You can try again anytime.');
+      // If coming from verification flow or refresh is requested
+      if ((verificationStatus === 'success' || refresh === 'true') && userId) {
+        console.log('Detected verification completion or refresh request. Checking database status.');
+        
+        try {
+          // Force invalidate cache first
+          invalidateUserDataCache(userId);
+          
+          // Then double-check directly with database for latest status
+          const { data, error } = await supabase
+            .from('developer_profiles')
+            .select('premium_verified')
+            .eq('id', userId)
+            .single();
+            
+          if (error) {
+            console.error('Error checking verification status:', error);
+            return;
+          }
+          
+          // If database shows verified but our local state doesn't, update it
+          if (data && data.premium_verified && !isVerified) {
+            console.log('Updated verification status from database:', data.premium_verified);
+            setIsVerified(true);
+            
+            // If we have a refresh function, call it to update the whole profile
+            if (refreshProfile) {
+              console.log('Refreshing entire profile data');
+              refreshProfile();
+            }
+            
+            // Show success toast
+            toast.success('Your account verification has been processed successfully!');
+            
+            // Clean up URL params to avoid repeated checks
+            if (verificationStatus || refresh) {
+              navigate(location.pathname, { replace: true });
+            }
+          }
+        } catch (err) {
+          console.error('Error during verification status check:', err);
+        }
       }
     };
     
-    checkVerificationReturn();
-  }, [location, userId, refreshProfile]);
+    checkVerificationStatus();
+  }, [developer.premiumVerified, location, userId, refreshProfile]);
 
   // Track if the form has any changes
   useEffect(() => {
@@ -128,7 +171,7 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
       <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <CardContent className="p-6">
           <VerificationProfileSection 
-            isVerified={developer.premiumVerified || false} 
+            isVerified={isVerified} 
             userId={developer.id}
           />
         </CardContent>

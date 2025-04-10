@@ -51,6 +51,20 @@ const VerificationSuccessPage = () => {
         } else if (data?.success) {
           // Clear any cached user data to ensure the verification status is refreshed
           invalidateUserDataCache(userId);
+          
+          // Double check the database to confirm the status was updated
+          const { data: verifyData, error: verifyError } = await supabase
+            .from('developer_profiles')
+            .select('premium_verified')
+            .eq('id', userId)
+            .single();
+            
+          if (verifyError) {
+            console.warn('Could not verify database update:', verifyError);
+          } else {
+            console.log('Database verification status:', verifyData?.premium_verified);
+          }
+          
           toast.success('Your developer account has been verified!');
           setVerificationStatus('success');
         } else {
@@ -85,7 +99,8 @@ const VerificationSuccessPage = () => {
 
   const handleContinue = () => {
     if (verificationStatus === 'success') {
-      navigate('/developer-dashboard');
+      // Force refresh the profile page to show updated verification status
+      navigate('/developer-dashboard?refresh=true');
     } else {
       navigate('/developer-dashboard');
     }

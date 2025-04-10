@@ -182,6 +182,22 @@ serve(async (req) => {
       );
     }
 
+    // Also update the profiles table to ensure premium_verified is reflected across the system
+    try {
+      const { error: profileError } = await supabaseClient
+        .from('profiles')
+        .update({
+          premium_verified: true
+        })
+        .eq('id', user.id);
+        
+      if (profileError) {
+        console.warn("Could not update main profile, but verification was successful:", profileError);
+      }
+    } catch (profileUpdateError) {
+      console.warn("Error updating main profile:", profileUpdateError);
+    }
+
     // Record the payment in the database
     console.log("Recording payment in database");
     const { error: paymentError } = await supabaseClient
@@ -197,6 +213,19 @@ serve(async (req) => {
     if (paymentError) {
       console.error("Error recording payment:", paymentError);
       // Continue anyway as the verification was successful
+    }
+
+    // Check that the update was successful
+    const { data: verifyData, error: verifyError } = await supabaseClient
+      .from('developer_profiles')
+      .select('premium_verified')
+      .eq('id', user.id)
+      .single();
+      
+    if (verifyError) {
+      console.warn("Could not verify database update:", verifyError);
+    } else {
+      console.log("Verified database status after update:", verifyData?.premium_verified);
     }
 
     console.log("Verification completed successfully");
