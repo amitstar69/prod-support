@@ -31,7 +31,9 @@ const LoginPage: React.FC = () => {
     handleRememberMeChange,
     handleSubmit,
     checkAuthStatus,
-    isAuthenticated
+    isAuthenticated,
+    validateEmail,
+    validatePassword
   } = useLoginForm();
 
   // Check URL query parameters for verification status
