@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth';
@@ -9,17 +10,30 @@ interface ProtectedRouteProps {
   children?: React.ReactNode;
   requireProfileCompletion?: boolean;
   minCompletionPercentage?: number;
+  requiredUserType?: 'developer' | 'client';
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
   requireProfileCompletion = false,
-  minCompletionPercentage = 50
+  minCompletionPercentage = 50,
+  requiredUserType
 }) => {
-  const { isAuthenticated, userType, isLoading } = useAuth();
+  const { isAuthenticated, userType, isLoading, userId } = useAuth();
   const location = useLocation();
   const [profileCompletionPercentage, setProfileCompletionPercentage] = useState<number | null>(null);
   const [checkingCompletion, setCheckingCompletion] = useState(requireProfileCompletion);
+  
+  useEffect(() => {
+    // Debug logging for auth state
+    console.log(`Auth ProtectedRoute (${location.pathname}):`, { 
+      isAuthenticated, 
+      userType, 
+      isLoading,
+      requireProfileCompletion,
+      requiredUserType
+    });
+  }, [isAuthenticated, userType, isLoading, requireProfileCompletion, requiredUserType, location.pathname]);
   
   useEffect(() => {
     const checkProfileCompletion = async () => {
@@ -82,6 +96,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   
   if (!isAuthenticated) {
     return <Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname)}`} replace />;
+  }
+  
+  // If a specific user type is required, check it
+  if (requiredUserType && userType !== requiredUserType) {
+    const redirectPath = userType === 'developer' ? '/developer-dashboard' : '/client-dashboard';
+    return <Navigate to={redirectPath} replace />;
   }
   
   if (requireProfileCompletion && 

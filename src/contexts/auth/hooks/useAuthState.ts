@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../types';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../../integrations/supabase/client';
@@ -29,10 +28,12 @@ export const useAuthState = (): AuthContextType => {
       if (storedAuthState) {
         const parsedState = JSON.parse(storedAuthState);
         setAuthState(parsedState);
+        console.log('Loaded auth state from localStorage:', parsedState);
       }
       
       if (supabase) {
         const authData = await checkSupabaseSession(setAuthState);
+        console.log('Supabase auth check result:', authData);
         
         if (!authData?.isAuthenticated && storedAuthState) {
           const parsedState = JSON.parse(storedAuthState);
@@ -62,55 +63,14 @@ export const useAuthState = (): AuthContextType => {
   }, []);
   
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        setIsLoading(true);
-        
-        const storedAuthState = localStorage.getItem('authState');
-        if (storedAuthState) {
-          const parsedState = JSON.parse(storedAuthState);
-          setAuthState(parsedState);
-        }
-        
-        const storedDevelopers = localStorage.getItem('mockDevelopers');
-        if (storedDevelopers) {
-          setMockDevelopers(JSON.parse(storedDevelopers));
-        }
-        
-        const storedClients = localStorage.getItem('mockClients');
-        if (storedClients) {
-          setMockClients(JSON.parse(storedClients));
-        }
-        
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 5000)
-        );
-        
-        try {
-          await Promise.race([checkSession(), timeoutPromise]);
-        } catch (error) {
-          console.warn('Session check timed out or failed:', error);
-        }
-        
-        if (supabase) {
-          setupAuthStateChangeListener(setAuthState);
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        localStorage.removeItem('authState');
-        setAuthState({
-          isAuthenticated: false,
-          userType: null,
-          userId: null,
-        });
-      } finally {
-        setIsLoading(false);
-        setAuthInitialized(true);
-      }
-    };
+    // Always log auth state changes to help with debugging
+    console.log('Auth state updated:', authState);
     
-    initAuth();
-  }, [checkSession]);
+    // Save to localStorage for persistence
+    if (authState.isAuthenticated) {
+      localStorage.setItem('authState', JSON.stringify(authState));
+    }
+  }, [authState]);
   
   const handleLogout = async () => {
     console.log("Logout triggered from AuthProvider");
