@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../types';
 import { supabase } from '../../../integrations/supabase/client';
@@ -73,7 +74,16 @@ export const useAuthState = (): AuthContextType => {
     console.log('handleLogin called');
     setIsLoading(true);
     try {
-      const result = await login(email, password, userType);
+      // Pass all required parameters with explicit defaults for optional parameters
+      const result = await login(
+        email, 
+        password, 
+        userType, 
+        false, // rememberMe
+        setAuthState, // setAuthState callback
+        null, // redirectPath
+        null // onSuccess
+      );
       
       const isSuccessful = typeof result === 'boolean' 
         ? result 
