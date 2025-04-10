@@ -7,7 +7,6 @@ import LoginForm from '../components/login/LoginForm';
 import { useLoginForm } from '../hooks/useLoginForm';
 import { Skeleton } from '../components/ui/skeleton';
 import EmailVerificationMessage from '../components/auth/EmailVerificationMessage';
-import { supabase } from '../integrations/supabase/client';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -49,6 +48,7 @@ const LoginPage: React.FC = () => {
   
   // Check auth status only once on initial component mount
   useEffect(() => {
+    console.log('LoginPage mounting - checking auth status');
     const checkAuth = async () => {
       console.log('Checking auth status on login page');
       await checkAuthStatus();

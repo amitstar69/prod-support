@@ -11,8 +11,8 @@ export {
   AuthProvider,
   AuthStateProvider,
   invalidateUserDataCache,
-  logoutUser,
   getCurrentUserData,
+  logoutUser,
   updateUserData
 };
 

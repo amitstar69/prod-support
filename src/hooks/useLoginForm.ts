@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
@@ -19,7 +20,6 @@ export const useLoginForm = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loginStartTime, setLoginStartTime] = useState<number | null>(null);
   const [requestAbortController, setRequestAbortController] = useState<AbortController | null>(null);
-  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
   const unmounted = useRef(false);
 
   useEffect(() => {
@@ -76,26 +76,6 @@ export const useLoginForm = () => {
     return true;
   }, [password]);
 
-  const checkEmailVerified = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.auth.getUser();
-      
-      if (error) {
-        console.error('Error getting user:', error);
-        return false;
-      }
-      
-      if (data.user) {
-        return data.user.email_confirmed_at !== null;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('Error checking email verification:', error);
-      return false;
-    }
-  }, []);
-
   const checkAuthStatus = useCallback(async () => {
     try {
       const cachedSession = localStorage.getItem('supabase.auth.token');
@@ -117,6 +97,7 @@ export const useLoginForm = () => {
       const checkProfileCompletion = async () => {
         try {
           const userId = (await supabase.auth.getUser()).data.user?.id;
+          if (!userId) return;
           
           let query;
           if (userType === 'developer') {

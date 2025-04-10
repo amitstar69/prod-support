@@ -3,8 +3,12 @@ import React, { ReactNode } from 'react';
 import { AuthContext } from './AuthContext';
 import { useAuthState } from './hooks/useAuthState';
 
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
 // Provider component to wrap the app
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const authState = useAuthState();
   
   return (
