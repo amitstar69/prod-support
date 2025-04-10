@@ -12,7 +12,7 @@ import { useDeveloperProfile } from '../hooks/useDeveloperProfile';
 import DeveloperProfileCard from '../components/profile/DeveloperProfileCard';
 import ProfileLoadingState from '../components/profile/ProfileLoadingState';
 import ProfileErrorState from '../components/profile/ProfileErrorState';
-import { useAuth, signOut } from '../contexts/auth';
+import { useAuth, logoutUser } from '../contexts/auth';
 
 const DeveloperProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,15 +33,24 @@ const DeveloperProfilePage = () => {
   } = useDeveloperProfile();
 
   if (isLoading) {
-    return <ProfileLoadingState onForceLogout={signOut} />;
+    return <ProfileLoadingState onForceLogout={logoutUser} />;
   }
   
   if (loadingTimeoutReached) {
-    return <ProfileErrorState error="Profile data loading timeout" onRetry={refreshProfile} />;
+    return <ProfileErrorState 
+      title="Profile Loading Timeout"  
+      message="Profile data loading timeout. Please try again or log out and back in."
+      onRetry={refreshProfile}
+      onForceLogout={logoutUser}
+    />;
   }
   
   if (!developer) {
-    return <ProfileErrorState error="Developer profile not found" />;
+    return <ProfileErrorState 
+      title="Profile Not Found"
+      message="Developer profile could not be found."
+      onForceLogout={logoutUser}
+    />;
   }
 
   if (isEditing && isOwnProfile) {
