@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../types';
 import { supabase } from '../../../integrations/supabase/client';
-import { loginWithEmailAndPassword as authLogin } from '../authLogin';
+import { loginWithEmailAndPassword } from '../authLogin';
 import { register as authRegister } from '../authRegister';
 import { logoutUser, checkSupabaseSession } from '../authUtils';
 
@@ -75,8 +75,8 @@ export const useAuthState = (): AuthContextType => {
     console.log('handleLogin called');
     setIsLoading(true);
     try {
-      // The loginWithEmailAndPassword function only expects email, password, and userType
-      const result = await authLogin(email, password, userType);
+      // Use the imported loginWithEmailAndPassword function directly
+      const result = await loginWithEmailAndPassword(email, password, userType);
       
       const isSuccessful = typeof result === 'boolean' 
         ? result 
