@@ -15,9 +15,12 @@ serve(async (req) => {
   }
 
   try {
-    // Get the authorization header from the request
+    console.log("Create developer payment function called");
+    
+    // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.log("No authorization header provided");
       return new Response(
         JSON.stringify({ error: "Not authorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -34,78 +37,101 @@ serve(async (req) => {
       }
     );
 
-    // Get the current user
+    // Get the authenticated user
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     
     if (userError || !user) {
       console.error("Error getting user:", userError);
       return new Response(
-        JSON.stringify({ error: "Not authorized" }),
+        JSON.stringify({ error: "Authentication failed" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if user is a developer
-    const { data: userData, error: profileError } = await supabaseClient
+    // Additional body params (optional)
+    let bodyParams = {};
+    try {
+      bodyParams = await req.json();
+    } catch {
+      // If no body or invalid JSON, use empty object
+      bodyParams = {};
+    }
+
+    // Check if the user is a developer
+    const { data: profileData, error: profileError } = await supabaseClient
       .from('profiles')
       .select('user_type')
       .eq('id', user.id)
       .single();
-
-    if (profileError || !userData || userData.user_type !== 'developer') {
-      console.error("User is not a developer:", profileError);
+      
+    if (profileError) {
+      console.error("Error fetching profile:", profileError);
       return new Response(
-        JSON.stringify({ error: "Only developers can make this payment" }),
+        JSON.stringify({ error: "Failed to verify user type" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    if (profileData.user_type !== 'developer') {
+      console.error("User is not a developer");
+      return new Response(
+        JSON.stringify({ error: "Only developers can be verified" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if the developer already paid
-    const { data: developerData, error: devProfileError } = await supabaseClient
+    // Check if already verified
+    const { data: devProfile, error: devProfileError } = await supabaseClient
       .from('developer_profiles')
-      .select('premium_verified, payment_completed_at')
+      .select('premium_verified')
       .eq('id', user.id)
       .single();
-
-    if (!devProfileError && developerData && developerData.premium_verified) {
+      
+    if (!devProfileError && devProfile && devProfile.premium_verified) {
+      console.log("Developer already verified");
       return new Response(
-        JSON.stringify({ error: "Developer already verified", verified: true }),
+        JSON.stringify({ error: "Developer already verified" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
+    
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
 
-    // Create a Stripe checkout session
+    console.log(`Creating payment session for user: ${user.id} (${user.email})`);
+    
+    // Create the checkout session
+    const origin = req.headers.get('origin') || 'https://platform.codementor.io';
+    
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
+      payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: 'usd',
             product_data: {
-              name: "Developer Account Verification",
-              description: "One-time verification fee for developer account",
+              name: 'Developer Verification',
+              description: 'One-time verification fee for developer account'
             },
-            unit_amount: 2999, // $29.99
+            unit_amount: 2999, // $29.99 in cents
           },
           quantity: 1,
         },
       ],
-      mode: "payment",
-      success_url: `${req.headers.get("origin")}/verification-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/verification-canceled`,
+      mode: 'payment',
       client_reference_id: user.id,
+      customer_email: user.email,
       metadata: {
         user_id: user.id,
-        email: user.email,
       },
+      success_url: `${origin}/verification-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/verification-canceled`,
     });
 
-    // Return the checkout URL
+    console.log("Payment session created successfully");
+    
     return new Response(
       JSON.stringify({ url: session.url }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

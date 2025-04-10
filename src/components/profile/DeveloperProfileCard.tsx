@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Developer } from '../../types/product';
 import { Card, CardContent } from '../ui/card';
 import { toast } from 'sonner';
+import { useLocation } from 'react-router-dom';
+import { useAuth, invalidateUserDataCache } from '../../contexts/auth';
 import ProfileHeader from './sections/ProfileHeader';
 import AboutSection from './sections/AboutSection';
 import SkillsSection from './sections/SkillsSection';
@@ -40,6 +42,7 @@ interface DeveloperProfileCardProps {
   onInputChange: (field: string, value: any) => void;
   isSaving: boolean;
   onSave: () => void;
+  refreshProfile?: () => void;
 }
 
 const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
@@ -47,10 +50,32 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
   formData,
   onInputChange,
   isSaving,
-  onSave
+  onSave,
+  refreshProfile
 }) => {
   const [hasChanges, setHasChanges] = useState(false);
   const [initialFormData, setInitialFormData] = useState(formData);
+  const location = useLocation();
+  const { userId } = useAuth();
+
+  // Check for verification status upon returning from Stripe checkout
+  useEffect(() => {
+    const checkVerificationReturn = async () => {
+      const urlParams = new URLSearchParams(location.search);
+      const verificationStatus = urlParams.get('verification');
+      
+      if (verificationStatus === 'success' && userId && refreshProfile) {
+        console.log('Detected successful verification. Refreshing profile data.');
+        invalidateUserDataCache(userId);
+        refreshProfile();
+        toast.success('Your account verification has been processed successfully!');
+      } else if (verificationStatus === 'canceled') {
+        toast.info('Verification was canceled. You can try again anytime.');
+      }
+    };
+    
+    checkVerificationReturn();
+  }, [location, userId, refreshProfile]);
 
   // Track if the form has any changes
   useEffect(() => {
@@ -64,7 +89,7 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
       setInitialFormData(formData);
       setHasChanges(false);
     }
-  }, [isSaving]);
+  }, [isSaving, hasChanges, formData]);
 
   const handleSave = () => {
     if (formData.skills.length === 0) {
@@ -99,7 +124,7 @@ const DeveloperProfileCard: React.FC<DeveloperProfileCardProps> = ({
         </CardContent>
       </Card>
       
-      {/* Add Verification Section */}
+      {/* Verification Section - Only for developers */}
       <Card className="rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <CardContent className="p-6">
           <VerificationProfileSection 

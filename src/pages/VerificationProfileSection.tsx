@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
@@ -19,27 +18,50 @@ const VerificationProfileSection: React.FC<VerificationProfileSectionProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const checkVerificationStatus = async () => {
+      const url = new URL(window.location.href);
+      const verificationInProgress = url.searchParams.get('verification') === 'in-progress';
+      
+      if (verificationInProgress) {
+        toast.info('Verification in progress. Please wait...', { duration: 5000 });
+      }
+    };
+    
+    checkVerificationStatus();
+  }, []);
+
   const handleStartVerification = async () => {
     setIsLoading(true);
     
     try {
+      console.log('Starting developer verification process for user:', userId);
+      
       const { data, error } = await supabase.functions.invoke('create-developer-payment', {
-        body: {}
+        body: { userId }
       });
       
       if (error) {
-        throw error;
+        console.error('Payment initialization error from Edge Function:', error);
+        throw new Error(`Payment initialization failed: ${error.message || 'Unknown error'}`);
       }
       
+      if (!data) {
+        throw new Error('No response received from payment service');
+      }
+      
+      console.log('Verification payment response:', data);
+      
       if (data?.url) {
-        // Redirect to Stripe checkout
+        console.log('Redirecting to Stripe checkout:', data.url);
+        const returnUrl = new URL(data.url);
         window.location.href = data.url;
       } else {
         throw new Error('No checkout URL received');
       }
     } catch (err) {
       console.error('Payment initialization error:', err);
-      toast.error('Failed to start verification process. Please try again.');
+      toast.error(`Failed to start verification process: ${err instanceof Error ? err.message : 'Please try again'}`);
     } finally {
       setIsLoading(false);
     }

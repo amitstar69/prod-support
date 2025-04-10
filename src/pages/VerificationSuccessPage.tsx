@@ -2,9 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
+import { useAuth, invalidateUserDataCache } from '../contexts/auth';
 import Layout from '../components/Layout';
 import { toast } from 'sonner';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
 const VerificationSuccessPage = () => {
@@ -12,27 +13,44 @@ const VerificationSuccessPage = () => {
   const [searchParams] = useSearchParams();
   const [isVerifying, setIsVerifying] = useState(true);
   const [verificationStatus, setVerificationStatus] = useState<'success' | 'error' | null>(null);
+  const { userId } = useAuth();
   const sessionId = searchParams.get('session_id');
 
   useEffect(() => {
     const verifyPayment = async () => {
       if (!sessionId) {
+        console.error('Missing session information');
         toast.error('Missing session information');
         setVerificationStatus('error');
         setIsVerifying(false);
         return;
       }
+      
+      if (!userId) {
+        console.error('User not authenticated');
+        toast.error('You need to be logged in to complete verification');
+        setVerificationStatus('error');
+        setIsVerifying(false);
+        return;
+      }
+
+      console.log('Verifying payment with session ID:', sessionId);
+      console.log('Current user ID:', userId);
 
       try {
         const { data, error } = await supabase.functions.invoke('verify-developer-payment', {
-          body: { sessionId }
+          body: { sessionId, userId }
         });
+
+        console.log('Verification response:', data, error);
 
         if (error) {
           console.error('Verification error:', error);
-          toast.error('Failed to verify payment');
+          toast.error(`Failed to verify payment: ${error.message || 'Unknown error'}`);
           setVerificationStatus('error');
         } else if (data?.success) {
+          // Clear any cached user data to ensure the verification status is refreshed
+          invalidateUserDataCache(userId);
           toast.success('Your developer account has been verified!');
           setVerificationStatus('success');
         } else {
@@ -48,14 +66,28 @@ const VerificationSuccessPage = () => {
       }
     };
 
-    verifyPayment();
-  }, [sessionId]);
+    if (sessionId && userId) {
+      verifyPayment();
+    } else {
+      // Small delay to ensure auth is fully loaded
+      const timeout = setTimeout(() => {
+        if (!userId) {
+          console.warn('User not authenticated after timeout');
+          setIsVerifying(false);
+          setVerificationStatus('error');
+          toast.error('Authentication required to complete verification');
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [sessionId, userId]);
 
   const handleContinue = () => {
     if (verificationStatus === 'success') {
       navigate('/developer-dashboard');
     } else {
-      navigate('/onboarding/developer');
+      navigate('/developer-dashboard');
     }
   };
 
@@ -88,9 +120,14 @@ const VerificationSuccessPage = () => {
                 </div>
               ) : (
                 <div className="py-8">
+                  <div className="mb-6 flex justify-center">
+                    <div className="rounded-full bg-red-100 p-3 dark:bg-red-900/30">
+                      <AlertCircle className="h-12 w-12 text-red-500 dark:text-red-400" />
+                    </div>
+                  </div>
                   <h2 className="text-2xl font-bold mb-2">Verification Issue</h2>
                   <p className="text-muted-foreground mb-6">
-                    We couldn't verify your payment at this time. You can try again later from your profile settings.
+                    We couldn't verify your payment at this time. This could be due to a technical issue. You can try again later from your profile settings.
                   </p>
                   <Button onClick={handleContinue} className="w-full">
                     Continue to Dashboard
