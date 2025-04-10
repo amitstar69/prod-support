@@ -8,12 +8,12 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  console.log('Layout component rendering');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pageReady, setPageReady] = useState(false);
   
   useEffect(() => {
     // Track page load status
-    setPageReady(false);
     console.log('Layout mounting - setting up page');
     
     const timeoutId = setTimeout(() => {
@@ -42,6 +42,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       console.log('Layout unmounted');
     };
   }, []);
+  
+  console.log('Layout render state', { pageReady });
   
   if (!pageReady) {
     return (

@@ -9,11 +9,13 @@ import { Skeleton } from '../components/ui/skeleton';
 import EmailVerificationMessage from '../components/auth/EmailVerificationMessage';
 
 const LoginPage: React.FC = () => {
+  console.log('LoginPage rendering');
   const navigate = useNavigate();
   const location = useLocation();
   const [showVerification, setShowVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
   
+  // Use the simplified version of useLoginForm to avoid circular dependencies
   const { 
     email, 
     password, 
@@ -27,8 +29,6 @@ const LoginPage: React.FC = () => {
     handlePasswordChange,
     handleUserTypeChange,
     handleRememberMeChange,
-    validateEmail,
-    validatePassword,
     handleSubmit,
     checkAuthStatus,
     isAuthenticated
@@ -36,6 +36,7 @@ const LoginPage: React.FC = () => {
 
   // Check URL query parameters for verification status
   useEffect(() => {
+    console.log('LoginPage - checking URL params');
     const searchParams = new URLSearchParams(location.search);
     const verificationError = searchParams.get('error') === 'email-verification';
     const emailParam = searchParams.get('email');
@@ -48,20 +49,16 @@ const LoginPage: React.FC = () => {
   
   // Check auth status only once on initial component mount
   useEffect(() => {
-    console.log('LoginPage mounting - checking auth status');
-    const checkAuth = async () => {
-      console.log('Checking auth status on login page');
-      await checkAuthStatus();
-    };
-    checkAuth();
+    console.log('LoginPage - checking auth status');
+    checkAuthStatus();
   }, [checkAuthStatus]);
   
   // Handle redirect for authenticated users
   useEffect(() => {
+    console.log('LoginPage - auth status effect', { isAuthenticated, userType });
     if (isAuthenticated) {
       console.log('User is already authenticated, redirecting');
       
-      // Determine where to redirect based on user type and optional returnTo param
       const searchParams = new URLSearchParams(location.search);
       const returnTo = searchParams.get('returnTo');
       
@@ -73,12 +70,11 @@ const LoginPage: React.FC = () => {
         destination = userType === 'client' ? '/client-dashboard' : '/developer-dashboard';
       }
       
-      // Add a small delay to ensure state is fully updated
-      setTimeout(() => {
-        navigate(destination);
-      }, 100);
+      navigate(destination);
     }
   }, [isAuthenticated, navigate, userType, location.search]);
+  
+  console.log('LoginPage render state', { showVerification, isLoading, error });
   
   if (showVerification) {
     return (
@@ -106,7 +102,6 @@ const LoginPage: React.FC = () => {
       <LoginHeader />
       
       <div className="container mx-auto px-4 py-12">
-        {/* Use a skeleton loader while initially checking auth status */}
         {isLoading && !error && !email && !password ? (
           <div className="max-w-md mx-auto space-y-4">
             <Skeleton className="h-8 w-full mb-4" />

@@ -1,81 +1,65 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../types';
-import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../../integrations/supabase/client';
+import { supabase } from '../../../integrations/supabase/client';
 import { login as authLogin } from '../authLogin';
 import { register as authRegister } from '../authRegister';
-import { logoutUser, checkSupabaseSession, setupAuthStateChangeListener } from '../authUtils';
-
-// Log Supabase configuration information
-console.log('AuthContext: Supabase URL:', SUPABASE_URL ? 'URL is set' : 'URL is missing');
-console.log('AuthContext: Supabase Key:', SUPABASE_ANON_KEY ? 'Key is set' : 'Key is missing');
-console.log('AuthContext: Supabase Client:', supabase ? 'Client is initialized' : 'Client is not initialized');
+import { logoutUser, checkSupabaseSession } from '../authUtils';
 
 export const useAuthState = (): AuthContextType => {
+  console.log('useAuthState initialized');
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     userType: null,
     userId: null,
   });
   
-  const [authInitialized, setAuthInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [mockDevelopers, setMockDevelopers] = useState<any[]>([]);
-  const [mockClients, setMockClients] = useState<any[]>([]);
   
-  const checkSession = useCallback(async () => {
-    try {
-      const storedAuthState = localStorage.getItem('authState');
-      if (storedAuthState) {
-        const parsedState = JSON.parse(storedAuthState);
-        setAuthState(parsedState);
-        console.log('Loaded auth state from localStorage:', parsedState);
-      }
-      
-      if (supabase) {
-        const authData = await checkSupabaseSession(setAuthState);
-        console.log('Supabase auth check result:', authData);
-        
-        if (!authData?.isAuthenticated && storedAuthState) {
+  // Check session on component mount
+  useEffect(() => {
+    console.log('useAuthState - checking session on mount');
+    const checkSession = async () => {
+      try {
+        const storedAuthState = localStorage.getItem('authState');
+        if (storedAuthState) {
           const parsedState = JSON.parse(storedAuthState);
-          if (parsedState.isAuthenticated) {
-            console.log('Local auth state conflicts with server state. Resetting...');
-            localStorage.removeItem('authState');
-            setAuthState({
-              isAuthenticated: false,
-              userType: null,
-              userId: null,
-            });
-          }
+          setAuthState(parsedState);
+          console.log('Loaded auth state from localStorage:', parsedState);
         }
+        
+        if (supabase) {
+          const authData = await checkSupabaseSession(setAuthState);
+          console.log('Supabase auth check result:', authData);
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error checking session:', error);
-      localStorage.removeItem('authState');
-      setAuthState({
-        isAuthenticated: false,
-        userType: null,
-        userId: null,
-      });
-    } finally {
-      setIsLoading(false);
-      setAuthInitialized(true);
-    }
+    };
+    
+    checkSession();
   }, []);
   
   useEffect(() => {
-    // Always log auth state changes to help with debugging
     console.log('Auth state updated:', authState);
     
-    // Save to localStorage for persistence
     if (authState.isAuthenticated) {
       localStorage.setItem('authState', JSON.stringify(authState));
     }
   }, [authState]);
   
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     console.log("Logout triggered from AuthProvider");
     try {
       await logoutUser();
+      setAuthState({
+        isAuthenticated: false,
+        userType: null,
+        userId: null,
+      });
+      localStorage.removeItem('authState');
     } catch (error) {
       console.error("Error during logout:", error);
       setAuthState({
@@ -85,31 +69,13 @@ export const useAuthState = (): AuthContextType => {
       });
       localStorage.removeItem('authState');
     }
-  };
+  }, []);
   
-  const handleLogin = async (email: string, password: string, userType: 'developer' | 'client'): Promise<boolean> => {
+  const handleLogin = useCallback(async (email: string, password: string, userType: 'developer' | 'client'): Promise<boolean> => {
+    console.log('handleLogin called');
     setIsLoading(true);
     try {
-      const loginAttemptTime = Date.now();
-      localStorage.setItem('lastLoginAttempt', loginAttemptTime.toString());
-      
-      const timeoutPromise = new Promise<boolean>((_, reject) => {
-        setTimeout(() => reject(new Error('Login request timed out')), 15000);
-      });
-      
-      const loginPromise = authLogin(email, password, userType);
-      
-      const result = await Promise.race([loginPromise, timeoutPromise])
-        .catch(error => {
-          console.error('Login error or timeout in handleLogin:', error);
-          return { success: false, error: error.message || 'Login timed out' };
-        });
-      
-      const lastAttempt = localStorage.getItem('lastLoginAttempt');
-      if (lastAttempt && parseInt(lastAttempt) !== loginAttemptTime) {
-        console.log('Ignoring outdated login attempt response');
-        return false;
-      }
+      const result = await authLogin(email, password, userType);
       
       const isSuccessful = typeof result === 'boolean' 
         ? result 
@@ -121,7 +87,7 @@ export const useAuthState = (): AuthContextType => {
           isAuthenticated: true,
           userType: userType,
         }));
-        console.log(`Login successful as ${userType}, setting immediate auth state`);
+        console.log(`Login successful as ${userType}, setting auth state`);
       } else {
         const errorMessage = (typeof result === 'object' && result && 'error' in result) 
           ? result.error 
@@ -138,26 +104,17 @@ export const useAuthState = (): AuthContextType => {
         setIsLoading(false);
       }, 300);
     }
-  };
+  }, []);
   
-  const handleRegister = async (userData: any, userType: 'developer' | 'client'): Promise<boolean> => {
+  const handleRegister = useCallback(async (userData: any, userType: 'developer' | 'client'): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const result = await authRegister(
-        userData, 
-        userType,
-        mockDevelopers,
-        mockClients,
-        setMockDevelopers,
-        setMockClients,
-        setAuthState
-      );
-      
+      const result = await authRegister(userData, userType);
       return result;
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   return {
     ...authState,

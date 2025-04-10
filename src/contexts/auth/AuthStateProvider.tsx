@@ -12,13 +12,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const authState = useAuthState();
   
   return (
-    <AuthContext.Provider
-      value={authState}
-    >
+    <AuthContext.Provider value={authState}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// This is a duplicate export name for backward compatibility
+// This is deprecated but kept for backward compatibility
 export const AuthStateProvider = AuthProvider;
