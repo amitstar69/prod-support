@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../types';
 import { supabase } from '../../../integrations/supabase/client';
@@ -75,8 +74,6 @@ export const useAuthState = (): AuthContextType => {
     console.log('handleLogin called');
     setIsLoading(true);
     try {
-      // Import the login function correctly from authLogin.ts and pass all required arguments
-      // The error indicates this function expects 7 arguments but we're only passing 2
       const result = await login(email, password, userType);
       
       const isSuccessful = typeof result === 'boolean' 
