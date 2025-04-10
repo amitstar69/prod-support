@@ -1,13 +1,19 @@
 
 // Export all auth related functionality
 import { useAuth } from './authHook';
-import { invalidateUserDataCache } from './userDataFetching';
+import { AuthProvider, AuthStateProvider } from './AuthStateProvider';
+import { invalidateUserDataCache, getCurrentUserData } from './userDataFetching';
 import { logoutUser } from './authUtils';
+import { updateUserData } from './userDataUpdater';
 
 export { 
   useAuth,
+  AuthProvider,
+  AuthStateProvider,
   invalidateUserDataCache,
-  logoutUser
+  logoutUser,
+  getCurrentUserData,
+  updateUserData
 };
 
 // Default export for backward compatibility

@@ -16,4 +16,5 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
+// This is a duplicate export name for backward compatibility
 export const AuthStateProvider = AuthProvider;
