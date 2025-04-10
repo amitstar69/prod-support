@@ -155,5 +155,11 @@ export const loginWithEmailAndPassword = async (
   }
 };
 
-// Export login function for AuthStateProvider
-export const login = loginWithEmailAndPassword;
+// Export login function with a simpler signature to match what's expected in useAuthState
+export const login = async (
+  email: string, 
+  password: string, 
+  userType: 'developer' | 'client'
+): Promise<boolean | { success: boolean; error?: string; requiresVerification?: boolean }> => {
+  return await loginWithEmailAndPassword(email, password, userType);
+};
