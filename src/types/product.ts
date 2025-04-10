@@ -1,3 +1,4 @@
+
 export interface Developer {
   id: string;
   firstName?: string;
@@ -24,6 +25,15 @@ export interface Developer {
   portfolioItems?: any[];
   languagesSpoken?: any[];
   premiumVerified?: boolean;
+  
+  // Adding missing properties that are causing errors
+  featured?: boolean;
+  online?: boolean;
+  lastActive?: string;
+  phone?: string;
+  profileCompletionPercentage?: number;
+  languages?: string[];
+  preferredWorkingHours?: string;
 }
 
 export interface Client {
