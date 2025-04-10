@@ -75,7 +75,7 @@ export const useAuthState = (): AuthContextType => {
     console.log('handleLogin called');
     setIsLoading(true);
     try {
-      // This is the line with the error - authLogin is being called with only 3 arguments when it expects more
+      // The loginWithEmailAndPassword function only expects email, password, and userType
       const result = await authLogin(email, password, userType);
       
       const isSuccessful = typeof result === 'boolean' 
