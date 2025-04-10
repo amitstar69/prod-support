@@ -154,8 +154,7 @@ export const loginWithEmailAndPassword = async (
   }
 };
 
-// Update the login function signature to match what's expected by useAuthState
-// The function in useAuthState expects only 3 parameters but TypeScript error suggests 7 are expected
+// Update the login function to use truly optional parameters with default values
 export const login = async (
   email: string, 
   password: string, 

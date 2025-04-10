@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../types';
 import { supabase } from '../../../integrations/supabase/client';
@@ -16,7 +15,6 @@ export const useAuthState = (): AuthContextType => {
   
   const [isLoading, setIsLoading] = useState(true);
   
-  // Check session on component mount
   useEffect(() => {
     console.log('useAuthState - checking session on mount');
     const checkSession = async () => {
@@ -75,8 +73,7 @@ export const useAuthState = (): AuthContextType => {
     console.log('handleLogin called');
     setIsLoading(true);
     try {
-      // Pass all the required arguments to match the expected function signature
-      const result = await login(email, password, userType, false, setAuthState, null, null);
+      const result = await login(email, password, userType);
       
       const isSuccessful = typeof result === 'boolean' 
         ? result 
