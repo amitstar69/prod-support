@@ -1,9 +1,11 @@
+
 import { Developer, Product } from '../types/product';
 
 export const developers: Developer[] = [
   {
     id: 'dev1',
     name: 'Alex Johnson',
+    email: 'alex.johnson@example.com',
     hourlyRate: 85,
     minuteRate: 1.5,
     image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=1600&auto=format&fit=crop',
@@ -20,6 +22,7 @@ export const developers: Developer[] = [
   {
     id: 'dev2',
     name: 'Samantha Chen',
+    email: 'samantha.chen@example.com',
     hourlyRate: 95,
     minuteRate: 1.7,
     image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1600&auto=format&fit=crop',
@@ -36,6 +39,7 @@ export const developers: Developer[] = [
   {
     id: 'dev3',
     name: 'Marcus Williams',
+    email: 'marcus.williams@example.com',
     hourlyRate: 110,
     minuteRate: 2.0,
     image: 'https://images.unsplash.com/photo-1531384441138-2736e62e0919?q=80&w=1600&auto=format&fit=crop',
@@ -52,6 +56,7 @@ export const developers: Developer[] = [
   {
     id: 'dev4',
     name: 'Elena Rivera',
+    email: 'elena.rivera@example.com',
     hourlyRate: 90,
     minuteRate: 1.6,
     image: 'https://images.unsplash.com/photo-1534751516642-a1af1ef26a56?q=80&w=1600&auto=format&fit=crop',
@@ -68,6 +73,7 @@ export const developers: Developer[] = [
   {
     id: 'dev5',
     name: 'David Kim',
+    email: 'david.kim@example.com',
     hourlyRate: 100,
     minuteRate: 1.8,
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1600&auto=format&fit=crop',
@@ -84,6 +90,7 @@ export const developers: Developer[] = [
   {
     id: 'dev6',
     name: 'Olivia Torres',
+    email: 'olivia.torres@example.com',
     hourlyRate: 120,
     minuteRate: 2.2,
     image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1600&auto=format&fit=crop',
@@ -100,6 +107,7 @@ export const developers: Developer[] = [
   {
     id: 'dev7',
     name: 'Michael Zhang',
+    email: 'michael.zhang@example.com',
     hourlyRate: 85,
     minuteRate: 1.5,
     image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1600&auto=format&fit=crop',
@@ -116,6 +124,7 @@ export const developers: Developer[] = [
   {
     id: 'dev8',
     name: 'Sophie Anderson',
+    email: 'sophie.anderson@example.com',
     hourlyRate: 95,
     minuteRate: 1.7,
     image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1600&auto=format&fit=crop',

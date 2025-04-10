@@ -13,7 +13,7 @@ export interface Developer {
   experience?: string;
   hourlyRate?: number;
   minuteRate?: number;
-  availability?: boolean;
+  availability?: boolean | { days?: string[]; hours?: string; };
   rating?: number;
   communicationPreferences?: string[];
   description?: string;
@@ -26,7 +26,7 @@ export interface Developer {
   languagesSpoken?: any[];
   premiumVerified?: boolean;
   
-  // Adding missing properties that are causing errors
+  // Additional properties
   featured?: boolean;
   online?: boolean;
   lastActive?: string;
