@@ -20,6 +20,9 @@ import {
   debugCreateProfile 
 } from './authDebug';
 
+// Import the logoutUser function from authUtils
+import { logoutUser } from './authUtils';
+
 // Export auth context and hook
 export { AuthContext, AuthProvider, AuthStateProvider };
 export { useAuth };
@@ -29,6 +32,9 @@ export { getCurrentUserData, updateUserData, invalidateUserDataCache };
 
 // Export registration function
 export { register };
+
+// Export logout function
+export { logoutUser };
 
 // Export debug functions
 export { debugCheckProfileExists, debugCreateProfile };
