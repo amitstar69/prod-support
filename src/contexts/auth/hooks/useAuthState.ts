@@ -117,6 +117,7 @@ export const useAuthState = (): AuthContextType => {
   const handleRegister = useCallback(async (userData: any, userType: 'developer' | 'client'): Promise<boolean> => {
     setIsLoading(true);
     try {
+      // Make sure to pass the required parameters for authRegister
       const result = await authRegister(userData, userType);
       return result;
     } finally {
