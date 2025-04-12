@@ -117,8 +117,16 @@ export const useAuthState = (): AuthContextType => {
   const handleRegister = useCallback(async (userData: any, userType: 'developer' | 'client'): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Make sure to pass the required parameters for authRegister
-      const result = await authRegister(userData, userType);
+      // After looking at the registration function, we need to provide all 7 expected parameters
+      const result = await authRegister(
+        userData, 
+        userType,
+        false, // rememberMe (default)
+        setAuthState, // setAuthState callback 
+        null, // redirectPath (default)
+        null, // onSuccess callback (default)
+        true // emailVerification (default to true)
+      );
       return result;
     } finally {
       setIsLoading(false);
