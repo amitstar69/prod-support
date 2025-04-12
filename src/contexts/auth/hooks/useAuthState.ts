@@ -117,15 +117,16 @@ export const useAuthState = (): AuthContextType => {
   const handleRegister = useCallback(async (userData: any, userType: 'developer' | 'client'): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // After looking at the registration function, we need to provide all 7 expected parameters
+      // Based on the registration function signature in contexts/auth/registration/index.ts
+      // The function expects (userData, userType, mockDevelopers, mockClients, setMockDevelopers, setMockClients, setAuthState)
       const result = await authRegister(
         userData, 
         userType,
-        false, // rememberMe (default)
-        setAuthState, // setAuthState callback 
-        null, // redirectPath (default)
-        null, // onSuccess callback (default)
-        true // emailVerification (default to true)
+        [], // mockDevelopers - empty array as we're using Supabase
+        [], // mockClients - empty array as we're using Supabase
+        () => {}, // setMockDevelopers - empty function as we're using Supabase
+        () => {}, // setMockClients - empty function as we're using Supabase
+        setAuthState // setAuthState callback
       );
       return result;
     } finally {
