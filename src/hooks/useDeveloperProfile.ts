@@ -4,6 +4,7 @@ import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } 
 import { Developer } from '../types/product';
 import { toast } from 'sonner';
 import { debugCheckProfile, debugCreateMissingProfiles } from '../contexts/auth/authUtils';
+import { supabase } from '../integrations/supabase/client';
 
 interface DeveloperProfileFormData {
   firstName: string;
@@ -105,19 +106,33 @@ export const useDeveloperProfile = () => {
   });
   
   const fetchUserData = useCallback(async (forceRefresh = true) => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('No userId provided, aborting fetchUserData');
+      setIsLoading(false);
+      return;
+    }
     
     setIsLoading(true);
     console.log('Fetching developer profile data for user:', userId, 'forceRefresh:', forceRefresh);
     
+    // Set a timeout in case the fetch takes too long
     const timeoutId = setTimeout(() => {
       console.log('Profile loading timeout reached');
       setLoadingTimeoutReached(true);
       setIsLoading(false);
       toast.error("Loading profile data is taking longer than expected. You can try logging out and back in.");
-    }, 10000); // 10 seconds timeout
+    }, 15000); // 15 seconds timeout
     
     try {
+      // Verify user exists in auth
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No authenticated user found');
+        clearTimeout(timeoutId);
+        setIsLoading(false);
+        return;
+      }
+      
       // Force a fresh fetch if requested
       if (forceRefresh) {
         console.log('Forcing cache invalidation before fetch');
@@ -131,21 +146,16 @@ export const useDeveloperProfile = () => {
         
         // If profile is missing or incomplete, attempt to create it
         if (!profileCheck.complete) {
-          const authStateStr = localStorage.getItem('authState');
-          if (authStateStr) {
-            const { userType } = JSON.parse(authStateStr);
-            
-            // Attempt to create missing profile parts
-            console.log('Attempting to create missing profile parts...');
-            const createResult = await debugCreateMissingProfiles(
-              userId,
-              userType as 'developer' | 'client',
-              profileCheck.baseProfile?.email || '',
-              profileCheck.baseProfile?.name || 'New User'
-            );
-            
-            console.log('Profile creation result:', createResult);
-          }
+          // Attempt to create missing profile parts
+          console.log('Attempting to create missing profile parts...');
+          const createResult = await debugCreateMissingProfiles(
+            userId,
+            userType as 'developer' | 'client',
+            user.email || '',
+            user.user_metadata?.name || 'New User'
+          );
+          
+          console.log('Profile creation result:', createResult);
         }
       }
       
@@ -224,6 +234,7 @@ export const useDeveloperProfile = () => {
     };
   }, [userId]);
   
+  // Fetch data when component mounts or userId changes
   useEffect(() => {
     if (userId) {
       console.log('Initial developer profile data fetch for user:', userId);

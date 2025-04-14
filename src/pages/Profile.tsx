@@ -13,12 +13,15 @@ import { Progress } from '../components/ui/progress';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDeveloperProfile } from '../hooks/useDeveloperProfile';
+import { supabase } from '../integrations/supabase/client';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout, userId } = useAuth();
+  const { logout, userId, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('profile');
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  
   const { 
     developer,
     formData,
@@ -30,9 +33,35 @@ const Profile: React.FC = () => {
     refreshProfile
   } = useDeveloperProfile();
   
+  // Check auth status on page load and verify profile exists
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      setCheckingAuth(true);
+      
+      try {
+        // Verify we have a session with Supabase
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          console.log('No active session found, redirecting to login');
+          navigate('/login');
+          return;
+        }
+        
+        console.log('Active session found', session.user.id);
+      } catch (err) {
+        console.error('Error checking auth session:', err);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+    
+    checkAuthStatus();
+  }, [navigate]);
+  
   // Force refresh profile data when navigating back to this page
   useEffect(() => {
-    if (refreshProfile) {
+    if (!checkingAuth && refreshProfile) {
       console.log("Profile page mounted or route changed, refreshing data");
       refreshProfile();
     }
@@ -40,8 +69,11 @@ const Profile: React.FC = () => {
     // Cleanup on unmount
     return () => {
       console.log("Profile page unmounting");
+      if (userId) {
+        invalidateUserDataCache(userId);
+      }
     };
-  }, [location.key, refreshProfile]);
+  }, [location.key, refreshProfile, checkingAuth, userId]);
   
   const handleForceLogout = async () => {
     try {
@@ -58,10 +90,24 @@ const Profile: React.FC = () => {
     navigate(-1);
   };
   
-  if (isLoading) {
+  // Show loading state while checking authentication or loading profile
+  if (checkingAuth || isLoading) {
     return (
       <Layout>
         <ProfileLoadingState onForceLogout={handleForceLogout} />
+      </Layout>
+    );
+  }
+  
+  // Handle authentication issues
+  if (!isAuthenticated || !userId) {
+    return (
+      <Layout>
+        <ProfileErrorState 
+          title="Authentication Required"
+          message="Please log in to view your profile"
+          onForceLogout={() => navigate('/login')}
+        />
       </Layout>
     );
   }

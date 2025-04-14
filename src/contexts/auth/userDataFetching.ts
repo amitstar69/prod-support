@@ -3,6 +3,7 @@ import { supabase } from '../../integrations/supabase/client';
 import { Developer, Client } from '../../types/product';
 import { fetchUserData } from './userDataFetchers';
 import { toast } from 'sonner';
+import { debugCreateMissingProfiles, debugCheckProfile } from './authUtils';
 
 // Function to get the current user's data with improved caching and timeout
 export const getCurrentUserData = async (): Promise<Developer | Client | null> => {
@@ -31,14 +32,15 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
       localStorage.removeItem(`userData_${userId}`);
       localStorage.removeItem(`userDataTime_${userId}`);
     } else {
-      // More aggressive caching strategy for verification status - only cache for 10 seconds
+      // More aggressive caching strategy for verification status - only cache for 5 seconds
+      // to ensure fresh data after page refreshes
       const cachedDataStr = localStorage.getItem(`userData_${userId}`);
       const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
       
       if (cachedDataStr && cacheTime) {
         const cacheAge = Date.now() - parseInt(cacheTime);
-        // Reduced cache time to 10 seconds for more frequent checks of verification status
-        if (cacheAge < 10 * 1000) { 
+        // Reduced cache time to 5 seconds for more frequent checks after page refresh
+        if (cacheAge < 5 * 1000) { 
           console.log('Using cached user data', cacheAge/1000, 'seconds old');
           try {
             return JSON.parse(cachedDataStr);
@@ -50,6 +52,29 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
           console.log('Cache expired after', cacheAge/1000, 'seconds, fetching fresh data');
         }
       }
+    }
+    
+    // Before fetching data, check that the profile exists and create it if missing
+    const profileCheck = await debugCheckProfile(userId);
+    if (!profileCheck.complete) {
+      console.log('Profile check found incomplete profile - attempting creation');
+      
+      // Get email from auth user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No auth user found while checking profile');
+        return null;
+      }
+      
+      // Attempt to create missing profile parts
+      await debugCreateMissingProfiles(
+        userId,
+        userType as 'developer' | 'client',
+        user.email || '',
+        user.user_metadata?.name || 'New User'
+      );
+      
+      console.log('Profile creation completed');
     }
     
     // Create a timeout promise - 30 seconds to allow more time for slow connections
@@ -123,12 +148,9 @@ export const getUserDataFromLocalStorage = (userType: string | null, userId: str
   if (!userType || !userId) return null;
   
   try {
-    if (userType === 'developer') {
-      const developers = JSON.parse(localStorage.getItem('mockDevelopers') || '[]');
-      return developers.find((dev: Developer) => dev.id === userId) || null;
-    } else if (userType === 'client') {
-      const clients = JSON.parse(localStorage.getItem('mockClients') || '[]');
-      return clients.find((client: Client) => client.id === userId) || null;
+    const cachedDataStr = localStorage.getItem(`userData_${userId}`);
+    if (cachedDataStr) {
+      return JSON.parse(cachedDataStr);
     }
   } catch (error) {
     console.error('Error reading from localStorage:', error);
