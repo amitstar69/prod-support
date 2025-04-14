@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 
 import Index from './pages/Index';
@@ -59,97 +59,30 @@ function App() {
       <HelpRequestProvider>
         <BrowserRouter>
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            
-            {/* Route for developer registration */}
             <Route path="/developer" element={<DeveloperRegistration />} />
-            
-            {/* Add this alias route to prevent 404 */}
             <Route path="/developer-registration" element={<DeveloperRegistration />} />
-            
             <Route path="/search" element={<Search />} />
             <Route path="/product/:id" element={<ProductDetail />} />
-            
-            {/* New route for developer profile */}
             <Route path="/developer/:id" element={<DeveloperProfilePage />} />
+            <Route path="/verification-success" element={<VerificationSuccessPage />} />
+            <Route path="/verification-canceled" element={<VerificationCanceledPage />} />
             
+            {/* Developer-specific routes */}
             <Route 
               path="/profile" 
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredUserType="developer">
                   <Profile />
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/client-profile" 
-              element={
-                <ProtectedRoute>
-                  <ClientProfile />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/get-help/*" element={<GetHelpPage />} />
             
-            {/* Client Routes - Standardized with dashboard suffix */}
-            <Route 
-              path="/client-dashboard" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientLanding />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/client" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientLanding />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/client-tickets" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Keep old route for backward compatibility */}
-            <Route 
-              path="/ticket-dashboard" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Onboarding Routes */}
-            <Route 
-              path="/onboarding/client" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientOnboarding />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/onboarding/developer" 
-              element={
-                <ProtectedRoute requiredUserType="developer">
-                  <DeveloperOnboarding />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Developer Routes - Standardized similar to client routes */}
             <Route 
               path="/developer-dashboard" 
               element={
@@ -159,7 +92,6 @@ function App() {
               } 
             />
             
-            {/* Route for developer tickets (Gigs) */}
             <Route 
               path="/developer-tickets" 
               element={
@@ -169,7 +101,6 @@ function App() {
               } 
             />
             
-            {/* New route for My Applications */}
             <Route 
               path="/my-applications" 
               element={
@@ -179,7 +110,6 @@ function App() {
               } 
             />
             
-            {/* Route for developer ticket details */}
             <Route 
               path="/developer/tickets/:ticketId" 
               element={
@@ -190,6 +120,64 @@ function App() {
             />
             
             <Route 
+              path="/onboarding/developer" 
+              element={
+                <ProtectedRoute requiredUserType="developer">
+                  <DeveloperOnboarding />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Client-specific routes */}
+            <Route 
+              path="/client-profile" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientProfile />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/client-dashboard" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientLanding />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/client" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientLanding />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/client-tickets" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/onboarding/client" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientOnboarding />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Routes accessible by both user types */}
+            <Route path="/get-help/*" element={<GetHelpPage />} />
+            
+            <Route 
               path="/session-history" 
               element={
                 <ProtectedRoute>
@@ -197,8 +185,28 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route path="/verification-success" element={<VerificationSuccessPage />} />
-            <Route path="/verification-canceled" element={<VerificationCanceledPage />} />
+            
+            {/* Role-specific redirects */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  {({ userType }) => {
+                    if (userType === 'developer') return <Navigate to="/developer-dashboard" replace />;
+                    if (userType === 'client') return <Navigate to="/client-dashboard" replace />;
+                    return <Navigate to="/login" replace />;
+                  }}
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Legacy route redirects */}
+            <Route 
+              path="/ticket-dashboard" 
+              element={<Navigate to="/client-tickets" replace />} 
+            />
+            
+            {/* 404 route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />

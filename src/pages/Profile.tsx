@@ -14,13 +14,23 @@ import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDeveloperProfile } from '../hooks/useDeveloperProfile';
 import { supabase } from '../integrations/supabase/client';
+import { getUserHomeRoute } from '../contexts/auth/authUtils';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout, userId, isAuthenticated } = useAuth();
+  const { logout, userId, isAuthenticated, userType } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('profile');
   const [checkingAuth, setCheckingAuth] = useState(true);
+  
+  // If this isn't a developer profile, redirect to the correct profile page
+  useEffect(() => {
+    if (userType === 'client') {
+      console.log('Client user detected on developer profile page, redirecting');
+      navigate('/client-profile');
+      return;
+    }
+  }, [userType, navigate]);
   
   const { 
     developer,
@@ -49,6 +59,18 @@ const Profile: React.FC = () => {
         }
         
         console.log('Active session found', session.user.id);
+        
+        // Verify user type is developer, otherwise redirect
+        if (userType === 'client') {
+          console.log('Client user detected on developer profile page, redirecting');
+          navigate('/client-profile');
+          return;
+        } else if (!userType) {
+          console.log('No user type detected, redirecting to login to refresh session');
+          navigate('/login');
+          return;
+        }
+        
       } catch (err) {
         console.error('Error checking auth session:', err);
       } finally {
@@ -57,11 +79,11 @@ const Profile: React.FC = () => {
     };
     
     checkAuthStatus();
-  }, [navigate]);
+  }, [navigate, userType]);
   
   // Force refresh profile data when navigating back to this page
   useEffect(() => {
-    if (!checkingAuth && refreshProfile) {
+    if (!checkingAuth && refreshProfile && userType === 'developer') {
       console.log("Profile page mounted or route changed, refreshing data");
       refreshProfile();
     }
@@ -73,7 +95,7 @@ const Profile: React.FC = () => {
         invalidateUserDataCache(userId);
       }
     };
-  }, [location.key, refreshProfile, checkingAuth, userId]);
+  }, [location.key, refreshProfile, checkingAuth, userId, userType]);
   
   const handleForceLogout = async () => {
     try {
@@ -107,6 +129,19 @@ const Profile: React.FC = () => {
           title="Authentication Required"
           message="Please log in to view your profile"
           onForceLogout={() => navigate('/login')}
+        />
+      </Layout>
+    );
+  }
+  
+  // Handle wrong user type
+  if (userType !== 'developer') {
+    return (
+      <Layout>
+        <ProfileErrorState 
+          title="Incorrect Profile Type"
+          message="This profile page is for developers only"
+          onForceLogout={() => navigate(getUserHomeRoute(userType))}
         />
       </Layout>
     );
@@ -173,9 +208,9 @@ const Profile: React.FC = () => {
             <div className="flex flex-col w-full md:w-auto">
               <div className="flex justify-between items-center mb-1 w-full md:w-64">
                 <span className="text-sm font-medium">Profile Completion</span>
-                <span className="text-sm font-medium">{completionPercentage}%</span>
+                <span className="text-sm font-medium">{developer.profileCompletionPercentage || 0}%</span>
               </div>
-              <Progress value={completionPercentage} className="h-2 w-full md:w-64" />
+              <Progress value={developer.profileCompletionPercentage || 0} className="h-2 w-full md:w-64" />
             </div>
           </div>
         </div>

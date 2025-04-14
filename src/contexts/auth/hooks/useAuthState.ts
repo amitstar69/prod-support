@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../types';
 import { supabase } from '../../../integrations/supabase/client';
@@ -28,8 +27,21 @@ export const useAuthState = (): AuthContextType => {
         const storedAuthState = localStorage.getItem('authState');
         if (storedAuthState) {
           const parsedState = JSON.parse(storedAuthState);
-          setAuthState(parsedState);
-          console.log('Loaded initial auth state from localStorage:', parsedState);
+          
+          // Ensure userType is strictly typed as 'developer', 'client', or null
+          let safeUserType: 'developer' | 'client' | null = null;
+          if (parsedState.userType === 'developer') safeUserType = 'developer';
+          else if (parsedState.userType === 'client') safeUserType = 'client';
+          
+          // Create a properly typed state object
+          const safeState: AuthState = {
+            isAuthenticated: !!parsedState.isAuthenticated,
+            userId: parsedState.userId || null,
+            userType: safeUserType
+          };
+          
+          setAuthState(safeState);
+          console.log('Loaded initial auth state from localStorage:', safeState);
         }
         
         // Then check with Supabase for the actual session status
@@ -58,15 +70,25 @@ export const useAuthState = (): AuthContextType => {
           if (session?.user) {
             // Get the user type from the profiles table
             try {
-              const { data: profileData } = await supabase
+              const { data: profileData, error } = await supabase
                 .from('profiles')
                 .select('user_type')
                 .eq('id', session.user.id)
                 .single();
                 
+              if (error) {
+                console.error('Error fetching user type:', error);
+                return;
+              }
+                
               // Make sure the user_type is strictly 'developer' or 'client', or null
-              const userType = profileData?.user_type === 'developer' ? 'developer' : 
-                             profileData?.user_type === 'client' ? 'client' : null;
+              let userType: 'developer' | 'client' | null = null;
+              
+              if (profileData?.user_type === 'developer') {
+                userType = 'developer';
+              } else if (profileData?.user_type === 'client') {
+                userType = 'client';
+              }
               
               const newAuthState: AuthState = {
                 isAuthenticated: true,
@@ -82,11 +104,12 @@ export const useAuthState = (): AuthContextType => {
             }
           }
         } else if (event === 'SIGNED_OUT') {
-          setAuthState({
+          const newState: AuthState = {
             isAuthenticated: false,
             userType: null,
             userId: null,
-          });
+          };
+          setAuthState(newState);
           localStorage.removeItem('authState');
           console.log('Cleared auth state on sign out');
         }
