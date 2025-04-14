@@ -29,7 +29,7 @@ import MyApplicationsPage from './pages/MyApplicationsPage';
 import VerificationSuccessPage from './pages/VerificationSuccessPage';
 import VerificationCanceledPage from './pages/VerificationCanceledPage';
 
-import { AuthProvider } from './contexts/auth';
+import { AuthProvider, useAuth } from './contexts/auth';
 import { HelpRequestProvider } from './contexts/HelpRequestContext';
 
 import './App.css';
@@ -186,16 +186,12 @@ function App() {
               } 
             />
             
-            {/* Role-specific redirects */}
+            {/* Role-specific redirects - Fix the TypeScript error by using a proper route */}
             <Route 
               path="/dashboard" 
               element={
                 <ProtectedRoute>
-                  {({ userType }) => {
-                    if (userType === 'developer') return <Navigate to="/developer-dashboard" replace />;
-                    if (userType === 'client') return <Navigate to="/client-dashboard" replace />;
-                    return <Navigate to="/login" replace />;
-                  }}
+                  <DashboardRedirect />
                 </ProtectedRoute>
               } 
             />
@@ -215,5 +211,18 @@ function App() {
     </AuthProvider>
   );
 }
+
+// Component to handle redirection based on user type
+const DashboardRedirect = () => {
+  const { userType } = useAuth();
+  
+  if (userType === 'developer') {
+    return <Navigate to="/developer-dashboard" replace />;
+  } else if (userType === 'client') {
+    return <Navigate to="/client-dashboard" replace />;
+  } else {
+    return <Navigate to="/login" replace />;
+  }
+};
 
 export default App;
