@@ -64,9 +64,11 @@ export const useAuthState = (): AuthContextType => {
                 .eq('id', session.user.id)
                 .single();
                 
-              const userType = profileData?.user_type || null;
+              // Make sure the user_type is strictly 'developer' or 'client', or null
+              const userType = profileData?.user_type === 'developer' ? 'developer' : 
+                             profileData?.user_type === 'client' ? 'client' : null;
               
-              const newAuthState = {
+              const newAuthState: AuthState = {
                 isAuthenticated: true,
                 userId: session.user.id,
                 userType: userType
