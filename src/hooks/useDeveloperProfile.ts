@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth, getCurrentUserData, updateUserData, invalidateUserDataCache } from '../contexts/auth';
 import { Developer } from '../types/product';
 import { toast } from 'sonner';
+import { debugCheckProfile, debugCreateMissingProfiles } from '../contexts/auth/authUtils';
 
 interface DeveloperProfileFormData {
   firstName: string;
@@ -76,7 +77,7 @@ const calculateProfileCompletionPercentage = (formData: DeveloperProfileFormData
 };
 
 export const useDeveloperProfile = () => {
-  const { userId } = useAuth();
+  const { userId, userType } = useAuth();
   const [developer, setDeveloper] = useState<Developer | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -121,6 +122,31 @@ export const useDeveloperProfile = () => {
       if (forceRefresh) {
         console.log('Forcing cache invalidation before fetch');
         invalidateUserDataCache(userId);
+      }
+      
+      // Debug check to ensure profiles exist
+      if (userType === 'developer') {
+        const profileCheck = await debugCheckProfile(userId);
+        console.log('Debug profile check result:', profileCheck);
+        
+        // If profile is missing or incomplete, attempt to create it
+        if (!profileCheck.complete) {
+          const authStateStr = localStorage.getItem('authState');
+          if (authStateStr) {
+            const { userType } = JSON.parse(authStateStr);
+            
+            // Attempt to create missing profile parts
+            console.log('Attempting to create missing profile parts...');
+            const createResult = await debugCreateMissingProfiles(
+              userId,
+              userType as 'developer' | 'client',
+              profileCheck.baseProfile?.email || '',
+              profileCheck.baseProfile?.name || 'New User'
+            );
+            
+            console.log('Profile creation result:', createResult);
+          }
+        }
       }
       
       console.log('Fetching fresh user data');
@@ -185,7 +211,7 @@ export const useDeveloperProfile = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [userId, userType]);
   
   // Clean up effect
   useEffect(() => {

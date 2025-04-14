@@ -46,6 +46,8 @@ export const fetchUserData = async (userType: string | null, userId: string | nu
 // Function to fetch developer profile
 const fetchDeveloperProfile = async (userId: string | null, profileData: any): Promise<Developer | null> => {
   try {
+    console.log('Fetching developer profile for:', userId);
+    
     const { data: devProfileData, error: devProfileError } = await supabase
       .from('developer_profiles')
       .select('*')
@@ -77,7 +79,8 @@ const fetchDeveloperProfile = async (userId: string | null, profileData: any): P
       profileCompleted: profileData.profile_completed,
       // Map the new fields from snake_case to camelCase
       portfolioItems: devProfileData.portfolio_items,
-      languagesSpoken: devProfileData.languages_spoken
+      languagesSpoken: devProfileData.languages_spoken,
+      premiumVerified: devProfileData.premium_verified
     } as Developer;
   } catch (error) {
     console.error('Exception in fetchDeveloperProfile:', error);
