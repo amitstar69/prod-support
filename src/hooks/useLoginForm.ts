@@ -7,6 +7,13 @@ import { supabase } from '../integrations/supabase/client';
 
 export type UserType = 'client' | 'developer';
 
+// Define the login result type to match what's returned by login function
+interface LoginResult {
+  success: boolean;
+  error?: string;
+  requiresVerification?: boolean;
+}
+
 export const useLoginForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -124,11 +131,13 @@ export const useLoginForm = () => {
     console.log(`Attempting to login: ${email} as ${loginUserType}`);
     
     try {
-      const result = await login(email, password, loginUserType);
+      // Explicitly type the result to match our LoginResult interface
+      const result = await login(email, password, loginUserType) as LoginResult;
       
-      const isSuccess = typeof result === 'boolean' ? result : (result && 'success' in result && result.success);
-      const errorMsg = typeof result === 'object' && result && 'error' in result ? result.error : null;
-      const requiresVerification = typeof result === 'object' && result && 'requiresVerification' in result ? result.requiresVerification : false;
+      // Now TypeScript knows that result has these properties
+      const isSuccess = result.success;
+      const errorMsg = result.error;
+      const requiresVerification = result.requiresVerification;
       
       console.log('Login result:', isSuccess ? 'Success' : 'Failed', requiresVerification ? '(verification required)' : '');
       

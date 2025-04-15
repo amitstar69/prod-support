@@ -3,6 +3,13 @@ import { supabase } from '../../integrations/supabase/client';
 import { AuthError } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
+// Define the return type for the login function
+export interface LoginResult {
+  success: boolean;
+  error?: string;
+  requiresVerification?: boolean;
+}
+
 // Cache for user profiles to reduce database queries
 const profileCache = new Map<string, { user_type: string | null, timestamp: number }>();
 const CACHE_EXPIRY = 15 * 60 * 1000; // Cache expires after 15 minutes for better performance
@@ -11,7 +18,7 @@ export const loginWithEmailAndPassword = async (
   email: string,
   password: string,
   userType: 'client' | 'developer'
-): Promise<{ success: boolean; error?: string; requiresVerification?: boolean }> => {
+): Promise<LoginResult> => {
   try {
     console.time('login-process');
     console.log(`Attempting to log in as ${userType} with email:`, email);
@@ -170,6 +177,7 @@ export const loginWithEmailAndPassword = async (
 };
 
 // Update the login function to use truly optional parameters with default values
+// Explicitly define the return type
 export const login = async (
   email: string, 
   password: string, 
@@ -178,6 +186,6 @@ export const login = async (
   setAuthState: ((state: any) => void) | null = null,
   redirectPath: string | null = null,
   onSuccess: (() => void) | null = null
-): Promise<boolean | { success: boolean; error?: string; requiresVerification?: boolean }> => {
+): Promise<LoginResult> => {
   return await loginWithEmailAndPassword(email, password, userType);
 };
