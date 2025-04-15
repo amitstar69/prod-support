@@ -4,15 +4,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
 import { supabase } from '../integrations/supabase/client';
+import { LoginResult } from '../contexts/auth/authLogin';
 
 export type UserType = 'client' | 'developer';
-
-// Define the login result type to match what's returned by login function
-interface LoginResult {
-  success: boolean;
-  error?: string;
-  requiresVerification?: boolean;
-}
 
 export const useLoginForm = () => {
   const navigate = useNavigate();
@@ -131,8 +125,8 @@ export const useLoginForm = () => {
     console.log(`Attempting to login: ${email} as ${loginUserType}`);
     
     try {
-      // Explicitly type the result to match our LoginResult interface
-      const result = await login(email, password, loginUserType) as LoginResult;
+      // Call login and get the result with the correct type
+      const result = await login(email, password, loginUserType);
       
       // Now TypeScript knows that result has these properties
       const isSuccess = result.success;

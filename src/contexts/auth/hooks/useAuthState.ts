@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../types';
 import { supabase } from '../../../integrations/supabase/client';
-import { login } from '../authLogin';
+import { login, LoginResult } from '../authLogin';
 import { register as authRegister } from '../authRegister';
 import { logoutUser, checkSupabaseSession } from '../authUtils';
 
@@ -156,7 +156,7 @@ export const useAuthState = (): AuthContextType => {
     }
   }, []);
   
-  const handleLogin = useCallback(async (email: string, password: string, userType: 'developer' | 'client'): Promise<boolean> => {
+  const handleLogin = useCallback(async (email: string, password: string, userType: 'developer' | 'client'): Promise<LoginResult> => {
     console.log('handleLogin called');
     setIsLoading(true);
     try {
@@ -171,11 +171,7 @@ export const useAuthState = (): AuthContextType => {
         null // onSuccess
       );
       
-      const isSuccessful = typeof result === 'boolean' 
-        ? result 
-        : (result && 'success' in result) ? result.success : false;
-      
-      if (isSuccessful) {
+      if (result.success) {
         setAuthState(prev => ({
           ...prev,
           isAuthenticated: true,
@@ -183,16 +179,16 @@ export const useAuthState = (): AuthContextType => {
         }));
         console.log(`Login successful as ${userType}, setting auth state`);
       } else {
-        const errorMessage = (typeof result === 'object' && result && 'error' in result) 
-          ? result.error 
-          : 'Login failed';
-        console.error('Login failed:', errorMessage);
+        console.error('Login failed:', result.error);
       }
       
-      return isSuccessful;
+      return result;
     } catch (error: any) {
       console.error('Login exception:', error);
-      return false;
+      return {
+        success: false,
+        error: error.message || 'An unexpected error occurred during login'
+      };
     } finally {
       setTimeout(() => {
         setIsLoading(false);
