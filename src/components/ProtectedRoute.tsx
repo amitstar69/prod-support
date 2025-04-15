@@ -29,7 +29,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { isAuthenticated, userType: authUserType, userId, isLoading } = useAuth();
   const location = useLocation();
   const [isVerifying, setIsVerifying] = useState(true);
-  const [routeResolved, setRouteResolved] = useState(false);
   
   useEffect(() => {
     // Show toast when redirecting because of wrong user type
@@ -89,7 +88,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         console.error("Error in profile verification:", error);
       } finally {
         setIsVerifying(false);
-        setRouteResolved(true);
       }
     };
     

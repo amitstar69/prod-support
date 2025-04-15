@@ -1,3 +1,4 @@
+
 import { supabase } from '../../integrations/supabase/client';
 import { AuthError } from '@supabase/supabase-js';
 import { toast } from 'sonner';
@@ -34,6 +35,13 @@ export const loginWithEmailAndPassword = async (
 
     if (error) {
       console.error('Login error:', error);
+      if (error.message.includes('Email not confirmed')) {
+        return {
+          success: false,
+          error: 'Please verify your email before logging in.',
+          requiresVerification: true
+        };
+      }
       return {
         success: false,
         error: error.message,
@@ -106,8 +114,15 @@ export const loginWithEmailAndPassword = async (
 
     if (profileError) {
       console.error('Error fetching user profile:', profileError);
-      // Sign out user if we can't verify their user type
-      await supabase.auth.signOut();
+      
+      // If the profile doesn't exist, we might need to create it
+      if (profileError.code === 'PGRST116') { // Not found error
+        // This would be a good place to create a profile if needed
+        // For now, we'll just sign out the user
+        toast.error('Your user profile is missing. Please contact support.');
+        await supabase.auth.signOut();
+      }
+      
       return {
         success: false,
         error: 'Error verifying user type. Please try again.',
