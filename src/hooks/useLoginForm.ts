@@ -1,264 +1,151 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
-import { supabase } from '../integrations/supabase/client';
-import { LoginResult } from '../contexts/auth/authLogin';
-
-export type UserType = 'client' | 'developer';
+import { useLoginErrors } from './auth/login/useLoginErrors';
+import { useAuthStatus } from './auth/login/useAuthStatus';
+import { validateEmail, validatePassword } from './auth/login/validation';
+import { UserType } from '../contexts/auth/types';
 
 export const useLoginForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated, userType, isLoading: authLoading } = useAuth();
+  const { login, isAuthenticated, userType } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginUserType, setLoginUserType] = useState<UserType>('client');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
   
+  const {
+    error,
+    emailError,
+    passwordError,
+    clearAllErrors,
+    setLoginError,
+    setFieldError
+  } = useLoginErrors();
+
+  const { checkAuthStatus, handleResendVerification } = useAuthStatus();
+
   const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
-    setEmailError('');
-    setError(''); // Clear global error when user starts typing
-  }, []);
+    clearAllErrors();
+  }, [clearAllErrors]);
 
   const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
-    setPasswordError('');
-    setError(''); // Clear global error when user starts typing
-  }, []);
+    clearAllErrors();
+  }, [clearAllErrors]);
 
   const handleUserTypeChange = useCallback((type: UserType) => {
     setLoginUserType(type);
-    // Clear all errors on user type change
-    setError('');
-    setEmailError('');
-    setPasswordError('');
+    clearAllErrors();
+  }, [clearAllErrors]);
+
+  const handleRememberMeChange = useCallback(() => {
+    setRememberMe(prev => !prev);
   }, []);
 
-  const handleRememberMeChange = useCallback(() => setRememberMe(prev => !prev), []);
+  const validateForm = useCallback(() => {
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      setFieldError('email', emailValidation.error);
+      return false;
+    }
 
-  // Validate email with clear error handling
-  const validateEmail = useCallback(() => {
-    // Clear other errors first
-    setError('');
-    setPasswordError('');
-    
-    if (!email) {
-      setEmailError('Email is required');
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setFieldError('password', passwordValidation.error);
       return false;
     }
-    
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(email)) {
-      setEmailError('Please enter a valid email address');
-      return false;
-    }
-    
-    setEmailError('');
+
     return true;
-  }, [email]);
-
-  // Validate password with clear error handling
-  const validatePassword = useCallback(() => {
-    // Clear other errors first
-    setError('');
-    setEmailError('');
-    
-    if (!password) {
-      setPasswordError('Password is required');
-      return false;
-    }
-    
-    if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
-      return false;
-    }
-    
-    setPasswordError('');
-    return true;
-  }, [password]);
-
-  useEffect(() => {
-    if (isAuthenticated && userType) {
-      console.log('User already authenticated, redirecting');
-      const params = new URLSearchParams(location.search);
-      const returnTo = params.get('returnTo');
-      
-      let destination = returnTo && returnTo.startsWith('/') 
-        ? returnTo
-        : userType === 'developer' 
-          ? '/developer-dashboard' 
-          : '/client-dashboard';
-      
-      console.log(`User already authenticated as ${userType}, redirecting to`, destination);
-      navigate(destination, { replace: true });
-    }
-  }, [isAuthenticated, userType, navigate, location.search]);
-
-  const checkAuthStatus = useCallback(async () => {
-    try {
-      console.log('Checking auth status');
-      const { data } = await supabase.auth.getSession();
-      console.log('Auth session check result:', data.session ? 'Has session' : 'No session');
-      return !!data.session;
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-      return false;
-    }
-  }, []);
-
-  const handleResendVerification = useCallback(async () => {
-    if (!email) {
-      toast.error('Please enter your email address first');
-      return;
-    }
-    
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email,
-      });
-      
-      if (error) {
-        console.error('Failed to resend verification email:', error);
-        toast.error('Failed to resend verification email. Please try again later.');
-      } else {
-        toast.success('Verification email sent! Please check your inbox.');
-      }
-    } catch (error: any) {
-      console.error('Error sending verification email:', error);
-      toast.error('An error occurred. Please try again later.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [email]);
+  }, [email, password, setFieldError]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    clearAllErrors();
     
-    // Clear all errors at the start
-    setError('');
-    setEmailError('');
-    setPasswordError('');
-    
-    const isEmailValid = validateEmail();
-    const isPasswordValid = validatePassword();
-    
-    if (!isEmailValid || !isPasswordValid) {
-      return;
-    }
-    
-    if (isLoading || authLoading) {
-      console.log('Login already in progress');
+    if (!validateForm()) {
       return;
     }
     
     setIsLoading(true);
-    console.log(`Attempting to login: ${email} as ${loginUserType}`);
+    console.log(`Attempting to login: ${email} as ${loginUserType} with Remember Me: ${rememberMe}`);
     
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        console.warn('Login request timed out after 10 seconds');
         controller.abort();
       }, 10000);
       
-      // Pass the rememberMe parameter to the login function
-      const loginPromise = login(email, password, loginUserType, rememberMe);
-      
       const result = await Promise.race([
-        loginPromise,
-        new Promise<LoginResult>((_, reject) => {
+        login(email, password, loginUserType, rememberMe),
+        new Promise((_, reject) => {
           controller.signal.addEventListener('abort', () => {
             reject(new Error('Login request timed out'));
           });
         })
       ]).catch(error => {
-        console.error('Login error or timeout:', error);
-        clearTimeout(timeoutId);
-        return {
-          success: false,
-          error: error.message || 'Login request failed'
-        } as LoginResult;
+        setConsecutiveErrors(prev => prev + 1);
+        throw error;
       });
       
       clearTimeout(timeoutId);
       
-      console.log('Login result:', result.success ? 'Success' : 'Failed', 
-        result.requiresVerification ? '(verification required)' : '');
-      
       if (result.success) {
-        // Clear all error states
-        setError('');
-        setEmailError('');
-        setPasswordError('');
-        
+        setConsecutiveErrors(0);
+        clearAllErrors();
         toast.success(`Successfully logged in as ${loginUserType}`);
-        
-        const activeUserType = userType || loginUserType;
         
         const params = new URLSearchParams(location.search);
         const returnTo = params.get('returnTo');
-        
-        const redirectPath = returnTo && returnTo.startsWith('/')
+        const redirectPath = returnTo && returnTo.startsWith('/') 
           ? returnTo
-          : activeUserType === 'developer'
-            ? '/developer-dashboard' 
-            : '/client-dashboard';
+          : loginUserType === 'developer' ? '/developer-dashboard' : '/client-dashboard';
             
-        console.log(`Login successful, redirecting to ${redirectPath}`);
         navigate(redirectPath, { replace: true });
       } else if (result.requiresVerification) {
-        // Show verification error, but ONLY in one place (global error)
-        setError('Please verify your email before logging in.');
-        setEmailError('');
-        setPasswordError('');
+        setLoginError('Please verify your email before logging in.');
         toast.error('Email verification required');
       } else if (result.error) {
-        // Set a single error message in the error state
-        setError(result.error);
-        // Clear field-specific errors when showing a global error
-        setEmailError('');
-        setPasswordError('');
-        toast.error(result.error);
-      } else {
-        // Generic error, only set global error
-        setError('Login failed. Please check your credentials and try again.');
-        setEmailError('');
-        setPasswordError('');
-        toast.error('Login failed');
+        setLoginError(result.error);
+        
+        if (consecutiveErrors >= 3) {
+          toast.error('Multiple login failures', {
+            description: 'Please check your credentials or contact support',
+            action: {
+              label: 'Help',
+              onClick: () => navigate('/help')
+            }
+          });
+        } else {
+          toast.error(result.error);
+        }
       }
     } catch (error: any) {
       console.error('Login error:', error);
       
-      // Set ONLY global error, clear field-specific errors
-      setEmailError('');
-      setPasswordError('');
-      
       if (error.name === 'AbortError' || error.message?.includes('timed out')) {
-        setError('Login request timed out. Please check your internet connection and try again.');
+        setLoginError('Login request timed out. Please check your internet connection and try again.');
         toast.error('Connection timed out');
       } else {
-        setError(error.message || 'An unexpected error occurred during login');
+        setLoginError(error.message || 'An unexpected error occurred during login');
         toast.error(error.message || 'Login failed. Please try again later.');
       }
     } finally {
       setIsLoading(false);
     }
-  }, [email, password, loginUserType, isLoading, authLoading, validateEmail, validatePassword, login, navigate, location.search, userType, rememberMe]);
+  }, [email, password, loginUserType, rememberMe, isLoading, login, navigate, location.search, consecutiveErrors, clearAllErrors, setLoginError, validateForm]);
 
   return {
     email,
     password,
     userType: loginUserType,
-    isLoading: isLoading || authLoading,
+    isLoading,
     error,
     emailError,
     passwordError,
@@ -267,11 +154,31 @@ export const useLoginForm = () => {
     handlePasswordChange,
     handleUserTypeChange,
     handleRememberMeChange,
-    validateEmail,
-    validatePassword,
     handleSubmit,
     checkAuthStatus,
     isAuthenticated,
-    handleResendVerification
+    validateEmail: () => {
+      const validation = validateEmail(email);
+      if (!validation.isValid) {
+        setFieldError('email', validation.error);
+      }
+      return validation.isValid;
+    },
+    validatePassword: () => {
+      const validation = validatePassword(password);
+      if (!validation.isValid) {
+        setFieldError('password', validation.error);
+      }
+      return validation.isValid;
+    },
+    handleResendVerification: async () => {
+      try {
+        await handleResendVerification(email);
+        toast.success('Verification email sent!');
+      } catch (error: any) {
+        console.error('Error in resend verification:', error);
+        toast.error('Failed to resend verification email');
+      }
+    }
   };
 };
