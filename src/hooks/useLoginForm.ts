@@ -155,7 +155,7 @@ export const useLoginForm = () => {
         controller.abort();
       }, 10000);
       
-      const loginPromise = login(email, password, loginUserType, rememberMe);
+      const loginPromise = login(email, password, loginUserType);
       
       const result = await Promise.race([
         loginPromise,
