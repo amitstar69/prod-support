@@ -14,14 +14,131 @@ export interface LoginResult {
 const profileCache = new Map<string, { user_type: string | null, timestamp: number }>();
 const CACHE_EXPIRY = 15 * 60 * 1000; // Cache expires after 15 minutes for better performance
 
+// Rate limiting implementation
+const loginAttempts = new Map<string, { count: number, firstAttempt: number, locked: boolean, lockExpiry: number }>();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes lockout
+const ATTEMPT_WINDOW = 10 * 60 * 1000; // 10 minute window for attempts
+
+const isRateLimited = (email: string): { limited: boolean, message?: string } => {
+  const now = Date.now();
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  // Get or initialize attempts record
+  if (!loginAttempts.has(normalizedEmail)) {
+    loginAttempts.set(normalizedEmail, {
+      count: 0,
+      firstAttempt: now,
+      locked: false,
+      lockExpiry: 0
+    });
+  }
+  
+  const record = loginAttempts.get(normalizedEmail)!;
+  
+  // Check if the account is locked
+  if (record.locked) {
+    // Check if lockout period has expired
+    if (now >= record.lockExpiry) {
+      // Reset the record after lockout period
+      loginAttempts.set(normalizedEmail, {
+        count: 0,
+        firstAttempt: now,
+        locked: false,
+        lockExpiry: 0
+      });
+      return { limited: false };
+    }
+    
+    // Calculate remaining lockout time in minutes
+    const remainingMinutes = Math.ceil((record.lockExpiry - now) / 60000);
+    return { 
+      limited: true, 
+      message: `Too many login attempts. Please try again in ${remainingMinutes} minute${remainingMinutes === 1 ? '' : 's'}.`
+    };
+  }
+  
+  // Reset attempts if the window has expired
+  if (now - record.firstAttempt > ATTEMPT_WINDOW) {
+    loginAttempts.set(normalizedEmail, {
+      count: 0,
+      firstAttempt: now,
+      locked: false,
+      lockExpiry: 0
+    });
+  }
+  
+  return { limited: false };
+};
+
+const recordLoginAttempt = (email: string, success: boolean): void => {
+  const now = Date.now();
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  if (!loginAttempts.has(normalizedEmail)) {
+    loginAttempts.set(normalizedEmail, {
+      count: 0,
+      firstAttempt: now,
+      locked: false,
+      lockExpiry: 0
+    });
+  }
+  
+  const record = loginAttempts.get(normalizedEmail)!;
+  
+  if (success) {
+    // Reset on successful login
+    loginAttempts.set(normalizedEmail, {
+      count: 0,
+      firstAttempt: now,
+      locked: false,
+      lockExpiry: 0
+    });
+    return;
+  }
+  
+  // Increment failed attempts
+  const newCount = record.count + 1;
+  
+  // Check if we should lock the account
+  if (newCount >= MAX_LOGIN_ATTEMPTS) {
+    loginAttempts.set(normalizedEmail, {
+      count: newCount,
+      firstAttempt: record.firstAttempt,
+      locked: true,
+      lockExpiry: now + LOCKOUT_DURATION
+    });
+    
+    console.warn(`Account ${email} locked for ${LOCKOUT_DURATION/60000} minutes due to too many failed attempts`);
+  } else {
+    // Just increment the counter
+    loginAttempts.set(normalizedEmail, {
+      count: newCount,
+      firstAttempt: record.firstAttempt,
+      locked: false,
+      lockExpiry: 0
+    });
+  }
+};
+
 export const loginWithEmailAndPassword = async (
   email: string,
   password: string,
-  userType: 'client' | 'developer'
+  userType: 'client' | 'developer',
+  rememberMe: boolean = false
 ): Promise<LoginResult> => {
   try {
     console.time('login-process');
     console.log(`Attempting to log in as ${userType} with email:`, email);
+    
+    // Check rate limiting first
+    const rateLimitCheck = isRateLimited(email);
+    if (rateLimitCheck.limited) {
+      return {
+        success: false,
+        error: rateLimitCheck.message || 'Too many login attempts. Please try again later.'
+      };
+    }
     
     // Step 1: Sign in with credentials
     console.time('auth-signin');
@@ -30,10 +147,16 @@ export const loginWithEmailAndPassword = async (
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
     
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const authOptions = {
       email,
       password,
-    });
+      options: {
+        // If rememberMe is true, use longer session duration
+        expiresIn: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 // 30 days vs 1 day
+      }
+    };
+    
+    const { data, error } = await supabase.auth.signInWithPassword(authOptions);
     
     // Clear timeout
     clearTimeout(timeoutId);
@@ -41,6 +164,9 @@ export const loginWithEmailAndPassword = async (
     console.timeEnd('auth-signin');
 
     if (error) {
+      // Record failed attempt
+      recordLoginAttempt(email, false);
+      
       console.error('Login error:', error);
       if (error.message.includes('Email not confirmed')) {
         return {
@@ -65,6 +191,7 @@ export const loginWithEmailAndPassword = async (
     }
 
     if (!data.user) {
+      recordLoginAttempt(email, false);
       console.error('No user returned after login');
       return {
         success: false,
@@ -74,6 +201,7 @@ export const loginWithEmailAndPassword = async (
     
     // Check if email is verified
     if (data.user.email_confirmed_at === null) {
+      recordLoginAttempt(email, false);
       console.log('User email is not verified');
       // Sign out user since email is not verified
       await supabase.auth.signOut();
@@ -96,6 +224,7 @@ export const loginWithEmailAndPassword = async (
       
       // Check if user type matches
       if (cachedProfile.user_type !== userType) {
+        recordLoginAttempt(email, false);
         console.error('User type mismatch (from cache):', cachedProfile.user_type, 'vs', userType);
         // Sign out user if their type doesn't match
         await supabase.auth.signOut();
@@ -104,6 +233,9 @@ export const loginWithEmailAndPassword = async (
           error: `You are registered as a ${cachedProfile.user_type}, not a ${userType}. Please use the correct login option.`,
         };
       }
+      
+      // Record successful login
+      recordLoginAttempt(email, true);
       
       console.log('Login successful for', userType, '(cached validation)');
       console.timeEnd('login-process');
@@ -129,6 +261,7 @@ export const loginWithEmailAndPassword = async (
     console.timeEnd('profile-fetch');
 
     if (profileError) {
+      recordLoginAttempt(email, false);
       console.error('Error fetching user profile:', profileError);
       
       // If the profile doesn't exist, we might need to create it
@@ -154,6 +287,7 @@ export const loginWithEmailAndPassword = async (
 
     // Check if user type matches
     if (profileData.user_type !== userType) {
+      recordLoginAttempt(email, false);
       console.error('User type mismatch:', profileData.user_type, 'vs', userType);
       // Sign out user if their type doesn't match
       await supabase.auth.signOut();
@@ -163,10 +297,14 @@ export const loginWithEmailAndPassword = async (
       };
     }
 
+    // Record successful login
+    recordLoginAttempt(email, true);
+    
     console.log('Login successful for', userType);
     console.timeEnd('login-process');
     return { success: true };
   } catch (error) {
+    recordLoginAttempt(email, false);
     const authError = error as AuthError;
     console.error('Exception during login:', authError);
     console.timeEnd('login-process');
@@ -197,5 +335,5 @@ export const login = async (
   redirectPath: string | null = null,
   onSuccess: (() => void) | null = null
 ): Promise<LoginResult> => {
-  return await loginWithEmailAndPassword(email, password, userType);
+  return await loginWithEmailAndPassword(email, password, userType, rememberMe);
 };

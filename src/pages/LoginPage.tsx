@@ -33,7 +33,8 @@ const LoginPage: React.FC = () => {
     checkAuthStatus,
     isAuthenticated,
     validateEmail,
-    validatePassword
+    validatePassword,
+    handleResendVerification
   } = useLoginForm();
 
   // Check URL query parameters for verification status
@@ -76,6 +77,38 @@ const LoginPage: React.FC = () => {
       navigate(destination, { replace: true });
     }
   }, [isAuthenticated, navigate, userType, location.search]);
+
+  // Check for verification error in the URL
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    
+    // If there's an error parameter that indicates email verification is needed
+    if (searchParams.get('error') === 'email-verification' || error?.includes('verify')) {
+      const emailToVerify = searchParams.get('email') || email;
+      
+      if (emailToVerify) {
+        setVerificationEmail(emailToVerify);
+        setShowVerification(true);
+      }
+    }
+  }, [location.search, email, error]);
+  
+  // Handle resend verification and go back functions
+  const onResendVerification = () => {
+    handleResendVerification();
+  };
+  
+  const onBackToLogin = () => {
+    setShowVerification(false);
+    // Clear verification related query params
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.delete('error');
+    searchParams.delete('email');
+    
+    const newSearch = searchParams.toString();
+    const path = location.pathname + (newSearch ? `?${newSearch}` : '');
+    navigate(path, { replace: true });
+  };
   
   console.log('LoginPage render state', { showVerification, isLoading, error });
   
@@ -85,15 +118,11 @@ const LoginPage: React.FC = () => {
         <LoginHeader />
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-md mx-auto">
-            <EmailVerificationMessage email={verificationEmail} />
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => setShowVerification(false)}
-                className="text-primary hover:underline text-sm"
-              >
-                Back to login
-              </button>
-            </div>
+            <EmailVerificationMessage 
+              email={verificationEmail}
+              onResend={onResendVerification}
+              onBack={onBackToLogin}
+            />
           </div>
         </div>
       </Layout>

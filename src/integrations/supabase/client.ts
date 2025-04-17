@@ -42,7 +42,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
 
 // Enhanced logging for Supabase initialization and operations
 console.log('Supabase client initialized with URL:', SUPABASE_URL);
-console.log('Initializing with key starting with:', SUPABASE_ANON_KEY.substring(0, 10) + '...');
 
 // Test the connection and log more details
 supabase.auth.getSession().then(({ data, error }) => {
@@ -50,7 +49,7 @@ supabase.auth.getSession().then(({ data, error }) => {
     console.error('Error checking Supabase session:', error);
     toast.error('Unable to connect to the database. Please try again later.');
   } else {
-    console.log('Supabase session check successful:', data.session ? 'Active session' : 'No active session');
+    console.log('Supabase session check successful:', data.session ? 'Active session' : 'No session');
     
     // If we have a session, log the user ID to verify it's valid
     if (data.session) {
@@ -68,5 +67,3 @@ window.addEventListener('online', () => {
   console.log('Network connection restored, refreshing Supabase connection');
   supabase.auth.refreshSession();
 });
-
-// No imports at the end to prevent circular dependencies

@@ -54,6 +54,20 @@ const LoginForm: React.FC<LoginFormProps> = ({
     }
   };
 
+  // Determine error type for better user feedback
+  const getErrorType = (error: string): string => {
+    if (error.includes('Network') || error.includes('connection') || error.includes('timed out')) {
+      return 'network';
+    } else if (error.includes('credentials') || error.includes('invalid') || error.includes('incorrect')) {
+      return 'credentials'; 
+    } else if (error.includes('verify') || error.includes('verification') || error.includes('confirmed')) {
+      return 'verification';
+    }
+    return 'general';
+  };
+
+  const errorType = error ? getErrorType(error) : null;
+
   return (
     <Card className="border border-border/40 shadow-sm">
       <CardHeader className="pb-2">
@@ -78,9 +92,20 @@ const LoginForm: React.FC<LoginFormProps> = ({
       <form onSubmit={onSubmit} noValidate>
         <CardContent className="space-y-4 pt-4">
           {error && (
-            <Alert variant="destructive" className="py-2">
+            <Alert variant={errorType === 'network' ? 'destructive' : errorType === 'verification' ? 'warning' : 'destructive'} className="py-2">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                {errorType === 'verification' ? (
+                  <>
+                    {error}{' '}
+                    <Link to="/forgot-password" className="underline font-medium">
+                      Resend verification email
+                    </Link>
+                  </>
+                ) : (
+                  error
+                )}
+              </AlertDescription>
             </Alert>
           )}
           
@@ -98,9 +123,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
               className={emailError ? "border-destructive" : ""}
               disabled={isLoading}
               required
+              aria-invalid={emailError ? "true" : "false"}
+              aria-describedby={emailError ? "email-error" : undefined}
             />
             {emailError && (
-              <p className="text-xs text-destructive mt-1">{emailError}</p>
+              <p id="email-error" className="text-xs text-destructive mt-1">{emailError}</p>
             )}
           </div>
           
@@ -127,9 +154,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
               className={passwordError ? "border-destructive" : ""}
               disabled={isLoading}
               required
+              aria-invalid={passwordError ? "true" : "false"}
+              aria-describedby={passwordError ? "password-error" : undefined}
             />
             {passwordError && (
-              <p className="text-xs text-destructive mt-1">{passwordError}</p>
+              <p id="password-error" className="text-xs text-destructive mt-1">{passwordError}</p>
             )}
           </div>
           
@@ -144,7 +173,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
               htmlFor="rememberMe" 
               className="text-sm font-normal"
             >
-              Remember me
+              Keep me signed in
             </Label>
           </div>
         </CardContent>
@@ -158,7 +187,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             {isLoading ? (
               <span className="flex items-center">
                 <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Logging in...
+                Signing in...
               </span>
             ) : (
               'Sign In'

@@ -103,6 +103,34 @@ export const useLoginForm = () => {
     }
   }, []);
 
+  // Function to resend verification email
+  const handleResendVerification = useCallback(async () => {
+    if (!email) {
+      toast.error('Please enter your email address first');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      });
+      
+      if (error) {
+        console.error('Failed to resend verification email:', error);
+        toast.error('Failed to resend verification email. Please try again later.');
+      } else {
+        toast.success('Verification email sent! Please check your inbox.');
+      }
+    } catch (error: any) {
+      console.error('Error sending verification email:', error);
+      toast.error('An error occurred. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [email]);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -134,7 +162,7 @@ export const useLoginForm = () => {
       }, 10000);
       
       // Call login and get the result with the correct type
-      const loginPromise = login(email, password, loginUserType);
+      const loginPromise = login(email, password, loginUserType, rememberMe);
       
       // We'll race the login promise against an abort signal
       const result = await Promise.race([
@@ -201,7 +229,7 @@ export const useLoginForm = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [email, password, loginUserType, isLoading, authLoading, validateEmail, validatePassword, login, navigate, location.search, userType]);
+  }, [email, password, loginUserType, isLoading, authLoading, validateEmail, validatePassword, login, navigate, location.search, userType, rememberMe]);
 
   return {
     email,
@@ -220,6 +248,7 @@ export const useLoginForm = () => {
     validatePassword,
     handleSubmit,
     checkAuthStatus,
-    isAuthenticated
+    isAuthenticated,
+    handleResendVerification
   };
 };

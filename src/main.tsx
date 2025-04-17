@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { initEmergencyRecovery } from './utils/emergencyRecovery.ts'
+import { Toaster } from './components/ui/sonner'
 
 // Initialize emergency recovery mechanism
 initEmergencyRecovery();
@@ -56,7 +57,12 @@ try {
     document.body.innerHTML = '<div style="text-align: center; padding: 40px;">Error: Root element not found</div>';
   } else {
     const root = createRoot(rootElement);
-    root.render(<App />);
+    root.render(
+      <>
+        <App />
+        <Toaster position="top-right" />
+      </>
+    );
     appLoaded = true;
     clearTimeout(loadingTimeout);
     console.log("Application successfully rendered");
