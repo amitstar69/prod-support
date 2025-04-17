@@ -123,7 +123,7 @@ export const useAuthState = (): AuthContextType => {
     }
   }, [authState]);
   
-  const handleLogout = useCallback(async () => {
+  const handleLogout = useCallback(async (): Promise<boolean> => {
     console.log("Logout triggered from AuthProvider");
     try {
       const result = await logoutUser();

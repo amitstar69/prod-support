@@ -92,4 +92,3 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
 };
 
 export default LogoutButton;
-
