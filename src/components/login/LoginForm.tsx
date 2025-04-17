@@ -91,24 +91,23 @@ const LoginForm: React.FC<LoginFormProps> = ({
       
       <form onSubmit={onSubmit} noValidate>
         <CardContent className="space-y-4 pt-4">
-          {error && (
-            <Alert variant={errorType === 'network' ? 'destructive' : 'default'} 
-                  className={`py-2 ${
-                    errorType === 'verification' 
-                      ? 'border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300' 
-                      : ''
-                  }`}>
+          {/* Consolidate error display at the top of the form */}
+          {(error || emailError || passwordError) && (
+            <Alert 
+              variant={errorType === 'network' ? 'destructive' : 'default'} 
+              className={`py-2 ${
+                errorType === 'verification' 
+                  ? 'border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300' 
+                  : ''
+              }`}
+            >
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                {errorType === 'verification' ? (
-                  <>
-                    {error}{' '}
-                    <Link to="/forgot-password" className="underline font-medium">
-                      Resend verification email
-                    </Link>
-                  </>
-                ) : (
-                  error
+                {error || emailError || passwordError}{' '}
+                {errorType === 'verification' && (
+                  <Link to="/forgot-password" className="underline font-medium">
+                    Resend verification email
+                  </Link>
                 )}
               </AlertDescription>
             </Alert>
@@ -131,9 +130,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
               aria-invalid={emailError ? "true" : "false"}
               aria-describedby={emailError ? "email-error" : undefined}
             />
-            {emailError && (
-              <p id="email-error" className="text-xs text-destructive mt-1">{emailError}</p>
-            )}
           </div>
           
           <div className="space-y-1">
@@ -162,9 +158,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
               aria-invalid={passwordError ? "true" : "false"}
               aria-describedby={passwordError ? "password-error" : undefined}
             />
-            {passwordError && (
-              <p id="password-error" className="text-xs text-destructive mt-1">{passwordError}</p>
-            )}
           </div>
           
           <div className="flex items-center space-x-2">
@@ -212,3 +205,4 @@ const LoginForm: React.FC<LoginFormProps> = ({
 };
 
 export default LoginForm;
+
