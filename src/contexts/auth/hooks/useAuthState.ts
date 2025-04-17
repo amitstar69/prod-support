@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../types';
 import { supabase } from '../../../integrations/supabase/client';
@@ -16,7 +15,6 @@ export const useAuthState = (): AuthContextType => {
   
   const [isLoading, setIsLoading] = useState(true);
   
-  // Initialize auth state from localStorage and Supabase session
   useEffect(() => {
     console.log('useAuthState - checking session on mount');
     
@@ -24,18 +22,15 @@ export const useAuthState = (): AuthContextType => {
       try {
         setIsLoading(true);
         
-        // First try to load from localStorage for immediate UI feedback
         const storedAuthState = localStorage.getItem('authState');
         if (storedAuthState) {
           try {
             const parsedState = JSON.parse(storedAuthState);
             
-            // Ensure userType is strictly typed as 'developer', 'client', or null
             let safeUserType: 'developer' | 'client' | null = null;
             if (parsedState.userType === 'developer') safeUserType = 'developer';
             else if (parsedState.userType === 'client') safeUserType = 'client';
             
-            // Create a properly typed state object
             const safeState: AuthState = {
               isAuthenticated: !!parsedState.isAuthenticated,
               userId: parsedState.userId || null,
@@ -50,13 +45,9 @@ export const useAuthState = (): AuthContextType => {
           }
         }
         
-        // Then check with Supabase for the actual session status
         if (supabase) {
           const authData = await checkSupabaseSession(setAuthState);
           console.log('Supabase auth check result:', authData);
-          
-          // If we got a valid session from Supabase but localStorage had no data,
-          // this would update our state with the valid session
         }
       } catch (error) {
         console.error('Error checking session:', error);
@@ -67,14 +58,12 @@ export const useAuthState = (): AuthContextType => {
     
     initializeAuthState();
     
-    // Set up an auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log(`Auth state changed: ${event}`, session);
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
-            // Get the user type from the profiles table
             try {
               const { data: profileData, error } = await supabase
                 .from('profiles')
@@ -86,8 +75,7 @@ export const useAuthState = (): AuthContextType => {
                 console.error('Error fetching user type:', error);
                 return;
               }
-                
-              // Make sure the user_type is strictly 'developer' or 'client', or null
+              
               let userType: 'developer' | 'client' | null = null;
               
               if (profileData?.user_type === 'developer') {
@@ -160,15 +148,14 @@ export const useAuthState = (): AuthContextType => {
     console.log('handleLogin called');
     setIsLoading(true);
     try {
-      // Pass all required parameters with explicit defaults for optional parameters
       const result = await login(
         email, 
         password, 
         userType, 
-        false, // rememberMe
-        setAuthState, // setAuthState callback
-        null, // redirectPath
-        null // onSuccess
+        false,
+        setAuthState,
+        null,
+        null
       );
       
       if (result.success) {
@@ -199,16 +186,14 @@ export const useAuthState = (): AuthContextType => {
   const handleRegister = useCallback(async (userData: any, userType: 'developer' | 'client'): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Based on the registration function signature in contexts/auth/registration/index.ts
-      // The function expects (userData, userType, mockDevelopers, mockClients, setMockDevelopers, setMockClients, setAuthState)
       const result = await authRegister(
         userData, 
         userType,
-        [], // mockDevelopers - empty array as we're using Supabase
-        [], // mockClients - empty array as we're using Supabase
-        () => {}, // setMockDevelopers - empty function as we're using Supabase
-        () => {}, // setMockClients - empty function as we're using Supabase
-        setAuthState // setAuthState callback
+        [],
+        [],
+        () => {},
+        () => {},
+        setAuthState
       );
       return result;
     } finally {

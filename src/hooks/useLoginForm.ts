@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
@@ -128,14 +127,10 @@ export const useLoginForm = () => {
       // Call login and get the result with the correct type
       const result = await login(email, password, loginUserType);
       
-      // Now TypeScript knows that result has these properties
-      const isSuccess = result.success;
-      const errorMsg = result.error;
-      const requiresVerification = result.requiresVerification;
+      console.log('Login result:', result.success ? 'Success' : 'Failed', 
+        result.requiresVerification ? '(verification required)' : '');
       
-      console.log('Login result:', isSuccess ? 'Success' : 'Failed', requiresVerification ? '(verification required)' : '');
-      
-      if (isSuccess) {
+      if (result.success) {
         toast.success(`Successfully logged in as ${loginUserType}`);
         
         // Get the returnTo parameter from the URL if it exists
@@ -150,13 +145,13 @@ export const useLoginForm = () => {
             : '/client-dashboard';
             
         navigate(redirectPath, { replace: true });
-      } else if (requiresVerification) {
+      } else if (result.requiresVerification) {
         setError('Please verify your email before logging in.');
         // If using a verification page, you could redirect here
         // navigate(`/email-verification?email=${encodeURIComponent(email)}`);
-      } else if (errorMsg) {
-        setError(errorMsg);
-        toast.error(errorMsg);
+      } else if (result.error) {
+        setError(result.error);
+        toast.error(result.error);
       } else {
         setError('Login failed. Please check your credentials and try again.');
         toast.error('Login failed');

@@ -1,41 +1,41 @@
 
 import { supabase } from '../../integrations/supabase/client';
-import { AuthState } from './types';
 import { toast } from 'sonner';
 
-// Timeout-safe Supabase sign out function
-export const logoutUser = async (): Promise<void> => {
+// Improved logout function with better timeout handling
+export const logoutUser = async (): Promise<boolean> => {
   console.log('Logging out user');
-  return new Promise(async (resolve) => {
-    try {
-      const timeoutId = setTimeout(() => {
+  
+  try {
+    // Create a timeout promise
+    const timeoutPromise = new Promise<boolean>((resolve) => {
+      setTimeout(() => {
         console.warn('Supabase signout timeout reached');
-        localStorage.removeItem('authState');
-        localStorage.removeItem('sb-xptoyeinviaeevdtyjax-auth-token');
-        throw new Error('Logout timeout reached');
-      }, 3000);
-      
-      await supabase.auth.signOut();
-      clearTimeout(timeoutId);
-      localStorage.removeItem('authState');
-      localStorage.removeItem('sb-xptoyeinviaeevdtyjax-auth-token');
-      console.log('Logout completed, auth state cleared');
-      resolve();
-    } catch (error) {
-      console.error('Exception during Supabase signout:', error);
-      localStorage.removeItem('authState');
-      localStorage.removeItem('sb-xptoyeinviaeevdtyjax-auth-token');
-      resolve(); // Resolve anyway to avoid hanging promises
-    }
-  });
+        resolve(false);
+      }, 3000); // 3 second timeout
+    });
+    
+    // Create the actual signout promise
+    const signOutPromise = supabase.auth.signOut().then(() => true);
+    
+    // Race the promises
+    const success = await Promise.race([signOutPromise, timeoutPromise]);
+    
+    // Clear any local storage data regardless of success
+    localStorage.removeItem('authState');
+    
+    // Return the success status
+    return success;
+  } catch (error) {
+    console.error('Error during logout:', error);
+    localStorage.removeItem('authState');
+    return false;
+  }
 };
 
-// Check Supabase session
-export const checkSupabaseSession = async (
-  setAuthState: React.Dispatch<React.SetStateAction<AuthState>>
-): Promise<{success: boolean, userId?: string} | null> => {
+// Check if user has a valid Supabase session
+export const checkSupabaseSession = async (setAuthState?: (state: any) => void): Promise<any> => {
   try {
-    // Get session from Supabase
     const { data, error } = await supabase.auth.getSession();
     
     if (error) {
@@ -43,268 +43,222 @@ export const checkSupabaseSession = async (
       return null;
     }
     
-    const { session } = data;
-    
-    if (!session) {
-      console.log('No Supabase session found');
+    if (!data.session) {
+      console.info('Supabase session check successful: No active session');
       return null;
     }
     
-    console.log('Supabase session check successful:', session.user.id);
+    console.log('Supabase auth check result:', data.session ? 'Has session' : 'No session');
     
-    // Now fetch the user type from profiles
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('user_type')
-      .eq('id', session.user.id)
-      .single();
-      
-    if (profileError) {
-      console.error('Error fetching user profile during session check:', profileError);
-      
-      // Check if the error is because the profile doesn't exist
-      if (profileError.code === 'PGRST116') { // Not found error code
-        // We have a valid auth session but no profile - this is an inconsistent state
-        // The user should log out and log in again
-        toast.error('Your user profile is missing. Please log out and log in again.');
-        return { success: false };
+    // If we have a valid session and a callback to update state
+    if (data.session && setAuthState) {
+      try {
+        // Get the user type from profile
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', data.session.user.id)
+          .maybeSingle();
+          
+        if (profileError) {
+          console.error('Error fetching user type during session check:', profileError);
+        }
+        
+        // Update auth state with user data
+        const userType = profileData?.user_type === 'developer' ? 'developer' : 
+                        profileData?.user_type === 'client' ? 'client' : null;
+        
+        const newState = {
+          isAuthenticated: true,
+          userId: data.session.user.id,
+          userType: userType
+        };
+        
+        setAuthState(newState);
+        localStorage.setItem('authState', JSON.stringify(newState));
+        console.log('Updated auth state from session check:', newState);
+      } catch (error) {
+        console.error('Error processing session data:', error);
       }
-      
-      return { success: false };
     }
     
-    // Validate user type
-    let userType: 'developer' | 'client' | null = null;
-    if (profileData?.user_type === 'developer') {
-      userType = 'developer';
-    } else if (profileData?.user_type === 'client') {
-      userType = 'client';
-    } else {
-      console.warn('User has invalid user_type:', profileData?.user_type);
-    }
-    
-    const newState: AuthState = {
-      isAuthenticated: true,
-      userId: session.user.id,
-      userType: userType
-    };
-    
-    setAuthState(newState);
-    localStorage.setItem('authState', JSON.stringify(newState));
-    
-    return {
-      success: true,
-      userId: session.user.id
-    };
+    return data;
   } catch (error) {
-    console.error('Exception checking Supabase session:', error);
-    return { success: false };
+    console.error('Exception in checkSupabaseSession:', error);
+    return null;
   }
 };
 
-// Function to check if a profile exists for the current user
-export const debugCheckProfile = async (userId: string) => {
-  if (!userId) {
-    console.error('No userId provided to debugCheckProfile');
-    return { 
-      complete: false, 
-      baseProfileExists: false,
-      typeProfileExists: false,
-      error: 'No userId provided' 
-    };
+// Helper to get user's home route based on their type
+export const getUserHomeRoute = (userType: string | null): string => {
+  if (userType === 'developer') {
+    return '/developer-dashboard';
+  } else if (userType === 'client') {
+    return '/client-dashboard';
   }
-  
+  return '/';
+};
+
+// Debug function to check profile consistency
+export const debugCheckProfile = async (userId: string): Promise<{complete: boolean, profiles: boolean, userProfile: boolean}> => {
   try {
-    console.log(`Checking profile completeness for user ${userId}`);
-    
-    // Step 1: Check if base profile exists
+    // Check if base profile exists
     const { data: baseProfile, error: baseProfileError } = await supabase
       .from('profiles')
-      .select('*')
+      .select('user_type')
       .eq('id', userId)
-      .single();
-    
+      .maybeSingle();
+      
     if (baseProfileError) {
       console.error('Error checking base profile:', baseProfileError);
-      return { 
-        complete: false, 
-        baseProfileExists: false,
-        typeProfileExists: false,
-        error: baseProfileError.message 
-      };
     }
     
-    // No base profile
-    if (!baseProfile) {
-      console.log('No base profile found');
-      return { 
-        complete: false, 
-        baseProfileExists: false,
-        typeProfileExists: false
-      };
+    const userType = baseProfile?.user_type;
+    let userProfileExists = false;
+    
+    // Check if type-specific profile exists
+    if (userType === 'developer') {
+      const { data, error } = await supabase
+        .from('developer_profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (error) {
+        console.error('Error checking developer profile:', error);
+      }
+      
+      userProfileExists = !!data;
+    } else if (userType === 'client') {
+      const { data, error } = await supabase
+        .from('client_profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (error) {
+        console.error('Error checking client profile:', error);
+      }
+      
+      userProfileExists = !!data;
     }
     
-    console.log('Base profile found:', baseProfile);
-    
-    // Step 2: Check specific profile type exists
-    const userType = baseProfile.user_type;
-    
-    if (!userType || (userType !== 'developer' && userType !== 'client')) {
-      console.error(`Invalid user type: ${userType}`);
-      return { 
-        complete: false, 
-        baseProfileExists: true,
-        typeProfileExists: false,
-        error: `Invalid user type: ${userType}`
-      };
-    }
-    
-    const profileTable = userType === 'developer' ? 'developer_profiles' : 'client_profiles';
-    
-    const { data: typeProfile, error: typeProfileError } = await supabase
-      .from(profileTable)
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (typeProfileError) {
-      console.error(`Error checking ${userType} profile:`, typeProfileError);
-      return { 
-        complete: false, 
-        baseProfileExists: true,
-        typeProfileExists: false,
-        userType,
-        error: typeProfileError.message 
-      };
-    }
-    
-    // Both profiles exist - we're complete
-    console.log(`${userType} profile found:`, typeProfile);
-    return { 
-      complete: true, 
-      baseProfileExists: true,
-      typeProfileExists: true,
-      userType
+    return {
+      complete: !!baseProfile && userProfileExists,
+      profiles: !!baseProfile,
+      userProfile: userProfileExists
     };
-  } catch (error: any) {
-    console.error('Exception in debugCheckProfile:', error);
-    return { 
+  } catch (error) {
+    console.error('Error in debugCheckProfile:', error);
+    return {
       complete: false,
-      baseProfileExists: false,
-      typeProfileExists: false,
-      error: error.message 
+      profiles: false,
+      userProfile: false
     };
   }
 };
 
-// Function to create missing profiles if needed
+// Debug function to create missing profiles
 export const debugCreateMissingProfiles = async (
   userId: string,
   userType: 'developer' | 'client',
-  email: string,
-  name: string
-) => {
+  email: string = '',
+  name: string = ''
+): Promise<{success: boolean, message: string}> => {
   try {
-    console.log(`Creating missing profiles for ${userId}, userType: ${userType}`);
-    
-    // Check current state
-    const profileCheck = await debugCheckProfile(userId);
-    
-    // Needed for profile creation
+    // Get user data if email or name not provided
     if (!email || !name) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        email = email || user.email || '';
-        name = name || user.user_metadata?.name || 'New User';
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData && userData.user) {
+        email = email || userData.user.email || '';
+        name = name || userData.user.user_metadata?.name || 'New User';
       }
     }
     
-    let baseProfileCreated = false;
-    let typeProfileCreated = false;
-    
-    // Create base profile if needed
-    if (!profileCheck.baseProfileExists) {
-      console.log('Creating base profile...');
+    // Check if base profile exists
+    const { data: baseProfile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
       
-      const { error: baseProfileError } = await supabase
+    // Create base profile if missing
+    if (!baseProfile) {
+      const { error } = await supabase
         .from('profiles')
         .insert({
           id: userId,
-          user_type: userType,
           email: email,
           name: name,
-          username: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''),
-          image: '/placeholder.svg',
+          user_type: userType,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          profile_completed: false
         });
-      
-      if (baseProfileError) {
-        console.error('Error creating base profile:', baseProfileError);
-        return { success: false, error: baseProfileError.message };
-      }
-      
-      baseProfileCreated = true;
-      console.log('Base profile created successfully');
-    }
-    
-    // Create type-specific profile if needed
-    if (!profileCheck.typeProfileExists) {
-      console.log(`Creating ${userType} profile...`);
-      
-      const profileTable = userType === 'developer' ? 'developer_profiles' : 'client_profiles';
-      const profileData = userType === 'developer' 
-        ? {
-            id: userId,
-            category: 'frontend',
-            skills: ['JavaScript', 'React'],
-            hourly_rate: 75,
-            minute_rate: 1.5,
-          }
-        : {
-            id: userId,
-            profile_completion_percentage: 20,
-            looking_for: ['web development'],
-            tech_stack: ['React'],
-            budget_per_hour: 75,
-          };
         
-      const { error: typeProfileError } = await supabase
-        .from(profileTable)
-        .insert(profileData);
-      
-      if (typeProfileError) {
-        console.error(`Error creating ${userType} profile:`, typeProfileError);
-        return { 
-          success: baseProfileCreated, 
-          baseProfileCreated, 
-          typeProfileCreated: false,
-          error: typeProfileError.message 
-        };
+      if (error) {
+        console.error('Error creating base profile:', error);
+        return { success: false, message: 'Failed to create base profile' };
       }
       
-      typeProfileCreated = true;
-      console.log(`${userType} profile created successfully`);
+      console.log('Created missing base profile');
     }
     
-    return { 
-      success: true, 
-      baseProfileCreated, 
-      typeProfileCreated,
-      userType
-    };
-  } catch (error: any) {
-    console.error('Exception in debugCreateMissingProfiles:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-// Helper to get the appropriate route for a user type
-export const getUserHomeRoute = (userType: 'developer' | 'client' | null): string => {
-  switch (userType) {
-    case 'developer':
-      return '/developer-dashboard';
-    case 'client':
-      return '/client-dashboard';
-    default:
-      return '/';
+    // Check if type-specific profile exists
+    if (userType === 'developer') {
+      const { data: devProfile } = await supabase
+        .from('developer_profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (!devProfile) {
+        const { error } = await supabase
+          .from('developer_profiles')
+          .insert({
+            id: userId,
+            hourly_rate: 0,
+            minute_rate: 0,
+            category: [],
+            skills: [],
+            profile_completion_percentage: 0
+          });
+          
+        if (error) {
+          console.error('Error creating developer profile:', error);
+          return { success: false, message: 'Failed to create developer profile' };
+        }
+        
+        console.log('Created missing developer profile');
+      }
+    } else if (userType === 'client') {
+      const { data: clientProfile } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (!clientProfile) {
+        const { error } = await supabase
+          .from('client_profiles')
+          .insert({
+            id: userId,
+            looking_for: [],
+            profile_completion_percentage: 0
+          });
+          
+        if (error) {
+          console.error('Error creating client profile:', error);
+          return { success: false, message: 'Failed to create client profile' };
+        }
+        
+        console.log('Created missing client profile');
+      }
+    }
+    
+    return { success: true, message: 'Profiles repaired successfully' };
+  } catch (error) {
+    console.error('Error in debugCreateMissingProfiles:', error);
+    return { success: false, message: 'Unexpected error during profile repair' };
   }
 };

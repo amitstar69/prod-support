@@ -1,13 +1,12 @@
 
-import React, { ReactNode } from 'react';
+import React from 'react';
 import { AuthContext } from './AuthContext';
 import { useAuthState } from './hooks/useAuthState';
 
 interface AuthProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
-// Provider component to wrap the app
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const authState = useAuthState();
   
@@ -17,6 +16,3 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
-// This is deprecated but kept for backward compatibility
-export const AuthStateProvider = AuthProvider;
