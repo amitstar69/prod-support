@@ -1,5 +1,5 @@
 
-import { User } from '@/contexts/auth/types';
+import { UserType } from '@/contexts/auth/types';
 
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 
@@ -21,6 +21,15 @@ export type TicketCategory =
   | 'debugging'
   | 'consultation'
   | 'other';
+
+// Define our own User interface since we don't have it in auth/types
+export interface User {
+  id: string;
+  userType: UserType;
+  name?: string;
+  email?: string;
+  image?: string;
+}
 
 export interface Ticket {
   id: string;
