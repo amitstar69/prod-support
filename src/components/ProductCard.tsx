@@ -1,12 +1,11 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Clock, MapPin, User } from 'lucide-react';
+import { Star, Clock, MapPin } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardFooter } from './ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Product } from '../types/product';
-import { Skeleton } from './ui/skeleton';
 
 interface ProductCardProps {
   product: Product;
@@ -14,9 +13,6 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, featuredSize = 'normal' }) => {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  
   const { 
     id, 
     name, 
@@ -46,35 +42,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, featuredSize = 'norm
   const displayedSkills = skills.slice(0, 3);
   const hasMoreSkills = skills.length > 3;
 
-  const handleImageLoad = () => {
-    setImageLoaded(true);
-  };
-
-  const handleImageError = () => {
-    console.warn('Product image failed to load:', image);
-    setImageError(true);
-  };
-
   return (
     <Card className={`overflow-hidden transition-shadow hover:shadow-md ${featured ? 'border-primary/50 bg-primary/5' : ''}`}>
       <Link to={`/developer/${id}`} className="block">
         <div className="p-6">
           <div className="flex items-start gap-4">
             <Avatar className={`border-2 border-background ${featuredSize === 'large' ? 'h-16 w-16' : 'h-12 w-12'}`}>
-              {!imageLoaded && !imageError && (
-                <Skeleton className="h-full w-full rounded-full" />
-              )}
-              {!imageError && (
-                <AvatarImage 
-                  src={image} 
-                  alt={name}
-                  onLoad={handleImageLoad}
-                  onError={handleImageError}
-                />
-              )}
-              <AvatarFallback>
-                <User className="h-5 w-5 text-muted-foreground" />
-              </AvatarFallback>
+              <AvatarImage src={image} alt={name} />
+              <AvatarFallback>{getInitials(name)}</AvatarFallback>
             </Avatar>
             
             <div className="space-y-1 flex-1">

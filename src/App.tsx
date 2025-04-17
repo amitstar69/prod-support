@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 
 import Index from './pages/Index';
@@ -29,7 +29,8 @@ import MyApplicationsPage from './pages/MyApplicationsPage';
 import VerificationSuccessPage from './pages/VerificationSuccessPage';
 import VerificationCanceledPage from './pages/VerificationCanceledPage';
 
-import { useAuth } from './contexts/auth';
+import { AuthProvider, useAuth } from './contexts/auth';
+import { HelpRequestProvider } from './contexts/HelpRequestContext';
 
 import './App.css';
 
@@ -54,163 +55,167 @@ function App() {
   }, [darkMode]);
 
   return (
-    <>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/developer" element={<DeveloperRegistration />} />
-        <Route path="/developer-registration" element={<DeveloperRegistration />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/product/:id" element={<ProductDetail />} />
-        <Route path="/developer/:id" element={<DeveloperProfilePage />} />
-        <Route path="/verification-success" element={<VerificationSuccessPage />} />
-        <Route path="/verification-canceled" element={<VerificationCanceledPage />} />
-        
-        {/* Developer-specific routes - ensure they're protected */}
-        <Route 
-          path="/profile" 
-          element={
-            <ProtectedRoute requiredUserType="developer">
-              <Profile />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/developer-dashboard" 
-          element={
-            <ProtectedRoute requiredUserType="developer">
-              <DeveloperWelcomePage />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/developer-tickets" 
-          element={
-            <ProtectedRoute requiredUserType="developer">
-              <DeveloperDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/my-applications" 
-          element={
-            <ProtectedRoute requiredUserType="developer">
-              <MyApplicationsPage />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/developer/tickets/:ticketId" 
-          element={
-            <ProtectedRoute requiredUserType="developer">
-              <DeveloperTicketDetail />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/onboarding/developer" 
-          element={
-            <ProtectedRoute requiredUserType="developer">
-              <DeveloperOnboarding />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Client-specific routes - ensure they're protected */}
-        <Route 
-          path="/client-profile" 
-          element={
-            <ProtectedRoute requiredUserType="client">
-              <ClientProfile />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/client-dashboard" 
-          element={
-            <ProtectedRoute requiredUserType="client">
-              <ClientLanding />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/client" 
-          element={
-            <ProtectedRoute requiredUserType="client">
-              <ClientLanding />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/client-tickets" 
-          element={
-            <ProtectedRoute requiredUserType="client">
-              <ClientDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/onboarding/client" 
-          element={
-            <ProtectedRoute requiredUserType="client">
-              <ClientOnboarding />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Routes accessible by both user types */}
-        <Route 
-          path="/get-help/*" 
-          element={
-            <ProtectedRoute>
-              <GetHelpPage />
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route 
-          path="/session-history" 
-          element={
-            <ProtectedRoute>
-              <SessionHistory />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Role-specific redirects */}
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <DashboardRedirect />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Legacy route redirects */}
-        <Route 
-          path="/ticket-dashboard" 
-          element={<Navigate to="/client-tickets" replace />} 
-        />
-        
-        {/* 404 route */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Toaster />
-    </>
+    <AuthProvider>
+      <HelpRequestProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/developer" element={<DeveloperRegistration />} />
+            <Route path="/developer-registration" element={<DeveloperRegistration />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/developer/:id" element={<DeveloperProfilePage />} />
+            <Route path="/verification-success" element={<VerificationSuccessPage />} />
+            <Route path="/verification-canceled" element={<VerificationCanceledPage />} />
+            
+            {/* Developer-specific routes - ensure they're protected */}
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute requiredUserType="developer">
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/developer-dashboard" 
+              element={
+                <ProtectedRoute requiredUserType="developer">
+                  <DeveloperWelcomePage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/developer-tickets" 
+              element={
+                <ProtectedRoute requiredUserType="developer">
+                  <DeveloperDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/my-applications" 
+              element={
+                <ProtectedRoute requiredUserType="developer">
+                  <MyApplicationsPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/developer/tickets/:ticketId" 
+              element={
+                <ProtectedRoute requiredUserType="developer">
+                  <DeveloperTicketDetail />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/onboarding/developer" 
+              element={
+                <ProtectedRoute requiredUserType="developer">
+                  <DeveloperOnboarding />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Client-specific routes - ensure they're protected */}
+            <Route 
+              path="/client-profile" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientProfile />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/client-dashboard" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientLanding />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/client" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientLanding />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/client-tickets" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/onboarding/client" 
+              element={
+                <ProtectedRoute requiredUserType="client">
+                  <ClientOnboarding />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Routes accessible by both user types */}
+            <Route 
+              path="/get-help/*" 
+              element={
+                <ProtectedRoute>
+                  <GetHelpPage />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route 
+              path="/session-history" 
+              element={
+                <ProtectedRoute>
+                  <SessionHistory />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Role-specific redirects */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <DashboardRedirect />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Legacy route redirects */}
+            <Route 
+              path="/ticket-dashboard" 
+              element={<Navigate to="/client-tickets" replace />} 
+            />
+            
+            {/* 404 route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster />
+        </BrowserRouter>
+      </HelpRequestProvider>
+    </AuthProvider>
   );
 }
 

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -17,8 +18,6 @@ import { Search, Filter } from 'lucide-react';
 import { useTicketFetching } from '../hooks/dashboard/useTicketFetching';
 import { useTicketFilters } from '../hooks/dashboard/useTicketFilters';
 import { useTicketApplications } from '../hooks/dashboard/useTicketApplications';
-import ClientSection from '../components/sections/ClientSection';
-import DeveloperSection from '../components/sections/DeveloperSection';
 
 const Index: React.FC = () => {
   const { isAuthenticated, userId, userType } = useAuth();
@@ -217,10 +216,23 @@ const Index: React.FC = () => {
       ) : (
         <>
           <Hero />
-          <ClientSection />
-          <DeveloperSection />
+          {contentLoaded || !isLoading ? (
+            <DeveloperShowcase developers={developers} />
+          ) : (
+            <div className="py-8 text-center">
+              <div className="animate-pulse mx-auto max-w-6xl px-4">
+                <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto mb-4"></div>
+                <div className="flex flex-wrap justify-center gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-64 w-64 bg-gray-200 rounded-lg"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <PainPointsSection />
           <HowItWorksSection />
-          <DeveloperShowcase developers={developers} />
+          <TargetAudienceSection />
           <CTASection />
         </>
       )}

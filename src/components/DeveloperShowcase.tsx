@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Developer } from '../types/product';
-import { Shield, Clock, User } from 'lucide-react';
+import { Shield, Clock } from 'lucide-react';
 
 interface DeveloperShowcaseProps {
   developers: Developer[];
@@ -47,22 +47,6 @@ const DeveloperShowcase: React.FC<DeveloperShowcaseProps> = ({ developers }) => 
                   src={developer.image} 
                   alt={developer.name}
                   className="h-full w-full object-cover"
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    console.warn('Developer image failed to load:', target.src);
-                    target.src = '/placeholder.svg';
-                    target.onerror = null; // Prevent infinite error loop
-                    
-                    // Add a placeholder background
-                    target.parentElement?.classList.add('bg-muted');
-                    
-                    // Add a fallback icon
-                    const fallbackIcon = document.createElement('div');
-                    fallbackIcon.className = 'absolute inset-0 flex items-center justify-center';
-                    fallbackIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-                    target.parentElement?.appendChild(fallbackIcon);
-                  }}
                 />
                 <div className="absolute top-3 right-3">
                   <div className={`px-3 py-1 rounded-full text-xs font-medium ${developer.online ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>

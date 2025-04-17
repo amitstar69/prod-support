@@ -12,27 +12,12 @@ export const createUserProfile = async (
   userType: 'developer' | 'client'
 ): Promise<boolean> => {
   try {
-    // Process image to ensure we have a valid URL
-    let imageUrl = userData.image;
-    
-    // If we don't have a valid image URL, use placeholder
-    if (!imageUrl || !imageUrl.trim() || imageUrl.includes('undefined')) {
-      imageUrl = '/placeholder.svg';
-    }
-    
-    // Ensure image URL is properly formatted
-    if (imageUrl.startsWith('data:image')) {
-      // Base64 images aren't supported directly, use placeholder instead
-      console.warn('Base64 images not supported in profile creation, using placeholder');
-      imageUrl = '/placeholder.svg';
-    }
-    
     const profileData = {
       id: userId,
       user_type: userType,
       name: userData.name || '',
       email: userData.email,
-      image: imageUrl,
+      image: userData.image || '/placeholder.svg',
       description: userData.description || '',
       location: userData.location || '',
       joined_date: new Date().toISOString(),
@@ -62,8 +47,7 @@ export const createUserProfile = async (
           id: userId,
           user_type: userType,
           name: userData.name || 'User',
-          email: userData.email,
-          image: '/placeholder.svg' // Always use placeholder for fallback approach
+          email: userData.email
         }]);
         
       if (altProfileError) {
