@@ -31,11 +31,11 @@ import VerificationCanceledPage from './pages/VerificationCanceledPage';
 
 import { AuthProvider, useAuth } from './contexts/auth';
 import { HelpRequestProvider } from './contexts/HelpRequestContext';
+import { getUserHomePage } from './utils/navigationUtils';
 
 import './App.css';
 
 function App() {
-  // Check if dark mode is enabled
   const [darkMode, setDarkMode] = React.useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -59,155 +59,141 @@ function App() {
       <HelpRequestProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public Routes */}
+            {/* Public marketing page for all users */}
             <Route path="/" element={<Index />} />
+            
+            {/* Authentication routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/developer" element={<DeveloperRegistration />} />
-            <Route path="/developer-registration" element={<DeveloperRegistration />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/product/:id" element={<ProductDetail />} />
-            <Route path="/developer/:id" element={<DeveloperProfilePage />} />
             <Route path="/verification-success" element={<VerificationSuccessPage />} />
             <Route path="/verification-canceled" element={<VerificationCanceledPage />} />
             
-            {/* Developer-specific routes - ensure they're protected */}
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute requiredUserType="developer">
-                  <Profile />
-                </ProtectedRoute>
-              } 
-            />
+            {/* Public search and profile routes */}
+            <Route path="/search" element={<Search />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/developer-profiles/:id" element={<DeveloperProfilePage />} />
             
-            <Route 
-              path="/developer-dashboard" 
-              element={
-                <ProtectedRoute requiredUserType="developer">
-                  <DeveloperWelcomePage />
-                </ProtectedRoute>
-              } 
-            />
+            {/* SEO-friendly developer routes */}
+            <Route path="/developer" element={
+              <ProtectedRoute requiredUserType="developer">
+                <DeveloperWelcomePage />
+              </ProtectedRoute>
+            } />
             
-            <Route 
-              path="/developer-tickets" 
-              element={
-                <ProtectedRoute requiredUserType="developer">
-                  <DeveloperDashboard />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/developer/dashboard" element={
+              <ProtectedRoute requiredUserType="developer">
+                <DeveloperDashboard />
+              </ProtectedRoute>
+            } />
             
-            <Route 
-              path="/my-applications" 
-              element={
-                <ProtectedRoute requiredUserType="developer">
-                  <MyApplicationsPage />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/developer/tickets" element={
+              <ProtectedRoute requiredUserType="developer">
+                <DeveloperDashboard />
+              </ProtectedRoute>
+            } />
             
-            <Route 
-              path="/developer/tickets/:ticketId" 
-              element={
-                <ProtectedRoute requiredUserType="developer">
-                  <DeveloperTicketDetail />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/developer/profile" element={
+              <ProtectedRoute requiredUserType="developer">
+                <Profile />
+              </ProtectedRoute>
+            } />
             
-            <Route 
-              path="/onboarding/developer" 
-              element={
-                <ProtectedRoute requiredUserType="developer">
-                  <DeveloperOnboarding />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/developer/applications" element={
+              <ProtectedRoute requiredUserType="developer">
+                <MyApplicationsPage />
+              </ProtectedRoute>
+            } />
             
-            {/* Client-specific routes - ensure they're protected */}
-            <Route 
-              path="/client-profile" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientProfile />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/developer/tickets/:ticketId" element={
+              <ProtectedRoute requiredUserType="developer">
+                <DeveloperTicketDetail />
+              </ProtectedRoute>
+            } />
             
-            <Route 
-              path="/client-dashboard" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientLanding />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/developer/onboarding" element={
+              <ProtectedRoute requiredUserType="developer">
+                <DeveloperOnboarding />
+              </ProtectedRoute>
+            } />
             
-            <Route 
-              path="/client" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientLanding />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/developer/sessions" element={
+              <ProtectedRoute requiredUserType="developer">
+                <SessionHistory />
+              </ProtectedRoute>
+            } />
             
-            <Route 
-              path="/client-tickets" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientDashboard />
-                </ProtectedRoute>
-              } 
-            />
+            {/* SEO-friendly client routes */}
+            <Route path="/client" element={
+              <ProtectedRoute requiredUserType="client">
+                <ClientLanding />
+              </ProtectedRoute>
+            } />
             
-            <Route 
-              path="/onboarding/client" 
-              element={
-                <ProtectedRoute requiredUserType="client">
-                  <ClientOnboarding />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/client/dashboard" element={
+              <ProtectedRoute requiredUserType="client">
+                <ClientDashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/client/tickets" element={
+              <ProtectedRoute requiredUserType="client">
+                <ClientDashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/client/profile" element={
+              <ProtectedRoute requiredUserType="client">
+                <ClientProfile />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/client/onboarding" element={
+              <ProtectedRoute requiredUserType="client">
+                <ClientOnboarding />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/client/sessions" element={
+              <ProtectedRoute requiredUserType="client">
+                <SessionHistory />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/client/help" element={
+              <ProtectedRoute requiredUserType="client">
+                <GetHelpPage />
+              </ProtectedRoute>
+            } />
             
             {/* Routes accessible by both user types */}
-            <Route 
-              path="/get-help/*" 
-              element={
-                <ProtectedRoute>
-                  <GetHelpPage />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/get-help/*" element={
+              <ProtectedRoute>
+                <GetHelpPage />
+              </ProtectedRoute>
+            } />
             
-            <Route 
-              path="/session-history" 
-              element={
-                <ProtectedRoute>
-                  <SessionHistory />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/session-history" element={
+              <ProtectedRoute>
+                <SessionHistory />
+              </ProtectedRoute>
+            } />
             
-            {/* Role-specific redirects */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <DashboardRedirect />
-                </ProtectedRoute>
-              } 
-            />
+            {/* Account registration */}
+            <Route path="/developer-registration" element={<DeveloperRegistration />} />
             
-            {/* Legacy route redirects */}
-            <Route 
-              path="/ticket-dashboard" 
-              element={<Navigate to="/client-tickets" replace />} 
-            />
+            {/* Automatic routing based on user type */}
+            <Route path="/dashboard" element={<UserTypeRedirect />} />
+            <Route path="/home" element={<UserTypeRedirect />} />
+            <Route path="/account" element={<UserAccountRedirect />} />
+            
+            {/* Legacy route redirects for backward compatibility */}
+            <Route path="/developer-dashboard" element={<Navigate to="/developer/dashboard" replace />} />
+            <Route path="/client-dashboard" element={<Navigate to="/client/dashboard" replace />} />
+            <Route path="/ticket-dashboard" element={<Navigate to="/client/tickets" replace />} />
+            <Route path="/onboarding/developer" element={<Navigate to="/developer/onboarding" replace />} />
+            <Route path="/onboarding/client" element={<Navigate to="/client/onboarding" replace />} />
             
             {/* 404 route */}
             <Route path="*" element={<NotFound />} />
@@ -219,17 +205,28 @@ function App() {
   );
 }
 
-// Component to handle redirection based on user type
-const DashboardRedirect = () => {
-  const { userType } = useAuth();
+// Component to handle redirection to the user's home page
+const UserTypeRedirect = () => {
+  const { userType, isAuthenticated } = useAuth();
   
-  if (userType === 'developer') {
-    return <Navigate to="/developer-dashboard" replace />;
-  } else if (userType === 'client') {
-    return <Navigate to="/client-dashboard" replace />;
-  } else {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+  
+  const homePath = getUserHomePage(userType);
+  return <Navigate to={homePath} replace />;
+};
+
+// Component to handle redirection to the user's profile page
+const UserAccountRedirect = () => {
+  const { userType, isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  const profilePath = userType === 'developer' ? '/developer/profile' : '/client/profile';
+  return <Navigate to={profilePath} replace />;
 };
 
 export default App;

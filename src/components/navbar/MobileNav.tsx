@@ -1,186 +1,205 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { User, LogIn, Search } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth';
-import LogoutButton from './LogoutButton';
-import SearchBar from '../SearchBar';
+import { ThemeToggle } from '../ThemeToggle';
+import { Button } from '../ui/button';
+import { getUserHomePage } from '../../utils/navigationUtils';
 
 interface MobileNavProps {
   isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
+  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
-  const { isAuthenticated, userType } = useAuth();
-  const navigate = useNavigate();
+  const { isAuthenticated, userType, logout } = useAuth();
+  const location = useLocation();
   
-  const handleLoginClick = () => {
-    navigate('/login');
+  const homePath = getUserHomePage(userType);
+  
+  const handleLogout = async () => {
+    await logout();
     setIsOpen(false);
   };
   
-  const handleRegisterClick = () => {
-    navigate('/register');
+  const handleLinkClick = () => {
     setIsOpen(false);
   };
   
-  const handleProfileClick = () => {
-    navigate(userType === 'developer' ? '/profile' : '/client-profile');
-    setIsOpen(false);
-  };
-
   if (!isOpen) return null;
-
+  
   return (
-    <div className="md:hidden border-t border-border/40">
-      <div className="p-3">
-        {/* Only show search for client or non-authenticated users */}
-        {(!isAuthenticated || userType === 'client') && (
-          <SearchBar
-            placeholder="Find developers..."
-            className="mb-4"
-          />
+    <div className="md:hidden">
+      <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-border/40">
+        {/* Mobile Navigation Links */}
+        <Link
+          to="/"
+          className={`block px-3 py-2 rounded-md text-base font-medium ${
+            location.pathname === '/' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+          }`}
+          onClick={handleLinkClick}
+        >
+          Home
+        </Link>
+        
+        <Link
+          to="/search"
+          className={`block px-3 py-2 rounded-md text-base font-medium ${
+            location.pathname === '/search' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+          }`}
+          onClick={handleLinkClick}
+        >
+          Find Developers
+        </Link>
+        
+        {/* Authenticated user links based on user type */}
+        {isAuthenticated && userType === 'developer' && (
+          <>
+            <Link
+              to="/developer"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                location.pathname === '/developer' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+              }`}
+              onClick={handleLinkClick}
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/developer/tickets"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                location.pathname.includes('/developer/tickets') ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+              }`}
+              onClick={handleLinkClick}
+            >
+              Gigs
+            </Link>
+            <Link
+              to="/developer/applications"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                location.pathname.includes('/developer/applications') ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+              }`}
+              onClick={handleLinkClick}
+            >
+              Applications
+            </Link>
+            <Link
+              to="/developer/profile"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                location.pathname.includes('/developer/profile') ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+              }`}
+              onClick={handleLinkClick}
+            >
+              Profile
+            </Link>
+            <Link
+              to="/developer/sessions"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                location.pathname.includes('/developer/sessions') ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+              }`}
+              onClick={handleLinkClick}
+            >
+              Sessions
+            </Link>
+          </>
         )}
         
-        <div className="space-y-1">
-          {/* Show different sections based on user type */}
-          {userType === 'developer' ? (
-            // Developer navigation section
-            <>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
-                Developer Menu
-              </p>
-              
-              <Link
-                to="/developer-dashboard"
-                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                My Dashboard
-              </Link>
-              <Link
-                to="/developer-tickets"
-                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Gigs
-              </Link>
-              <Link
-                to="/my-applications"
-                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                My Applications
-              </Link>
-            </>
-          ) : (
-            // Client navigation section or non-authenticated
-            <>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
-                Find Help
-              </p>
-              
-              <Link
-                to="/search"
-                className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Search Developers
-              </Link>
-              
-              {/* Only show Get Help for clients */}
-              {isAuthenticated && userType === 'client' && (
-                <Link
-                  to="/get-help"
-                  className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Get Instant Help
-                </Link>
-              )}
-              
-              {userType === 'client' && (
-                <>
-                  <Link
-                    to="/client-dashboard"
-                    className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    to="/client-tickets"
-                    className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Tickets
-                  </Link>
-                </>
-              )}
-            </>
-          )}
-          
-          {/* Session History - only show for clients, not developers */}
-          {isAuthenticated && userType === 'client' && (
+        {isAuthenticated && userType === 'client' && (
+          <>
             <Link
-              to="/session-history"
-              className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-              onClick={() => setIsOpen(false)}
+              to="/client"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                location.pathname === '/client' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+              }`}
+              onClick={handleLinkClick}
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/client/tickets"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                location.pathname.includes('/client/tickets') ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+              }`}
+              onClick={handleLinkClick}
+            >
+              Tickets
+            </Link>
+            <Link
+              to="/client/profile"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                location.pathname.includes('/client/profile') ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+              }`}
+              onClick={handleLinkClick}
+            >
+              Profile
+            </Link>
+            <Link
+              to="/client/help"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                location.pathname.includes('/client/help') ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+              }`}
+              onClick={handleLinkClick}
+            >
+              Get Help
+            </Link>
+            <Link
+              to="/client/sessions"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                location.pathname.includes('/client/sessions') ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+              }`}
+              onClick={handleLinkClick}
             >
               Session History
             </Link>
-          )}
-        </div>
+          </>
+        )}
         
-        <div className="my-4 border-t border-border/40 pt-4">
-          {isAuthenticated ? (
-            <>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
-                My Account
-              </p>
-              
-              <button
-                onClick={handleProfileClick}
-                className="flex items-center w-full px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-              >
-                <User className="h-4 w-4 mr-2" />
-                {userType === 'developer' ? 'Developer Profile' : 'Client Profile'}
-              </button>
-              
-              {userType === 'client' && (
-                <Link
-                  to="/get-help/tracking"
-                  className="block px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors ml-6"
-                  onClick={() => setIsOpen(false)}
-                >
-                  My Help Requests
-                </Link>
-              )}
-              
-              <LogoutButton 
-                variant="ghost" 
-                className="flex items-center w-full px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
-              />
-            </>
-          ) : (
-            <div className="flex flex-col space-y-2">
-              <button
-                onClick={handleLoginClick}
-                className="flex items-center w-full px-3 py-2 rounded-md border border-border hover:bg-secondary transition-colors"
-              >
-                <LogIn className="h-4 w-4 mr-2" />
-                Log In
-              </button>
-              
-              <button
-                onClick={handleRegisterClick}
-                className="w-full px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
-                Sign Up
-              </button>
+        {/* Auth buttons */}
+        <div className="pt-4 pb-3 border-t border-border/40">
+          <div className="flex items-center px-5">
+            <div className="ml-auto">
+              <ThemeToggle />
             </div>
-          )}
+          </div>
+          <div className="mt-3 px-2 space-y-1">
+            {isAuthenticated ? (
+              <>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </Button>
+                <Button
+                  className="w-full justify-start"
+                  asChild
+                  onClick={handleLinkClick}
+                >
+                  <Link to={homePath}>
+                    {userType === 'developer' ? 'My Dashboard' : 'My Account'}
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  asChild
+                  onClick={handleLinkClick}
+                >
+                  <Link to="/login">Login</Link>
+                </Button>
+                <Button
+                  className="w-full justify-start"
+                  asChild
+                  onClick={handleLinkClick}
+                >
+                  <Link to="/register">Sign Up</Link>
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -1,180 +1,147 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ChevronDown, User } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth';
-import { NavAuthActions } from './NavAuthActions';
-import LogoutButton from './LogoutButton';
-import SearchBar from '../SearchBar';
+import { Button } from '../ui/button';
+import { ThemeToggle } from '../ThemeToggle';
+import { getUserHomePage } from '../../utils/navigationUtils';
 
 interface DesktopNavProps {
   isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
+  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => {
-  const { isAuthenticated, userType } = useAuth();
-  const navigate = useNavigate();
+export const DesktopNav: React.FC<DesktopNavProps> = () => {
+  const { isAuthenticated, userType, logout } = useAuth();
+  const location = useLocation();
   
-  const handleLoginClick = () => {
-    navigate('/login');
-    setIsOpen(false);
+  const handleLogout = async () => {
+    await logout();
   };
   
-  const handleRegisterClick = () => {
-    navigate('/register');
-    setIsOpen(false);
-  };
+  // Get the user's home page based on user type
+  const homePath = getUserHomePage(userType);
   
-  const handleProfileClick = () => {
-    navigate(userType === 'developer' ? '/profile' : '/client-profile');
-    setIsOpen(false);
-  };
-
   return (
-    <div className="hidden md:flex items-center justify-between flex-1 ml-6">
-      {/* Primary Navigation */}
-      <nav className="flex items-center">
-        <div className="flex space-x-1">
-          {/* Only show Find Help dropdown for clients or non-authenticated users */}
-          {(!isAuthenticated || userType === 'client') && (
-            <div className="relative group">
-              <button className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors flex items-center">
-                Find Help
-                <ChevronDown className="h-4 w-4 ml-1 text-muted-foreground" />
-              </button>
-              <div className="absolute left-0 mt-1 w-48 rounded-md shadow-lg bg-background border border-border/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
-                <div className="py-1">
-                  <Link
-                    to="/search"
-                    className="block px-4 py-2 text-sm hover:bg-secondary transition-colors"
-                  >
-                    Search Developers
-                  </Link>
-                  {isAuthenticated && userType === 'client' && (
-                    <Link
-                      to="/get-help"
-                      className="block px-4 py-2 text-sm hover:bg-secondary transition-colors"
-                    >
-                      Get Instant Help
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Show different navigation based on user type */}
-          {userType === 'developer' ? (
-            <>
-              <Link 
-                to="/developer-dashboard" 
-                className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
-              >
-                My Dashboard
-              </Link>
-              <Link 
-                to="/developer-tickets" 
-                className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
-              >
-                Gigs
-              </Link>
-              <Link 
-                to="/my-applications" 
-                className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
-              >
-                My Applications
-              </Link>
-            </>
-          ) : userType === 'client' ? (
-            <>
-              <Link 
-                to="/client-dashboard" 
-                className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link 
-                to="/client-tickets" 
-                className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
-              >
-                Tickets
-              </Link>
-            </>
-          ) : (
-            <Link 
-              to="/developer-tickets" 
-              className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
+    <div className="hidden md:flex items-center space-x-4">
+      {/* Navigation Links */}
+      <div className="flex items-center space-x-2">
+        {/* Show public links for all users */}
+        <Link
+          to="/"
+          className={`px-3 py-2 rounded-md text-sm font-medium 
+            ${location.pathname === '/' ? 'text-primary' : 'hover:text-primary transition-colors'}`}
+        >
+          Home
+        </Link>
+        
+        <Link
+          to="/search"
+          className={`px-3 py-2 rounded-md text-sm font-medium 
+            ${location.pathname === '/search' ? 'text-primary' : 'hover:text-primary transition-colors'}`}
+        >
+          Find Developers
+        </Link>
+        
+        {/* Authenticated user links based on user type */}
+        {isAuthenticated && userType === 'developer' && (
+          <>
+            <Link
+              to="/developer"
+              className={`px-3 py-2 rounded-md text-sm font-medium 
+                ${location.pathname === '/developer' ? 'text-primary' : 'hover:text-primary transition-colors'}`}
             >
-              Browse Tickets
+              Dashboard
             </Link>
-          )}
-          
-          {/* Session History - only show for clients, not developers */}
-          {isAuthenticated && userType === 'client' && (
-            <Link 
-              to="/session-history" 
-              className="px-3 py-2 rounded-md hover:bg-secondary/70 transition-colors"
+            <Link
+              to="/developer/tickets"
+              className={`px-3 py-2 rounded-md text-sm font-medium 
+                ${location.pathname.includes('/developer/tickets') ? 'text-primary' : 'hover:text-primary transition-colors'}`}
+            >
+              Gigs
+            </Link>
+            <Link
+              to="/developer/applications"
+              className={`px-3 py-2 rounded-md text-sm font-medium 
+                ${location.pathname.includes('/developer/applications') ? 'text-primary' : 'hover:text-primary transition-colors'}`}
+            >
+              Applications
+            </Link>
+            <Link
+              to="/developer/profile"
+              className={`px-3 py-2 rounded-md text-sm font-medium 
+                ${location.pathname.includes('/developer/profile') ? 'text-primary' : 'hover:text-primary transition-colors'}`}
+            >
+              Profile
+            </Link>
+          </>
+        )}
+        
+        {isAuthenticated && userType === 'client' && (
+          <>
+            <Link
+              to="/client"
+              className={`px-3 py-2 rounded-md text-sm font-medium 
+                ${location.pathname === '/client' ? 'text-primary' : 'hover:text-primary transition-colors'}`}
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/client/tickets"
+              className={`px-3 py-2 rounded-md text-sm font-medium 
+                ${location.pathname.includes('/client/tickets') ? 'text-primary' : 'hover:text-primary transition-colors'}`}
+            >
+              Tickets
+            </Link>
+            <Link
+              to="/client/profile"
+              className={`px-3 py-2 rounded-md text-sm font-medium 
+                ${location.pathname.includes('/client/profile') ? 'text-primary' : 'hover:text-primary transition-colors'}`}
+            >
+              Profile
+            </Link>
+            <Link
+              to="/client/help"
+              className={`px-3 py-2 rounded-md text-sm font-medium 
+                ${location.pathname.includes('/client/help') ? 'text-primary' : 'hover:text-primary transition-colors'}`}
+            >
+              Get Help
+            </Link>
+            <Link
+              to="/client/sessions"
+              className={`px-3 py-2 rounded-md text-sm font-medium 
+                ${location.pathname.includes('/client/sessions') ? 'text-primary' : 'hover:text-primary transition-colors'}`}
             >
               Session History
             </Link>
-          )}
-        </div>
-      </nav>
-
-      {/* Right Side - Search and Auth */}
-      <div className="flex items-center space-x-3">
-        {/* Only show search for clients or non-authenticated users */}
-        {(!isAuthenticated || userType === 'client') && (
-          <SearchBar 
-            className="w-64" 
-            placeholder="Find developers..." 
-          />
+          </>
         )}
+      </div>
+      
+      {/* Auth/User buttons */}
+      <div className="flex items-center space-x-2">
+        <ThemeToggle />
         
         {isAuthenticated ? (
-          <>
-            {/* User Account Dropdown */}
-            <div className="relative group">
-              <button className="flex items-center gap-2 p-2 rounded-md hover:bg-secondary/70 transition-colors">
-                <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="h-4 w-4 text-primary" />
-                </div>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              </button>
-              <div className="absolute right-0 mt-1 w-48 rounded-md shadow-lg bg-background border border-border/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
-                <div className="py-1">
-                  <button
-                    onClick={handleProfileClick}
-                    className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary transition-colors"
-                  >
-                    {userType === 'developer' ? 'Developer Profile' : 'Client Profile'}
-                  </button>
-                  
-                  {userType === 'client' && (
-                    <>
-                      <Link 
-                        to="/get-help/tracking" 
-                        className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary transition-colors"
-                      >
-                        My Help Requests
-                      </Link>
-                    </>
-                  )}
-                  
-                  <LogoutButton 
-                    variant="ghost" 
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-secondary transition-colors"
-                  />
-                </div>
-              </div>
-            </div>
-          </>
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" onClick={handleLogout}>
+              Logout
+            </Button>
+            <Button asChild>
+              <Link to={homePath}>
+                {userType === 'developer' ? 'My Dashboard' : 'My Account'}
+              </Link>
+            </Button>
+          </div>
         ) : (
-          <NavAuthActions 
-            handleLoginClick={handleLoginClick} 
-            handleRegisterClick={handleRegisterClick} 
-          />
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" asChild>
+              <Link to="/login">Login</Link>
+            </Button>
+            <Button asChild>
+              <Link to="/register">Sign Up</Link>
+            </Button>
+          </div>
         )}
       </div>
     </div>
