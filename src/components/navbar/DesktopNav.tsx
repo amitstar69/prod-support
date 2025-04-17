@@ -163,7 +163,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({ isOpen, setIsOpen }) => 
                   )}
                   
                   <LogoutButton 
-                    variant="text" 
+                    variant="ghost" 
                     className="w-full text-left px-4 py-2 text-sm hover:bg-secondary transition-colors"
                   />
                 </div>

@@ -38,7 +38,7 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
       // Clear the timeout if logout completed normally
       clearTimeout(timeoutId);
       
-      if (!success) {
+      if (success === false) {
         console.info('Performing emergency logout');
         performEmergencyLogout();
       } else {

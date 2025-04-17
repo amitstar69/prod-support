@@ -219,9 +219,8 @@ export const debugCreateMissingProfiles = async (
             id: userId,
             hourly_rate: 0,
             minute_rate: 0,
-            category: [],
-            skills: [],
-            profile_completion_percentage: 0
+            category: 'frontend',
+            skills: []
           });
           
         if (error) {

@@ -159,7 +159,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
               )}
               
               <LogoutButton 
-                variant="text" 
+                variant="ghost" 
                 className="flex items-center w-full px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
               />
             </>
