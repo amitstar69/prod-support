@@ -126,13 +126,14 @@ export const useAuthState = (): AuthContextType => {
   const handleLogout = useCallback(async () => {
     console.log("Logout triggered from AuthProvider");
     try {
-      await logoutUser();
+      const result = await logoutUser();
       setAuthState({
         isAuthenticated: false,
         userType: null,
         userId: null,
       });
       localStorage.removeItem('authState');
+      return result;
     } catch (error) {
       console.error("Error during logout:", error);
       setAuthState({
@@ -141,6 +142,7 @@ export const useAuthState = (): AuthContextType => {
         userId: null,
       });
       localStorage.removeItem('authState');
+      return false;
     }
   }, []);
   

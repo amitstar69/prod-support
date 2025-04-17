@@ -33,13 +33,14 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
       }, 5000);
       
       // Try normal logout
-      const success = await logout();
+      const logoutResult = await logout();
       
       // Clear the timeout if logout completed normally
       clearTimeout(timeoutId);
       
-      if (success === false) {
-        console.info('Performing emergency logout');
+      // Check if logout was explicitly unsuccessful
+      if (logoutResult === false) {
+        console.info('Logout failed, performing emergency logout');
         performEmergencyLogout();
       } else {
         // Redirect to home page
@@ -91,3 +92,4 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
 };
 
 export default LogoutButton;
+
