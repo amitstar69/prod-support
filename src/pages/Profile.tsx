@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -110,6 +109,10 @@ const Profile: React.FC = () => {
   
   const handleBack = () => {
     navigate(-1);
+  };
+  
+  const handleViewAllSessions = () => {
+    navigate('/developer/sessions');
   };
   
   // Show loading state while checking authentication or loading profile
@@ -270,7 +273,7 @@ const Profile: React.FC = () => {
                   <p className="text-muted-foreground mb-4">No active sessions found</p>
                   <Button 
                     variant="outline" 
-                    onClick={() => navigate('/developer-dashboard')}
+                    onClick={() => navigate('/developer/dashboard')}
                   >
                     View available help requests
                   </Button>

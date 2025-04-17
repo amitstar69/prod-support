@@ -15,6 +15,13 @@ export const getUserDashboardPage = (userType: UserType | null): string => {
   return userType === 'developer' ? '/developer/dashboard' : '/client/dashboard';
 };
 
+// Get the sessions history page for the user type
+export const getSessionsHistoryPage = (userType: UserType | null): string => {
+  if (!userType) return '/login';
+  
+  return userType === 'developer' ? '/developer/sessions' : '/client/sessions';
+};
+
 // Check if current path belongs to user type
 export const isCorrectUserPath = (
   path: string, 

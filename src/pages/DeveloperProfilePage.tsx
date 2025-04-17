@@ -13,10 +13,11 @@ import DeveloperProfileCard from '../components/profile/DeveloperProfileCard';
 import ProfileLoadingState from '../components/profile/ProfileLoadingState';
 import ProfileErrorState from '../components/profile/ProfileErrorState';
 import { useAuth, logoutUser } from '../contexts/auth';
+import { getSessionsHistoryPage } from '../utils/navigationUtils';
 
 const DeveloperProfilePage = () => {
   const { id } = useParams<{ id: string }>();
-  const { userId } = useAuth();
+  const { userId, userType } = useAuth();
   const location = useLocation();
   const isEditing = location.pathname.includes('/edit');
   const isOwnProfile = id === userId;
@@ -53,6 +54,9 @@ const DeveloperProfilePage = () => {
     />;
   }
 
+  // Get the correct sessions history path based on user type
+  const sessionsHistoryPath = getSessionsHistoryPage(userType);
+
   if (isEditing && isOwnProfile) {
     return (
       <Layout>
@@ -87,9 +91,14 @@ const DeveloperProfilePage = () => {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-semibold">{isOwnProfile ? 'My Profile' : 'Developer Profile'}</h1>
             {isOwnProfile && (
-              <Link to={`/developer/${id}/edit`}>
-                <Button>Edit Profile</Button>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link to={sessionsHistoryPath}>
+                  <Button variant="outline">View All Activity</Button>
+                </Link>
+                <Link to={`/developer/${id}/edit`}>
+                  <Button>Edit Profile</Button>
+                </Link>
+              </div>
             )}
           </div>
           
