@@ -1,12 +1,11 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import LoginHeader from '../components/login/LoginHeader';
-import LoginForm from '../components/login/LoginForm';
-import { useLoginForm } from '../hooks/useLoginForm';
 import { Skeleton } from '../components/ui/skeleton';
 import EmailVerificationMessage from '../components/auth/EmailVerificationMessage';
+import LoginForm from '../features/auth/login/components/LoginForm';
+import { useLoginForm } from '../features/auth/login/hooks/useLoginForm';
 
 const LoginPage: React.FC = () => {
   console.log('LoginPage rendering');
@@ -15,7 +14,6 @@ const LoginPage: React.FC = () => {
   const [showVerification, setShowVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
   
-  // Use the simplified version of useLoginForm to avoid circular dependencies
   const { 
     email, 
     password, 
@@ -37,7 +35,6 @@ const LoginPage: React.FC = () => {
     handleResendVerification
   } = useLoginForm();
 
-  // Check URL query parameters for verification status
   useEffect(() => {
     console.log('LoginPage - checking URL params');
     const searchParams = new URLSearchParams(location.search);
@@ -50,13 +47,11 @@ const LoginPage: React.FC = () => {
     }
   }, [location.search]);
   
-  // Check auth status only once on initial component mount
   useEffect(() => {
     console.log('LoginPage - checking auth status');
     checkAuthStatus();
   }, [checkAuthStatus]);
   
-  // Handle redirect for authenticated users
   useEffect(() => {
     console.log('LoginPage - auth status effect', { isAuthenticated, userType });
     if (isAuthenticated) {
@@ -78,11 +73,9 @@ const LoginPage: React.FC = () => {
     }
   }, [isAuthenticated, navigate, userType, location.search]);
 
-  // Check for verification error in the URL
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     
-    // If there's an error parameter that indicates email verification is needed
     if (searchParams.get('error') === 'email-verification' || error?.includes('verify')) {
       const emailToVerify = searchParams.get('email') || email;
       
@@ -93,14 +86,12 @@ const LoginPage: React.FC = () => {
     }
   }, [location.search, email, error]);
   
-  // Handle resend verification and go back functions
   const onResendVerification = () => {
     handleResendVerification();
   };
   
   const onBackToLogin = () => {
     setShowVerification(false);
-    // Clear verification related query params
     const searchParams = new URLSearchParams(location.search);
     searchParams.delete('error');
     searchParams.delete('email');
