@@ -19,7 +19,16 @@ export const useAuthState = (): AuthContextType => {
     console.log('useAuthState - checking session on mount');
     
     // Initialize auth state from localStorage and Supabase session
-    initializeAuthState(setAuthState, setIsLoading);
+    const initialize = async () => {
+      try {
+        await initializeAuthState(setAuthState, setIsLoading);
+      } catch (error) {
+        console.error('Error initializing auth state:', error);
+        setIsLoading(false);
+      }
+    };
+    
+    initialize();
     
     // Set up auth state change listener
     const subscription = setupAuthStateChangeListener(setAuthState);
@@ -33,7 +42,11 @@ export const useAuthState = (): AuthContextType => {
     console.log('Auth state updated:', authState);
     
     if (authState.isAuthenticated) {
-      localStorage.setItem('authState', JSON.stringify(authState));
+      try {
+        localStorage.setItem('authState', JSON.stringify(authState));
+      } catch (error) {
+        console.error('Error saving auth state to localStorage:', error);
+      }
     }
   }, [authState]);
   

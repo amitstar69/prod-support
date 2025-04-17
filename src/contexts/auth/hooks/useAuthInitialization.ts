@@ -3,6 +3,7 @@ import { Dispatch, SetStateAction } from 'react';
 import { AuthState } from '../types';
 import { supabase } from '../../../integrations/supabase/client';
 import { checkSupabaseSession } from '../authUtils';
+import { toast } from 'sonner';
 
 export const initializeAuthState = async (
   setAuthState: Dispatch<SetStateAction<AuthState>>,
@@ -10,7 +11,9 @@ export const initializeAuthState = async (
 ): Promise<void> => {
   try {
     setIsLoading(true);
+    console.log('Beginning auth initialization');
     
+    // First, try to recover from localStorage
     const storedAuthState = localStorage.getItem('authState');
     if (storedAuthState) {
       try {
@@ -34,13 +37,37 @@ export const initializeAuthState = async (
       }
     }
     
+    // Then check Supabase session with timeout handling
     if (supabase) {
-      const authData = await checkSupabaseSession(setAuthState);
-      console.log('Supabase auth check result:', authData);
+      try {
+        // Create a timeout promise
+        const timeoutPromise = new Promise<null>((resolve) => {
+          setTimeout(() => {
+            console.warn('Supabase auth check timed out');
+            resolve(null);
+          }, 5000); // 5 second timeout
+        });
+        
+        // Race between the actual check and the timeout
+        const authCheckPromise = checkSupabaseSession(setAuthState);
+        await Promise.race([authCheckPromise, timeoutPromise]);
+      } catch (error) {
+        console.error('Error checking Supabase session:', error);
+      }
+    } else {
+      console.warn('Supabase client not initialized');
     }
   } catch (error) {
-    console.error('Error checking session:', error);
+    console.error('Fatal error checking session:', error);
+    // Fallback to logged out state to ensure app can start
+    setAuthState({
+      isAuthenticated: false,
+      userType: null,
+      userId: null
+    });
+    toast.error('Error initializing authentication. Please refresh the page.');
   } finally {
     setIsLoading(false);
+    console.log('Auth initialization complete');
   }
 };
