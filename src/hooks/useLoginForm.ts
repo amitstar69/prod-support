@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
@@ -71,15 +70,12 @@ export const useLoginForm = () => {
     return true;
   }, [password]);
 
-  // Handle redirect if user is already authenticated
   useEffect(() => {
     if (isAuthenticated && userType) {
       console.log('User already authenticated, redirecting');
-      // Get the intended destination from URL params if available
       const params = new URLSearchParams(location.search);
       const returnTo = params.get('returnTo');
       
-      // Determine where to redirect based on user type and returnTo parameter
       let destination = returnTo && returnTo.startsWith('/') 
         ? returnTo
         : userType === 'developer' 
@@ -103,7 +99,6 @@ export const useLoginForm = () => {
     }
   }, []);
 
-  // Function to resend verification email
   const handleResendVerification = useCallback(async () => {
     if (!email) {
       toast.error('Please enter your email address first');
@@ -154,17 +149,14 @@ export const useLoginForm = () => {
     console.log(`Attempting to login: ${email} as ${loginUserType}`);
     
     try {
-      // Create an AbortController for the timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         console.warn('Login request timed out after 10 seconds');
         controller.abort();
       }, 10000);
       
-      // Call login and get the result with the correct type
       const loginPromise = login(email, password, loginUserType, rememberMe);
       
-      // We'll race the login promise against an abort signal
       const result = await Promise.race([
         loginPromise,
         new Promise<LoginResult>((_, reject) => {
@@ -189,14 +181,11 @@ export const useLoginForm = () => {
       if (result.success) {
         toast.success(`Successfully logged in as ${loginUserType}`);
         
-        // Double check we have a user type before redirecting
         const activeUserType = userType || loginUserType;
         
-        // Get the returnTo parameter from the URL if it exists
         const params = new URLSearchParams(location.search);
         const returnTo = params.get('returnTo');
         
-        // Determine where to redirect based on returnTo and user type
         const redirectPath = returnTo && returnTo.startsWith('/')
           ? returnTo
           : activeUserType === 'developer'
@@ -218,7 +207,6 @@ export const useLoginForm = () => {
     } catch (error: any) {
       console.error('Login error:', error);
       
-      // Handle timeout errors specially
       if (error.name === 'AbortError' || error.message?.includes('timed out')) {
         setError('Login request timed out. Please check your internet connection and try again.');
         toast.error('Connection timed out');

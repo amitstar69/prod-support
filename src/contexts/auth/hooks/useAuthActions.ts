@@ -1,4 +1,3 @@
-
 import { Dispatch, SetStateAction, useCallback } from 'react';
 import { AuthState } from '../types';
 import { login as authLogin, LoginResult } from '../authLogin';
@@ -35,7 +34,8 @@ export const useAuthActions = (
   const handleLogin = useCallback(async (
     email: string, 
     password: string, 
-    userType: 'developer' | 'client'
+    userType: 'developer' | 'client',
+    rememberMe: boolean = false
   ): Promise<LoginResult> => {
     console.log('handleLogin called');
     setIsLoading(true);
@@ -44,10 +44,7 @@ export const useAuthActions = (
         email, 
         password, 
         userType, 
-        false,
-        setAuthState,
-        null,
-        null
+        rememberMe
       );
       
       if (result.success) {
