@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
 import { supabase } from '../integrations/supabase/client';
+import { LoginResult } from '../contexts/auth/authLogin';
 
 export type UserType = 'client' | 'developer';
 
@@ -135,9 +136,10 @@ export const useLoginForm = () => {
       const loginPromise = login(email, password, loginUserType);
       
       // We'll race the login promise against an abort signal
+      // Make sure our timeout promise returns an object matching the LoginResult type
       const result = await Promise.race([
         loginPromise,
-        new Promise<{ success: false, error: string }>((_, reject) => {
+        new Promise<LoginResult>((_, reject) => {
           controller.signal.addEventListener('abort', () => {
             reject(new Error('Login request timed out'));
           });
