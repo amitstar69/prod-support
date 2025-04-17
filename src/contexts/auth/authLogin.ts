@@ -147,16 +147,11 @@ export const loginWithEmailAndPassword = async (
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
     
-    const authOptions = {
+    // Fixed: Remove expiresIn from options (not supported by Supabase signInWithPassword)
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password,
-      options: {
-        // If rememberMe is true, use longer session duration
-        expiresIn: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 // 30 days vs 1 day
-      }
-    };
-    
-    const { data, error } = await supabase.auth.signInWithPassword(authOptions);
+      password
+    });
     
     // Clear timeout
     clearTimeout(timeoutId);
@@ -330,10 +325,7 @@ export const login = async (
   email: string, 
   password: string, 
   userType: 'developer' | 'client',
-  rememberMe: boolean = false,
-  setAuthState: ((state: any) => void) | null = null,
-  redirectPath: string | null = null,
-  onSuccess: (() => void) | null = null
+  rememberMe: boolean = false
 ): Promise<LoginResult> => {
   return await loginWithEmailAndPassword(email, password, userType, rememberMe);
 };

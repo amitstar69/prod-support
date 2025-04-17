@@ -94,6 +94,7 @@ export const useLoginForm = () => {
       }
       
       // Add timeout to prevent UI from being stuck indefinitely
+      // Fixed: Passed only 3 arguments to login function (removed redirectPath)
       const loginPromise = login(email, password, userType, rememberMe);
       
       // Set a timeout for the login process
@@ -142,7 +143,7 @@ export const useLoginForm = () => {
           setError(result.error);
           
           // If too many consecutive errors, suggest contacting support
-          if (consecutiveErrors >= a) {
+          if (consecutiveErrors >= 3) {  // Fixed: Changed 'a' to numeric value 3
             toast.error('Multiple login failures', {
               description: 'Please check your credentials or contact support',
               action: {

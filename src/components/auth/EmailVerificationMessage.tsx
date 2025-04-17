@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Mail, RefreshCw, ArrowLeft } from 'lucide-react';
@@ -84,7 +85,7 @@ const EmailVerificationMessage: React.FC<EmailVerificationMessageProps> = ({
         </div>
         
         {resendLimited && (
-          <Alert variant="warning" className="mb-4">
+          <Alert className="mb-4 border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300">
             <AlertDescription>
               Too many resend attempts. Please wait a few minutes before trying again.
             </AlertDescription>

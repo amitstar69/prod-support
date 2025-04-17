@@ -92,7 +92,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
       <form onSubmit={onSubmit} noValidate>
         <CardContent className="space-y-4 pt-4">
           {error && (
-            <Alert variant={errorType === 'network' ? 'destructive' : errorType === 'verification' ? 'warning' : 'destructive'} className="py-2">
+            <Alert variant={errorType === 'network' ? 'destructive' : 'default'} 
+                  className={`py-2 ${
+                    errorType === 'verification' 
+                      ? 'border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300' 
+                      : ''
+                  }`}>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 {errorType === 'verification' ? (
