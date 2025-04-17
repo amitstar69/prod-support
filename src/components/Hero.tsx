@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
@@ -37,41 +38,6 @@ const Hero: React.FC = () => {
   return (
     <section className="relative py-16 md:py-24 overflow-hidden">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_50%,rgba(0,180,216,0.08),transparent_70%)]"></div>
-      
-      <div className="hidden md:block absolute inset-0 overflow-hidden -z-5">
-        <div className="absolute left-[5%] top-1/4 w-24 h-24 rounded-xl overflow-hidden shadow-md opacity-90 transform rotate-3">
-          <img 
-            src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=300&auto=format&fit=crop" 
-            alt="Developer profile" 
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        </div>
-        <div className="absolute right-[5%] top-1/3 w-24 h-24 rounded-xl overflow-hidden shadow-md opacity-90 transform -rotate-3">
-          <img 
-            src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=300&auto=format&fit=crop" 
-            alt="Developer profile" 
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        </div>
-        <div className="absolute left-[8%] bottom-1/4 w-24 h-24 rounded-xl overflow-hidden shadow-md opacity-90 transform -rotate-3">
-          <img 
-            src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=300&auto=format&fit=crop" 
-            alt="Developer profile" 
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        </div>
-        <div className="absolute right-[8%] bottom-1/3 w-24 h-24 rounded-xl overflow-hidden shadow-md opacity-90 transform rotate-3">
-          <img 
-            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop" 
-            alt="Developer profile" 
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        </div>
-      </div>
       
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto text-center">
