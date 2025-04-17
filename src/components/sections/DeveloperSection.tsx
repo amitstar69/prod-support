@@ -21,7 +21,7 @@ const DeveloperSection = () => {
           <div className="order-2 lg:order-1">
             <div className="rounded-2xl overflow-hidden shadow-2xl">
               <img
-                src="public/lovable-uploads/0f7f698a-f567-4bca-92ee-391f2fb37c81.png"
+                src="public/lovable-uploads/43e7ef3a-3d05-4a8d-96b6-7e5373299c70.png"
                 alt="Developer working"
                 className="w-full h-auto object-cover aspect-[4/3]"
               />
