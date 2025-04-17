@@ -1,5 +1,5 @@
 
-import React, { KeyboardEvent } from 'react';
+import React, { KeyboardEvent, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -66,7 +66,16 @@ const LoginForm: React.FC<LoginFormProps> = ({
     return 'general';
   };
 
-  const errorType = error ? getErrorType(error) : null;
+  // Determine which error message to show (with priority)
+  const getDisplayError = (): string => {
+    if (error) return error;
+    if (emailError) return emailError;
+    if (passwordError) return passwordError;
+    return '';
+  };
+
+  const displayError = getDisplayError();
+  const errorType = displayError ? getErrorType(displayError) : null;
 
   return (
     <Card className="border border-border/40 shadow-sm">
@@ -91,8 +100,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
       
       <form onSubmit={onSubmit} noValidate>
         <CardContent className="space-y-4 pt-4">
-          {/* Consolidate error display at the top of the form */}
-          {(error || emailError || passwordError) && (
+          {/* Single consolidated error display at the top of the form */}
+          {displayError && (
             <Alert 
               variant={errorType === 'network' ? 'destructive' : 'default'} 
               className={`py-2 ${
@@ -103,7 +112,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             >
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                {error || emailError || passwordError}{' '}
+                {displayError}{' '}
                 {errorType === 'verification' && (
                   <Link to="/forgot-password" className="underline font-medium">
                     Resend verification email
@@ -205,4 +214,3 @@ const LoginForm: React.FC<LoginFormProps> = ({
 };
 
 export default LoginForm;
-

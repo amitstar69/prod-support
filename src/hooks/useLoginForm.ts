@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
@@ -23,31 +24,34 @@ export const useLoginForm = () => {
   const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
     setEmailError('');
-    setError('');
+    setError(''); // Clear global error when user starts typing
   }, []);
 
   const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
     setPasswordError('');
-    setError('');
+    setError(''); // Clear global error when user starts typing
   }, []);
 
   const handleUserTypeChange = useCallback((type: UserType) => {
     setLoginUserType(type);
-    setError('');
+    setError(''); // Clear errors on user type change
   }, []);
 
   const handleRememberMeChange = useCallback(() => setRememberMe(prev => !prev), []);
 
+  // Validate email with clear error handling
   const validateEmail = useCallback(() => {
     if (!email) {
       setEmailError('Email is required');
+      setError(''); // Clear global error when showing field-specific error
       return false;
     }
     
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(email)) {
       setEmailError('Please enter a valid email address');
+      setError(''); // Clear global error when showing field-specific error
       return false;
     }
     
@@ -55,14 +59,17 @@ export const useLoginForm = () => {
     return true;
   }, [email]);
 
+  // Validate password with clear error handling
   const validatePassword = useCallback(() => {
     if (!password) {
       setPasswordError('Password is required');
+      setError(''); // Clear global error when showing field-specific error
       return false;
     }
     
     if (password.length < 6) {
       setPasswordError('Password must be at least 6 characters');
+      setError(''); // Clear global error when showing field-specific error
       return false;
     }
     
@@ -129,6 +136,7 @@ export const useLoginForm = () => {
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Clear all errors at the start
     setError('');
     setEmailError('');
     setPasswordError('');
@@ -155,7 +163,8 @@ export const useLoginForm = () => {
         controller.abort();
       }, 10000);
       
-      const loginPromise = login(email, password, loginUserType);
+      // Pass the rememberMe parameter to the login function
+      const loginPromise = login(email, password, loginUserType, rememberMe);
       
       const result = await Promise.race([
         loginPromise,
@@ -198,7 +207,11 @@ export const useLoginForm = () => {
         setError('Please verify your email before logging in.');
         toast.error('Email verification required');
       } else if (result.error) {
+        // Set a single error message in the error state
         setError(result.error);
+        // Clear field-specific errors when showing a global error
+        setEmailError('');
+        setPasswordError('');
         toast.error(result.error);
       } else {
         setError('Login failed. Please check your credentials and try again.');
