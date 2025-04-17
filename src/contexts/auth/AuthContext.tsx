@@ -8,7 +8,7 @@ export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   userType: null,
   userId: null,
-  login: async () => ({ success: false, error: 'Not implemented' }), // Return LoginResult object
+  login: async () => ({ success: false, error: 'Not implemented' }),
   register: async () => false,
   logout: async () => false,
   logoutUser: async () => false,

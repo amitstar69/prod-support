@@ -52,12 +52,12 @@ export const initializeAuthState = async (
           setTimeout(() => {
             console.warn('Supabase auth check timed out');
             resolve(null);
-          }, 5000); // 5 second timeout - reduced from 8s to fail faster
+          }, 5000); // 5 second timeout
         });
         
         // Race between the actual check and the timeout
-        const authCheckPromise = checkSupabaseSession(setAuthState);
-        await Promise.race([authCheckPromise, timeoutPromise]);
+        const sessionPromise = checkSupabaseSession(setAuthState);
+        await Promise.race([sessionPromise, timeoutPromise]);
       } catch (error) {
         console.error('Error checking Supabase session:', error);
       }

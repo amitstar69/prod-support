@@ -74,6 +74,7 @@ export const useLoginForm = () => {
   // Handle redirect if user is already authenticated
   useEffect(() => {
     if (isAuthenticated && userType) {
+      console.log('User already authenticated, redirecting');
       // Get the intended destination from URL params if available
       const params = new URLSearchParams(location.search);
       const returnTo = params.get('returnTo');
@@ -128,15 +129,14 @@ export const useLoginForm = () => {
       // Create an AbortController for the timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        console.warn('Login request timed out after 15 seconds');
+        console.warn('Login request timed out after 10 seconds');
         controller.abort();
-      }, 15000);
+      }, 10000);
       
       // Call login and get the result with the correct type
       const loginPromise = login(email, password, loginUserType);
       
       // We'll race the login promise against an abort signal
-      // Make sure our timeout promise returns an object matching the LoginResult type
       const result = await Promise.race([
         loginPromise,
         new Promise<LoginResult>((_, reject) => {
@@ -144,7 +144,14 @@ export const useLoginForm = () => {
             reject(new Error('Login request timed out'));
           });
         })
-      ]);
+      ]).catch(error => {
+        console.error('Login error or timeout:', error);
+        clearTimeout(timeoutId);
+        return {
+          success: false,
+          error: error.message || 'Login request failed'
+        } as LoginResult;
+      });
       
       clearTimeout(timeoutId);
       
@@ -154,6 +161,9 @@ export const useLoginForm = () => {
       if (result.success) {
         toast.success(`Successfully logged in as ${loginUserType}`);
         
+        // Double check we have a user type before redirecting
+        const activeUserType = userType || loginUserType;
+        
         // Get the returnTo parameter from the URL if it exists
         const params = new URLSearchParams(location.search);
         const returnTo = params.get('returnTo');
@@ -161,16 +171,15 @@ export const useLoginForm = () => {
         // Determine where to redirect based on returnTo and user type
         const redirectPath = returnTo && returnTo.startsWith('/')
           ? returnTo
-          : loginUserType === 'developer'
+          : activeUserType === 'developer'
             ? '/developer-dashboard' 
             : '/client-dashboard';
             
+        console.log(`Login successful, redirecting to ${redirectPath}`);
         navigate(redirectPath, { replace: true });
       } else if (result.requiresVerification) {
         setError('Please verify your email before logging in.');
         toast.error('Email verification required');
-        // If using a verification page, you could redirect here
-        // navigate(`/email-verification?email=${encodeURIComponent(email)}`);
       } else if (result.error) {
         setError(result.error);
         toast.error(result.error);
@@ -192,7 +201,7 @@ export const useLoginForm = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [email, password, loginUserType, isLoading, authLoading, validateEmail, validatePassword, login, navigate, location.search]);
+  }, [email, password, loginUserType, isLoading, authLoading, validateEmail, validatePassword, login, navigate, location.search, userType]);
 
   return {
     email,

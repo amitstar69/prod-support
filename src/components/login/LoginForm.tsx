@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -45,6 +45,15 @@ const LoginForm: React.FC<LoginFormProps> = ({
   onEmailBlur,
   onPasswordBlur
 }) => {
+  // Handle Enter key press for both email and password inputs
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isLoading) {
+      e.preventDefault();
+      const formEvent = new Event('submit', { cancelable: true }) as unknown as React.FormEvent;
+      onSubmit(formEvent);
+    }
+  };
+
   return (
     <Card className="border border-border/40 shadow-sm">
       <CardHeader className="pb-2">
@@ -66,7 +75,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         </Tabs>
       </CardHeader>
       
-      <form onSubmit={onSubmit}>
+      <form onSubmit={onSubmit} noValidate>
         <CardContent className="space-y-4 pt-4">
           {error && (
             <Alert variant="destructive" className="py-2">
@@ -83,9 +92,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
               value={email}
               onChange={onEmailChange}
               onBlur={onEmailBlur}
+              onKeyDown={handleKeyDown}
               placeholder="you@example.com"
               autoComplete="email"
               className={emailError ? "border-destructive" : ""}
+              disabled={isLoading}
               required
             />
             {emailError && (
@@ -99,6 +110,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
               <Link 
                 to="/forgot-password" 
                 className="text-xs text-primary hover:underline"
+                tabIndex={isLoading ? -1 : 0}
               >
                 Forgot password?
               </Link>
@@ -109,9 +121,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
               value={password}
               onChange={onPasswordChange}
               onBlur={onPasswordBlur}
+              onKeyDown={handleKeyDown}
               placeholder="••••••••"
               autoComplete="current-password"
               className={passwordError ? "border-destructive" : ""}
+              disabled={isLoading}
               required
             />
             {passwordError && (
@@ -124,6 +138,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
               id="rememberMe" 
               checked={rememberMe}
               onCheckedChange={onRememberMeChange}
+              disabled={isLoading}
             />
             <Label 
               htmlFor="rememberMe" 

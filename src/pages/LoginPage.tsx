@@ -72,7 +72,8 @@ const LoginPage: React.FC = () => {
         destination = userType === 'client' ? '/client-dashboard' : '/developer-dashboard';
       }
       
-      navigate(destination);
+      console.log(`Redirecting authenticated user to: ${destination}`);
+      navigate(destination, { replace: true });
     }
   }, [isAuthenticated, navigate, userType, location.search]);
   
