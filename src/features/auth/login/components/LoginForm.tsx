@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Code, RefreshCw } from 'lucide-react';
 import { LoginInputField } from './LoginInputField';
 import { LoginErrorDisplay } from './LoginErrorDisplay';
+import { SocialLoginButtons } from './SocialLoginButtons';
 import { UserType } from '@/contexts/auth/types';
 
 interface LoginFormProps {
@@ -27,6 +28,8 @@ interface LoginFormProps {
   onSubmit: (e: React.FormEvent) => void;
   onEmailBlur?: () => void;
   onPasswordBlur?: () => void;
+  onGoogleLogin: () => void;
+  onGithubLogin: () => void;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({
@@ -44,7 +47,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
   onRememberMeChange,
   onSubmit,
   onEmailBlur,
-  onPasswordBlur
+  onPasswordBlur,
+  onGoogleLogin,
+  onGithubLogin
 }) => {
   // Handle Enter key press for form inputs
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -162,6 +167,13 @@ const LoginForm: React.FC<LoginFormProps> = ({
               'Sign In'
             )}
           </Button>
+          
+          <SocialLoginButtons
+            userType={userType}
+            onGoogleLogin={onGoogleLogin}
+            onGithubLogin={onGithubLogin}
+            isLoading={isLoading}
+          />
           
           <div className="text-sm text-center text-muted-foreground">
             Don't have an account?{' '}

@@ -5,9 +5,10 @@ import { useAuthStatus } from '@/hooks/auth/login/useAuthStatus';
 import { useLoginState } from './useLoginState';
 import { useLoginValidation } from './useLoginValidation';
 import { useLoginSubmission } from './useLoginSubmission';
+import { toast } from 'sonner';
 
 export const useLoginForm = () => {
-  const { login, isAuthenticated, userType } = useAuth();
+  const { login, loginWithOAuth, isAuthenticated, userType } = useAuth();
   
   // Form state management
   const {
@@ -59,6 +60,35 @@ export const useLoginForm = () => {
     
     await handleLoginSubmit(email, password, loginUserType, rememberMe, true);
   }, [email, password, loginUserType, rememberMe, clearErrors, validateForm, handleLoginSubmit]);
+
+  // Social login handlers
+  const handleGoogleLogin = useCallback(async () => {
+    try {
+      const result = await loginWithOAuth('google', loginUserType);
+      if (!result.success && result.error) {
+        toast.error(result.error);
+        setGeneralError(result.error);
+      }
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      toast.error('Failed to sign in with Google');
+      setGeneralError(error.message || 'Failed to sign in with Google');
+    }
+  }, [loginWithOAuth, loginUserType, setGeneralError]);
+
+  const handleGithubLogin = useCallback(async () => {
+    try {
+      const result = await loginWithOAuth('github', loginUserType);
+      if (!result.success && result.error) {
+        toast.error(result.error);
+        setGeneralError(result.error);
+      }
+    } catch (error: any) {
+      console.error('GitHub login error:', error);
+      toast.error('Failed to sign in with GitHub');
+      setGeneralError(error.message || 'Failed to sign in with GitHub');
+    }
+  }, [loginWithOAuth, loginUserType, setGeneralError]);
   
   return {
     email,
@@ -74,6 +104,8 @@ export const useLoginForm = () => {
     handleUserTypeChange,
     handleRememberMeChange,
     handleSubmit,
+    handleGoogleLogin,
+    handleGithubLogin,
     checkAuthStatus,
     isAuthenticated,
     validateEmail: () => validateEmail(email),

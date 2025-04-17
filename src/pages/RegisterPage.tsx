@@ -25,7 +25,9 @@ const RegisterPage: React.FC = () => {
     handleUserTypeChange,
     handleInputChange,
     handleTermsChange,
-    handleSubmit
+    handleSubmit,
+    handleGoogleRegister,
+    handleGithubRegister
   } = useRegisterForm();
   
   useEffect(() => {
@@ -87,9 +89,12 @@ const RegisterPage: React.FC = () => {
                 termsAgreed={termsAgreed}
                 isLoading={isLoading}
                 formError={formError}
+                userType={userType}
                 handleInputChange={handleInputChange}
                 handleTermsChange={handleTermsChange}
                 handleSubmit={handleSubmit}
+                onGoogleRegister={handleGoogleRegister}
+                onGithubRegister={handleGithubRegister}
               />
               
               <div className="mt-6 pt-6 border-t border-border/30 text-center">

@@ -1,21 +1,33 @@
 
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Checkbox } from '../ui/checkbox';
+import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
-import { RegisterFormValues } from '../../hooks/useRegisterForm';
+import { Input } from '../ui/input';
+import { Checkbox } from '../ui/checkbox';
+import { Label } from '../ui/label';
+import { Alert, AlertDescription } from '../ui/alert';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import SocialRegisterButtons from './SocialRegisterButtons';
+import { UserType } from '@/contexts/auth/types';
 
 interface RegisterFormProps {
-  formValues: RegisterFormValues;
+  formValues: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+  };
   passwordsMatch: boolean;
   termsAgreed: boolean;
   isLoading: boolean;
   formError: string | null;
+  userType: UserType;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleTermsChange: (checked: boolean) => void;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onGoogleRegister: () => void;
+  onGithubRegister: () => void;
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = ({
@@ -24,131 +36,139 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   termsAgreed,
   isLoading,
   formError,
+  userType,
   handleInputChange,
   handleTermsChange,
-  handleSubmit
+  handleSubmit,
+  onGoogleRegister,
+  onGithubRegister
 }) => {
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="space-y-6">
-        {formError && (
-          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
-            {formError}
-          </div>
-        )}
-        
-        <div className="pt-4 border-t border-border/30">
-          <h2 className="font-medium text-lg mb-4">Account Information</h2>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name*</Label>
-                <Input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  value={formValues.firstName}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name*</Label>
-                <Input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  value={formValues.lastName}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address*</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formValues.email}
-                onChange={handleInputChange}
-                required
-                placeholder="example@domain.com"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Enter a valid email address with domain (e.g., example@domain.com)</p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Password*</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={formValues.password}
-                onChange={handleInputChange}
-                required
-                minLength={6}
-              />
-              <p className="text-xs text-muted-foreground mt-1">Password must be at least 6 characters</p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password*</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={formValues.confirmPassword}
-                onChange={handleInputChange}
-                required
-                className={!passwordsMatch && formValues.confirmPassword ? 'border-destructive focus:border-destructive' : ''}
-              />
-              {!passwordsMatch && formValues.confirmPassword && (
-                <p className="text-xs text-destructive mt-1">Passwords do not match</p>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex items-start gap-2">
-          <Checkbox 
-            id="terms" 
-            checked={termsAgreed}
-            onCheckedChange={(checked) => handleTermsChange(checked as boolean)}
-            className="mt-1"
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {formError && (
+        <Alert variant="destructive" className="py-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{formError}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <Label htmlFor="firstName">First Name</Label>
+          <Input 
+            id="firstName"
+            name="firstName"
+            type="text"
+            placeholder="John"
+            value={formValues.firstName}
+            onChange={handleInputChange}
             required
           />
-          <Label htmlFor="terms" className="text-sm font-normal leading-tight">
-            I agree to the <a href="#" className="text-primary font-medium">Terms of Service</a> and <a href="#" className="text-primary font-medium">Privacy Policy</a>
-          </Label>
         </div>
         
-        <div>
-          <Button
-            type="submit"
-            className="w-full gap-2"
-            disabled={isLoading || !passwordsMatch}
-          >
-            {isLoading ? (
-              <span className="flex items-center">
-                <svg className="animate-spin mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Creating account...
-              </span>
-            ) : (
-              <>
-                Create Account
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </Button>
+        <div className="space-y-1">
+          <Label htmlFor="lastName">Last Name</Label>
+          <Input 
+            id="lastName"
+            name="lastName"
+            type="text"
+            placeholder="Doe"
+            value={formValues.lastName}
+            onChange={handleInputChange}
+            required
+          />
         </div>
       </div>
+      
+      <div className="space-y-1">
+        <Label htmlFor="email">Email Address</Label>
+        <Input 
+          id="email"
+          name="email"
+          type="email"
+          placeholder="you@example.com"
+          value={formValues.email}
+          onChange={handleInputChange}
+          required
+        />
+      </div>
+      
+      <div className="space-y-1">
+        <Label htmlFor="password">Password</Label>
+        <Input 
+          id="password"
+          name="password"
+          type="password"
+          placeholder="Create a password (6+ characters)"
+          value={formValues.password}
+          onChange={handleInputChange}
+          required
+        />
+      </div>
+      
+      <div className="space-y-1">
+        <Label htmlFor="confirmPassword">Confirm Password</Label>
+        <Input 
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          placeholder="Re-enter your password"
+          value={formValues.confirmPassword}
+          onChange={handleInputChange}
+          aria-invalid={!passwordsMatch}
+          className={!passwordsMatch && formValues.confirmPassword ? "border-destructive" : ""}
+          required
+        />
+        
+        {!passwordsMatch && formValues.confirmPassword && (
+          <p className="text-xs text-destructive mt-1">
+            Passwords do not match
+          </p>
+        )}
+      </div>
+      
+      <div className="flex items-start space-x-2 pt-2">
+        <Checkbox 
+          id="termsAgreed" 
+          checked={termsAgreed}
+          onCheckedChange={handleTermsChange}
+        />
+        <Label 
+          htmlFor="termsAgreed" 
+          className="text-sm font-normal"
+        >
+          I agree to the{' '}
+          <Link to="/terms" className="text-primary hover:underline">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className="text-primary hover:underline">
+            Privacy Policy
+          </Link>
+        </Label>
+      </div>
+      
+      <Button 
+        type="submit" 
+        className="w-full" 
+        disabled={isLoading || !termsAgreed || !passwordsMatch}
+      >
+        {isLoading ? (
+          <span className="flex items-center">
+            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            Creating account...
+          </span>
+        ) : (
+          'Create Account'
+        )}
+      </Button>
+
+      <SocialRegisterButtons
+        userType={userType}
+        onGoogleRegister={onGoogleRegister}
+        onGithubRegister={onGithubRegister}
+        isLoading={isLoading}
+      />
     </form>
   );
 };

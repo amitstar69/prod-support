@@ -3,8 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/auth';
-
-export type UserType = 'client' | 'developer';
+import { UserType, OAuthProvider } from '../contexts/auth/types';
 
 export type RegisterFormValues = {
   firstName: string;
@@ -16,7 +15,7 @@ export type RegisterFormValues = {
 
 export const useRegisterForm = () => {
   const navigate = useNavigate();
-  const { register, isAuthenticated } = useAuth();
+  const { register, loginWithOAuth, isAuthenticated } = useAuth();
   const [userType, setUserType] = useState<UserType>('client');
   const [isLoading, setIsLoading] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
@@ -65,6 +64,41 @@ export const useRegisterForm = () => {
   const handleTermsChange = (checked: boolean) => {
     setTermsAgreed(checked);
   };
+
+  const handleSocialRegister = async (provider: OAuthProvider) => {
+    if (!termsAgreed) {
+      const errorMsg = 'You must agree to the Terms of Service and Privacy Policy';
+      setFormError(errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      console.log(`Registering with ${provider} as ${userType}`);
+      const result = await loginWithOAuth(provider, userType);
+      
+      if (result.success) {
+        toast.success(`Account created with ${provider}! You'll be redirected shortly.`);
+        setShowVerification(true);
+      } else {
+        const errorMsg = result.error || `Registration with ${provider} failed. Please try again.`;
+        setFormError(errorMsg);
+        toast.error(errorMsg);
+      }
+    } catch (error: any) {
+      console.error(`${provider} registration error:`, error);
+      const errorMsg = error.message || `Registration with ${provider} failed. Please try again.`;
+      setFormError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleRegister = () => handleSocialRegister('google');
+  const handleGithubRegister = () => handleSocialRegister('github');
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -200,6 +234,8 @@ export const useRegisterForm = () => {
     handleUserTypeChange,
     handleInputChange,
     handleTermsChange,
-    handleSubmit
+    handleSubmit,
+    handleGoogleRegister,
+    handleGithubRegister
   };
 };

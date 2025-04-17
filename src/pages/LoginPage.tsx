@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -6,6 +7,7 @@ import { Skeleton } from '../components/ui/skeleton';
 import EmailVerificationMessage from '../components/auth/EmailVerificationMessage';
 import LoginForm from '../features/auth/login/components/LoginForm';
 import { useLoginForm } from '../features/auth/login/hooks/useLoginForm';
+import { useOAuthCallback } from '../features/auth/login/hooks/useOAuthCallback';
 
 const LoginPage: React.FC = () => {
   console.log('LoginPage rendering');
@@ -13,6 +15,9 @@ const LoginPage: React.FC = () => {
   const location = useLocation();
   const [showVerification, setShowVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
+  
+  // Process potential OAuth callback
+  const { isProcessingOAuth, oAuthError } = useOAuthCallback();
   
   const { 
     email, 
@@ -28,6 +33,8 @@ const LoginPage: React.FC = () => {
     handleUserTypeChange,
     handleRememberMeChange,
     handleSubmit,
+    handleGoogleLogin,
+    handleGithubLogin,
     checkAuthStatus,
     isAuthenticated,
     validateEmail,
@@ -86,6 +93,13 @@ const LoginPage: React.FC = () => {
     }
   }, [location.search, email, error]);
   
+  // Add effect to handle OAuth errors
+  useEffect(() => {
+    if (oAuthError) {
+      console.log('OAuth callback error detected:', oAuthError);
+    }
+  }, [oAuthError]);
+  
   const onResendVerification = () => {
     handleResendVerification();
   };
@@ -125,7 +139,7 @@ const LoginPage: React.FC = () => {
       <LoginHeader />
       
       <div className="container mx-auto px-4 py-12">
-        {isLoading && !error && !email && !password ? (
+        {(isLoading && !error && !email && !password) || isProcessingOAuth ? (
           <div className="max-w-md mx-auto space-y-4">
             <Skeleton className="h-8 w-full mb-4" />
             <Skeleton className="h-10 w-full mb-2" />
@@ -139,7 +153,7 @@ const LoginPage: React.FC = () => {
               password={password}
               userType={userType}
               isLoading={isLoading}
-              error={error}
+              error={error || oAuthError || ''}
               emailError={emailError}
               passwordError={passwordError}
               rememberMe={rememberMe}
@@ -150,6 +164,8 @@ const LoginPage: React.FC = () => {
               onSubmit={handleSubmit}
               onEmailBlur={validateEmail}
               onPasswordBlur={validatePassword}
+              onGoogleLogin={handleGoogleLogin}
+              onGithubLogin={handleGithubLogin}
             />
           </div>
         )}

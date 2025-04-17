@@ -1,6 +1,8 @@
+
 import { Dispatch, SetStateAction, useCallback } from 'react';
-import { AuthState } from '../types';
+import { AuthState, UserType, OAuthProvider } from '../types';
 import { login as authLogin, LoginResult } from '../authLogin';
+import { loginWithOAuth as authLoginWithOAuth } from '../authOAuth';
 import { register as authRegister } from '../authRegister';
 import { logoutUser } from '../authUtils';
 
@@ -34,7 +36,7 @@ export const useAuthActions = (
   const handleLogin = useCallback(async (
     email: string, 
     password: string, 
-    userType: 'developer' | 'client',
+    userType: UserType,
     rememberMe: boolean = false
   ): Promise<LoginResult> => {
     console.log('handleLogin called');
@@ -72,9 +74,43 @@ export const useAuthActions = (
     }
   }, [setAuthState, setIsLoading]);
   
+  const handleOAuthLogin = useCallback(async (
+    provider: OAuthProvider,
+    userType: UserType
+  ): Promise<LoginResult> => {
+    console.log(`handleOAuthLogin called for ${provider} as ${userType}`);
+    setIsLoading(true);
+    try {
+      const result = await authLoginWithOAuth(provider, userType);
+      
+      if (result.success) {
+        setAuthState(prev => ({
+          ...prev,
+          isAuthenticated: true,
+          userType: userType,
+        }));
+        console.log(`OAuth login successful as ${userType}, setting auth state`);
+      } else {
+        console.error('OAuth login failed:', result.error);
+      }
+      
+      return result;
+    } catch (error: any) {
+      console.error('OAuth login exception:', error);
+      return {
+        success: false,
+        error: error.message || `An unexpected error occurred during ${provider} login`
+      };
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
+    }
+  }, [setAuthState, setIsLoading]);
+  
   const handleRegister = useCallback(async (
     userData: any, 
-    userType: 'developer' | 'client'
+    userType: UserType
   ): Promise<boolean> => {
     setIsLoading(true);
     try {
@@ -95,6 +131,7 @@ export const useAuthActions = (
 
   return {
     handleLogin,
+    handleOAuthLogin,
     handleRegister,
     handleLogout
   };

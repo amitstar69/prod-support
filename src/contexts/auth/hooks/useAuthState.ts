@@ -51,11 +51,12 @@ export const useAuthState = (): AuthContextType => {
   }, [authState]);
   
   // Get auth action handlers
-  const { handleLogin, handleRegister, handleLogout } = useAuthActions(setAuthState, setIsLoading);
+  const { handleLogin, handleOAuthLogin, handleRegister, handleLogout } = useAuthActions(setAuthState, setIsLoading);
 
   return {
     ...authState,
     login: handleLogin,
+    loginWithOAuth: handleOAuthLogin,
     register: handleRegister,
     logout: handleLogout,
     logoutUser: handleLogout,

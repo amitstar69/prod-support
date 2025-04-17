@@ -21,6 +21,8 @@ const UserTypeSelection: React.FC<UserTypeSelectionProps> = ({ userType, onUserT
               : 'border-border hover:border-primary/30'
           } h-[120px]`}
           onClick={() => onUserTypeChange('client')}
+          aria-pressed={userType === 'client'}
+          aria-label="Register as Client"
         >
           <User className={`h-8 w-8 mb-2 ${userType === 'client' ? 'text-primary' : ''}`} />
           <div className="text-center">
@@ -37,6 +39,8 @@ const UserTypeSelection: React.FC<UserTypeSelectionProps> = ({ userType, onUserT
               : 'border-border hover:border-primary/30'
           } h-[120px]`}
           onClick={() => onUserTypeChange('developer')}
+          aria-pressed={userType === 'developer'}
+          aria-label="Register as Developer"
         >
           <Code className={`h-8 w-8 mb-2 ${userType === 'developer' ? 'text-primary' : ''}`} />
           <div className="text-center">
