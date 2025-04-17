@@ -1,9 +1,9 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'sonner';
 import { supabase } from '../integrations/supabase/client';
-import { LoginResult } from '../contexts/auth/authLogin';
 
 export type UserType = 'client' | 'developer';
 
@@ -124,8 +124,27 @@ export const useLoginForm = () => {
     console.log(`Attempting to login: ${email} as ${loginUserType}`);
     
     try {
+      // Create an AbortController for the timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.warn('Login request timed out after 15 seconds');
+        controller.abort();
+      }, 15000);
+      
       // Call login and get the result with the correct type
-      const result = await login(email, password, loginUserType);
+      const loginPromise = login(email, password, loginUserType);
+      
+      // We'll race the login promise against an abort signal
+      const result = await Promise.race([
+        loginPromise,
+        new Promise<{ success: false, error: string }>((_, reject) => {
+          controller.signal.addEventListener('abort', () => {
+            reject(new Error('Login request timed out'));
+          });
+        })
+      ]);
+      
+      clearTimeout(timeoutId);
       
       console.log('Login result:', result.success ? 'Success' : 'Failed', 
         result.requiresVerification ? '(verification required)' : '');
@@ -147,6 +166,7 @@ export const useLoginForm = () => {
         navigate(redirectPath, { replace: true });
       } else if (result.requiresVerification) {
         setError('Please verify your email before logging in.');
+        toast.error('Email verification required');
         // If using a verification page, you could redirect here
         // navigate(`/email-verification?email=${encodeURIComponent(email)}`);
       } else if (result.error) {
@@ -158,8 +178,15 @@ export const useLoginForm = () => {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      setError(error.message || 'An unexpected error occurred during login');
-      toast.error(error.message || 'Login failed. Please try again later.');
+      
+      // Handle timeout errors specially
+      if (error.name === 'AbortError' || error.message?.includes('timed out')) {
+        setError('Login request timed out. Please check your internet connection and try again.');
+        toast.error('Connection timed out');
+      } else {
+        setError(error.message || 'An unexpected error occurred during login');
+        toast.error(error.message || 'Login failed. Please try again later.');
+      }
     } finally {
       setIsLoading(false);
     }

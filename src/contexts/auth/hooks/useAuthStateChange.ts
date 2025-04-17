@@ -27,7 +27,7 @@ export const setupAuthStateChangeListener = (
               const timeoutId = setTimeout(() => {
                 controller.abort();
                 console.warn('Profile fetch timed out');
-              }, 8000); // Increased from 5000
+              }, 5000); // Reduced from 8000 to fail faster
               
               const { data: profileData, error } = await supabase
                 .from('profiles')

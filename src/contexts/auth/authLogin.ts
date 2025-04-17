@@ -49,6 +49,15 @@ export const loginWithEmailAndPassword = async (
           requiresVerification: true
         };
       }
+      
+      // Handle invalid credentials more explicitly
+      if (error.message.includes('Invalid login credentials')) {
+        return {
+          success: false,
+          error: 'Email or password is incorrect. Please check your credentials.',
+        };
+      }
+      
       return {
         success: false,
         error: error.message,
@@ -127,6 +136,7 @@ export const loginWithEmailAndPassword = async (
         // This would be a good place to create a profile if needed
         // For now, we'll just sign out the user
         toast.error('Your user profile is missing. Please contact support.');
+        console.error('Profile not found for user', userId);
         await supabase.auth.signOut();
       }
       

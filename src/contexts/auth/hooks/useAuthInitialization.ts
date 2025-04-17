@@ -52,7 +52,7 @@ export const initializeAuthState = async (
           setTimeout(() => {
             console.warn('Supabase auth check timed out');
             resolve(null);
-          }, 8000); // 8 second timeout - increased from 5s
+          }, 5000); // 5 second timeout - reduced from 8s to fail faster
         });
         
         // Race between the actual check and the timeout
