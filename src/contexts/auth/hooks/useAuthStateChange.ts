@@ -2,6 +2,7 @@
 import { Dispatch, SetStateAction } from 'react';
 import { AuthState } from '../types';
 import { supabase } from '../../../integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const setupAuthStateChangeListener = (
   setAuthState: Dispatch<SetStateAction<AuthState>>
@@ -26,7 +27,7 @@ export const setupAuthStateChangeListener = (
               const timeoutId = setTimeout(() => {
                 controller.abort();
                 console.warn('Profile fetch timed out');
-              }, 5000);
+              }, 8000); // Increased from 5000
               
               const { data: profileData, error } = await supabase
                 .from('profiles')
@@ -38,6 +39,19 @@ export const setupAuthStateChangeListener = (
                 
               if (error) {
                 console.error('Error fetching user type:', error);
+                
+                // Still update auth state as authenticated but without user type
+                const basicAuthState: AuthState = {
+                  isAuthenticated: true,
+                  userId: session.user.id,
+                  userType: null
+                };
+                
+                setAuthState(basicAuthState);
+                localStorage.setItem('authState', JSON.stringify(basicAuthState));
+                
+                // Notify user of the issue
+                toast.error("Couldn't fetch your user profile. Some features may be limited.");
                 return;
               }
               
@@ -62,11 +76,14 @@ export const setupAuthStateChangeListener = (
               console.error('Error fetching user type during auth change:', error);
               
               // Still update with basic auth information even if profile fetch fails
-              setAuthState({
+              const fallbackAuthState: AuthState = {
                 isAuthenticated: true,
                 userId: session.user.id,
                 userType: null
-              });
+              };
+              
+              setAuthState(fallbackAuthState);
+              localStorage.setItem('authState', JSON.stringify(fallbackAuthState));
             }
           }
         } else if (event === 'SIGNED_OUT') {

@@ -13,7 +13,14 @@ export const initializeAuthState = async (
     setIsLoading(true);
     console.log('Beginning auth initialization');
     
-    // First, try to recover from localStorage
+    // First, set a reliable initial state
+    setAuthState({
+      isAuthenticated: false,
+      userType: null,
+      userId: null
+    });
+    
+    // Then, try to recover from localStorage
     const storedAuthState = localStorage.getItem('authState');
     if (storedAuthState) {
       try {
@@ -45,7 +52,7 @@ export const initializeAuthState = async (
           setTimeout(() => {
             console.warn('Supabase auth check timed out');
             resolve(null);
-          }, 5000); // 5 second timeout
+          }, 8000); // 8 second timeout - increased from 5s
         });
         
         // Race between the actual check and the timeout

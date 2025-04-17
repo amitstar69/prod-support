@@ -73,7 +73,7 @@ function App() {
             <Route path="/verification-success" element={<VerificationSuccessPage />} />
             <Route path="/verification-canceled" element={<VerificationCanceledPage />} />
             
-            {/* Developer-specific routes */}
+            {/* Developer-specific routes - ensure they're protected */}
             <Route 
               path="/profile" 
               element={
@@ -128,7 +128,7 @@ function App() {
               } 
             />
             
-            {/* Client-specific routes */}
+            {/* Client-specific routes - ensure they're protected */}
             <Route 
               path="/client-profile" 
               element={
@@ -175,7 +175,14 @@ function App() {
             />
             
             {/* Routes accessible by both user types */}
-            <Route path="/get-help/*" element={<GetHelpPage />} />
+            <Route 
+              path="/get-help/*" 
+              element={
+                <ProtectedRoute>
+                  <GetHelpPage />
+                </ProtectedRoute>
+              }
+            />
             
             <Route 
               path="/session-history" 
@@ -186,7 +193,7 @@ function App() {
               } 
             />
             
-            {/* Role-specific redirects - Fix the TypeScript error by using a proper route */}
+            {/* Role-specific redirects */}
             <Route 
               path="/dashboard" 
               element={
