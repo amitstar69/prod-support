@@ -55,7 +55,7 @@ const ClientSection = () => {
           <div className="relative">
             <div className="rounded-2xl overflow-hidden shadow-2xl">
               <img
-                src="public/lovable-uploads/43e7ef3a-3d05-4a8d-96b6-7e5373299c70.png"
+                src="/lovable-uploads/43e7ef3a-3d05-4a8d-96b6-7e5373299c70.png"
                 alt="Client collaborating with developer"
                 className="w-full h-auto object-cover aspect-[4/3]"
               />
