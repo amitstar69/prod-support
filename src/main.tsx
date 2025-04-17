@@ -8,10 +8,18 @@ import './index.css';
 // Initialize Supabase services
 import './integrations/supabase/init';
 
+// Auth and context providers
+import { AuthProvider } from './contexts/auth';
+import { HelpRequestProvider } from './contexts/HelpRequestContext';
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <AuthProvider>
+      <HelpRequestProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </HelpRequestProvider>
+    </AuthProvider>
   </React.StrictMode>,
 );
