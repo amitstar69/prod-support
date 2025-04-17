@@ -35,23 +35,28 @@ export const useLoginForm = () => {
 
   const handleUserTypeChange = useCallback((type: UserType) => {
     setLoginUserType(type);
-    setError(''); // Clear errors on user type change
+    // Clear all errors on user type change
+    setError('');
+    setEmailError('');
+    setPasswordError('');
   }, []);
 
   const handleRememberMeChange = useCallback(() => setRememberMe(prev => !prev), []);
 
   // Validate email with clear error handling
   const validateEmail = useCallback(() => {
+    // Clear other errors first
+    setError('');
+    setPasswordError('');
+    
     if (!email) {
       setEmailError('Email is required');
-      setError(''); // Clear global error when showing field-specific error
       return false;
     }
     
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(email)) {
       setEmailError('Please enter a valid email address');
-      setError(''); // Clear global error when showing field-specific error
       return false;
     }
     
@@ -61,15 +66,17 @@ export const useLoginForm = () => {
 
   // Validate password with clear error handling
   const validatePassword = useCallback(() => {
+    // Clear other errors first
+    setError('');
+    setEmailError('');
+    
     if (!password) {
       setPasswordError('Password is required');
-      setError(''); // Clear global error when showing field-specific error
       return false;
     }
     
     if (password.length < 6) {
       setPasswordError('Password must be at least 6 characters');
-      setError(''); // Clear global error when showing field-specific error
       return false;
     }
     
@@ -188,6 +195,11 @@ export const useLoginForm = () => {
         result.requiresVerification ? '(verification required)' : '');
       
       if (result.success) {
+        // Clear all error states
+        setError('');
+        setEmailError('');
+        setPasswordError('');
+        
         toast.success(`Successfully logged in as ${loginUserType}`);
         
         const activeUserType = userType || loginUserType;
@@ -204,7 +216,10 @@ export const useLoginForm = () => {
         console.log(`Login successful, redirecting to ${redirectPath}`);
         navigate(redirectPath, { replace: true });
       } else if (result.requiresVerification) {
+        // Show verification error, but ONLY in one place (global error)
         setError('Please verify your email before logging in.');
+        setEmailError('');
+        setPasswordError('');
         toast.error('Email verification required');
       } else if (result.error) {
         // Set a single error message in the error state
@@ -214,11 +229,18 @@ export const useLoginForm = () => {
         setPasswordError('');
         toast.error(result.error);
       } else {
+        // Generic error, only set global error
         setError('Login failed. Please check your credentials and try again.');
+        setEmailError('');
+        setPasswordError('');
         toast.error('Login failed');
       }
     } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Set ONLY global error, clear field-specific errors
+      setEmailError('');
+      setPasswordError('');
       
       if (error.name === 'AbortError' || error.message?.includes('timed out')) {
         setError('Login request timed out. Please check your internet connection and try again.');

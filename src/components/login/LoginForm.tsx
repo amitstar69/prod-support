@@ -1,5 +1,5 @@
 
-import React, { KeyboardEvent, useEffect } from 'react';
+import React, { KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -68,6 +68,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
   // Determine which error message to show (with priority)
   const getDisplayError = (): string => {
+    // Only return one error with priority: error > emailError > passwordError
     if (error) return error;
     if (emailError) return emailError;
     if (passwordError) return passwordError;
@@ -110,15 +111,17 @@ const LoginForm: React.FC<LoginFormProps> = ({
                   : ''
               }`}
             >
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {displayError}{' '}
-                {errorType === 'verification' && (
-                  <Link to="/forgot-password" className="underline font-medium">
-                    Resend verification email
-                  </Link>
-                )}
-              </AlertDescription>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="m-0">
+                  {displayError}{' '}
+                  {errorType === 'verification' && (
+                    <Link to="/forgot-password" className="underline font-medium">
+                      Resend verification email
+                    </Link>
+                  )}
+                </AlertDescription>
+              </div>
             </Alert>
           )}
           
