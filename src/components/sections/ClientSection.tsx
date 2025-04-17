@@ -21,13 +21,13 @@ const ClientSection = () => {
               quick fixes to complete transformations.
             </p>
             <div className="grid sm:grid-cols-2 gap-4 mb-8">
-              <div className="bg-card p-6 rounded-lg border">
+              <div className="bg-card p-6 rounded-lg border border-border/50 hover:border-border transition-colors">
                 <h3 className="font-semibold mb-2">Post a project</h3>
                 <p className="text-sm text-muted-foreground">
                   Describe your needs and get matched with qualified developers
                 </p>
               </div>
-              <div className="bg-card p-6 rounded-lg border">
+              <div className="bg-card p-6 rounded-lg border border-border/50 hover:border-border transition-colors">
                 <h3 className="font-semibold mb-2">Browse developers</h3>
                 <p className="text-sm text-muted-foreground">
                   Explore profiles and choose the perfect match for your project
@@ -53,12 +53,13 @@ const ClientSection = () => {
             </div>
           </div>
           <div className="relative">
-            <div className="rounded-2xl overflow-hidden">
+            <div className="rounded-2xl overflow-hidden shadow-2xl">
               <img
-                src="public/lovable-uploads/0f7f698a-f567-4bca-92ee-391f2fb37c81.png"
-                alt="Client working on project"
-                className="w-full h-auto object-cover"
+                src="public/lovable-uploads/6a656c42-d54c-4f36-9881-c158ec6ffc04.png"
+                alt="Client collaborating with developer"
+                className="w-full h-auto object-cover aspect-[4/3]"
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent"></div>
             </div>
           </div>
         </div>

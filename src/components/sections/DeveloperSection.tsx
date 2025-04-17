@@ -19,12 +19,13 @@ const DeveloperSection = () => {
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="order-2 lg:order-1">
-            <div className="rounded-2xl overflow-hidden">
+            <div className="rounded-2xl overflow-hidden shadow-2xl">
               <img
                 src="public/lovable-uploads/0f7f698a-f567-4bca-92ee-391f2fb37c81.png"
                 alt="Developer working"
-                className="w-full h-auto object-cover"
+                className="w-full h-auto object-cover aspect-[4/3]"
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent"></div>
             </div>
           </div>
           <div className="order-1 lg:order-2">
@@ -39,7 +40,7 @@ const DeveloperSection = () => {
             <div className="space-y-4 mb-8">
               {benefits.map((benefit, index) => (
                 <div key={index} className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-primary" />
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
                   <span>{benefit}</span>
                 </div>
               ))}
