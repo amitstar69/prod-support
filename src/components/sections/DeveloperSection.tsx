@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -20,7 +21,7 @@ const DeveloperSection = () => {
           <div className="order-2 lg:order-1">
             <div className="rounded-2xl overflow-hidden shadow-2xl">
               <img
-                src="/lovable-uploads/0aebc354-ad86-47bc-8bc5-3d1b19d9949d.png"
+                src="/lovable-uploads/97c5d978-fe69-4b9f-9784-88a4a14032a7.png"
                 alt="Developer working at night"
                 className="w-full h-auto object-cover aspect-[4/3]"
               />
