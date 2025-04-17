@@ -58,6 +58,13 @@ const ClientSection = () => {
                 src="/lovable-uploads/43e7ef3a-3d05-4a8d-96b6-7e5373299c70.png"
                 alt="Client collaborating with developer"
                 className="w-full h-auto object-cover aspect-[4/3]"
+                loading="lazy"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  console.warn('Image failed to load:', target.src);
+                  target.src = '/placeholder.svg';
+                  target.onerror = null; // Prevent infinite error loop
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent"></div>
             </div>

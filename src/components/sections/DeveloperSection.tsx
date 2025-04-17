@@ -19,11 +19,18 @@ const DeveloperSection = () => {
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="order-2 lg:order-1">
-            <div className="rounded-2xl overflow-hidden shadow-2xl">
+            <div className="rounded-2xl overflow-hidden shadow-2xl relative">
               <img
                 src="/lovable-uploads/97c5d978-fe69-4b9f-9784-88a4a14032a7.png"
                 alt="Developer working at night"
                 className="w-full h-auto object-cover aspect-[4/3]"
+                loading="lazy"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  console.warn('Image failed to load:', target.src);
+                  target.src = '/placeholder.svg';
+                  target.onerror = null; // Prevent infinite error loop
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent"></div>
             </div>

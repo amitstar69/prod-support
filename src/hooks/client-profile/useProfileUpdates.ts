@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useProfileCompletion } from './useProfileCompletion';
 import { Client } from '../../types/product';
 import { useAuth } from '../../contexts/auth';
+import { deleteImage } from '../../utils/imageStorage';
 
 export const useProfileUpdates = (profileData: Partial<Client> | null) => {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -23,8 +24,27 @@ export const useProfileUpdates = (profileData: Partial<Client> | null) => {
       // First update the profiles table with basic info
       const basicInfo: Record<string, any> = {};
       
+      // Handle image update - if image changed and old one exists, clean up old image
+      if (updatedData.image && updatedData.image !== profileData?.image) {
+        basicInfo.image = updatedData.image;
+        
+        // Try to clean up old image if it's a storage URL
+        if (profileData?.image && 
+            profileData.image !== '/placeholder.svg' && 
+            profileData.image.includes('storage')) {
+          
+          console.log('Attempting to clean up old profile image:', profileData.image);
+          
+          try {
+            await deleteImage(profileData.image);
+          } catch (error) {
+            console.warn('Failed to delete old image, continuing with profile update:', error);
+            // Non-critical error, continue with profile update
+          }
+        }
+      }
+      
       if (updatedData.name) basicInfo.name = updatedData.name;
-      if (updatedData.image) basicInfo.image = updatedData.image;
       if (updatedData.location) basicInfo.location = updatedData.location;
       if (updatedData.description) basicInfo.description = updatedData.description;
       if (updatedData.languages) basicInfo.languages = updatedData.languages;

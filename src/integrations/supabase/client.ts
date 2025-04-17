@@ -37,6 +37,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
         throw error;
       });
     }
+  },
+  // Configure storage to use the CDN with edge caching
+  storageOpts: {
+    retryLimit: 3,
+    dedupingInterval: 1000,
   }
 });
 
@@ -68,5 +73,24 @@ window.addEventListener('online', () => {
   console.log('Network connection restored, refreshing Supabase connection');
   supabase.auth.refreshSession();
 });
+
+// Ensure storage buckets are available
+export const checkStorageBuckets = async () => {
+  try {
+    // Attempt to list buckets to ensure storage is working
+    const { data, error } = await supabase.storage.listBuckets();
+    
+    if (error) {
+      console.error('Storage service error:', error);
+      return false;
+    }
+    
+    console.log('Storage buckets available:', data?.map(b => b.name).join(', '));
+    return true;
+  } catch (err) {
+    console.error('Failed to check storage buckets:', err);
+    return false;
+  }
+};
 
 // No imports at the end to prevent circular dependencies
