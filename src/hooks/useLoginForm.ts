@@ -7,6 +7,7 @@ import { useLoginErrors } from './auth/login/useLoginErrors';
 import { useAuthStatus } from './auth/login/useAuthStatus';
 import { validateEmail, validatePassword } from './auth/login/validation';
 import { UserType } from '../contexts/auth/types';
+import { LoginResult } from '../contexts/auth/authLogin';
 
 export const useLoginForm = () => {
   const navigate = useNavigate();
@@ -82,16 +83,22 @@ export const useLoginForm = () => {
         controller.abort();
       }, 10000);
       
+      const loginPromise = login(email, password, loginUserType, rememberMe);
+      const timeoutPromise = new Promise<LoginResult>((_, reject) => {
+        controller.signal.addEventListener('abort', () => {
+          reject(new Error('Login request timed out'));
+        });
+      });
+      
       const result = await Promise.race([
-        login(email, password, loginUserType, rememberMe),
-        new Promise((_, reject) => {
-          controller.signal.addEventListener('abort', () => {
-            reject(new Error('Login request timed out'));
-          });
-        })
-      ]).catch(error => {
+        loginPromise,
+        timeoutPromise
+      ]).catch((error: Error) => {
         setConsecutiveErrors(prev => prev + 1);
-        throw error;
+        return {
+          success: false,
+          error: error.message || 'Login request failed'
+        } as LoginResult;
       });
       
       clearTimeout(timeoutId);
@@ -139,7 +146,7 @@ export const useLoginForm = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [email, password, loginUserType, rememberMe, isLoading, login, navigate, location.search, consecutiveErrors, clearAllErrors, setLoginError, validateForm]);
+  }, [email, password, loginUserType, rememberMe, login, navigate, location.search, consecutiveErrors, clearAllErrors, setLoginError, validateForm]);
 
   return {
     email,
