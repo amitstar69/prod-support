@@ -164,7 +164,7 @@ export const handleOAuthCallback = async (): Promise<{
     
     return {
       success: true,
-      userType: profileData.user_type
+      userType: profileData.user_type as UserType
     };
   } catch (error: any) {
     console.error('Error in OAuth callback handler:', error);

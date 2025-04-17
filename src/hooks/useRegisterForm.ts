@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -45,14 +44,12 @@ export const useRegisterForm = () => {
       }
     }
     
-    // Clear form error when user starts typing again
     if (formError) {
       setFormError(null);
     }
   };
   
   const validateEmail = (email: string): boolean => {
-    // Check for basic email format and require a domain extension (like .com, .org, etc.)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
@@ -104,17 +101,15 @@ export const useRegisterForm = () => {
     e.preventDefault();
     
     if (isLoading) {
-      return; // Prevent double submission
+      return;
     }
     
-    // Reset form error
     setFormError(null);
     setIsLoading(true);
     
     try {
       const { firstName, lastName, email, password, confirmPassword } = formValues;
       
-      // Validation
       if (!firstName || !lastName || !email || !password) {
         const errorMsg = 'Please fill out all required fields';
         setFormError(errorMsg);
@@ -123,7 +118,6 @@ export const useRegisterForm = () => {
         return;
       }
       
-      // Validate email format
       if (!validateEmail(email)) {
         const errorMsg = 'Please enter a valid email address with a domain (e.g., example@domain.com)';
         setFormError(errorMsg);

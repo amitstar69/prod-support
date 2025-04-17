@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { User, Code } from 'lucide-react';
-import { UserType } from '../../hooks/useRegisterForm';
+import { UserType } from '@/contexts/auth/types';
 
 interface UserTypeSelectionProps {
   userType: UserType;
