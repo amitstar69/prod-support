@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -6,24 +7,12 @@ import { HelpRequest, HelpRequestMatch } from '../types/helpRequest';
 import Layout from '../components/Layout';
 import { toast } from 'sonner';
 import { 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  BarChart3, 
-  Calendar, 
-  PlusCircle, 
-  Loader2, 
-  User,
-  Star,
-  Bell,
+  Loader2,
   ArrowLeft,
-  FileEdit
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
-import { Progress } from '../components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { getHelpRequestsForClient } from '../integrations/supabase/helpRequests';
 import DeveloperApplications from '../components/dashboard/DeveloperApplications';
 import ChatDialog from '../components/chat/ChatDialog';
@@ -32,12 +21,9 @@ import { Notification } from '../integrations/supabase/notifications';
 import EditHelpRequestForm from '../components/help/EditHelpRequestForm';
 import CancelHelpRequestDialog from '../components/help/CancelHelpRequestDialog';
 import HelpRequestHistoryDialog from '../components/help/HelpRequestHistoryDialog';
-import TicketViewToggle from '../components/dashboard/TicketViewToggle';
 import ClientDashboardHeader from '../components/dashboard/client/ClientDashboardHeader';
 import RequestList from '../components/dashboard/client/RequestList';
 import { useTicketFetching } from '../hooks/dashboard/useTicketFetching';
-import { ArrowLeft } from 'lucide-react';
-import { Badge } from '../components/ui/badge';
 
 const ClientDashboard = () => {
   const { userId, isAuthenticated } = useAuth();
@@ -57,10 +43,24 @@ const ClientDashboard = () => {
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [selectedRequestForHistory, setSelectedRequestForHistory] = useState(null);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [requestMatches, setRequestMatches] = useState<Record<string, any[]>>({});
+
+  const {
+    tickets: allTickets,
+    isLoading,
+    dataSource,
+    fetchTickets,
+    handleForceRefresh
+  } = useTicketFetching(isAuthenticated, 'client');
+
+  const activeRequests = allTickets.filter(ticket => 
+    !['completed', 'cancelled'].includes(ticket.status || ''));
+  const completedRequests = allTickets.filter(ticket => 
+    ['completed', 'cancelled'].includes(ticket.status || ''));
 
   useEffect(() => {
     if (isAuthenticated && userId) {
-      fetchHelpRequests();
+      fetchTickets();
       
       const matchesChannel = supabase
         .channel('public:help_request_matches')
@@ -78,7 +78,7 @@ const ClientDashboard = () => {
               }
             });
             
-            fetchHelpRequests();
+            fetchTickets();
           }
         })
         .subscribe();
@@ -99,7 +99,7 @@ const ClientDashboard = () => {
     } else {
       navigate('/login', { state: { returnTo: '/client-dashboard' } });
     }
-  }, [userId, isAuthenticated]);
+  }, [userId, isAuthenticated, activeRequests]);
 
   useEffect(() => {
     if (isAuthenticated && userId) {
@@ -154,55 +154,6 @@ const ClientDashboard = () => {
       };
     }
   }, [userId, isAuthenticated]);
-
-  const fetchHelpRequests = async () => {
-    if (!userId) return;
-    
-    try {
-      setIsLoading(true);
-      
-      const response = await getHelpRequestsForClient(userId);
-      
-      if (!response.success) {
-        console.error('Error fetching help requests:', response.error);
-        toast.error('Failed to load your help requests');
-        return;
-      }
-      
-      console.log('[ClientDashboard] All help requests from API:', response.data);
-      
-      const active: HelpRequest[] = [];
-      const completed: HelpRequest[] = [];
-      
-      response.data.forEach((request: HelpRequest, index: number) => {
-        console.log(`[ClientDashboard] Request ${index + 1}:`, {
-          id: request.id,
-          title: request.title,
-          status: request.status
-        });
-        
-        if (request.status === 'completed' || request.status === 'cancelled') {
-          completed.push(request);
-        } else {
-          active.push(request);
-        }
-      });
-      
-      console.log('[ClientDashboard] Active requests:', active.length);
-      console.log('[ClientDashboard] Completed requests:', completed.length);
-      
-      setActiveRequests(active);
-      setCompletedRequests(completed);
-      
-      fetchRequestMatches(active.map(r => r.id!).filter(Boolean));
-      
-    } catch (error) {
-      console.error('Exception fetching help requests:', error);
-      toast.error('An unexpected error occurred while loading your requests');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const fetchRequestMatches = async (requestIds: string[]) => {
     if (requestIds.length === 0) return;
@@ -317,7 +268,7 @@ const ClientDashboard = () => {
   const handleApplicationUpdate = () => {
     if (selectedRequestId) {
       fetchApplicationsForRequest(selectedRequestId);
-      fetchHelpRequests();
+      fetchTickets();
     }
   };
 
@@ -331,139 +282,6 @@ const ClientDashboard = () => {
 
   const handleCreateRequest = () => {
     navigate('/get-help');
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Clock className="h-5 w-5 text-yellow-500" />;
-      case 'matching':
-        return <User className="h-5 w-5 text-blue-500" />;
-      case 'in-progress':
-        return <BarChart3 className="h-5 w-5 text-purple-500" />;
-      case 'scheduled':
-        return <Calendar className="h-5 w-5 text-indigo-500" />;
-      case 'completed':
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-      case 'cancelled':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return <Clock className="h-5 w-5 text-gray-500" />;
-    }
-  };
-
-  const getStatusDescription = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'Your request has been posted and is waiting for developers to apply';
-      case 'matching':
-        return 'Developers are applying to your request';
-      case 'scheduled':
-        return 'Your session has been scheduled and is awaiting start';
-      case 'in-progress':
-        return 'Your session is currently in progress';
-      case 'completed':
-        return 'Your request has been successfully completed';
-      case 'cancelled':
-        return 'This request has been cancelled';
-      default:
-        return 'Status unknown';
-    }
-  };
-
-  const fetchApplicationsForRequest = async (requestId: string) => {
-    if (!userId || !requestId) return;
-    
-    try {
-      toast.loading('Loading developer applications...');
-      const response = await getDeveloperApplicationsForRequest(requestId);
-      toast.dismiss();
-      
-      if (response.success) {
-        console.log('Applications loaded successfully:', response.data);
-        setSelectedRequestApplications(response.data || []);
-      } else {
-        console.error('Error fetching applications:', response.error);
-        toast.error('Failed to load developer applications: ' + response.error);
-      }
-    } catch (error) {
-      toast.dismiss();
-      console.error('Exception fetching applications:', error);
-      toast.error('An unexpected error occurred while loading applications');
-    }
-  };
-
-  const handleOpenChat = (developerId: string, applicationId: string) => {
-    try {
-      if (!selectedRequestId) return;
-      
-      const application = selectedRequestApplications.find(app => app.id === applicationId);
-      const developerName = application?.developers?.profiles?.name || 'Developer';
-      
-      setChatDeveloperId(developerId);
-      setChatDeveloperName(developerName);
-      setIsChatOpen(true);
-    } catch (error) {
-      console.error('Error opening chat:', error);
-      toast.error('Failed to open chat');
-    }
-  };
-
-  const handleApplicationUpdate = () => {
-    if (selectedRequestId) {
-      fetchApplicationsForRequest(selectedRequestId);
-      fetchHelpRequests();
-    }
-  };
-
-  const getApplicationCountForRequest = (requestId: string) => {
-    return requestMatches[requestId]?.length || 0;
-  };
-
-  const getTotalNewApplicationsCount = () => {
-    return applicationNotifications.length;
-  };
-
-  const handleCreateRequest = () => {
-    navigate('/get-help');
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Clock className="h-5 w-5 text-yellow-500" />;
-      case 'matching':
-        return <User className="h-5 w-5 text-blue-500" />;
-      case 'in-progress':
-        return <BarChart3 className="h-5 w-5 text-purple-500" />;
-      case 'scheduled':
-        return <Calendar className="h-5 w-5 text-indigo-500" />;
-      case 'completed':
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-      case 'cancelled':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return <Clock className="h-5 w-5 text-gray-500" />;
-    }
-  };
-
-  const getStatusDescription = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'Your request has been posted and is waiting for developers to apply';
-      case 'matching':
-        return 'Developers are applying to your request';
-      case 'scheduled':
-        return 'Your session has been scheduled and is awaiting start';
-      case 'in-progress':
-        return 'Your session is currently in progress';
-      case 'completed':
-        return 'Your request has been successfully completed';
-      case 'cancelled':
-        return 'This request has been cancelled';
-      default:
-        return 'Status unknown';
-    }
   };
 
   if (!isAuthenticated) {
@@ -488,19 +306,6 @@ const ClientDashboard = () => {
     setSelectedRequestForHistory(request);
     setIsHistoryDialogOpen(true);
   };
-
-  const {
-    tickets: allTickets,
-    isLoading,
-    dataSource,
-    fetchTickets,
-    handleForceRefresh
-  } = useTicketFetching(isAuthenticated, 'client');
-
-  const activeRequests = allTickets.filter(ticket => 
-    !['completed', 'cancelled'].includes(ticket.status || ''));
-  const completedRequests = allTickets.filter(ticket => 
-    ['completed', 'cancelled'].includes(ticket.status || ''));
 
   return (
     <Layout>
@@ -539,7 +344,7 @@ const ClientDashboard = () => {
                 </div>
                 
                 <div className="flex gap-2 mb-4">
-                  {selectedRequest.technical_area.map((area: string, i: number) => (
+                  {selectedRequest.technical_area?.map((area: string, i: number) => (
                     <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
                       {area}
                     </Badge>
@@ -555,7 +360,7 @@ const ClientDashboard = () => {
                   applications={selectedRequestApplications}
                   requestId={selectedRequestId}
                   clientId={userId || ''}
-                  onApplicationUpdate={handleForceRefresh}
+                  onApplicationUpdate={handleApplicationUpdate}
                   onOpenChat={handleOpenChat}
                 />
               </div>
@@ -590,7 +395,7 @@ const ClientDashboard = () => {
                   requests={activeRequests}
                   isLoading={isLoading}
                   viewMode={viewMode}
-                  requestMatches={{}}
+                  requestMatches={requestMatches}
                   applicationNotifications={applicationNotifications}
                   selectedApplications={selectedRequestApplications}
                   onViewRequest={handleViewRequest}
@@ -606,7 +411,7 @@ const ClientDashboard = () => {
                   requests={completedRequests}
                   isLoading={isLoading}
                   viewMode={viewMode}
-                  requestMatches={{}}
+                  requestMatches={requestMatches}
                   applicationNotifications={[]}
                   selectedApplications={[]}
                   onViewRequest={handleViewRequest}
