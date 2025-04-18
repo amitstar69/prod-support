@@ -41,14 +41,18 @@ export const setupAuthStateChangeListener = (
               }, 10000); // Increased from 5s to 10s
               
               // Attempt to fetch additional profile data
-              // Use the signal parameter in the fetch options instead of abortSignal method
-              const { data: profileData, error } = await supabase
+              // Set up the Supabase query with options at the PostgrestFilterBuilder level
+              const query = supabase
                 .from('profiles')
                 .select('user_type')
-                .eq('id', session.user.id)
-                .single({
-                  signal: controller.signal
-                });
+                .eq('id', session.user.id);
+                
+              // Apply the AbortSignal to the query
+              const { data: profileData, error } = await query.single({
+                head: false,
+                count: null,
+                signal: controller.signal
+              });
                 
               clearTimeout(timeoutId);
                 
