@@ -17,6 +17,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Input } from '../ui/input';
 import { isApiSuccess, isApiError } from '../../types/api';
+import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
 interface HelpRequestDetailProps {
   ticket?: HelpRequest;
