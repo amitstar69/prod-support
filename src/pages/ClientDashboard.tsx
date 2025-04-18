@@ -22,7 +22,7 @@ const ClientDashboard = () => {
 
   // Show login prompt if not authenticated
   if (!isAuthenticated) {
-    return <LoginPrompt userType="client" />;
+    return <LoginPrompt />;
   }
   
   // If we're on a subpath, don't show the banner
@@ -35,11 +35,13 @@ const ClientDashboard = () => {
           <>
             <DashboardHeader
               title="Client Dashboard"
-              subtitle="Manage your help requests and work with developers"
+              description="Manage your help requests and work with developers"
+              showFilters={false}
+              setShowFilters={() => {}}
+              onRefresh={() => {}}
+              hideFilterButton={true}
             />
-            <DashboardBanner 
-              userType="client"
-            />
+            <DashboardBanner />
           </>
         )}
         

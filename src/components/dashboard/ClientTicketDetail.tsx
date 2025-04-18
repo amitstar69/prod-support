@@ -380,7 +380,7 @@ const ClientTicketDetail: React.FC = () => {
       
       {/* History Dialog */}
       <HelpRequestHistoryDialog 
-        helpRequestId={ticket.id || ''}
+        requestId={ticket.id || ''}
         isOpen={showHistoryDialog}
         onClose={() => setShowHistoryDialog(false)}
       />
@@ -390,7 +390,7 @@ const ClientTicketDetail: React.FC = () => {
         <ClientReviewDialog
           isOpen={showReviewDialog}
           onClose={() => setShowReviewDialog(false)}
-          helpRequest={ticket}
+          request={ticket}
           onReviewSubmitted={() => {
             // Refresh ticket data after review
             getHelpRequest(ticket.id || '').then(response => {

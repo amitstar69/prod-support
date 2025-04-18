@@ -26,6 +26,25 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 
+// Helper function to convert Ticket to HelpRequest
+const convertTicketToHelpRequest = (ticket: Ticket): HelpRequest => {
+  // Map Ticket fields to HelpRequest fields
+  return {
+    id: ticket.id,
+    client_id: ticket.clientId,
+    title: ticket.title,
+    description: ticket.description,
+    technical_area: ticket.tags || [],
+    urgency: ticket.priority,
+    communication_preference: [],
+    estimated_duration: ticket.estimatedHours ? Math.floor(ticket.estimatedHours * 60) : 30,
+    budget_range: ticket.budget ? `$${ticket.budget}` : 'Under $50',
+    status: ticket.status.replace('_', '-'), // Convert status format if needed
+    created_at: ticket.createdAt.toISOString(),
+    updated_at: ticket.updatedAt.toISOString(),
+  };
+};
+
 const ClientTicketDashboard: React.FC = () => {
   const { userId } = useAuth();
   const navigate = useNavigate();
@@ -41,8 +60,11 @@ const ClientTicketDashboard: React.FC = () => {
     refreshTickets 
   } = useClientTickets(userId || '');
   
+  // Convert Ticket[] to HelpRequest[]
+  const helpRequestTickets: HelpRequest[] = tickets.map(convertTicketToHelpRequest);
+  
   // Filter tickets based on search and status
-  const filteredTickets = tickets.filter((ticket: any) => {
+  const filteredTickets = helpRequestTickets.filter((ticket) => {
     const matchesSearch = searchQuery.trim() === '' || 
       ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -70,17 +92,17 @@ const ClientTicketDashboard: React.FC = () => {
   }, [userId, refreshTickets]);
   
   // Determine ticket counts by status
-  const openCount = tickets.filter(t => ['open', 'pending', 'matching'].includes(t.status || '')).length;
-  const inProgressCount = tickets.filter(t => ['claimed', 'in-progress', 'developer-qa'].includes(t.status || '')).length;
-  const reviewCount = tickets.filter(t => ['client-review', 'client-approved'].includes(t.status || '')).length;
-  const completedCount = tickets.filter(t => ['completed', 'resolved'].includes(t.status || '')).length;
+  const openCount = filteredTickets.filter(t => ['open', 'pending', 'matching'].includes(t.status || '')).length;
+  const inProgressCount = filteredTickets.filter(t => ['claimed', 'in-progress', 'developer-qa'].includes(t.status || '')).length;
+  const reviewCount = filteredTickets.filter(t => ['client-review', 'client-approved'].includes(t.status || '')).length;
+  const completedCount = filteredTickets.filter(t => ['completed', 'resolved'].includes(t.status || '')).length;
 
   const createNewTicket = () => {
     navigate('/get-help');
   };
   
   if (isLoading) {
-    return <LoadingState message="Loading your tickets..." />;
+    return <LoadingState text="Loading your tickets..." />;
   }
   
   if (error) {
@@ -209,7 +231,7 @@ const ClientTicketDashboard: React.FC = () => {
         <TabsList className="grid grid-cols-5 md:w-auto w-full">
           <TabsTrigger value="all">
             All
-            <Badge variant="secondary" className="ml-2">{tickets.length}</Badge>
+            <Badge variant="secondary" className="ml-2">{filteredTickets.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="open">
             Open
