@@ -32,7 +32,14 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
 }) => {
   // Skip if no ticket is provided
   if (!ticket && !ticketId) {
-    return <div>No ticket information available.</div>;
+    return (
+      <div className="p-4">
+        <Alert>
+          <AlertTitle>No Information Available</AlertTitle>
+          <AlertDescription>No ticket information provided.</AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   const [developerQANotes, setDeveloperQANotes] = useState<string>(ticket?.developer_qa_notes || '');
@@ -92,7 +99,14 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
 
   // If we only have ticketId but no ticket data, show loading or fetch the ticket
   if (!ticket) {
-    return <div>Loading ticket information...</div>;
+    return (
+      <div className="p-4">
+        <Alert>
+          <AlertTitle>Loading</AlertTitle>
+          <AlertDescription>Loading ticket information...</AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   return (
