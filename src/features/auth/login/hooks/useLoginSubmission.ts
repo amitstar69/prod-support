@@ -48,17 +48,27 @@ export const useLoginSubmission = ({
     setIsLoading(true);
     debugLog(`Login request started for ${email} as ${userType}`);
     
+    // Create an outer timeout that will ensure we never get stuck in a loading state
+    const outerTimeoutId = setTimeout(() => {
+      debugLog('Global login timeout reached - forcing loading state reset');
+      setIsLoading(false);
+      onError?.('Login failed. Please try again later.');
+      toast.error('Login timed out', {
+        description: 'Please try again in a few moments'
+      });
+    }, 30000); // 30-second global timeout
+    
     // Create abort controller for login timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       controller.abort();
-      debugLog('Login request timed out after 8 seconds');
+      debugLog('Login request timed out after 15 seconds');
       setIsLoading(false); // Ensure loading state is reset on timeout
       toast.error('Connection timed out', {
         description: 'Please check your internet connection and try again'
       });
       onError?.('Login request timed out. Please check your internet connection and try again.');
-    }, 8000); // 8 second timeout
+    }, 15000); // 15 second timeout - increased from 8 seconds
     
     try {
       const loginPromise = login(email, password, userType, rememberMe);
@@ -99,12 +109,16 @@ export const useLoginSubmission = ({
           navigate(redirectPath, { replace: true });
           onSuccess?.();
           
+          // Important: Ensure loading state is always reset
           setIsLoading(false);
-        }, 2500); // Shorter timeout for profile fetch
+          // Clear the outer timeout as well
+          clearTimeout(outerTimeoutId);
+        }, 3000); // Reduced from 2.5s to 3s to give a bit more time
         
         try {
           // Fetch user profile after successful login
-          const userData = await getCurrentUserData();
+          // Note: This is now optional - if it fails, we'll still complete login
+          const userData = await getCurrentUserData().catch(() => null);
           
           clearTimeout(profileTimeoutId);
           
@@ -116,7 +130,7 @@ export const useLoginSubmission = ({
               'User';
             toast.success(`Welcome back, ${userName}!`);
           } else {
-            debugLog('User profile fetch returned empty');
+            debugLog('User profile fetch returned empty or failed');
             toast.success(`Successfully logged in as ${userType}`);
           }
           
@@ -132,8 +146,6 @@ export const useLoginSubmission = ({
           navigate(redirectPath, { replace: true });
           onSuccess?.();
           
-          setIsLoading(false);
-          return true;
         } catch (profileError: any) {
           debugLog('Error fetching user profile:', profileError.message);
           clearTimeout(profileTimeoutId);
@@ -146,15 +158,17 @@ export const useLoginSubmission = ({
           debugLog(`Fallback redirect to: ${fallbackPath}`);
           navigate(fallbackPath, { replace: true });
           onSuccess?.();
-          
-          setIsLoading(false);
-          return true;
         }
+        
+        setIsLoading(false);
+        clearTimeout(outerTimeoutId);
+        return true;
       } else if (result.requiresVerification) {
         debugLog('Email verification required');
         onVerificationRequired?.(email);
         toast.error('Email verification required');
         setIsLoading(false);
+        clearTimeout(outerTimeoutId);
         return false;
       } else if (result.error) {
         debugLog('Login error:', result.error);
@@ -175,14 +189,17 @@ export const useLoginSubmission = ({
         }
         
         setIsLoading(false);
+        clearTimeout(outerTimeoutId);
         return false;
       }
       
       setIsLoading(false);
+      clearTimeout(outerTimeoutId);
       return false;
     } catch (error: any) {
       debugLog('Unexpected login error:', error.message);
       clearTimeout(timeoutId);
+      clearTimeout(outerTimeoutId);
       
       if (error.name === 'AbortError' || error.message?.includes('timed out')) {
         onError?.('Login request timed out. Please check your internet connection and try again.');

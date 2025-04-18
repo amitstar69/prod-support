@@ -14,7 +14,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
     autoRefreshToken: true,
     detectSessionInUrl: true,
     storageKey: 'supabase.auth.token',
-    // Add shorter timeouts for auth operations
+    // Add longer timeouts for auth operations
     flowType: 'implicit',
   },
   realtime: {
@@ -27,12 +27,12 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
   },
   global: {
     headers: { 'X-Client-Info': 'devHelp' },
-    // Add request retry logic with shorter timeout
+    // Add request retry logic with longer timeout
     fetch: (url, options) => {
       return fetch(url, {
         ...options,
-        // Add timeout to prevent hanging requests (reduced from 15s to 8s)
-        signal: options?.signal || AbortSignal.timeout(8000),
+        // Increase timeout from 8s to 20s to prevent hanging requests on slow networks
+        signal: options?.signal || AbortSignal.timeout(20000),
       }).catch(error => {
         console.error('Supabase fetch error:', error);
         if (error.name !== 'AbortError') {
@@ -50,7 +50,7 @@ console.log('Supabase client initialized with URL:', SUPABASE_URL);
 // Test the connection and log more details
 const sessionCheckTimeout = setTimeout(() => {
   console.warn('Supabase auth check timed out');
-}, 5000);
+}, 10000); // Increased from 5s to 10s
 
 // Test the connection with timeout
 supabase.auth.getSession().then(({ data, error }) => {

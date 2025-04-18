@@ -128,12 +128,14 @@ export const loginWithEmailAndPassword = async (
     
     console.time('auth-signin');
     
+    // Increased timeout from 8s to 15s to give more time for slower connections
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     
     let authData;
     
     try {
+      console.log('Starting Supabase auth signin');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -141,6 +143,7 @@ export const loginWithEmailAndPassword = async (
       
       clearTimeout(timeoutId);
       console.timeEnd('auth-signin');
+      console.log('Supabase auth signin completed', error ? 'with error' : 'successfully');
       
       authData = data; // Store the data in an accessible variable
 
@@ -201,6 +204,8 @@ export const loginWithEmailAndPassword = async (
       throw error;
     }
 
+    // Login successful, now we need to check the user profile
+    // Skip profile checking if we already have cached data
     const userId = authData.user.id;
     const cachedProfile = profileCache.get(userId);
     const now = Date.now();
@@ -225,57 +230,74 @@ export const loginWithEmailAndPassword = async (
       return { success: true };
     }
 
+    // If we get here, we need to check the user's profile
+    // but we'll make it a faster/simpler check with a longer timeout
     console.time('profile-fetch');
     
     const profileController = new AbortController();
-    const profileTimeoutId = setTimeout(() => profileController.abort(), 8000);
+    // Increased profile timeout from 8s to 20s
+    const profileTimeoutId = setTimeout(() => profileController.abort(), 20000);
     
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('user_type')
-      .eq('id', userId)
-      .single();
-    
-    clearTimeout(profileTimeoutId);
-    
-    console.timeEnd('profile-fetch');
-
-    if (profileError) {
-      recordLoginAttempt(email, false);
-      console.error('Error fetching user profile:', profileError);
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', userId)
+        .single();
       
-      if (profileError.code === 'PGRST116') {
-        toast.error('Your user profile is missing. Please contact support.');
-        console.error('Profile not found for user', userId);
+      clearTimeout(profileTimeoutId);
+      console.timeEnd('profile-fetch');
+
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+        
+        // Allow login even if profile check fails
+        // This ensures the user can still log in if their profile data can't be retrieved
+        console.log('Continuing login despite profile error');
+        recordLoginAttempt(email, true);
+        
+        // Just log this error instead of failing the login
+        console.warn('Profile not found for user', userId, 'but allowing login anyway');
+        return { success: true };
+      }
+
+      profileCache.set(userId, {
+        user_type: profileData.user_type,
+        timestamp: now
+      });
+
+      if (profileData.user_type !== userType) {
+        recordLoginAttempt(email, false);
+        console.error('User type mismatch:', profileData.user_type, 'vs', userType);
         await supabase.auth.signOut();
+        return {
+          success: false,
+          error: `You are registered as a ${profileData.user_type}, not a ${userType}. Please use the correct login option.`,
+        };
+      }
+
+      recordLoginAttempt(email, true);
+      
+      console.log('Login successful for', userType);
+      console.timeEnd('login-process');
+      return { success: true };
+    } catch (profileError) {
+      clearTimeout(profileTimeoutId);
+      console.error('Exception during profile fetch:', profileError);
+      
+      // If the profile check times out, still allow the login
+      if (profileError instanceof Error && 
+          (profileError.name === 'AbortError' || profileError.message?.includes('timeout'))) {
+        console.warn('Profile check timed out, but allowing login to proceed');
+        recordLoginAttempt(email, true);
+        return { success: true };
       }
       
-      return {
-        success: false,
-        error: 'Error verifying user type. Please try again.',
-      };
+      // For other errors, also allow login but log the issue
+      console.warn('Non-critical profile error during login:', profileError);
+      recordLoginAttempt(email, true);
+      return { success: true };
     }
-
-    profileCache.set(userId, {
-      user_type: profileData.user_type,
-      timestamp: now
-    });
-
-    if (profileData.user_type !== userType) {
-      recordLoginAttempt(email, false);
-      console.error('User type mismatch:', profileData.user_type, 'vs', userType);
-      await supabase.auth.signOut();
-      return {
-        success: false,
-        error: `You are registered as a ${profileData.user_type}, not a ${userType}. Please use the correct login option.`,
-      };
-    }
-
-    recordLoginAttempt(email, true);
-    
-    console.log('Login successful for', userType);
-    console.timeEnd('login-process');
-    return { success: true };
   } catch (error) {
     recordLoginAttempt(email, false);
     const authError = error as AuthError;

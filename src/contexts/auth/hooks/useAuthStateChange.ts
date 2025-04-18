@@ -21,37 +21,41 @@ export const setupAuthStateChangeListener = (
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
+            // Always update with basic auth information first
+            const basicAuthState: AuthState = {
+              isAuthenticated: true,
+              userId: session.user.id,
+              userType: null
+            };
+            
+            // Update immediately with basic info
+            setAuthState(basicAuthState);
+            localStorage.setItem('authState', JSON.stringify(basicAuthState));
+            
             try {
               // Add timeout protection for the profile fetch
               const controller = new AbortController();
               const timeoutId = setTimeout(() => {
                 controller.abort();
                 console.warn('Profile fetch timed out');
-              }, 5000); // Reduced from 8000 to fail faster
+              }, 10000); // Increased from 5s to 10s
               
+              // Attempt to fetch additional profile data
+              // Use the signal from the AbortController
               const { data: profileData, error } = await supabase
                 .from('profiles')
                 .select('user_type')
                 .eq('id', session.user.id)
-                .single();
+                .single()
+                .abortSignal(controller.signal);
                 
               clearTimeout(timeoutId);
                 
               if (error) {
                 console.error('Error fetching user type:', error);
                 
-                // Still update auth state as authenticated but without user type
-                const basicAuthState: AuthState = {
-                  isAuthenticated: true,
-                  userId: session.user.id,
-                  userType: null
-                };
-                
-                setAuthState(basicAuthState);
-                localStorage.setItem('authState', JSON.stringify(basicAuthState));
-                
-                // Notify user of the issue
-                toast.error("Couldn't fetch your user profile. Some features may be limited.");
+                // User is still authenticated even without profile
+                toast.warning("Couldn't fetch your complete profile. Some features may be limited.");
                 return;
               }
               
@@ -75,15 +79,9 @@ export const setupAuthStateChangeListener = (
             } catch (error) {
               console.error('Error fetching user type during auth change:', error);
               
-              // Still update with basic auth information even if profile fetch fails
-              const fallbackAuthState: AuthState = {
-                isAuthenticated: true,
-                userId: session.user.id,
-                userType: null
-              };
-              
-              setAuthState(fallbackAuthState);
-              localStorage.setItem('authState', JSON.stringify(fallbackAuthState));
+              // Just continue with basic auth info - don't interrupt the auth process
+              // The user is still authenticated even if we can't get their profile
+              console.log('Continuing with basic auth information despite profile fetch error');
             }
           }
         } else if (event === 'SIGNED_OUT') {
