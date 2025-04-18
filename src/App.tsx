@@ -1,3 +1,4 @@
+
 import React, { useEffect, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
@@ -29,6 +30,8 @@ import DeveloperTicketDetail from './pages/DeveloperTicketDetail';
 import MyApplicationsPage from './pages/MyApplicationsPage';
 import VerificationSuccessPage from './pages/VerificationSuccessPage';
 import VerificationCanceledPage from './pages/VerificationCanceledPage';
+import ApplicationDetailPage from './pages/ApplicationDetailPage';
+import TicketDetailPage from './pages/TicketDetailPage';
 
 // Import contexts
 import { AuthProvider, useAuth } from './contexts/auth';
@@ -203,6 +206,19 @@ function App() {
                 <Route path="/client/tickets" element={
                   <ProtectedRoute requiredUserType="client">
                     <ClientDashboard />
+                  </ProtectedRoute>
+                } />
+                
+                {/* New client routes for application and ticket detail views */}
+                <Route path="/client/applications/:applicationId" element={
+                  <ProtectedRoute requiredUserType="client">
+                    <ApplicationDetailPage />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/client/tickets/:ticketId" element={
+                  <ProtectedRoute requiredUserType="client">
+                    <TicketDetailPage />
                   </ProtectedRoute>
                 } />
                 

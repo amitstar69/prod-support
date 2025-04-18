@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { Clock, Hourglass, DollarSign, MessageCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { Clock, Hourglass, DollarSign, MessageCircle, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
 import { ApplicationStatus } from '../../types/helpRequest';
 import { VALID_MATCH_STATUSES } from '../../integrations/supabase/helpRequestsApplications';
 
@@ -13,6 +13,7 @@ interface ApplicationCardProps {
   onApprove: (applicationId: string) => Promise<void>;
   onReject: (applicationId: string) => Promise<void>;
   onOpenChat: (developerId: string, applicationId: string) => void;
+  onViewDetails?: (applicationId: string) => void;
   isProcessing: (applicationId: string) => boolean;
 }
 
@@ -21,6 +22,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
   onApprove,
   onReject,
   onOpenChat,
+  onViewDetails,
   isProcessing
 }) => {
   const formatCurrency = (value: number) => {
@@ -34,6 +36,9 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
     if (application.developer?.profile?.name) {
       return application.developer.profile.name;
     }
+    if (application.developer?.name) {
+      return application.developer.name;
+    }
     return 'Developer';
   };
   
@@ -43,6 +48,9 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
     }
     if (application.developer?.profile?.image) {
       return application.developer.profile.image;
+    }
+    if (application.developer?.image) {
+      return application.developer.image;
     }
     return '/placeholder.svg';
   };
@@ -76,7 +84,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
       <CardContent className="space-y-3">
         {application.proposed_message && (
           <div className="bg-muted p-3 rounded text-sm">
-            <p>{application.proposed_message}</p>
+            <p className="line-clamp-3">{application.proposed_message}</p>
           </div>
         )}
         
@@ -110,8 +118,20 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
       </CardContent>
       
       <CardFooter className="gap-3 flex flex-wrap">
+        {onViewDetails && (
+          <Button 
+            className="w-full"
+            variant="outline"
+            onClick={() => onViewDetails(application.id)}
+            disabled={isProcessing(application.id)}
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            View Details
+          </Button>
+        )}
+        
         {application.status === APPLICATION_STATUSES.PENDING && (
-          <>
+          <div className="flex gap-2 w-full">
             <Button 
               className="flex-1"
               onClick={() => onApprove(application.id)}
@@ -138,11 +158,11 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
               <XCircle className="h-4 w-4 mr-2" />
               Reject
             </Button>
-          </>
+          </div>
         )}
         
         <Button 
-          className={application.status === APPLICATION_STATUSES.PENDING ? 'w-full mt-2' : 'flex-1'}
+          className={application.status === APPLICATION_STATUSES.PENDING ? 'w-full' : 'flex-1'}
           variant={application.status === APPLICATION_STATUSES.PENDING ? 'outline' : 'default'}
           onClick={() => onOpenChat(application.developer_id, application.id)}
           disabled={isProcessing(application.id)}

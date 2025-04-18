@@ -250,6 +250,11 @@ const ClientDashboard: React.FC = () => {
     }
   };
 
+  const handleViewRequest = (requestId: string) => {
+    setSelectedRequestId(requestId);
+    fetchApplicationsForRequest(requestId);
+  };
+
   const handleViewApplication = async (applicationId: string) => {
     try {
       const { data, error } = await supabase
@@ -274,59 +279,12 @@ const ClientDashboard: React.FC = () => {
           prev.filter(notif => notif.related_entity_id !== applicationId)
         );
         
-        handleViewRequest(data.request_id);
+        navigate(`/client/applications/${applicationId}`);
       }
     } catch (error) {
       console.error('Exception handling application view:', error);
       toast.error('An error occurred while loading the application');
     }
-  };
-
-  const handleCreateRequest = () => {
-    navigate('/get-help');
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Clock className="h-5 w-5 text-yellow-500" />;
-      case 'matching':
-        return <User className="h-5 w-5 text-blue-500" />;
-      case 'in-progress':
-        return <BarChart3 className="h-5 w-5 text-purple-500" />;
-      case 'scheduled':
-        return <Calendar className="h-5 w-5 text-indigo-500" />;
-      case 'completed':
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-      case 'cancelled':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return <Clock className="h-5 w-5 text-gray-500" />;
-    }
-  };
-
-  const getStatusDescription = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'Your request has been posted and is waiting for developers to apply';
-      case 'matching':
-        return 'Developers are applying to your request';
-      case 'scheduled':
-        return 'Your session has been scheduled and is awaiting start';
-      case 'in-progress':
-        return 'Your session is currently in progress';
-      case 'completed':
-        return 'Your request has been successfully completed';
-      case 'cancelled':
-        return 'This request has been cancelled';
-      default:
-        return 'Status unknown';
-    }
-  };
-
-  const handleViewRequest = (requestId: string) => {
-    setSelectedRequestId(requestId);
-    fetchApplicationsForRequest(requestId);
   };
 
   const handleOpenChat = (developerId: string, applicationId: string) => {
@@ -504,7 +462,7 @@ const ClientDashboard: React.FC = () => {
                       {activeRequests.map((request) => (
                         <Card 
                           key={request.id} 
-                          className={`overflow-hidden hover:shadow-md transition-shadow ${
+                          className={`overflow-hidden hover:shadow-md transition-shadow ${ 
                             applicationNotifications.some(n => {
                               const appData = selectedRequestApplications.find(app => app.id === n.related_entity_id);
                               return appData && appData.request_id === request.id;
@@ -644,9 +602,9 @@ const ClientDashboard: React.FC = () => {
                                   variant="outline"
                                   className={`
                                     ${request.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
-                                    request.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
-                                    request.status === 'scheduled' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
-                                    'bg-yellow-50 text-yellow-800 border-yellow-200'}
+                                     request.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                                     request.status === 'scheduled' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
+                                     'bg-yellow-50 text-yellow-800 border-yellow-200'}
                                   `}
                                 >
                                   <span className="flex items-center gap-1">
@@ -679,7 +637,6 @@ const ClientDashboard: React.FC = () => {
                             
                             <div className="flex items-center gap-2">
                               <Button 
-                                className="whitespace-nowrap"
                                 variant={getApplicationCountForRequest(request.id!) > 0 ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => handleViewRequest(request.id!)}
@@ -798,7 +755,7 @@ const ClientDashboard: React.FC = () => {
                               className="w-full"
                               onClick={() => handleViewHistory(request)}
                             >
-                              <Clock className="h-3.5 w-3.5 mr-1" />
+                              <Clock className="h-3.5 w-3.5" />
                               View History
                             </Button>
                           </CardFooter>

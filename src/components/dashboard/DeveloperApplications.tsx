@@ -55,6 +55,9 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
         }
         
         onApplicationUpdate();
+        
+        // Navigate to ticket detail view
+        navigate(`/client/tickets/${requestId}`);
       } else {
         toast.error(`Failed to approve application: ${result.error}`);
         console.error('Error details:', result);
@@ -101,6 +104,10 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
     }
   };
   
+  const handleViewApplication = (applicationId: string) => {
+    navigate(`/client/applications/${applicationId}`);
+  };
+  
   const handleStartChat = (developerId: string, applicationId: string) => {
     onOpenChat(developerId, applicationId);
     setShowSuccessDialog(false);
@@ -132,6 +139,7 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
             onApprove={handleApprove}
             onReject={handleReject}
             onOpenChat={onOpenChat}
+            onViewDetails={handleViewApplication}
             isProcessing={isProcessing}
           />
         ))}
