@@ -3,11 +3,9 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequest } from '../../types/helpRequest';
-import { 
-  getAllPublicHelpRequests, 
-  testDatabaseAccess 
-} from '../../integrations/supabase/helpRequests';
+import { getAllPublicHelpRequests, testDatabaseAccess } from '../../integrations/supabase/helpRequests';
 import { sampleTickets } from './sampleData';
+import { isApiSuccess, isApiError } from '../../types/api';
 
 export const useTicketFetching = (
   isAuthenticated: boolean, 
@@ -33,35 +31,27 @@ export const useTicketFetching = (
 
       const response = await getAllPublicHelpRequests(isAuthenticated);
       
-      if (response.success && response.data) {
+      if (isApiSuccess(response)) {
         console.log('[Ticket Fetching] All fetched tickets:', response.data.length);
-        console.log('[Ticket Fetching] Ticket data:', response.data);
         
-        // Log ticket statuses for debugging
-        const statusCounts = response.data.reduce((acc, ticket) => {
-          acc[ticket.status || 'unknown'] = (acc[ticket.status || 'unknown'] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-        
-        console.log('[Ticket Fetching] Ticket status breakdown:', statusCounts);
-        
-        // Add additional filter to ensure only relevant tickets are shown
+        // Filter active tickets
         const filteredTickets = response.data.filter(ticket => 
-          // Only include tickets with these statuses for active tickets
           ['open', 'in-progress', 'claimed', 'pending', 'matching', 'developer-qa', 'client-review', 'client-approved', 'scheduled'].includes(ticket.status || '')
         );
         
         console.log('[Ticket Fetching] Filtered tickets:', filteredTickets.length);
         
         setTickets(filteredTickets);
-        setDataSource('database');
+        setDataSource(response.storageMethod || 'database');
       } else {
         console.error('[Ticket Fetching] Error fetching tickets:', response.error);
         setTickets([]);
+        toast.error('Failed to fetch tickets');
       }
     } catch (error) {
       console.error('[Ticket Fetching] Exception:', error);
       setTickets([]);
+      toast.error('An unexpected error occurred');
     } finally {
       if (showLoading) {
         setIsLoading(false);
@@ -69,7 +59,6 @@ export const useTicketFetching = (
     }
   };
 
-  // The handleForceRefresh function
   const handleForceRefresh = () => {
     toast.info('Refreshing tickets...');
     fetchTickets(true);
