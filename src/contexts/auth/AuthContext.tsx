@@ -1,9 +1,7 @@
 
 import { createContext } from 'react';
 import { AuthContextType } from './types';
-import { LoginResult } from './authLogin';
 
-// Create the auth context
 export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   userType: null,
@@ -14,4 +12,5 @@ export const AuthContext = createContext<AuthContextType>({
   logout: async () => false,
   logoutUser: async () => false,
   isLoading: true,
+  initializationFailed: false,
 });

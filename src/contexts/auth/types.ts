@@ -1,3 +1,4 @@
+
 import { LoginResult } from './authLogin';
 
 export type UserType = 'client' | 'developer';
@@ -16,4 +17,5 @@ export interface AuthContextType extends AuthState {
   logout: () => Promise<boolean>;
   logoutUser: () => Promise<boolean>;
   isLoading: boolean;
+  initializationFailed: boolean;
 }
