@@ -1,51 +1,43 @@
 
 import React from 'react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
-
-export type ErrorType = 'network' | 'credentials' | 'verification' | 'general';
+import { AlertCircle, Wifi, AlertTriangle } from 'lucide-react';
 
 interface LoginErrorDisplayProps {
-  error?: string;
+  error: string;
 }
 
 export const LoginErrorDisplay: React.FC<LoginErrorDisplayProps> = ({ error }) => {
-  if (!error) return null;
+  // Determine error type and icon based on the error message
+  const getErrorDetails = (error: string) => {
+    if (error.includes('timeout') || error.includes('connection') || error.includes('internet')) {
+      return {
+        icon: <Wifi className="h-4 w-4 text-destructive" />,
+        className: 'bg-destructive/10 text-destructive'
+      };
+    } else if (error.includes('too many') || error.includes('attempts')) {
+      return {
+        icon: <AlertTriangle className="h-4 w-4 text-amber-600" />,
+        className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-500'
+      };
+    } else if (error.includes('verify') || error.includes('verification')) {
+      return {
+        icon: <AlertTriangle className="h-4 w-4 text-amber-600" />,
+        className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-500'
+      };
+    }
+    
+    return {
+      icon: <AlertCircle className="h-4 w-4 text-destructive" />,
+      className: 'bg-destructive/10 text-destructive'
+    };
+  };
   
-  const errorType = getErrorType(error);
+  const { icon, className } = getErrorDetails(error);
   
   return (
-    <Alert 
-      variant={errorType === 'network' ? 'destructive' : 'default'} 
-      className={`py-2 ${
-        errorType === 'verification' 
-          ? 'border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300' 
-          : ''
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription className="m-0">
-          {error}{' '}
-          {errorType === 'verification' && (
-            <Link to="/forgot-password" className="underline font-medium">
-              Resend verification email
-            </Link>
-          )}
-        </AlertDescription>
-      </div>
-    </Alert>
+    <div className={`${className} flex items-start gap-2 text-sm p-3 rounded-md`}>
+      {icon}
+      <span>{error}</span>
+    </div>
   );
 };
-
-function getErrorType(error: string): ErrorType {
-  if (error.includes('Network') || error.includes('connection') || error.includes('timed out')) {
-    return 'network';
-  } else if (error.includes('credentials') || error.includes('invalid') || error.includes('incorrect')) {
-    return 'credentials'; 
-  } else if (error.includes('verify') || error.includes('verification') || error.includes('confirmed')) {
-    return 'verification';
-  }
-  return 'general';
-}

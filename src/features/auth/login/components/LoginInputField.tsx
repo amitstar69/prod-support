@@ -1,6 +1,5 @@
 
 import React, { KeyboardEvent } from 'react';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface LoginInputFieldProps {
@@ -8,15 +7,13 @@ interface LoginInputFieldProps {
   label: string;
   type: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onBlur?: () => void;
-  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
   placeholder: string;
   autoComplete?: string;
   error?: string;
   disabled?: boolean;
-  required?: boolean;
-  endAdornment?: React.ReactNode;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: () => void;
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
 }
 
 export const LoginInputField: React.FC<LoginInputFieldProps> = ({
@@ -24,23 +21,18 @@ export const LoginInputField: React.FC<LoginInputFieldProps> = ({
   label,
   type,
   value,
-  onChange,
-  onBlur,
-  onKeyDown,
   placeholder,
   autoComplete,
   error,
-  disabled,
-  required = false,
-  endAdornment
+  disabled = false,
+  onChange,
+  onBlur,
+  onKeyDown,
 }) => {
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <Label htmlFor={id}>{label}</Label>
-        {endAdornment}
-      </div>
-      <Input
+      <Label htmlFor={id}>{label}</Label>
+      <input
         id={id}
         type={type}
         value={value}
@@ -49,12 +41,19 @@ export const LoginInputField: React.FC<LoginInputFieldProps> = ({
         onKeyDown={onKeyDown}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className={error ? "border-destructive" : ""}
+        className={`w-full px-3 py-2 bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+          error ? "border-destructive" : "border-input"
+        }`}
         disabled={disabled}
-        required={required}
+        required
         aria-invalid={error ? "true" : "false"}
         aria-describedby={error ? `${id}-error` : undefined}
       />
+      {error && (
+        <p id={`${id}-error`} className="text-destructive text-xs mt-1">
+          {error}
+        </p>
+      )}
     </div>
   );
 };

@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Code, RefreshCw } from 'lucide-react';
+import { User, Code, RefreshCw, AlertCircle, Wifi, AlertTriangle } from 'lucide-react';
 import { LoginInputField } from './LoginInputField';
 import { LoginErrorDisplay } from './LoginErrorDisplay';
 import { SocialLoginButtons } from './SocialLoginButtons';
@@ -70,6 +70,16 @@ const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   const displayError = getDisplayError();
+  
+  // Determine error icon based on error message
+  const getErrorIcon = (error: string) => {
+    if (error.includes('timeout') || error.includes('connection')) {
+      return <Wifi className="h-4 w-4 text-destructive" />;
+    } else if (error.includes('too many') || error.includes('attempts')) {
+      return <AlertTriangle className="h-4 w-4 text-destructive" />;
+    }
+    return <AlertCircle className="h-4 w-4" />;
+  };
 
   return (
     <Card className="border border-border/40 shadow-sm">
@@ -94,38 +104,38 @@ const LoginForm: React.FC<LoginFormProps> = ({
       
       <form onSubmit={onSubmit} noValidate>
         <CardContent className="space-y-4 pt-4">
-          {/* Error display component */}
-          {displayError && <LoginErrorDisplay error={displayError} />}
+          {/* Error display with improved icons */}
+          {displayError && (
+            <div className="bg-destructive/10 text-destructive flex items-start gap-2 text-sm p-3 rounded-md">
+              {getErrorIcon(displayError)}
+              <span>{displayError}</span>
+            </div>
+          )}
           
-          <LoginInputField 
-            id="email"
-            label="Email"
-            type="email"
-            value={email}
-            onChange={onEmailChange}
-            onBlur={onEmailBlur}
-            onKeyDown={handleKeyDown}
-            placeholder="you@example.com"
-            autoComplete="email"
-            error={emailError}
-            disabled={isLoading}
-            required
-          />
+          <div className="space-y-1">
+            <Label htmlFor="email">Email</Label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={onEmailChange}
+              onBlur={onEmailBlur}
+              onKeyDown={handleKeyDown}
+              placeholder="you@example.com"
+              autoComplete="email"
+              className={`w-full px-3 py-2 bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                emailError ? "border-destructive" : "border-input"
+              }`}
+              disabled={isLoading}
+              required
+              aria-invalid={emailError ? "true" : "false"}
+              aria-describedby={emailError ? "email-error" : undefined}
+            />
+          </div>
           
-          <LoginInputField 
-            id="password"
-            label="Password"
-            type="password"
-            value={password}
-            onChange={onPasswordChange}
-            onBlur={onPasswordBlur}
-            onKeyDown={handleKeyDown}
-            placeholder="••••••••"
-            autoComplete="current-password"
-            error={passwordError}
-            disabled={isLoading}
-            required
-            endAdornment={
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
               <Link 
                 to="/forgot-password" 
                 className="text-xs text-primary hover:underline"
@@ -133,8 +143,25 @@ const LoginForm: React.FC<LoginFormProps> = ({
               >
                 Forgot password?
               </Link>
-            }
-          />
+            </div>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={onPasswordChange}
+              onBlur={onPasswordBlur}
+              onKeyDown={handleKeyDown}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              className={`w-full px-3 py-2 bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                passwordError ? "border-destructive" : "border-input"
+              }`}
+              disabled={isLoading}
+              required
+              aria-invalid={passwordError ? "true" : "false"}
+              aria-describedby={passwordError ? "password-error" : undefined}
+            />
+          </div>
           
           <div className="flex items-center space-x-2">
             <Checkbox 
@@ -157,6 +184,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             type="submit"
             className="w-full"
             disabled={isLoading}
+            aria-busy={isLoading}
           >
             {isLoading ? (
               <span className="flex items-center">
@@ -168,19 +196,18 @@ const LoginForm: React.FC<LoginFormProps> = ({
             )}
           </Button>
           
-          <SocialLoginButtons
-            userType={userType}
-            onGoogleLogin={onGoogleLogin}
-            onGithubLogin={onGithubLogin}
-            isLoading={isLoading}
-          />
-          
           <div className="text-sm text-center text-muted-foreground">
             Don't have an account?{' '}
             <Link to="/register" className="text-primary font-medium hover:underline">
               Sign up
             </Link>
           </div>
+          
+          <SocialLoginButtons 
+            onGoogleLogin={onGoogleLogin} 
+            onGithubLogin={onGithubLogin} 
+            isLoading={isLoading}
+          />
         </CardFooter>
       </form>
     </Card>
