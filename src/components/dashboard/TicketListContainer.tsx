@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import TicketList from '../tickets/TicketList';
 import { ArrowDownUp, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/button';
 import ChatDialog from '../chat/ChatDialog';
+import { useAuth } from '../../contexts/auth';
 
 interface TicketListContainerProps {
   filteredTickets: HelpRequest[];
@@ -23,12 +24,13 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
   isAuthenticated,
   onRefresh
 }) => {
-  const [chatDialogOpen, setChatDialogOpen] = React.useState(false);
-  const [currentChat, setCurrentChat] = React.useState<{
+  const [chatDialogOpen, setChatDialogOpen] = useState(false);
+  const [currentChat, setCurrentChat] = useState<{
     helpRequestId: string;
     otherId: string;
     otherName?: string;
   } | null>(null);
+  const { userType } = useAuth();
 
   const handleOpenChat = (helpRequestId: string, clientId: string, clientName?: string) => {
     setCurrentChat({
@@ -40,12 +42,16 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
   };
 
   if (filteredTickets.length === 0) {
+    const isClient = userType === 'client';
+    
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border border-border/40 text-center">
         <div className="h-10 w-10 mx-auto text-muted-foreground mb-3">📋</div>
         <h3 className="text-lg font-medium mb-2">No tickets found</h3>
         <p className="text-muted-foreground text-sm mb-4">
-          There are no help requests available at the moment. New tickets created by clients will appear here.
+          {isClient 
+            ? "You haven't created any help requests yet. Create a new request to get help from our developers."
+            : "There are no help requests available at the moment. New tickets created by clients will appear here."}
         </p>
         {onRefresh && (
           <Button onClick={onRefresh} variant="outline" className="gap-2 text-sm" size="sm">
