@@ -32,6 +32,7 @@ import { Notification } from '../integrations/supabase/notifications';
 import EditHelpRequestForm from '../components/help/EditHelpRequestForm';
 import CancelHelpRequestDialog from '../components/help/CancelHelpRequestDialog';
 import HelpRequestHistoryDialog from '../components/help/HelpRequestHistoryDialog';
+import TicketViewToggle from '../components/dashboard/TicketViewToggle';
 
 const ClientDashboard: React.FC = () => {
   const { userId, isAuthenticated } = useAuth();
@@ -42,6 +43,7 @@ const ClientDashboard: React.FC = () => {
   const [completedRequests, setCompletedRequests] = useState<HelpRequest[]>([]);
   const [requestMatches, setRequestMatches] = useState<Record<string, HelpRequestMatch[]>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [selectedRequestApplications, setSelectedRequestApplications] = useState<any[]>([]);
@@ -463,15 +465,19 @@ const ClientDashboard: React.FC = () => {
                 </p>
               </div>
               
-              <Button onClick={handleCreateRequest} size="sm">
-                <PlusCircle className="h-4 w-4 mr-2" />
-                New Help Request
-                {getTotalNewApplicationsCount() > 0 && (
-                  <Badge variant="secondary" className="ml-2 bg-primary text-white">
-                    {getTotalNewApplicationsCount()}
-                  </Badge>
-                )}
-              </Button>
+              <div className="flex items-center gap-3">
+                <TicketViewToggle viewMode={viewMode} onViewChange={setViewMode} />
+                
+                <Button onClick={handleCreateRequest} size="sm">
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  New Help Request
+                  {getTotalNewApplicationsCount() > 0 && (
+                    <Badge variant="secondary" className="ml-2 bg-primary text-white">
+                      {getTotalNewApplicationsCount()}
+                    </Badge>
+                  )}
+                </Button>
+              </div>
             </div>
             
             <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -494,130 +500,224 @@ const ClientDashboard: React.FC = () => {
                     <span className="ml-2 text-lg">Loading your requests...</span>
                   </div>
                 ) : activeRequests.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {activeRequests.map((request) => (
-                      <Card 
-                        key={request.id} 
-                        className={`overflow-hidden hover:shadow-md transition-shadow ${
-                          applicationNotifications.some(n => {
-                            const appData = selectedRequestApplications.find(app => app.id === n.related_entity_id);
-                            return appData && appData.request_id === request.id;
-                          }) ? 'ring-2 ring-primary' : ''
-                        }`}
-                      >
-                        <CardHeader className="pb-2 space-y-1">
-                          <div className="flex justify-between items-start">
-                            <CardTitle className="text-base truncate flex items-center">
-                              {request.title}
-                              {getApplicationCountForRequest(request.id!) > 0 && (
-                                <Badge variant="secondary" className="ml-2 bg-primary text-white">
-                                  {getApplicationCountForRequest(request.id!)}
+                  viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {activeRequests.map((request) => (
+                        <Card 
+                          key={request.id} 
+                          className={`overflow-hidden hover:shadow-md transition-shadow ${
+                            applicationNotifications.some(n => {
+                              const appData = selectedRequestApplications.find(app => app.id === n.related_entity_id);
+                              return appData && appData.request_id === request.id;
+                            }) ? 'ring-2 ring-primary' : ''
+                          }`}
+                        >
+                          <CardHeader className="pb-2 space-y-1">
+                            <div className="flex justify-between items-start">
+                              <CardTitle className="text-base truncate flex items-center">
+                                {request.title}
+                                {getApplicationCountForRequest(request.id!) > 0 && (
+                                  <Badge variant="secondary" className="ml-2 bg-primary text-white">
+                                    {getApplicationCountForRequest(request.id!)}
+                                  </Badge>
+                                )}
+                              </CardTitle>
+                              <Badge 
+                                variant="outline"
+                                className={`
+                                  ${request.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
+                                   request.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                                   request.status === 'scheduled' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
+                                   'bg-yellow-50 text-yellow-800 border-yellow-200'}
+                                `}
+                              >
+                                {request.status}
+                              </Badge>
+                            </div>
+                            <CardDescription className="line-clamp-2 text-xs">{request.description}</CardDescription>
+                          </CardHeader>
+                          
+                          <CardContent className="pb-2">
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {request.technical_area.slice(0, 3).map((area, i) => (
+                                <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
+                                  {area}
+                                </Badge>
+                              ))}
+                              {request.technical_area.length > 3 && (
+                                <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">
+                                  +{request.technical_area.length - 3}
                                 </Badge>
                               )}
-                            </CardTitle>
-                            <Badge 
-                              variant="outline"
-                              className={`
-                                ${request.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
-                                 request.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
-                                 request.status === 'scheduled' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
-                                 'bg-yellow-50 text-yellow-800 border-yellow-200'}
-                              `}
-                            >
-                              {request.status}
-                            </Badge>
-                          </div>
-                          <CardDescription className="line-clamp-2 text-xs">{request.description}</CardDescription>
-                        </CardHeader>
-                        
-                        <CardContent className="pb-2">
-                          <div className="flex flex-wrap gap-1 mb-3">
-                            {request.technical_area.slice(0, 3).map((area, i) => (
-                              <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
-                                {area}
-                              </Badge>
-                            ))}
-                            {request.technical_area.length > 3 && (
-                              <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">
-                                +{request.technical_area.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-xs">
-                              {getStatusIcon(request.status || 'pending')}
-                              <span>{getStatusDescription(request.status || 'pending')}</span>
                             </div>
                             
-                            {request.status === 'matching' && (
-                              <div className="mt-2">
-                                <div className="flex justify-between text-xs mb-1">
-                                  <span>Developer applications</span>
-                                  <span className="font-medium">
-                                    {requestMatches[request.id!]?.length || 0}
-                                  </span>
-                                </div>
-                                <Progress value={
-                                  requestMatches[request.id!]?.length 
-                                    ? Math.min(requestMatches[request.id!].length * 20, 100) 
-                                    : 5
-                                } className="h-1.5" />
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-xs">
+                                {getStatusIcon(request.status || 'pending')}
+                                <span>{getStatusDescription(request.status || 'pending')}</span>
                               </div>
-                            )}
-                          </div>
-                        </CardContent>
-                        
-                        <CardFooter className="flex flex-col space-y-2">
-                          <Button 
-                            className="w-full"
-                            variant={getApplicationCountForRequest(request.id!) > 0 ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handleViewRequest(request.id!)}
-                          >
-                            {getApplicationCountForRequest(request.id!) > 0 ? (
-                              <>
-                                <Bell className="h-4 w-4 mr-2" />
-                                View Applications ({getApplicationCountForRequest(request.id!)})
-                              </>
-                            ) : (
-                              "View Details"
-                            )}
-                          </Button>
+                              
+                              {request.status === 'matching' && (
+                                <div className="mt-2">
+                                  <div className="flex justify-between text-xs mb-1">
+                                    <span>Developer applications</span>
+                                    <span className="font-medium">
+                                      {requestMatches[request.id!]?.length || 0}
+                                    </span>
+                                  </div>
+                                  <Progress value={
+                                    requestMatches[request.id!]?.length 
+                                      ? Math.min(requestMatches[request.id!].length * 20, 100) 
+                                      : 5
+                                  } className="h-1.5" />
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
                           
-                          <div className="flex gap-2 w-full">
+                          <CardFooter className="flex flex-col space-y-2">
                             <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1"
-                              onClick={() => handleEditRequest(request)}
+                              className="w-full"
+                              variant={getApplicationCountForRequest(request.id!) > 0 ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handleViewRequest(request.id!)}
                             >
-                              <FileEdit className="h-3.5 w-3.5 mr-1" />
-                              Edit
+                              {getApplicationCountForRequest(request.id!) > 0 ? (
+                                <>
+                                  <Bell className="h-4 w-4 mr-2" />
+                                  View Applications ({getApplicationCountForRequest(request.id!)})
+                                </>
+                              ) : (
+                                "View Details"
+                              )}
                             </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1"
-                              onClick={() => handleViewHistory(request)}
-                            >
-                              <Clock className="h-3.5 w-3.5 mr-1" />
-                              History
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1 text-red-500 hover:text-red-700"
-                              onClick={() => handleCancelRequest(request)}
-                            >
-                              <AlertCircle className="h-3.5 w-3.5 mr-1" />
-                              Cancel
-                            </Button>
+                            
+                            <div className="flex gap-2 w-full">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1"
+                                onClick={() => handleEditRequest(request)}
+                              >
+                                <FileEdit className="h-3.5 w-3.5 mr-1" />
+                                Edit
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1"
+                                onClick={() => handleViewHistory(request)}
+                              >
+                                <Clock className="h-3.5 w-3.5 mr-1" />
+                                History
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1 text-red-500 hover:text-red-700"
+                                onClick={() => handleCancelRequest(request)}
+                              >
+                                <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                                Cancel
+                              </Button>
+                            </div>
+                          </CardFooter>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-md shadow-sm border border-border/10 overflow-hidden divide-y divide-border/10">
+                      {activeRequests.map((request) => (
+                        <div 
+                          key={request.id} 
+                          className={`p-4 hover:bg-muted/5 transition-colors ${
+                            applicationNotifications.some(n => {
+                              const appData = selectedRequestApplications.find(app => app.id === n.related_entity_id);
+                              return appData && appData.request_id === request.id;
+                            }) ? 'bg-primary/5' : ''
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-medium">{request.title}</h3>
+                                <Badge 
+                                  variant="outline"
+                                  className={`
+                                    ${request.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
+                                    request.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                                    request.status === 'scheduled' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
+                                    'bg-yellow-50 text-yellow-800 border-yellow-200'}
+                                  `}
+                                >
+                                  <span className="flex items-center gap-1">
+                                    {getStatusIcon(request.status || 'pending')}
+                                    {request.status}
+                                  </span>
+                                </Badge>
+                                {getApplicationCountForRequest(request.id!) > 0 && (
+                                  <Badge variant="secondary" className="bg-primary text-white">
+                                    {getApplicationCountForRequest(request.id!)} applications
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              <p className="text-sm text-muted-foreground mb-2 line-clamp-1">{request.description}</p>
+                              
+                              <div className="flex flex-wrap gap-1">
+                                {request.technical_area.slice(0, 3).map((area, i) => (
+                                  <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
+                                    {area}
+                                  </Badge>
+                                ))}
+                                {request.technical_area.length > 3 && (
+                                  <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">
+                                    +{request.technical_area.length - 3}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                className="whitespace-nowrap"
+                                variant={getApplicationCountForRequest(request.id!) > 0 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleViewRequest(request.id!)}
+                              >
+                                {getApplicationCountForRequest(request.id!) > 0 ? "View Applications" : "View Details"}
+                              </Button>
+                              
+                              <div className="hidden sm:flex items-center gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => handleEditRequest(request)}
+                                >
+                                  <FileEdit className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => handleViewHistory(request)}
+                                >
+                                  <Clock className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="text-red-500 hover:text-red-700"
+                                  onClick={() => handleCancelRequest(request)}
+                                >
+                                  <AlertCircle className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
                 ) : (
                   <div className="bg-white p-8 rounded-lg border border-border/40 text-center">
                     <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">📋</div>
@@ -639,127 +739,111 @@ const ClientDashboard: React.FC = () => {
                     <span className="ml-2 text-lg">Loading your requests...</span>
                   </div>
                 ) : completedRequests.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {completedRequests.map((request) => (
-                      <Card key={request.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                        <CardHeader className="pb-2 space-y-1">
-                          <div className="flex justify-between items-start">
-                            <CardTitle className="text-base truncate">{request.title}</CardTitle>
-                            <Badge 
-                              variant="outline"
-                              className={`
-                                ${request.status === 'completed' ? 'bg-green-50 text-green-800 border-green-200' : 
-                                 'bg-red-50 text-red-800 border-red-200'}
-                              `}
-                            >
-                              {request.status}
-                            </Badge>
-                          </div>
-                          <CardDescription className="line-clamp-2 text-xs">{request.description}</CardDescription>
-                        </CardHeader>
-                        
-                        <CardContent className="pb-2">
-                          <div className="flex flex-wrap gap-1 mb-3">
-                            {request.technical_area.slice(0, 3).map((area, i) => (
-                              <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
-                                {area}
+                  viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {completedRequests.map((request) => (
+                        <Card key={request.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                          <CardHeader className="pb-2 space-y-1">
+                            <div className="flex justify-between items-start">
+                              <CardTitle className="text-base truncate">{request.title}</CardTitle>
+                              <Badge 
+                                variant="outline"
+                                className={`
+                                  ${request.status === 'completed' ? 'bg-green-50 text-green-800 border-green-200' : 
+                                   'bg-red-50 text-red-800 border-red-200'}
+                                `}
+                              >
+                                {request.status}
                               </Badge>
-                            ))}
-                          </div>
+                            </div>
+                            <CardDescription className="line-clamp-2 text-xs">{request.description}</CardDescription>
+                          </CardHeader>
                           
-                          {request.status === 'completed' && (
-                            <div className="flex justify-between items-center mt-2">
-                              <span className="text-xs text-muted-foreground">Developer Rating</span>
-                              <div className="flex">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star 
-                                    key={star} 
-                                    className={`h-3.5 w-3.5 ${star <= 5 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
-                                  />
+                          <CardContent className="pb-2">
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {request.technical_area.slice(0, 3).map((area, i) => (
+                                <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
+                                  {area}
+                                </Badge>
+                              ))}
+                            </div>
+                            
+                            {request.status === 'completed' && (
+                              <div className="flex justify-between items-center mt-2">
+                                <span className="text-xs text-muted-foreground">Developer Rating</span>
+                                <div className="flex">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star 
+                                      key={star} 
+                                      className={`h-3.5 w-3.5 ${star <= 5 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                          
+                          <CardFooter className="flex flex-col space-y-2">
+                            <Button 
+                              className="w-full"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewRequest(request.id!)}
+                            >
+                              View Details
+                            </Button>
+                            
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full"
+                              onClick={() => handleViewHistory(request)}
+                            >
+                              <Clock className="h-3.5 w-3.5 mr-1" />
+                              View History
+                            </Button>
+                          </CardFooter>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-md shadow-sm border border-border/10 overflow-hidden divide-y divide-border/10">
+                      {completedRequests.map((request) => (
+                        <div key={request.id} className="p-4 hover:bg-muted/5 transition-colors">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-medium">{request.title}</h3>
+                                <Badge 
+                                  variant="outline"
+                                  className={`
+                                    ${request.status === 'completed' ? 'bg-green-50 text-green-800 border-green-200' : 
+                                     'bg-red-50 text-red-800 border-red-200'}
+                                  `}
+                                >
+                                  <span className="flex items-center gap-1">
+                                    {getStatusIcon(request.status || 'completed')}
+                                    {request.status}
+                                  </span>
+                                </Badge>
+                              </div>
+                              
+                              <p className="text-sm text-muted-foreground mb-2 line-clamp-1">{request.description}</p>
+                              
+                              <div className="flex flex-wrap gap-1">
+                                {request.technical_area.slice(0, 3).map((area, i) => (
+                                  <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
+                                    {area}
+                                  </Badge>
                                 ))}
+                                {request.technical_area.length > 3 && (
+                                  <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">
+                                    +{request.technical_area.length - 3}
+                                  </Badge>
+                                )}
                               </div>
                             </div>
-                          )}
-                        </CardContent>
-                        
-                        <CardFooter className="flex flex-col space-y-2">
-                          <Button 
-                            className="w-full"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewRequest(request.id!)}
-                          >
-                            View Details
-                          </Button>
-                          
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full"
-                            onClick={() => handleViewHistory(request)}
-                          >
-                            <Clock className="h-3.5 w-3.5 mr-1" />
-                            View History
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-white p-8 rounded-lg border border-border/40 text-center">
-                    <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">📋</div>
-                    <h3 className="text-xl font-medium mb-2">No completed help requests</h3>
-                    <p className="text-muted-foreground mb-4">
-                      You don't have any completed help requests yet.
-                    </p>
-                    <Button onClick={handleCreateRequest}>
-                      Create New Help Request
-                    </Button>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </>
-        )}
-        
-        <ChatDialog 
-          isOpen={isChatOpen}
-          onClose={() => setIsChatOpen(false)}
-          helpRequestId={selectedRequestId || ''}
-          otherId={chatDeveloperId}
-          otherName={chatDeveloperName}
-        />
-      </div>
-      
-      {selectedRequestForEdit && (
-        <EditHelpRequestForm
-          isOpen={isEditDialogOpen}
-          onClose={() => setIsEditDialogOpen(false)}
-          helpRequest={selectedRequestForEdit}
-          onRequestUpdated={fetchHelpRequests}
-        />
-      )}
-      
-      {selectedRequestForCancel && (
-        <CancelHelpRequestDialog
-          isOpen={isCancelDialogOpen}
-          onClose={() => setIsCancelDialogOpen(false)}
-          requestId={selectedRequestForCancel.id!}
-          requestTitle={selectedRequestForCancel.title}
-          onRequestCancelled={fetchHelpRequests}
-        />
-      )}
-      
-      {selectedRequestForHistory && (
-        <HelpRequestHistoryDialog
-          isOpen={isHistoryDialogOpen}
-          onClose={() => setIsHistoryDialogOpen(false)}
-          requestId={selectedRequestForHistory.id!}
-          requestTitle={selectedRequestForHistory.title}
-        />
-      )}
-    </Layout>
-  );
-};
-
-export default ClientDashboard;
+                            
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant="outline
