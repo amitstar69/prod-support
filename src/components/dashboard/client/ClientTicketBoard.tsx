@@ -44,101 +44,43 @@ const ClientTicketBoard: React.FC<ClientTicketBoardProps> = ({ tickets, isLoadin
     );
   }
 
-  return (
-    <Tabs defaultValue="board" value={activeView} onValueChange={setActiveView} className="w-full">
-      <div className="flex justify-between items-center mb-4">
-        <TabsList>
-          <TabsTrigger value="board">Board View</TabsTrigger>
-          <TabsTrigger value="list">List View</TabsTrigger>
-        </TabsList>
+  const BoardColumn = ({ title, tickets, count }: { title: string, tickets: HelpRequest[], count: number }) => (
+    <div className="flex-1 min-w-[280px] max-w-sm bg-secondary/20 rounded-lg p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-medium">{title}</h3>
+        <Badge variant="outline">{count}</Badge>
       </div>
+      <div className="space-y-3">
+        {tickets.length > 0 ? (
+          tickets.map(ticket => (
+            <ClientTicketCard key={ticket.id} ticket={ticket} compact />
+          ))
+        ) : (
+          <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
+            No tickets in this column
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <Tabs defaultValue={activeView} value={activeView} onValueChange={setActiveView} className="w-full">
+      <TabsList className="grid w-full grid-cols-2 mb-6">
+        <TabsTrigger value="board">Board View</TabsTrigger>
+        <TabsTrigger value="list">List View</TabsTrigger>
+      </TabsList>
 
       <TabsContent value="board" className="mt-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Open Column */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">Open</h3>
-              <Badge variant="outline">{openTickets.length}</Badge>
-            </div>
-            <div className="space-y-3">
-              {openTickets.length > 0 ? (
-                openTickets.map(ticket => (
-                  <ClientTicketCard key={ticket.id} ticket={ticket} />
-                ))
-              ) : (
-                <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
-                  No open tickets
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* In Progress Column */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">In Progress</h3>
-              <Badge variant="outline">{inProgressTickets.length}</Badge>
-            </div>
-            <div className="space-y-3">
-              {inProgressTickets.length > 0 ? (
-                inProgressTickets.map(ticket => (
-                  <ClientTicketCard key={ticket.id} ticket={ticket} />
-                ))
-              ) : (
-                <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
-                  No tickets in progress
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Review Column */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">Review</h3>
-              <Badge variant="outline">{reviewTickets.length}</Badge>
-            </div>
-            <div className="space-y-3">
-              {reviewTickets.length > 0 ? (
-                reviewTickets.map(ticket => (
-                  <ClientTicketCard key={ticket.id} ticket={ticket} />
-                ))
-              ) : (
-                <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
-                  No tickets in review
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Completed Column */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">Completed</h3>
-              <Badge variant="outline">{completedTickets.length}</Badge>
-            </div>
-            <div className="space-y-3">
-              {completedTickets.length > 0 ? (
-                completedTickets.slice(0, 5).map(ticket => (
-                  <ClientTicketCard key={ticket.id} ticket={ticket} />
-                ))
-              ) : (
-                <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
-                  No completed tickets
-                </div>
-              )}
-              {completedTickets.length > 5 && (
-                <div className="text-center text-xs text-muted-foreground">
-                  + {completedTickets.length - 5} more completed tickets
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          <BoardColumn title="Open" tickets={openTickets} count={openTickets.length} />
+          <BoardColumn title="In Progress" tickets={inProgressTickets} count={inProgressTickets.length} />
+          <BoardColumn title="Review" tickets={reviewTickets} count={reviewTickets.length} />
+          <BoardColumn title="Completed" tickets={completedTickets} count={completedTickets.length} />
         </div>
       </TabsContent>
 
-      <TabsContent value="list" className="mt-4">
+      <TabsContent value="list">
         <div className="space-y-4">
           {tickets.map(ticket => (
             <ClientTicketCard key={ticket.id} ticket={ticket} />
