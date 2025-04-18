@@ -47,10 +47,9 @@ export const setupAuthStateChangeListener = (
                 .select('user_type')
                 .eq('id', session.user.id);
                 
-              // Apply the AbortSignal to the query
+              // Apply the AbortSignal to the query - use a proper options object
+              // that conforms to the expected type without any parameters
               const { data: profileData, error } = await query.single({
-                head: false,
-                count: null,
                 signal: controller.signal
               });
                 
