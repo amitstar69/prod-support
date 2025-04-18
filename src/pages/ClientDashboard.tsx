@@ -13,7 +13,6 @@ import {
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { getHelpRequestsForClient } from '../integrations/supabase/helpRequests';
 import DeveloperApplications from '../components/dashboard/DeveloperApplications';
 import ChatDialog from '../components/chat/ChatDialog';
 import { getDeveloperApplicationsForRequest } from '../integrations/supabase/helpRequests';
@@ -24,9 +23,10 @@ import HelpRequestHistoryDialog from '../components/help/HelpRequestHistoryDialo
 import ClientDashboardHeader from '../components/dashboard/client/ClientDashboardHeader';
 import RequestList from '../components/dashboard/client/RequestList';
 import { useTicketFetching } from '../hooks/dashboard/useTicketFetching';
+import LoadingState from '../components/dashboard/LoadingState';
 
-const ClientDashboard = () => {
-  const { userId, isAuthenticated } = useAuth();
+const ClientDashboard: React.FC = () => {
+  const { userId, isAuthenticated, userType } = useAuth();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('active');
@@ -37,31 +37,33 @@ const ClientDashboard = () => {
   const [chatDeveloperId, setChatDeveloperId] = useState('');
   const [chatDeveloperName, setChatDeveloperName] = useState('Developer');
   const [applicationNotifications, setApplicationNotifications] = useState<any[]>([]);
-  const [selectedRequestForEdit, setSelectedRequestForEdit] = useState(null);
+  const [selectedRequestForEdit, setSelectedRequestForEdit] = useState<HelpRequest | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedRequestForCancel, setSelectedRequestForCancel] = useState(null);
+  const [selectedRequestForCancel, setSelectedRequestForCancel] = useState<HelpRequest | null>(null);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
-  const [selectedRequestForHistory, setSelectedRequestForHistory] = useState(null);
+  const [selectedRequestForHistory, setSelectedRequestForHistory] = useState<HelpRequest | null>(null);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [requestMatches, setRequestMatches] = useState<Record<string, any[]>>({});
 
+  // Use the ticket fetching hook with proper authentication status
   const {
     tickets: allTickets,
     isLoading,
     dataSource,
+    fetchError,
     fetchTickets,
     handleForceRefresh
-  } = useTicketFetching(isAuthenticated, 'client');
+  } = useTicketFetching(isAuthenticated, userType);
 
+  // Separate active and completed requests
   const activeRequests = allTickets.filter(ticket => 
     !['completed', 'cancelled'].includes(ticket.status || ''));
   const completedRequests = allTickets.filter(ticket => 
     ['completed', 'cancelled'].includes(ticket.status || ''));
 
+  // Effect to set up notification subscription
   useEffect(() => {
-    if (isAuthenticated && userId) {
-      fetchTickets();
-      
+    if (isAuthenticated && userId) {      
       const matchesChannel = supabase
         .channel('public:help_request_matches')
         .on('postgres_changes', {
@@ -96,11 +98,12 @@ const ClientDashboard = () => {
         supabase.removeChannel(matchesChannel);
         window.removeEventListener('viewRequest', handleViewRequestEvent as EventListener);
       };
-    } else {
+    } else if (!isAuthenticated && !isLoading) {
       navigate('/login', { state: { returnTo: '/client-dashboard' } });
     }
-  }, [userId, isAuthenticated, activeRequests]);
+  }, [userId, isAuthenticated, activeRequests, fetchTickets, navigate, isLoading]);
 
+  // Effect to fetch application notifications
   useEffect(() => {
     if (isAuthenticated && userId) {
       const fetchApplicationNotifications = async () => {
@@ -132,20 +135,23 @@ const ClientDashboard = () => {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${userId} AND entity_type=eq.application`
+          filter: `user_id=eq.${userId}`
         }, (payload) => {
           const newNotification = payload.new as Notification;
-          setApplicationNotifications(prev => [newNotification, ...prev]);
           
-          toast.info(newNotification.title, {
-            description: newNotification.message,
-            action: {
-              label: 'View',
-              onClick: () => {
-                handleViewApplication(newNotification.related_entity_id);
+          if (newNotification.entity_type === 'application') {
+            setApplicationNotifications(prev => [newNotification, ...prev]);
+            
+            toast.info(newNotification.title, {
+              description: newNotification.message,
+              action: {
+                label: 'View',
+                onClick: () => {
+                  handleViewApplication(newNotification.related_entity_id);
+                }
               }
-            }
-          });
+            });
+          }
         })
         .subscribe();
         
@@ -154,41 +160,6 @@ const ClientDashboard = () => {
       };
     }
   }, [userId, isAuthenticated]);
-
-  const fetchRequestMatches = async (requestIds: string[]) => {
-    if (requestIds.length === 0) return;
-    
-    try {
-      console.log('Fetching matches for requests:', requestIds);
-      
-      const { data, error } = await supabase
-        .from('help_request_matches')
-        .select('*')
-        .in('request_id', requestIds)
-        .order('created_at', { ascending: false });
-        
-      if (error) {
-        console.error('Error fetching matches:', error);
-        return;
-      }
-      
-      console.log('Matches fetched successfully:', data);
-      
-      const matchesByRequest: Record<string, HelpRequestMatch[]> = {};
-      
-      data.forEach((match) => {
-        if (!matchesByRequest[match.request_id]) {
-          matchesByRequest[match.request_id] = [];
-        }
-        matchesByRequest[match.request_id].push(match as HelpRequestMatch);
-      });
-      
-      setRequestMatches(matchesByRequest);
-      
-    } catch (error) {
-      console.error('Exception fetching matches:', error);
-    }
-  };
 
   const fetchApplicationsForRequest = async (requestId: string) => {
     if (!userId || !requestId) return;
@@ -284,7 +255,8 @@ const ClientDashboard = () => {
     navigate('/get-help');
   };
 
-  if (!isAuthenticated) {
+  // Guard for authentication check
+  if (!isAuthenticated && !isLoading) {
     return null;
   }
 
@@ -292,20 +264,29 @@ const ClientDashboard = () => {
     [...activeRequests, ...completedRequests].find(req => req.id === selectedRequestId) : 
     null;
 
-  const handleEditRequest = (request: any) => {
+  const handleEditRequest = (request: HelpRequest) => {
     setSelectedRequestForEdit(request);
     setIsEditDialogOpen(true);
   };
 
-  const handleCancelRequest = (request: any) => {
+  const handleCancelRequest = (request: HelpRequest) => {
     setSelectedRequestForCancel(request);
     setIsCancelDialogOpen(true);
   };
 
-  const handleViewHistory = (request: any) => {
+  const handleViewHistory = (request: HelpRequest) => {
     setSelectedRequestForHistory(request);
     setIsHistoryDialogOpen(true);
   };
+
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <Layout>
+        <LoadingState />
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -319,6 +300,22 @@ const ClientDashboard = () => {
       </div>
       
       <div className="container mx-auto py-6 px-4">
+        {/* Show error message if tickets failed to load */}
+        {fetchError && !isLoading && (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 mb-6 rounded-lg">
+            <p className="font-medium mb-2">Error loading tickets</p>
+            <p className="text-sm">{fetchError}</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleForceRefresh}
+              className="mt-2 bg-white"
+            >
+              Try Again
+            </Button>
+          </div>
+        )}
+      
         {selectedRequestId ? (
           <div>
             <Button 
@@ -448,7 +445,7 @@ const ClientDashboard = () => {
           <CancelHelpRequestDialog
             isOpen={isCancelDialogOpen}
             onClose={() => setIsCancelDialogOpen(false)}
-            requestId={selectedRequestForCancel.id}
+            requestId={selectedRequestForCancel.id!}
             requestTitle={selectedRequestForCancel.title}
             onRequestCancelled={fetchTickets}
           />
@@ -458,7 +455,7 @@ const ClientDashboard = () => {
           <HelpRequestHistoryDialog
             isOpen={isHistoryDialogOpen}
             onClose={() => setIsHistoryDialogOpen(false)}
-            requestId={selectedRequestForHistory.id}
+            requestId={selectedRequestForHistory.id!}
             requestTitle={selectedRequestForHistory.title}
           />
         )}
