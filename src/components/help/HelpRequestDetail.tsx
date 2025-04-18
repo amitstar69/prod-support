@@ -53,8 +53,11 @@ const HelpRequestDetail: React.FC = () => {
           console.log('Help request updated:', payload);
           fetchHelpRequest(requestId);
           
-          if (payload.new && payload.old && payload.new.status !== payload.old.status) {
-            const newStatus = payload.new.status;
+          if (payload.new && payload.old && 
+              'status' in payload.new && 'status' in payload.old && 
+              payload.new.status !== payload.old.status) {
+            
+            const newStatus = payload.new.status as string;
             
             let message = '';
             let description = '';
