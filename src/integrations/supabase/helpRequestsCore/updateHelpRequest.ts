@@ -33,8 +33,7 @@ export const updateHelpRequest = async (requestId: string, updates: Partial<Omit
             .single();
             
           if (currentRequest?.status === 'client-approved') {
-            // Mark completion time
-            updates.updated_at = now;
+            // No additional fields needed currently
           }
           break;
       }
@@ -79,9 +78,6 @@ export const updateHelpRequest = async (requestId: string, updates: Partial<Omit
         console.error('Error updating help request in Supabase:', error);
         return { success: false, error: error.message };
       }
-      
-      // Log a message to console for debugging
-      console.log(`Help request ${requestId} updated with status: ${updates.status || 'unchanged'}`);
       
       return { success: true, data, storageMethod: 'Supabase' };
     }

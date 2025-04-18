@@ -17,8 +17,6 @@ import { supabase } from '../integrations/supabase/client';
 import { HelpRequest, HelpRequestMatch } from '../types/helpRequest';
 import DeveloperApplicationModal from '../components/apply/DeveloperApplicationModal';
 import DeveloperQADialog from '../components/help/DeveloperQADialog';
-import DeveloperStatusUpdate from '../components/help/DeveloperStatusUpdate';
-import { setupApplicationsSubscription } from '../integrations/supabase/realtime';
 
 const DeveloperTicketDetail: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -92,54 +90,6 @@ const DeveloperTicketDetail: React.FC = () => {
       setIsLoading(false);
     }
   }, [ticketId, isAuthenticated, userId]);
-  
-  const fetchLatestTicketData = async () => {
-    if (!ticketId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('help_requests')
-        .select('*')
-        .eq('id', ticketId)
-        .single();
-        
-      if (error) {
-        console.error('Error fetching ticket:', error);
-        return;
-      }
-      
-      if (data) {
-        setTicket(data as HelpRequest);
-      }
-    } catch (error) {
-      console.error('Exception in fetchLatestTicketData:', error);
-    }
-  };
-  
-  useEffect(() => {
-    if (!ticketId || !isAuthenticated) return;
-    
-    const channel = supabase
-      .channel(`ticket-updates-${ticketId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'help_requests',
-          filter: `id=eq.${ticketId}`,
-        },
-        (payload) => {
-          console.log('Ticket update received:', payload);
-          fetchLatestTicketData();
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [ticketId, isAuthenticated]);
   
   const handleBackClick = () => {
     navigate('/developer-dashboard');
@@ -573,21 +523,7 @@ const DeveloperTicketDetail: React.FC = () => {
               </CardContent>
             </Card>
             
-            {canSubmitQA ? (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle>Update Ticket Status</CardTitle>
-                  <CardDescription>Update the progress of your work on this ticket</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <DeveloperStatusUpdate 
-                    ticketId={ticketId || ''}
-                    currentStatus={ticket?.status || 'in-progress'}
-                    onStatusUpdated={fetchLatestTicketData}
-                  />
-                </CardContent>
-              </Card>
-            ) : (
+            {canSubmitQA && (
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle>Submit for QA</CardTitle>

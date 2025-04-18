@@ -1,75 +1,121 @@
 
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from './types';
 import { toast } from 'sonner';
 
-// Use environment variables for Supabase connection
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://YOUR_SUPABASE_URL.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+// Use consistent variables across the application
+export const SUPABASE_URL = "https://xptoyeinviaeevdtyjax.supabase.co";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwdG95ZWludmlhZWV2ZHR5amF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5NjE4MDEsImV4cCI6MjA1NjUzNzgwMX0.nHEt2UkbPHwYQmvKZhdqgN2ZamxoD4vwHqhHl1AER1I";
 
-// Create a custom fetch function with timeout to prevent hanging requests
-const fetchWithTimeout = (url: RequestInfo, options: RequestInit = {}, timeout = 10000): Promise<Response> => {
-  return new Promise((resolve, reject) => {
-    // Create abort controller for timeout
-    const controller = new AbortController();
-    options.signal = controller.signal;
-    
-    // Set timeout to abort request
-    const timer = setTimeout(() => {
-      controller.abort();
-      reject(new Error('Request timeout'));
-    }, timeout);
-    
-    fetch(url, options)
-      .then(resolve)
-      .catch((error) => {
-        // Log any Supabase fetch errors
-        console.error('Supabase fetch error:', error);
-        reject(error);
-      })
-      .finally(() => clearTimeout(timer));
-  });
-};
+// Performance optimizations - connect once
+let supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
 
-// Create the Supabase client with custom fetch
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  },
-  global: {
-    fetch: fetchWithTimeout as typeof fetch
-  }
-});
+// Track connection attempts
+let connectionAttempts = 0;
+const maxConnectionAttempts = 3;
 
-// Error handler helper for consistent error handling
-export const handleSupabaseError = (error: any, context: string) => {
-  const errorMessage = error?.message || 'Unknown error';
-  console.error(`${context}: ${errorMessage}`, error);
-  return {
-    success: false,
-    error: errorMessage
-  };
-};
-
-// Export a helper function to test database connectivity
-export const testDatabaseConnection = async () => {
+// Create and export the supabase client with improved error handling and retries
+export const supabase = (() => {
   try {
-    // Simple query to check database connectivity
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id')
-      .limit(1)
-      .maybeSingle();
-      
-    if (error) {
-      console.error('Database connection test failed:', error);
-      return false;
+    console.time('supabase-init');
+    
+    if (supabaseClient) {
+      return supabaseClient;
     }
     
-    return true;
+    connectionAttempts++;
+    
+    if (connectionAttempts > maxConnectionAttempts) {
+      console.error(`Maximum Supabase connection attempts (${maxConnectionAttempts}) reached`);
+      toast.error('Database connection failed. Please reload the page.');
+      throw new Error('Maximum connection attempts reached');
+    }
+    
+    // Create the client
+    supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storageKey: 'supabase.auth.token',
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      },
+      db: {
+        schema: 'public'
+      },
+      global: {
+        headers: { 'X-Client-Info': 'devHelp' },
+        // Add request retry logic
+        fetch: (url, options) => {
+          return fetch(url, {
+            ...options,
+            // Add timeout to prevent hanging requests - increased from 10s to 20s
+            signal: options?.signal || AbortSignal.timeout(20000), // Increased from 10s to 20s
+          }).catch(error => {
+            console.error('Supabase fetch error:', error);
+            toast.error('Network error. Please check your connection.');
+            throw error;
+          });
+        }
+      }
+    });
+    
+    console.timeEnd('supabase-init');
+    console.log('Supabase client initialized with URL:', SUPABASE_URL);
+    
+    return supabaseClient;
   } catch (error) {
-    console.error('Error testing database connection:', error);
-    return false;
+    console.error('Failed to initialize Supabase client:', error);
+    toast.error('Failed to connect to the database. Please reload the application.');
+    throw error;
   }
-};
+})();
+
+// Run a lightweight test of the connection to ensure it's working
+(async function testConnection() {
+  try {
+    console.time('supabase-connection-test');
+    
+    // Use a timer to detect slow connections
+    const timer = setTimeout(() => {
+      console.warn('Supabase connection test taking too long');
+    }, 3000); // Increased from 2s to 3s
+    
+    // Create an abort controller to limit test time
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      controller.abort();
+      console.warn('Supabase connection test aborted due to timeout');
+    }, 10000); // Increased from 5s to 10s
+    
+    // Fix the query to avoid the error in console logs
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .abortSignal(controller.signal)
+      .limit(1);
+    
+    clearTimeout(timer);
+    clearTimeout(timeout);
+    
+    if (error) {
+      console.error('Supabase connection test error:', error);
+    } else {
+      console.log('Supabase connection test successful', data ? `found ${data.length} profiles` : '');
+    }
+    
+    console.timeEnd('supabase-connection-test');
+  } catch (error) {
+    console.error('Exception in Supabase connection test:', error);
+  }
+})();
+
+// Add listener for connection issues
+window.addEventListener('online', () => {
+  console.log('Network connection restored, refreshing Supabase connection');
+  supabase.auth.refreshSession();
+});

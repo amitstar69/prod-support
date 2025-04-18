@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -7,12 +6,25 @@ import { HelpRequest, HelpRequestMatch } from '../types/helpRequest';
 import Layout from '../components/Layout';
 import { toast } from 'sonner';
 import { 
-  Loader2,
+  Clock, 
+  CheckCircle2, 
+  AlertCircle, 
+  BarChart3, 
+  Calendar, 
+  PlusCircle, 
+  Loader2, 
+  User,
+  Star,
+  Bell,
   ArrowLeft,
+  FileEdit
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Badge } from '../components/ui/badge';
+import { Progress } from '../components/ui/progress';
+import { getHelpRequestsForClient } from '../integrations/supabase/helpRequests';
 import DeveloperApplications from '../components/dashboard/DeveloperApplications';
 import ChatDialog from '../components/chat/ChatDialog';
 import { getDeveloperApplicationsForRequest } from '../integrations/supabase/helpRequests';
@@ -20,50 +32,36 @@ import { Notification } from '../integrations/supabase/notifications';
 import EditHelpRequestForm from '../components/help/EditHelpRequestForm';
 import CancelHelpRequestDialog from '../components/help/CancelHelpRequestDialog';
 import HelpRequestHistoryDialog from '../components/help/HelpRequestHistoryDialog';
-import ClientDashboardHeader from '../components/dashboard/client/ClientDashboardHeader';
-import RequestList from '../components/dashboard/client/RequestList';
-import { useTicketFetching } from '../hooks/dashboard/useTicketFetching';
-import LoadingState from '../components/dashboard/LoadingState';
+import TicketViewToggle from '../components/dashboard/TicketViewToggle';
 
 const ClientDashboard: React.FC = () => {
-  const { userId, isAuthenticated, userType } = useAuth();
+  const { userId, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('active');
+  const [activeRequests, setActiveRequests] = useState<HelpRequest[]>([]);
+  const [completedRequests, setCompletedRequests] = useState<HelpRequest[]>([]);
+  const [requestMatches, setRequestMatches] = useState<Record<string, HelpRequestMatch[]>>({});
+  const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [selectedRequestApplications, setSelectedRequestApplications] = useState<any[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatDeveloperId, setChatDeveloperId] = useState('');
   const [chatDeveloperName, setChatDeveloperName] = useState('Developer');
-  const [applicationNotifications, setApplicationNotifications] = useState<any[]>([]);
+  const [applicationNotifications, setApplicationNotifications] = useState<Notification[]>([]);
   const [selectedRequestForEdit, setSelectedRequestForEdit] = useState<HelpRequest | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedRequestForCancel, setSelectedRequestForCancel] = useState<HelpRequest | null>(null);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [selectedRequestForHistory, setSelectedRequestForHistory] = useState<HelpRequest | null>(null);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
-  const [requestMatches, setRequestMatches] = useState<Record<string, any[]>>({});
 
-  // Use the ticket fetching hook with proper authentication status
-  const {
-    tickets: allTickets,
-    isLoading,
-    dataSource,
-    fetchError,
-    fetchTickets,
-    handleForceRefresh
-  } = useTicketFetching(isAuthenticated, userType);
-
-  // Separate active and completed requests
-  const activeRequests = allTickets.filter(ticket => 
-    !['completed', 'cancelled'].includes(ticket.status || ''));
-  const completedRequests = allTickets.filter(ticket => 
-    ['completed', 'cancelled'].includes(ticket.status || ''));
-
-  // Effect to set up notification subscription
   useEffect(() => {
-    if (isAuthenticated && userId) {      
+    if (isAuthenticated && userId) {
+      fetchHelpRequests();
+      
       const matchesChannel = supabase
         .channel('public:help_request_matches')
         .on('postgres_changes', {
@@ -80,7 +78,7 @@ const ClientDashboard: React.FC = () => {
               }
             });
             
-            fetchTickets();
+            fetchHelpRequests();
           }
         })
         .subscribe();
@@ -98,12 +96,11 @@ const ClientDashboard: React.FC = () => {
         supabase.removeChannel(matchesChannel);
         window.removeEventListener('viewRequest', handleViewRequestEvent as EventListener);
       };
-    } else if (!isAuthenticated && !isLoading) {
+    } else {
       navigate('/login', { state: { returnTo: '/client-dashboard' } });
     }
-  }, [userId, isAuthenticated, activeRequests, fetchTickets, navigate, isLoading]);
+  }, [userId, isAuthenticated]);
 
-  // Effect to fetch application notifications
   useEffect(() => {
     if (isAuthenticated && userId) {
       const fetchApplicationNotifications = async () => {
@@ -135,23 +132,20 @@ const ClientDashboard: React.FC = () => {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${userId}`
+          filter: `user_id=eq.${userId} AND entity_type=eq.application`
         }, (payload) => {
           const newNotification = payload.new as Notification;
+          setApplicationNotifications(prev => [newNotification, ...prev]);
           
-          if (newNotification.entity_type === 'application') {
-            setApplicationNotifications(prev => [newNotification, ...prev]);
-            
-            toast.info(newNotification.title, {
-              description: newNotification.message,
-              action: {
-                label: 'View',
-                onClick: () => {
-                  handleViewApplication(newNotification.related_entity_id);
-                }
+          toast.info(newNotification.title, {
+            description: newNotification.message,
+            action: {
+              label: 'View',
+              onClick: () => {
+                handleViewApplication(newNotification.related_entity_id);
               }
-            });
-          }
+            }
+          });
         })
         .subscribe();
         
@@ -160,6 +154,79 @@ const ClientDashboard: React.FC = () => {
       };
     }
   }, [userId, isAuthenticated]);
+
+  const fetchHelpRequests = async () => {
+    if (!userId) return;
+    
+    try {
+      setIsLoading(true);
+      
+      const response = await getHelpRequestsForClient(userId);
+      
+      if (!response.success) {
+        console.error('Error fetching help requests:', response.error);
+        toast.error('Failed to load your help requests');
+        return;
+      }
+      
+      const active: HelpRequest[] = [];
+      const completed: HelpRequest[] = [];
+      
+      response.data.forEach((request: HelpRequest) => {
+        if (request.status === 'completed' || request.status === 'cancelled') {
+          completed.push(request);
+        } else {
+          active.push(request);
+        }
+      });
+      
+      setActiveRequests(active);
+      setCompletedRequests(completed);
+      
+      fetchRequestMatches(active.map(r => r.id!).filter(Boolean));
+      
+    } catch (error) {
+      console.error('Exception fetching help requests:', error);
+      toast.error('An unexpected error occurred while loading your requests');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchRequestMatches = async (requestIds: string[]) => {
+    if (requestIds.length === 0) return;
+    
+    try {
+      console.log('Fetching matches for requests:', requestIds);
+      
+      const { data, error } = await supabase
+        .from('help_request_matches')
+        .select('*')
+        .in('request_id', requestIds)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Error fetching matches:', error);
+        return;
+      }
+      
+      console.log('Matches fetched successfully:', data);
+      
+      const matchesByRequest: Record<string, HelpRequestMatch[]> = {};
+      
+      data.forEach((match) => {
+        if (!matchesByRequest[match.request_id]) {
+          matchesByRequest[match.request_id] = [];
+        }
+        matchesByRequest[match.request_id].push(match as HelpRequestMatch);
+      });
+      
+      setRequestMatches(matchesByRequest);
+      
+    } catch (error) {
+      console.error('Exception fetching matches:', error);
+    }
+  };
 
   const fetchApplicationsForRequest = async (requestId: string) => {
     if (!userId || !requestId) return;
@@ -239,7 +306,7 @@ const ClientDashboard: React.FC = () => {
   const handleApplicationUpdate = () => {
     if (selectedRequestId) {
       fetchApplicationsForRequest(selectedRequestId);
-      fetchTickets();
+      fetchHelpRequests();
     }
   };
 
@@ -251,12 +318,7 @@ const ClientDashboard: React.FC = () => {
     return applicationNotifications.length;
   };
 
-  const handleCreateRequest = () => {
-    navigate('/get-help');
-  };
-
-  // Guard for authentication check
-  if (!isAuthenticated && !isLoading) {
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -279,15 +341,6 @@ const ClientDashboard: React.FC = () => {
     setIsHistoryDialogOpen(true);
   };
 
-  // Handle loading state
-  if (isLoading) {
-    return (
-      <Layout>
-        <LoadingState />
-      </Layout>
-    );
-  }
-
   return (
     <Layout>
       <div className="bg-secondary/30 py-6">
@@ -300,87 +353,97 @@ const ClientDashboard: React.FC = () => {
       </div>
       
       <div className="container mx-auto py-6 px-4">
-        {/* Show error message if tickets failed to load */}
-        {fetchError && !isLoading && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-4 mb-6 rounded-lg">
-            <p className="font-medium mb-2">Error loading tickets</p>
-            <p className="text-sm">{fetchError}</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleForceRefresh}
-              className="mt-2 bg-white"
-            >
-              Try Again
-            </Button>
-          </div>
-        )}
-      
         {selectedRequestId ? (
           <div>
-            <Button 
-              variant="outline" 
-              onClick={() => setSelectedRequestId(null)}
-              className="mb-4"
-              size="sm"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to all requests
-            </Button>
-            
-            {selectedRequest && (
-              <div className="mb-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h2 className="text-xl font-semibold">{selectedRequest.title}</h2>
-                    <p className="text-sm text-muted-foreground mt-1">{selectedRequest.description}</p>
-                  </div>
-                  <Badge variant="outline" className="bg-primary/10 text-primary">
-                    {selectedRequest.status}
-                  </Badge>
-                </div>
-                
-                <div className="flex gap-2 mb-4">
-                  {selectedRequest.technical_area?.map((area: string, i: number) => (
-                    <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
-                      {area}
+            <div className="mb-6">
+              <Button 
+                variant="outline" 
+                onClick={() => setSelectedRequestId(null)}
+                className="mb-4"
+                size="sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to all requests
+              </Button>
+              
+              {selectedRequest && (
+                <div className="mb-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-xl font-semibold">{selectedRequest.title}</h2>
+                      <p className="text-sm text-muted-foreground mt-1">{selectedRequest.description}</p>
+                    </div>
+                    <Badge 
+                      variant="outline"
+                      className={`
+                        ${selectedRequest.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
+                         selectedRequest.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                         selectedRequest.status === 'scheduled' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
+                         'bg-yellow-50 text-yellow-800 border-yellow-200'}
+                      `}
+                    >
+                      {selectedRequest.status}
                     </Badge>
-                  ))}
+                  </div>
+                  
+                  <div className="flex gap-2 mb-4">
+                    {selectedRequest.technical_area.map((area, i) => (
+                      <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
+                        {area}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-                
-                <h3 className="text-lg font-semibold mb-2">Developer Applications</h3>
-                <p className="text-sm text-muted-foreground mb-6">
-                  Review and respond to developers who have applied to help with your request
-                </p>
-                
-                <DeveloperApplications 
-                  applications={selectedRequestApplications}
-                  requestId={selectedRequestId}
-                  clientId={userId || ''}
-                  onApplicationUpdate={handleApplicationUpdate}
-                  onOpenChat={handleOpenChat}
-                />
-              </div>
-            )}
+              )}
+              
+              <h3 className="text-lg font-semibold mb-2">
+                Developer Applications
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Review and respond to developers who have applied to help with your request
+              </p>
+              
+              <DeveloperApplications 
+                applications={selectedRequestApplications}
+                requestId={selectedRequestId}
+                clientId={userId || ''}
+                onApplicationUpdate={handleApplicationUpdate}
+                onOpenChat={handleOpenChat}
+              />
+            </div>
           </div>
         ) : (
           <>
-            <ClientDashboardHeader
-              activeRequests={activeRequests.length}
-              completedRequests={completedRequests.length}
-              totalNewApplications={applicationNotifications.length}
-              viewMode={viewMode}
-              onViewChange={setViewMode}
-              onCreateRequest={handleCreateRequest}
-            />
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl font-semibold">Your Help Requests</h2>
+                <p className="text-sm text-muted-foreground">
+                  {activeRequests.length} active, {completedRequests.length} completed
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <TicketViewToggle viewMode={viewMode} onViewChange={setViewMode} />
+                
+                <Button onClick={handleCreateRequest} size="sm">
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  New Help Request
+                  {getTotalNewApplicationsCount() > 0 && (
+                    <Badge variant="secondary" className="ml-2 bg-primary text-white">
+                      {getTotalNewApplicationsCount()}
+                    </Badge>
+                  )}
+                </Button>
+              </div>
+            </div>
             
             <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="active">
                   Active Requests
-                  {applicationNotifications.length > 0 && (
+                  {getTotalNewApplicationsCount() > 0 && (
                     <Badge variant="secondary" className="ml-2 bg-primary text-white">
-                      {applicationNotifications.length}
+                      {getTotalNewApplicationsCount()}
                     </Badge>
                   )}
                 </TabsTrigger>
@@ -388,35 +451,386 @@ const ClientDashboard: React.FC = () => {
               </TabsList>
               
               <TabsContent value="active">
-                <RequestList
-                  requests={activeRequests}
-                  isLoading={isLoading}
-                  viewMode={viewMode}
-                  requestMatches={requestMatches}
-                  applicationNotifications={applicationNotifications}
-                  selectedApplications={selectedRequestApplications}
-                  onViewRequest={handleViewRequest}
-                  onEditRequest={handleEditRequest}
-                  onViewHistory={handleViewHistory}
-                  onCancelRequest={handleCancelRequest}
-                  onCreateRequest={handleCreateRequest}
-                />
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="ml-2 text-lg">Loading your requests...</span>
+                  </div>
+                ) : activeRequests.length > 0 ? (
+                  viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {activeRequests.map((request) => (
+                        <Card 
+                          key={request.id} 
+                          className={`overflow-hidden hover:shadow-md transition-shadow ${ 
+                            applicationNotifications.some(n => {
+                              const appData = selectedRequestApplications.find(app => app.id === n.related_entity_id);
+                              return appData && appData.request_id === request.id;
+                            }) ? 'ring-2 ring-primary' : ''
+                          }`}
+                        >
+                          <CardHeader className="pb-2 space-y-1">
+                            <div className="flex justify-between items-start">
+                              <CardTitle className="text-base truncate flex items-center">
+                                {request.title}
+                                {getApplicationCountForRequest(request.id!) > 0 && (
+                                  <Badge variant="secondary" className="ml-2 bg-primary text-white">
+                                    {getApplicationCountForRequest(request.id!)}
+                                  </Badge>
+                                )}
+                              </CardTitle>
+                              <Badge 
+                                variant="outline"
+                                className={`
+                                  ${request.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
+                                   request.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                                   request.status === 'scheduled' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
+                                   'bg-yellow-50 text-yellow-800 border-yellow-200'}
+                                `}
+                              >
+                                {request.status}
+                              </Badge>
+                            </div>
+                            <CardDescription className="line-clamp-2 text-xs">{request.description}</CardDescription>
+                          </CardHeader>
+                          
+                          <CardContent className="pb-2">
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {request.technical_area.slice(0, 3).map((area, i) => (
+                                <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
+                                  {area}
+                                </Badge>
+                              ))}
+                              {request.technical_area.length > 3 && (
+                                <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">
+                                  +{request.technical_area.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-xs">
+                                {getStatusIcon(request.status || 'pending')}
+                                <span>{getStatusDescription(request.status || 'pending')}</span>
+                              </div>
+                              
+                              {request.status === 'matching' && (
+                                <div className="mt-2">
+                                  <div className="flex justify-between text-xs mb-1">
+                                    <span>Developer applications</span>
+                                    <span className="font-medium">
+                                      {requestMatches[request.id!]?.length || 0}
+                                    </span>
+                                  </div>
+                                  <Progress value={
+                                    requestMatches[request.id!]?.length 
+                                      ? Math.min(requestMatches[request.id!].length * 20, 100) 
+                                      : 5
+                                  } className="h-1.5" />
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                          
+                          <CardFooter className="flex flex-col space-y-2">
+                            <Button 
+                              className="w-full"
+                              variant={getApplicationCountForRequest(request.id!) > 0 ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handleViewRequest(request.id!)}
+                            >
+                              {getApplicationCountForRequest(request.id!) > 0 ? (
+                                <>
+                                  <Bell className="h-4 w-4 mr-2" />
+                                  View Applications ({getApplicationCountForRequest(request.id!)})
+                                </>
+                              ) : (
+                                "View Details"
+                              )}
+                            </Button>
+                            
+                            <div className="flex gap-2 w-full">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1"
+                                onClick={() => handleEditRequest(request)}
+                              >
+                                <FileEdit className="h-3.5 w-3.5 mr-1" />
+                                Edit
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1"
+                                onClick={() => handleViewHistory(request)}
+                              >
+                                <Clock className="h-3.5 w-3.5 mr-1" />
+                                History
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1 text-red-500 hover:text-red-700"
+                                onClick={() => handleCancelRequest(request)}
+                              >
+                                <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                                Cancel
+                              </Button>
+                            </div>
+                          </CardFooter>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-md shadow-sm border border-border/10 overflow-hidden divide-y divide-border/10">
+                      {activeRequests.map((request) => (
+                        <div 
+                          key={request.id} 
+                          className={`p-4 hover:bg-muted/5 transition-colors ${
+                            applicationNotifications.some(n => {
+                              const appData = selectedRequestApplications.find(app => app.id === n.related_entity_id);
+                              return appData && appData.request_id === request.id;
+                            }) ? 'bg-primary/5' : ''
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-medium">{request.title}</h3>
+                                <Badge 
+                                  variant="outline"
+                                  className={`
+                                    ${request.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
+                                     request.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                                     request.status === 'scheduled' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
+                                     'bg-yellow-50 text-yellow-800 border-yellow-200'}
+                                  `}
+                                >
+                                  <span className="flex items-center gap-1">
+                                    {getStatusIcon(request.status || 'pending')}
+                                    {request.status}
+                                  </span>
+                                </Badge>
+                                {getApplicationCountForRequest(request.id!) > 0 && (
+                                  <Badge variant="secondary" className="bg-primary text-white">
+                                    {getApplicationCountForRequest(request.id!)} applications
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              <p className="text-sm text-muted-foreground mb-2 line-clamp-1">{request.description}</p>
+                              
+                              <div className="flex flex-wrap gap-1">
+                                {request.technical_area.slice(0, 3).map((area, i) => (
+                                  <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
+                                    {area}
+                                  </Badge>
+                                ))}
+                                {request.technical_area.length > 3 && (
+                                  <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">
+                                    +{request.technical_area.length - 3}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant={getApplicationCountForRequest(request.id!) > 0 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleViewRequest(request.id!)}
+                              >
+                                {getApplicationCountForRequest(request.id!) > 0 ? "View Applications" : "View Details"}
+                              </Button>
+                              
+                              <div className="hidden sm:flex items-center gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => handleEditRequest(request)}
+                                >
+                                  <FileEdit className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => handleViewHistory(request)}
+                                >
+                                  <Clock className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="text-red-500 hover:text-red-700"
+                                  onClick={() => handleCancelRequest(request)}
+                                >
+                                  <AlertCircle className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  <div className="bg-white p-8 rounded-lg border border-border/40 text-center">
+                    <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">📋</div>
+                    <h3 className="text-xl font-medium mb-2">No active help requests</h3>
+                    <p className="text-muted-foreground mb-4">
+                      You don't have any active help requests at the moment.
+                    </p>
+                    <Button onClick={handleCreateRequest}>
+                      Create New Help Request
+                    </Button>
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="completed">
-                <RequestList
-                  requests={completedRequests}
-                  isLoading={isLoading}
-                  viewMode={viewMode}
-                  requestMatches={requestMatches}
-                  applicationNotifications={[]}
-                  selectedApplications={[]}
-                  onViewRequest={handleViewRequest}
-                  onEditRequest={handleEditRequest}
-                  onViewHistory={handleViewHistory}
-                  onCancelRequest={handleCancelRequest}
-                  onCreateRequest={handleCreateRequest}
-                />
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="ml-2 text-lg">Loading your requests...</span>
+                  </div>
+                ) : completedRequests.length > 0 ? (
+                  viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {completedRequests.map((request) => (
+                        <Card key={request.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                          <CardHeader className="pb-2 space-y-1">
+                            <div className="flex justify-between items-start">
+                              <CardTitle className="text-base truncate">{request.title}</CardTitle>
+                              <Badge 
+                                variant="outline"
+                                className={`
+                                  ${request.status === 'completed' ? 'bg-green-50 text-green-800 border-green-200' : 
+                                   'bg-red-50 text-red-800 border-red-200'}
+                                `}
+                              >
+                                {request.status}
+                              </Badge>
+                            </div>
+                            <CardDescription className="line-clamp-2 text-xs">{request.description}</CardDescription>
+                          </CardHeader>
+                          
+                          <CardContent className="pb-2">
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {request.technical_area.slice(0, 3).map((area, i) => (
+                                <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
+                                  {area}
+                                </Badge>
+                              ))}
+                            </div>
+                            
+                            {request.status === 'completed' && (
+                              <div className="flex justify-between items-center mt-2">
+                                <span className="text-xs text-muted-foreground">Developer Rating</span>
+                                <div className="flex">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star 
+                                      key={star} 
+                                      className={`h-3.5 w-3.5 ${star <= 5 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                          
+                          <CardFooter className="flex flex-col space-y-2">
+                            <Button 
+                              className="w-full"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewRequest(request.id!)}
+                            >
+                              View Details
+                            </Button>
+                            
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full"
+                              onClick={() => handleViewHistory(request)}
+                            >
+                              <Clock className="h-3.5 w-3.5" />
+                              View History
+                            </Button>
+                          </CardFooter>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-md shadow-sm border border-border/10 overflow-hidden divide-y divide-border/10">
+                      {completedRequests.map((request) => (
+                        <div key={request.id} className="p-4 hover:bg-muted/5 transition-colors">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-medium">{request.title}</h3>
+                                <Badge 
+                                  variant="outline"
+                                  className={`
+                                    ${request.status === 'completed' ? 'bg-green-50 text-green-800 border-green-200' : 
+                                     'bg-red-50 text-red-800 border-red-200'}
+                                  `}
+                                >
+                                  <span className="flex items-center gap-1">
+                                    {getStatusIcon(request.status || 'completed')}
+                                    {request.status}
+                                  </span>
+                                </Badge>
+                              </div>
+                              
+                              <p className="text-sm text-muted-foreground mb-2 line-clamp-1">{request.description}</p>
+                              
+                              <div className="flex flex-wrap gap-1">
+                                {request.technical_area.slice(0, 3).map((area, i) => (
+                                  <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
+                                    {area}
+                                  </Badge>
+                                ))}
+                                {request.technical_area.length > 3 && (
+                                  <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">
+                                    +{request.technical_area.length - 3}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewRequest(request.id!)}
+                              >
+                                View Details
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleViewHistory(request)}
+                              >
+                                <Clock className="h-3.5 w-3.5" />
+                                View History
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  <div className="bg-white p-8 rounded-lg border border-border/40 text-center">
+                    <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">📋</div>
+                    <h3 className="text-xl font-medium mb-2">No completed help requests</h3>
+                    <p className="text-muted-foreground mb-4">
+                      You don't have any completed help requests yet.
+                    </p>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </>
@@ -437,7 +851,7 @@ const ClientDashboard: React.FC = () => {
             isOpen={isEditDialogOpen}
             onClose={() => setIsEditDialogOpen(false)}
             helpRequest={selectedRequestForEdit}
-            onRequestUpdated={fetchTickets}
+            onRequestUpdated={fetchHelpRequests}
           />
         )}
 
@@ -447,7 +861,7 @@ const ClientDashboard: React.FC = () => {
             onClose={() => setIsCancelDialogOpen(false)}
             requestId={selectedRequestForCancel.id!}
             requestTitle={selectedRequestForCancel.title}
-            onRequestCancelled={fetchTickets}
+            onRequestCancelled={fetchHelpRequests}
           />
         )}
 

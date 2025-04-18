@@ -1,6 +1,8 @@
-import { supabase, handleSupabaseError } from '../client';
+
+import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
-import { isLocalId, isValidUUID, getLocalHelpRequests } from './utils';
+import { isLocalId, isValidUUID, getLocalHelpRequests, handleError } from './utils';
+import { toast } from 'sonner';
 
 // Function to fetch help requests for a client
 export const getHelpRequestsForClient = async (clientId: string) => {
@@ -20,72 +22,53 @@ export const getHelpRequestsForClient = async (clientId: string) => {
       };
     }
     
-    // For Supabase client ID, fetch from database with timeout
+    // For Supabase client ID, fetch from database
     if (isValidUUID(clientId)) {
-      try {
-        const { data, error } = await supabase
-          .from('help_requests')
-          .select('*')
-          .eq('client_id', clientId)
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          console.error('Error fetching help requests from Supabase:', error);
-          // If there's an error with Supabase, still return local requests
-          return { 
-            success: false, 
-            error: error.message,
-            data: filteredLocalHelpRequests, 
-            storageMethod: 'fallbackToLocalStorage' 
-          };
-        }
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
         
-        // Combine Supabase results with any local requests
-        const combinedResults = [...(data || []), ...filteredLocalHelpRequests];
-        
-        return { 
-          success: true, 
-          data: combinedResults, 
-          storageMethod: 'combined' 
-        };
-      } catch (error) {
-        console.error('Supabase fetch error:', error);
-        // On exception, return local data as fallback
+      if (error) {
+        console.error('Error fetching help requests from Supabase:', error);
+        // If there's an error with Supabase, still return local requests
         return { 
           success: false, 
-          error: error instanceof Error ? error.message : 'Unknown error',
-          data: filteredLocalHelpRequests,
-          storageMethod: 'errorFallback'
+          error: error.message,
+          data: filteredLocalHelpRequests, 
+          storageMethod: 'fallbackToLocalStorage' 
         };
       }
+      
+      // Combine Supabase results with any local requests
+      const combinedResults = [...data, ...filteredLocalHelpRequests];
+      
+      return { 
+        success: true, 
+        data: combinedResults, 
+        storageMethod: 'combined' 
+      };
     }
     
     // Invalid client ID format
     return { success: false, error: 'Invalid client ID format' };
     
   } catch (error) {
-    return handleSupabaseError(error, 'Exception fetching help requests');
+    return handleError(error, 'Exception fetching help requests:');
   }
 };
 
 // Function to get all public help requests for listing
-export const getAllPublicHelpRequests = async (isAuthenticated = false, userType: string | null = null) => {
+export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
   try {
-    console.log('[getAllPublicHelpRequests] Fetching tickets with auth status:', isAuthenticated, 'userType:', userType);
+    console.log('[getAllPublicHelpRequests] Fetching tickets with auth status:', isAuthenticated);
     
     // For authenticated users, fetch real data from the database
     if (isAuthenticated) {
-      // Check session first
-      const { data: session, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('[getAllPublicHelpRequests] Session error:', sessionError);
-        return { 
-          success: false, 
-          error: 'Error checking authentication: ' + sessionError.message,
-          data: [] 
-        };
-      }
+      // Let's explicitly check what session we have
+      const { data: session } = await supabase.auth.getSession();
+      console.log('[getAllPublicHelpRequests] Current session:', session?.session ? 'Active' : 'None');
       
       if (!session?.session) {
         console.log('[getAllPublicHelpRequests] No active session, returning empty list');
@@ -96,63 +79,64 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, userType
         };
       }
       
-      // Authenticated with valid session
+      // Log the user ID to confirm we have valid authentication
       console.log('[getAllPublicHelpRequests] Authenticated user ID:', session.session.user.id);
       
-      // Simplified query with better error handling
-      try {
-        const { data, error } = await supabase
-          .from('help_requests')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          console.error('[getAllPublicHelpRequests] Error fetching from Supabase:', error);
-          return { 
-            success: false, 
-            error: 'Failed to fetch help requests: ' + error.message,
-            data: [] 
-          };
-        }
+      // Check if the RLS policy should apply by getting the user type
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', session.session.user.id)
+        .single();
+      
+      console.log('[getAllPublicHelpRequests] User profile:', profileData, 'Error:', profileError);
+      
+      if (profileError) {
+        console.error('[getAllPublicHelpRequests] Error fetching user profile:', profileError);
+        toast.error('Error determining user type. Please try again.');
+      }
+      
+      // Debug query directly to check table access
+      const { count, error: countError } = await supabase
+        .from('help_requests')
+        .select('*', { count: 'exact', head: true });
+      
+      console.log('[getAllPublicHelpRequests] Table access check - Count:', count, 'Error:', countError);
+      
+      // Fetch all help requests (now using the RLS policy we added)
+      // The policy will automatically filter based on user type
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
         
-        // If we got data from the database, use it
-        console.log('[getAllPublicHelpRequests] Fetched tickets from database:', data?.length || 0);
-        
-        if (data && data.length > 0) {
-          // Map through tickets to ensure consistent data structure
-          const processedTickets = data.map(ticket => ({
-            ...ticket,
-            status: ticket.status || 'pending',
-            technical_area: ticket.technical_area || [],
-            created_at: ticket.created_at || new Date().toISOString()
-          }));
-          
-          return {
-            success: true,
-            data: processedTickets,
-            storageMethod: 'database'
-          };
-        } else {
-          // No tickets found in database
-          console.log('[getAllPublicHelpRequests] No tickets found in database');
-          return {
-            success: true,
-            data: [],
-            storageMethod: 'database'
-          };
-        }
-      } catch (fetchError) {
-        // Handle fetch errors, get local data as fallback
-        console.error('[getAllPublicHelpRequests] Database fetch error:', fetchError);
-        const localHelpRequests = getLocalHelpRequests();
-        
-        return {
-          success: false,
-          error: fetchError instanceof Error ? fetchError.message : 'Error connecting to database',
-          data: localHelpRequests,
-          storageMethod: 'fallbackLocal'
+      if (error) {
+        console.error('[getAllPublicHelpRequests] Error fetching from Supabase:', error);
+        return { 
+          success: false, 
+          error: 'Failed to fetch help requests: ' + error.message,
+          data: [] 
         };
       }
+      
+      // If we got data from the database, use it and log all tickets for debugging
+      console.log('[getAllPublicHelpRequests] Fetched tickets from database:', data?.length);
+      if (data) {
+        data.forEach((ticket, index) => {
+          console.log(`[getAllPublicHelpRequests] DB Ticket ${index+1}:`, {
+            id: ticket.id,
+            status: ticket.status,
+            title: ticket.title,
+            client_id: ticket.client_id
+          });
+        });
+      }
+      
+      return {
+        success: true,
+        data: data || [],
+        storageMethod: 'database'
+      };
     } 
     // For non-authenticated users, return sample data
     else {
@@ -168,7 +152,11 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, userType
     }
   } catch (error) {
     console.error('[getAllPublicHelpRequests] Exception:', error);
-    return handleSupabaseError(error, 'Exception fetching all help requests');
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error', 
+      data: [] 
+    };
   }
 };
 
@@ -209,6 +197,6 @@ export const getHelpRequest = async (requestId: string) => {
     return { success: false, error: 'Invalid help request ID format' };
     
   } catch (error) {
-    return handleSupabaseError(error, 'Exception fetching help request');
+    return handleError(error, 'Exception fetching help request:');
   }
 };
