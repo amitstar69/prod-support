@@ -30,7 +30,10 @@ const RequestStatusFlow: React.FC<RequestStatusFlowProps> = ({ currentStatus }) 
     return index <= currentIndex;
   };
 
-  if (currentStatus === 'open' || currentStatus === 'pending' || currentStatus === 'matching') {
+  // For waiting statuses
+  const waitingStatuses = ['open', 'pending', 'matching', 'scheduled'];
+  
+  if (waitingStatuses.includes(currentStatus)) {
     return (
       <div className="py-2 px-3 bg-blue-50 dark:bg-blue-950 rounded border border-blue-200 dark:border-blue-800 flex items-center">
         <Clock className="h-5 w-5 text-blue-500 mr-2" />

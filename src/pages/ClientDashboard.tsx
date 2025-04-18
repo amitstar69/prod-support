@@ -169,16 +169,27 @@ const ClientDashboard: React.FC = () => {
         return;
       }
       
+      console.log('[ClientDashboard] All help requests from API:', response.data);
+      
       const active: HelpRequest[] = [];
       const completed: HelpRequest[] = [];
       
-      response.data.forEach((request: HelpRequest) => {
+      response.data.forEach((request: HelpRequest, index: number) => {
+        console.log(`[ClientDashboard] Request ${index + 1}:`, {
+          id: request.id,
+          title: request.title,
+          status: request.status
+        });
+        
         if (request.status === 'completed' || request.status === 'cancelled') {
           completed.push(request);
         } else {
           active.push(request);
         }
       });
+      
+      console.log('[ClientDashboard] Active requests:', active.length);
+      console.log('[ClientDashboard] Completed requests:', completed.length);
       
       setActiveRequests(active);
       setCompletedRequests(completed);

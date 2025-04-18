@@ -45,7 +45,8 @@ export const useTicketFetching = (
         
         // Add additional filter to ensure only relevant tickets are shown
         const filteredTickets = response.data.filter(ticket => 
-          ['open', 'in-progress', 'claimed', 'pending', 'matching'].includes(ticket.status || '')
+          // Only include tickets with these statuses for active tickets
+          ['open', 'in-progress', 'claimed', 'pending', 'matching', 'developer-qa', 'client-review', 'client-approved', 'scheduled'].includes(ticket.status || '')
         );
         
         console.log('[Ticket Fetching] Filtered tickets:', filteredTickets);
@@ -66,7 +67,7 @@ export const useTicketFetching = (
     }
   };
 
-  // Add the missing handleForceRefresh function
+  // The handleForceRefresh function
   const handleForceRefresh = () => {
     toast.info('Refreshing tickets...');
     fetchTickets(true);
@@ -80,4 +81,3 @@ export const useTicketFetching = (
     handleForceRefresh,
   };
 };
-
