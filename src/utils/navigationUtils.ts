@@ -5,7 +5,7 @@ import { UserType } from '../contexts/auth/types';
 export const getUserHomePage = (userType: UserType | null): string => {
   if (!userType) return '/';
   
-  return userType === 'developer' ? '/developer' : '/client';
+  return userType === 'developer' ? '/developer/dashboard' : '/client/dashboard';
 };
 
 // Map specific dashboard routes

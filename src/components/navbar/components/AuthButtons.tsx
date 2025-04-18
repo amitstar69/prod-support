@@ -34,8 +34,8 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({ isMobile = false, onAc
           asChild
           onClick={onAction}
         >
-          <Link to={homePath}>
-            {userType === 'developer' ? 'My Dashboard' : 'My Account'}
+          <Link to={userType === 'developer' ? '/developer/dashboard' : '/client/dashboard'}>
+            {userType === 'developer' ? 'My Dashboard' : 'My Dashboard'}
           </Link>
         </Button>
       </div>

@@ -43,7 +43,7 @@ export const NavLinks = ({ isMobile = false, onLinkClick }: { isMobile?: boolean
     
     return (
       <>
-        <NavLink to="/developer" onClick={onLinkClick} isMobile={isMobile}>
+        <NavLink to="/developer/dashboard" onClick={onLinkClick} isMobile={isMobile}>
           Dashboard
         </NavLink>
         <NavLink to="/developer/tickets" onClick={onLinkClick} isMobile={isMobile}>
@@ -64,7 +64,7 @@ export const NavLinks = ({ isMobile = false, onLinkClick }: { isMobile?: boolean
     
     return (
       <>
-        <NavLink to="/client" onClick={onLinkClick} isMobile={isMobile}>
+        <NavLink to="/client/dashboard" onClick={onLinkClick} isMobile={isMobile}>
           Dashboard
         </NavLink>
         <NavLink to="/client/tickets" onClick={onLinkClick} isMobile={isMobile}>
