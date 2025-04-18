@@ -14,6 +14,10 @@ const TicketSummary: React.FC<TicketSummaryProps> = ({
   dataSource = 'database',
   categoryTitle = 'Available Help Requests'
 }) => {
+  // Ensure the displayed counts match the actual data
+  const displayedFilteredCount = filteredCount || 0;
+  const displayedTotalCount = totalCount || 0;
+
   return (
     <div className="flex justify-between items-center mb-4">
       <h2 className="text-xl font-semibold">
@@ -25,7 +29,7 @@ const TicketSummary: React.FC<TicketSummaryProps> = ({
         )}
       </h2>
       <div className="text-sm text-muted-foreground">
-        Showing {filteredCount} of {totalCount} help requests
+        Showing {displayedFilteredCount} of {displayedTotalCount} help requests
         {dataSource === 'sample' && (
           <span className="ml-1 text-amber-500">(sample tickets)</span>
         )}

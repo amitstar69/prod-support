@@ -25,6 +25,7 @@ export const useTicketFetching = (
       }
       
       if (!isAuthenticated) {
+        console.log('[Ticket Fetching] Using sample tickets for unauthenticated user');
         setTickets(sampleTickets);
         setDataSource('sample');
         return;
@@ -33,7 +34,8 @@ export const useTicketFetching = (
       const response = await getAllPublicHelpRequests(isAuthenticated);
       
       if (response.success && response.data) {
-        console.log('[Ticket Fetching] All fetched tickets:', response.data);
+        console.log('[Ticket Fetching] All fetched tickets:', response.data.length);
+        console.log('[Ticket Fetching] Ticket data:', response.data);
         
         // Log ticket statuses for debugging
         const statusCounts = response.data.reduce((acc, ticket) => {
@@ -49,7 +51,7 @@ export const useTicketFetching = (
           ['open', 'in-progress', 'claimed', 'pending', 'matching', 'developer-qa', 'client-review', 'client-approved', 'scheduled'].includes(ticket.status || '')
         );
         
-        console.log('[Ticket Fetching] Filtered tickets:', filteredTickets);
+        console.log('[Ticket Fetching] Filtered tickets:', filteredTickets.length);
         
         setTickets(filteredTickets);
         setDataSource('database');

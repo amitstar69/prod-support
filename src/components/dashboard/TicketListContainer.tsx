@@ -32,6 +32,10 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
   } | null>(null);
   const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
 
+  // Ensure we're using accurate counts
+  const actualTicketCount = filteredTickets?.length || 0;
+  const actualTotalCount = totalTickets || 0;
+
   const handleOpenChat = (helpRequestId: string, clientId: string, clientName?: string) => {
     setCurrentChat({
       helpRequestId,
@@ -41,7 +45,7 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
     setChatDialogOpen(true);
   };
 
-  if (filteredTickets.length === 0) {
+  if (actualTicketCount === 0) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border border-border/40 text-center">
         <div className="h-10 w-10 mx-auto text-muted-foreground mb-3">📋</div>
@@ -63,7 +67,7 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
     <div className="bg-white rounded-md shadow-sm border border-border/10 overflow-hidden">
       <div className="flex items-center justify-between border-b border-border/30 p-2 bg-muted/20">
         <div className="text-xs text-muted-foreground px-2">
-          Showing {filteredTickets.length} of {totalTickets} tickets
+          Showing {actualTicketCount} of {actualTotalCount} tickets
         </div>
         <div className="flex items-center gap-2">
           <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'grid' | 'list')}>
