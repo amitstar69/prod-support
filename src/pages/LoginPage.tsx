@@ -66,14 +66,14 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     debugLog('LoginPage - checking auth status');
     
-    // Set a timeout to prevent infinite loading
+    // Set a timeout to prevent infinite loading - REDUCED TO 3 SECONDS
     const authCheckTimeout = setTimeout(() => {
       if (!authCheckComplete) {
         debugLog('Auth check taking too long, continuing to login page');
         setInitialLoading(false);
         setAuthCheckComplete(true);
       }
-    }, 5000); // 5 seconds timeout
+    }, 3000); // 3 seconds timeout (reduced from 5)
     
     // Check auth status
     checkAuthStatus().then(isAuth => {
@@ -90,6 +90,19 @@ const LoginPage: React.FC = () => {
     
     return () => clearTimeout(authCheckTimeout);
   }, [checkAuthStatus]);
+  
+  // Failsafe for initial loading that never resolves
+  useEffect(() => {
+    const failsafeTimeout = setTimeout(() => {
+      if (initialLoading) {
+        debugLog('Failsafe triggered: forcing loading state to complete');
+        setInitialLoading(false);
+        setAuthCheckComplete(true);
+      }
+    }, 5000); // 5 second failsafe
+    
+    return () => clearTimeout(failsafeTimeout);
+  }, [initialLoading]);
   
   useEffect(() => {
     if (!initialLoading && authCheckComplete && isAuthenticated) {

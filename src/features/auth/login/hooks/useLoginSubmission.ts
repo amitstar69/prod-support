@@ -48,14 +48,19 @@ export const useLoginSubmission = ({
     setIsLoading(true);
     debugLog(`Login request started for ${email} as ${userType}`);
     
+    // Create abort controller for login timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      debugLog('Login request timed out after 8 seconds');
+      setIsLoading(false); // Ensure loading state is reset on timeout
+      toast.error('Connection timed out', {
+        description: 'Please check your internet connection and try again'
+      });
+      onError?.('Login request timed out. Please check your internet connection and try again.');
+    }, 8000); // 8 second timeout
+    
     try {
-      // Create abort controller for login timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-        debugLog('Login request timed out after 8 seconds');
-      }, 8000); // Reduced from 10000 to 8000ms
-      
       const loginPromise = login(email, password, userType, rememberMe);
       
       // Create timeout promise
@@ -69,14 +74,7 @@ export const useLoginSubmission = ({
       const result = await Promise.race([
         loginPromise,
         timeoutPromise
-      ]).catch((error: Error) => {
-        setConsecutiveErrors(prev => prev + 1);
-        debugLog('Login failed with error:', error.message);
-        return {
-          success: false,
-          error: error.message || 'Login request failed'
-        } as LoginResult;
-      });
+      ]);
       
       clearTimeout(timeoutId);
       
@@ -84,36 +82,41 @@ export const useLoginSubmission = ({
         debugLog('Login successful, fetching user profile');
         setConsecutiveErrors(0);
         
-        // Create a timeout for profile fetch
-        const profileController = new AbortController();
+        // Create a shorter timeout for profile fetch (5 seconds)
         const profileTimeoutId = setTimeout(() => {
-          profileController.abort();
-          debugLog('Profile fetch timed out after 5 seconds');
-        }, 5000);
+          debugLog('Profile fetch took too long, proceeding with basic redirect');
+          toast.success(`Successfully logged in as ${userType}`);
+          
+          // Determine redirection path
+          const params = new URLSearchParams(location.search);
+          const returnTo = params.get('returnTo');
+          
+          // Get the appropriate home page based on user type
+          const homePath = getUserHomePage(userType);
+          const redirectPath = returnTo && returnTo.startsWith('/') ? returnTo : homePath;
+          
+          debugLog(`User redirected to: ${redirectPath}`);
+          navigate(redirectPath, { replace: true });
+          onSuccess?.();
+          
+          setIsLoading(false);
+        }, 2500); // Shorter timeout for profile fetch
         
         try {
           // Fetch user profile after successful login
-          const profilePromise = getCurrentUserData();
-          const profileTimeoutPromise = new Promise((_, reject) => {
-            profileController.signal.addEventListener('abort', () => {
-              reject(new Error('Profile fetch timed out'));
-            });
-          });
-          
-          const userData = await Promise.race([profilePromise, profileTimeoutPromise])
-            .catch(() => null);
+          const userData = await getCurrentUserData();
           
           clearTimeout(profileTimeoutId);
           
           if (userData) {
             debugLog('User profile fetched successfully');
-            // Fix: Type assertion for userData and safe access to name property
+            // Safe access to name property
             const userName = userData && typeof userData === 'object' ? 
               (userData as { name?: string }).name || 'User' : 
               'User';
             toast.success(`Welcome back, ${userName}!`);
           } else {
-            debugLog('User profile fetch failed, using default redirection');
+            debugLog('User profile fetch returned empty');
             toast.success(`Successfully logged in as ${userType}`);
           }
           
@@ -129,6 +132,7 @@ export const useLoginSubmission = ({
           navigate(redirectPath, { replace: true });
           onSuccess?.();
           
+          setIsLoading(false);
           return true;
         } catch (profileError: any) {
           debugLog('Error fetching user profile:', profileError.message);
@@ -143,16 +147,20 @@ export const useLoginSubmission = ({
           navigate(fallbackPath, { replace: true });
           onSuccess?.();
           
+          setIsLoading(false);
           return true;
         }
       } else if (result.requiresVerification) {
         debugLog('Email verification required');
         onVerificationRequired?.(email);
         toast.error('Email verification required');
+        setIsLoading(false);
         return false;
       } else if (result.error) {
         debugLog('Login error:', result.error);
         onError?.(result.error);
+        
+        setConsecutiveErrors(prev => prev + 1);
         
         if (consecutiveErrors >= 3) {
           toast.error('Multiple login failures', {
@@ -165,11 +173,16 @@ export const useLoginSubmission = ({
         } else {
           toast.error(result.error);
         }
+        
+        setIsLoading(false);
         return false;
       }
+      
+      setIsLoading(false);
       return false;
     } catch (error: any) {
       debugLog('Unexpected login error:', error.message);
+      clearTimeout(timeoutId);
       
       if (error.name === 'AbortError' || error.message?.includes('timed out')) {
         onError?.('Login request timed out. Please check your internet connection and try again.');
@@ -180,9 +193,9 @@ export const useLoginSubmission = ({
         onError?.(error.message || 'An unexpected error occurred during login');
         toast.error(error.message || 'Login failed. Please try again later.');
       }
-      return false;
-    } finally {
+      
       setIsLoading(false);
+      return false;
     }
   }, [login, navigate, location.search, consecutiveErrors, onSuccess, onError, onVerificationRequired]);
 

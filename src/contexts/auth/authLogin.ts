@@ -1,30 +1,25 @@
-
 import { supabase } from '../../integrations/supabase/client';
 import { AuthError } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
-// Define the return type for the login function
 export interface LoginResult {
   success: boolean;
   error?: string;
   requiresVerification?: boolean;
 }
 
-// Cache for user profiles to reduce database queries
 const profileCache = new Map<string, { user_type: string | null, timestamp: number }>();
-const CACHE_EXPIRY = 15 * 60 * 1000; // Cache expires after 15 minutes for better performance
+const CACHE_EXPIRY = 15 * 60 * 1000;
 
-// Rate limiting implementation
 const loginAttempts = new Map<string, { count: number, firstAttempt: number, locked: boolean, lockExpiry: number }>();
 const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes lockout
-const ATTEMPT_WINDOW = 10 * 60 * 1000; // 10 minute window for attempts
+const LOCKOUT_DURATION = 15 * 60 * 1000;
+const ATTEMPT_WINDOW = 10 * 60 * 1000;
 
 const isRateLimited = (email: string): { limited: boolean, message?: string } => {
   const now = Date.now();
   const normalizedEmail = email.toLowerCase().trim();
   
-  // Get or initialize attempts record
   if (!loginAttempts.has(normalizedEmail)) {
     loginAttempts.set(normalizedEmail, {
       count: 0,
@@ -36,11 +31,8 @@ const isRateLimited = (email: string): { limited: boolean, message?: string } =>
   
   const record = loginAttempts.get(normalizedEmail)!;
   
-  // Check if the account is locked
   if (record.locked) {
-    // Check if lockout period has expired
     if (now >= record.lockExpiry) {
-      // Reset the record after lockout period
       loginAttempts.set(normalizedEmail, {
         count: 0,
         firstAttempt: now,
@@ -50,7 +42,6 @@ const isRateLimited = (email: string): { limited: boolean, message?: string } =>
       return { limited: false };
     }
     
-    // Calculate remaining lockout time in minutes
     const remainingMinutes = Math.ceil((record.lockExpiry - now) / 60000);
     return { 
       limited: true, 
@@ -58,7 +49,6 @@ const isRateLimited = (email: string): { limited: boolean, message?: string } =>
     };
   }
   
-  // Reset attempts if the window has expired
   if (now - record.firstAttempt > ATTEMPT_WINDOW) {
     loginAttempts.set(normalizedEmail, {
       count: 0,
@@ -87,7 +77,6 @@ const recordLoginAttempt = (email: string, success: boolean): void => {
   const record = loginAttempts.get(normalizedEmail)!;
   
   if (success) {
-    // Reset on successful login
     loginAttempts.set(normalizedEmail, {
       count: 0,
       firstAttempt: now,
@@ -97,10 +86,8 @@ const recordLoginAttempt = (email: string, success: boolean): void => {
     return;
   }
   
-  // Increment failed attempts
   const newCount = record.count + 1;
   
-  // Check if we should lock the account
   if (newCount >= MAX_LOGIN_ATTEMPTS) {
     loginAttempts.set(normalizedEmail, {
       count: newCount,
@@ -111,7 +98,6 @@ const recordLoginAttempt = (email: string, success: boolean): void => {
     
     console.warn(`Account ${email} locked for ${LOCKOUT_DURATION/60000} minutes due to too many failed attempts`);
   } else {
-    // Just increment the counter
     loginAttempts.set(normalizedEmail, {
       count: newCount,
       firstAttempt: record.firstAttempt,
@@ -131,7 +117,6 @@ export const loginWithEmailAndPassword = async (
     console.time('login-process');
     console.log(`Attempting to log in as ${userType} with email:`, email);
     
-    // Check rate limiting first
     const rateLimitCheck = isRateLimited(email);
     if (rateLimitCheck.limited) {
       return {
@@ -140,88 +125,87 @@ export const loginWithEmailAndPassword = async (
       };
     }
     
-    // Step 1: Sign in with credentials
     console.time('auth-signin');
     
-    // Add timeout to prevent hanging
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
     
-    // Fixed: Remove expiresIn from options (not supported by Supabase signInWithPassword)
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
-    // Clear timeout
-    clearTimeout(timeoutId);
-    
-    console.timeEnd('auth-signin');
-
-    if (error) {
-      // Record failed attempt
-      recordLoginAttempt(email, false);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      console.error('Login error:', error);
-      if (error.message.includes('Email not confirmed')) {
+      clearTimeout(timeoutId);
+      console.timeEnd('auth-signin');
+
+      if (error) {
+        recordLoginAttempt(email, false);
+        
+        console.error('Login error:', error);
+        if (error.message.includes('Email not confirmed')) {
+          return {
+            success: false,
+            error: 'Please verify your email before logging in.',
+            requiresVerification: true
+          };
+        }
+        
+        if (error.message.includes('Invalid login credentials')) {
+          return {
+            success: false,
+            error: 'Email or password is incorrect. Please check your credentials.',
+          };
+        }
+        
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      if (!data.user) {
+        recordLoginAttempt(email, false);
+        console.error('No user returned after login');
+        return {
+          success: false,
+          error: 'Login failed. Please try again.',
+        };
+      }
+      
+      if (data.user.email_confirmed_at === null) {
+        recordLoginAttempt(email, false);
+        console.log('User email is not verified');
+        await supabase.auth.signOut();
+        
         return {
           success: false,
           error: 'Please verify your email before logging in.',
           requiresVerification: true
         };
       }
-      
-      // Handle invalid credentials more explicitly
-      if (error.message.includes('Invalid login credentials')) {
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('Login request aborted due to timeout');
         return {
           success: false,
-          error: 'Email or password is incorrect. Please check your credentials.',
+          error: 'Login request timed out. Please check your internet connection and try again.'
         };
       }
-      
-      return {
-        success: false,
-        error: error.message,
-      };
+      throw error;
     }
 
-    if (!data.user) {
-      recordLoginAttempt(email, false);
-      console.error('No user returned after login');
-      return {
-        success: false,
-        error: 'Login failed. Please try again.',
-      };
-    }
-    
-    // Check if email is verified
-    if (data.user.email_confirmed_at === null) {
-      recordLoginAttempt(email, false);
-      console.log('User email is not verified');
-      // Sign out user since email is not verified
-      await supabase.auth.signOut();
-      
-      return {
-        success: false,
-        error: 'Please verify your email before logging in.',
-        requiresVerification: true
-      };
-    }
-
-    // Step 2: Check for cached profile data to avoid an extra DB query
     const userId = data.user.id;
     const cachedProfile = profileCache.get(userId);
     const now = Date.now();
     
-    // If we have a valid cached profile, use it instead of querying the database
     if (cachedProfile && (now - cachedProfile.timestamp) < CACHE_EXPIRY) {
       console.log('Using cached profile data');
       
-      // Check if user type matches
       if (cachedProfile.user_type !== userType) {
         recordLoginAttempt(email, false);
         console.error('User type mismatch (from cache):', cachedProfile.user_type, 'vs', userType);
-        // Sign out user if their type doesn't match
         await supabase.auth.signOut();
         return {
           success: false,
@@ -229,7 +213,6 @@ export const loginWithEmailAndPassword = async (
         };
       }
       
-      // Record successful login
       recordLoginAttempt(email, true);
       
       console.log('Login successful for', userType, '(cached validation)');
@@ -237,10 +220,8 @@ export const loginWithEmailAndPassword = async (
       return { success: true };
     }
 
-    // If no cache hit, fetch user profile to check their user type
     console.time('profile-fetch');
     
-    // Add another timeout for profile fetch
     const profileController = new AbortController();
     const profileTimeoutId = setTimeout(() => profileController.abort(), 8000);
     
@@ -250,7 +231,6 @@ export const loginWithEmailAndPassword = async (
       .eq('id', userId)
       .single();
     
-    // Clear timeout
     clearTimeout(profileTimeoutId);
     
     console.timeEnd('profile-fetch');
@@ -259,10 +239,7 @@ export const loginWithEmailAndPassword = async (
       recordLoginAttempt(email, false);
       console.error('Error fetching user profile:', profileError);
       
-      // If the profile doesn't exist, we might need to create it
-      if (profileError.code === 'PGRST116') { // Not found error
-        // This would be a good place to create a profile if needed
-        // For now, we'll just sign out the user
+      if (profileError.code === 'PGRST116') {
         toast.error('Your user profile is missing. Please contact support.');
         console.error('Profile not found for user', userId);
         await supabase.auth.signOut();
@@ -274,17 +251,14 @@ export const loginWithEmailAndPassword = async (
       };
     }
 
-    // Cache the profile data for future logins
     profileCache.set(userId, {
       user_type: profileData.user_type,
       timestamp: now
     });
 
-    // Check if user type matches
     if (profileData.user_type !== userType) {
       recordLoginAttempt(email, false);
       console.error('User type mismatch:', profileData.user_type, 'vs', userType);
-      // Sign out user if their type doesn't match
       await supabase.auth.signOut();
       return {
         success: false,
@@ -292,7 +266,6 @@ export const loginWithEmailAndPassword = async (
       };
     }
 
-    // Record successful login
     recordLoginAttempt(email, true);
     
     console.log('Login successful for', userType);
@@ -304,7 +277,6 @@ export const loginWithEmailAndPassword = async (
     console.error('Exception during login:', authError);
     console.timeEnd('login-process');
     
-    // Check if this was an abort error (timeout)
     if (authError.name === 'AbortError' || authError.message?.includes('timeout')) {
       return {
         success: false,
@@ -319,8 +291,6 @@ export const loginWithEmailAndPassword = async (
   }
 };
 
-// Update the login function to use truly optional parameters with default values
-// Explicitly define the return type
 export const login = async (
   email: string, 
   password: string, 
