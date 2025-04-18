@@ -83,7 +83,6 @@ const ClientDashboard: React.FC = () => {
         })
         .subscribe();
         
-      // Fix for the CustomEvent type error
       const handleViewRequestEvent = (event: CustomEvent<{ requestId: string }>) => {
         const { requestId } = event.detail;
         if (requestId) {
@@ -846,4 +845,78 @@ const ClientDashboard: React.FC = () => {
                             
                             <div className="flex items-center gap-2">
                               <Button 
-                                variant="outline
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewRequest(request.id!)}
+                              >
+                                View Details
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleViewHistory(request)}
+                              >
+                                <Clock className="h-3.5 w-3.5" />
+                                View History
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  <div className="bg-white p-8 rounded-lg border border-border/40 text-center">
+                    <div className="h-12 w-12 mx-auto text-muted-foreground mb-4">📋</div>
+                    <h3 className="text-xl font-medium mb-2">No completed help requests</h3>
+                    <p className="text-muted-foreground mb-4">
+                      You don't have any completed help requests yet.
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
+
+        {isChatOpen && selectedRequestId && (
+          <ChatDialog 
+            isOpen={isChatOpen}
+            onClose={() => setIsChatOpen(false)}
+            helpRequestId={selectedRequestId}
+            otherId={chatDeveloperId}
+            otherName={chatDeveloperName}
+          />
+        )}
+
+        {selectedRequestForEdit && (
+          <EditHelpRequestForm
+            isOpen={isEditDialogOpen}
+            onClose={() => setIsEditDialogOpen(false)}
+            helpRequest={selectedRequestForEdit}
+            onUpdate={fetchHelpRequests}
+          />
+        )}
+
+        {selectedRequestForCancel && (
+          <CancelHelpRequestDialog
+            isOpen={isCancelDialogOpen}
+            onClose={() => setIsCancelDialogOpen(false)}
+            request={selectedRequestForCancel}
+            onCancelComplete={fetchHelpRequests}
+          />
+        )}
+
+        {selectedRequestForHistory && (
+          <HelpRequestHistoryDialog
+            isOpen={isHistoryDialogOpen}
+            onClose={() => setIsHistoryDialogOpen(false)}
+            requestId={selectedRequestForHistory.id!}
+          />
+        )}
+      </div>
+    </Layout>
+  );
+};
+
+export default ClientDashboard;
