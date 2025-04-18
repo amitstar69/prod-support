@@ -3,7 +3,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequest } from '../../types/helpRequest';
-import { getAllPublicHelpRequests, testDatabaseConnection } from '../../integrations/supabase/helpRequests';
+import { getAllPublicHelpRequests } from '../../integrations/supabase/helpRequests';
+import { testDatabaseConnection } from '../../integrations/supabase/client'; // Fix import source
 import { sampleTickets } from './sampleData';
 
 export const useTicketFetching = (
