@@ -107,7 +107,11 @@ export const useLoginSubmission = ({
           
           if (userData) {
             debugLog('User profile fetched successfully');
-            toast.success(`Welcome back, ${userData.name || 'User'}!`);
+            // Fix: Type assertion for userData and safe access to name property
+            const userName = userData && typeof userData === 'object' ? 
+              (userData as { name?: string }).name || 'User' : 
+              'User';
+            toast.success(`Welcome back, ${userName}!`);
           } else {
             debugLog('User profile fetch failed, using default redirection');
             toast.success(`Successfully logged in as ${userType}`);

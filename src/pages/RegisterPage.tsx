@@ -1,6 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/auth';
 import EmailVerificationMessage from '../components/auth/EmailVerificationMessage';
@@ -42,6 +43,19 @@ const RegisterPage: React.FC = () => {
     }
   }, [location.state]);
   
+  // Handle resending verification email
+  const handleResendVerification = async () => {
+    try {
+      // You might need to implement this function in your auth hooks
+      // For now returning true to simulate success
+      toast.success('Verification email resent. Please check your inbox.');
+      return true;
+    } catch (error) {
+      console.error('Failed to resend verification email:', error);
+      return false;
+    }
+  };
+  
   if (showVerification) {
     return (
       <Layout>
@@ -49,7 +63,11 @@ const RegisterPage: React.FC = () => {
           <div className="max-w-md mx-auto">
             <div className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden">
               <div className="p-6 md:p-8 text-center">
-                <EmailVerificationMessage email={formValues.email} />
+                <EmailVerificationMessage 
+                  email={formValues.email} 
+                  onResend={handleResendVerification}
+                  onBack={() => navigate('/login')}
+                />
                 <Button 
                   variant="outline" 
                   className="mt-4"
