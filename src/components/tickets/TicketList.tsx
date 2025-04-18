@@ -15,6 +15,7 @@ interface TicketListProps {
   isRecommended?: boolean;
   isApplication?: boolean;
   onOpenChat?: (helpRequestId: string, clientId: string, clientName?: string) => void;
+  viewMode?: 'grid' | 'list';
 }
 
 const TicketList: React.FC<TicketListProps> = ({ 
@@ -24,7 +25,8 @@ const TicketList: React.FC<TicketListProps> = ({
   isAuthenticated,
   isRecommended = false,
   isApplication = false,
-  onOpenChat
+  onOpenChat,
+  viewMode = 'grid'
 }) => {
   const navigate = useNavigate();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
@@ -104,7 +106,11 @@ const TicketList: React.FC<TicketListProps> = ({
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4">
+      <div className={
+        viewMode === 'grid' 
+          ? "grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 p-4" 
+          : "divide-y divide-border"
+      }>
         {tickets.map((ticket) => (
           <TicketListItem
             key={ticket.id}
@@ -117,6 +123,7 @@ const TicketList: React.FC<TicketListProps> = ({
             onClaimClick={handleClaimClick}
             onApplyClick={handleApplyClick}
             onChatClick={onOpenChat ? handleChatClick : undefined}
+            viewMode={viewMode}
           />
         ))}
       </div>

@@ -2,9 +2,10 @@
 import React from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import TicketList from '../tickets/TicketList';
-import { ArrowDownUp, RefreshCw } from 'lucide-react';
+import { ArrowDownUp, RefreshCw, Columns, List } from 'lucide-react';
 import { Button } from '../ui/button';
 import ChatDialog from '../chat/ChatDialog';
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 
 interface TicketListContainerProps {
   filteredTickets: HelpRequest[];
@@ -29,6 +30,7 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
     otherId: string;
     otherName?: string;
   } | null>(null);
+  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
 
   const handleOpenChat = (helpRequestId: string, clientId: string, clientName?: string) => {
     setCurrentChat({
@@ -63,7 +65,16 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
         <div className="text-xs text-muted-foreground px-2">
           Showing {filteredTickets.length} of {totalTickets} tickets
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'grid' | 'list')}>
+            <ToggleGroupItem value="grid" size="sm" className="h-7 w-7">
+              <Columns className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="list" size="sm" className="h-7 w-7">
+              <List className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+          
           {onRefresh && (
             <Button 
               onClick={onRefresh}
@@ -86,13 +97,16 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
         </div>
       </div>
     
-      <TicketList 
-        tickets={filteredTickets} 
-        onClaimTicket={onClaimTicket} 
-        currentUserId={userId} 
-        isAuthenticated={isAuthenticated}
-        onOpenChat={handleOpenChat}
-      />
+      <div className={viewMode === 'list' ? 'divide-y divide-border/10' : ''}>
+        <TicketList 
+          tickets={filteredTickets} 
+          onClaimTicket={onClaimTicket} 
+          currentUserId={userId} 
+          isAuthenticated={isAuthenticated}
+          onOpenChat={handleOpenChat}
+          viewMode={viewMode}
+        />
+      </div>
 
       {currentChat && (
         <ChatDialog 
