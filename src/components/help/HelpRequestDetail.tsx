@@ -96,7 +96,7 @@ const HelpRequestDetail: React.FC = () => {
       setIsLoading(true);
       const response = await getHelpRequest(id);
       
-      if (response.success && response.data) {
+      if (response.success && 'data' in response) {
         setHelpRequest(response.data);
       } else {
         toast.error('Could not find the requested help ticket');

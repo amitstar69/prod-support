@@ -50,7 +50,7 @@ export const useTicketFetching = (
       // Get help requests from database
       const response = await getAllPublicHelpRequests(isAuthenticated, userType);
       
-      if (response.success && response.data) {
+      if (response.success && 'data' in response) {
         console.log('[Ticket Fetching] All fetched tickets:', response.data.length);
         
         if (response.data.length > 0) {
