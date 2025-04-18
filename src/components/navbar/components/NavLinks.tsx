@@ -8,11 +8,15 @@ interface NavLinkProps {
   onClick?: () => void;
   children: React.ReactNode;
   isMobile?: boolean;
+  exact?: boolean;
 }
 
-const NavLink = ({ to, onClick, children, isMobile = false }: NavLinkProps) => {
+const NavLink = ({ to, onClick, children, isMobile = false, exact = false }: NavLinkProps) => {
   const location = useLocation();
-  const isActive = location.pathname === to || location.pathname.startsWith(`${to}/`);
+  // If exact is true, we check for exact match, otherwise check if path starts with the link
+  const isActive = exact 
+    ? location.pathname === to
+    : location.pathname === to || (to !== '/' && location.pathname.startsWith(`${to}/`));
   
   const baseClasses = isMobile
     ? 'block px-3 py-2 rounded-md text-base font-medium'
@@ -43,7 +47,7 @@ export const NavLinks = ({ isMobile = false, onLinkClick }: { isMobile?: boolean
     
     return (
       <>
-        <NavLink to="/developer" onClick={onLinkClick} isMobile={isMobile}>
+        <NavLink to="/developer" onClick={onLinkClick} isMobile={isMobile} exact>
           Dashboard
         </NavLink>
         <NavLink to="/developer/tickets" onClick={onLinkClick} isMobile={isMobile}>
@@ -64,7 +68,7 @@ export const NavLinks = ({ isMobile = false, onLinkClick }: { isMobile?: boolean
     
     return (
       <>
-        <NavLink to="/client" onClick={onLinkClick} isMobile={isMobile}>
+        <NavLink to="/client" onClick={onLinkClick} isMobile={isMobile} exact>
           Dashboard
         </NavLink>
         <NavLink to="/client/tickets" onClick={onLinkClick} isMobile={isMobile}>
@@ -85,7 +89,7 @@ export const NavLinks = ({ isMobile = false, onLinkClick }: { isMobile?: boolean
 
   return (
     <div className={isMobile ? "space-y-1" : "flex items-center space-x-2"}>
-      <NavLink to="/" onClick={onLinkClick} isMobile={isMobile}>
+      <NavLink to="/" onClick={onLinkClick} isMobile={isMobile} exact>
         Home
       </NavLink>
       
