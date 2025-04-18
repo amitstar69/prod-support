@@ -33,7 +33,6 @@ export const useTicketFetching = (
       const response = await getAllPublicHelpRequests(isAuthenticated);
       
       if (response.success && response.data) {
-        // Add verbose logging to understand ticket sources
         console.log('[Ticket Fetching] All fetched tickets:', response.data);
         
         // Log ticket statuses for debugging
