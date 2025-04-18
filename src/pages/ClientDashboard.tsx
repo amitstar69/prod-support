@@ -894,7 +894,7 @@ const ClientDashboard: React.FC = () => {
             isOpen={isEditDialogOpen}
             onClose={() => setIsEditDialogOpen(false)}
             helpRequest={selectedRequestForEdit}
-            onUpdate={fetchHelpRequests}
+            onRequestUpdated={fetchHelpRequests}
           />
         )}
 
@@ -902,8 +902,9 @@ const ClientDashboard: React.FC = () => {
           <CancelHelpRequestDialog
             isOpen={isCancelDialogOpen}
             onClose={() => setIsCancelDialogOpen(false)}
-            request={selectedRequestForCancel}
-            onCancelComplete={fetchHelpRequests}
+            requestId={selectedRequestForCancel.id!}
+            requestTitle={selectedRequestForCancel.title}
+            onRequestCancelled={fetchHelpRequests}
           />
         )}
 
@@ -912,6 +913,7 @@ const ClientDashboard: React.FC = () => {
             isOpen={isHistoryDialogOpen}
             onClose={() => setIsHistoryDialogOpen(false)}
             requestId={selectedRequestForHistory.id!}
+            requestTitle={selectedRequestForHistory.title}
           />
         )}
       </div>
