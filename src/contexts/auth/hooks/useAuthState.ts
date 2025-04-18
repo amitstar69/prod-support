@@ -42,13 +42,14 @@ export const useAuthState = (): AuthContextType => {
     
     initialize();
     
-    // Force loading state to finish after a maximum timeout
+    // Force loading state to finish after a maximum timeout - increased from 7s to 15s
     const forceLoadingTimeout = setTimeout(() => {
       if (isLoading) {
-        console.warn('Auth state initialization force timeout reached');
+        console.warn('Auth state initialization force timeout reached after 15 seconds');
         setIsLoading(false);
+        setInitializationFailed(true);
       }
-    }, 7000); // Absolute maximum: 7 seconds
+    }, 15000); // Increased from 7s to 15s for slower connections
     
     // Set up auth state change listener
     const subscription = setupAuthStateChangeListener(setAuthState);

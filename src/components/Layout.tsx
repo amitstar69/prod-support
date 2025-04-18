@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from './navbar';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from './ui/alert';
+import { Loader2 } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,6 +14,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pageReady, setPageReady] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [loadingAttempt, setLoadingAttempt] = useState(1);
   
   useEffect(() => {
     // Track page load status
@@ -24,17 +27,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       console.timeEnd('layout-ready');
     }, 100);
     
-    // Add a timeout to prevent infinite loading
+    // Add a timeout with retries to prevent infinite loading
     const loadingTimeoutId = setTimeout(() => {
       if (!pageReady) {
-        console.warn('Layout loading timeout reached - forcing ready state');
-        setPageReady(true);
-        setLoadingTimeout(true);
-        toast.error("Page took too long to load. Some features may be limited.", {
-          duration: 5000,
-        });
+        console.warn(`Layout loading timeout reached (attempt ${loadingAttempt}) - extending timeout`);
+        
+        if (loadingAttempt < 3) {
+          // Retry by extending the timeout
+          setLoadingAttempt(prev => prev + 1);
+          toast.info(`Still loading content... (attempt ${loadingAttempt}/3)`);
+        } else {
+          // After 3 attempts, show the timeout message
+          console.warn('Layout loading timeout reached - forcing ready state after 3 attempts');
+          setPageReady(true);
+          setLoadingTimeout(true);
+          toast.error("Content is taking longer than expected to load. Some features may be limited.", {
+            duration: 7000,
+          });
+        }
       }
-    }, 5000); // Maximum 5s loading time
+    }, loadingAttempt === 1 ? 10000 : 15000); // Increased from 5s to 10s/15s
     
     // Setup network status monitoring
     const handleOnline = () => {
@@ -57,16 +69,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       window.removeEventListener('offline', handleOffline);
       console.log('Layout unmounted');
     };
-  }, []);
+  }, [loadingAttempt, pageReady]);
   
-  console.log('Layout render state', { pageReady, loadingTimeout });
+  console.log('Layout render state', { pageReady, loadingTimeout, loadingAttempt });
   
   if (!pageReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <div className="text-center max-w-md px-4">
+          <div className="flex items-center justify-center space-x-2 mb-4">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <span className="text-xl font-medium">Loading...</span>
+          </div>
+          
+          {loadingAttempt > 1 && (
+            <p className="text-muted-foreground mt-4">
+              {loadingAttempt === 2 ? 
+                "Content is taking longer than expected. Please wait..." :
+                "Still loading... Thank you for your patience."}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -83,9 +105,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
       
       {loadingTimeout && (
-        <div className="bg-yellow-500 text-white text-center py-1 px-2 text-sm">
-          Page loaded with timeout. Some data might not be available.
-        </div>
+        <Alert className="rounded-none border-x-0 bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800/30 mb-4">
+          <AlertDescription className="text-center py-1">
+            Some content is taking longer to load. Please wait or try refreshing the page.
+          </AlertDescription>
+        </Alert>
       )}
       
       <main className="flex-1">{children}</main>

@@ -53,8 +53,8 @@ export const supabase = (() => {
         fetch: (url, options) => {
           return fetch(url, {
             ...options,
-            // Add timeout to prevent hanging requests
-            signal: options?.signal || AbortSignal.timeout(10000), // Reduced from 15s to 10s
+            // Add timeout to prevent hanging requests - increased from 10s to 20s
+            signal: options?.signal || AbortSignal.timeout(20000), // Increased from 10s to 20s
           }).catch(error => {
             console.error('Supabase fetch error:', error);
             toast.error('Network error. Please check your connection.');
@@ -83,21 +83,21 @@ export const supabase = (() => {
     // Use a timer to detect slow connections
     const timer = setTimeout(() => {
       console.warn('Supabase connection test taking too long');
-    }, 2000);
+    }, 3000); // Increased from 2s to 3s
     
     // Create an abort controller to limit test time
     const controller = new AbortController();
     const timeout = setTimeout(() => {
       controller.abort();
       console.warn('Supabase connection test aborted due to timeout');
-    }, 5000);
+    }, 10000); // Increased from 5s to 10s
     
-    // Run a lightweight query to test the connection
-    const { error } = await supabase.from('profiles')
-      .select('count(*)')
+    // Fix the query to avoid the error in console logs
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
       .abortSignal(controller.signal)
-      .limit(1)
-      .single();
+      .limit(1);
     
     clearTimeout(timer);
     clearTimeout(timeout);
@@ -105,7 +105,7 @@ export const supabase = (() => {
     if (error) {
       console.error('Supabase connection test error:', error);
     } else {
-      console.log('Supabase connection test successful');
+      console.log('Supabase connection test successful', data ? `found ${data.length} profiles` : '');
     }
     
     console.timeEnd('supabase-connection-test');

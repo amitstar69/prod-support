@@ -32,15 +32,14 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
       localStorage.removeItem(`userData_${userId}`);
       localStorage.removeItem(`userDataTime_${userId}`);
     } else {
-      // More aggressive caching strategy for verification status - only cache for 5 seconds
-      // to ensure fresh data after page refreshes
+      // More aggressive caching strategy for verification status - increased from 5s to 10s
       const cachedDataStr = localStorage.getItem(`userData_${userId}`);
       const cacheTime = localStorage.getItem(`userDataTime_${userId}`);
       
       if (cachedDataStr && cacheTime) {
         const cacheAge = Date.now() - parseInt(cacheTime);
-        // Reduced cache time to 5 seconds for more frequent checks after page refresh
-        if (cacheAge < 5 * 1000) { 
+        // Increased cache time to 10 seconds 
+        if (cacheAge < 10 * 1000) { 
           console.log('Using cached user data', cacheAge/1000, 'seconds old');
           try {
             return JSON.parse(cachedDataStr);
@@ -77,12 +76,12 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
       console.log('Profile creation completed');
     }
     
-    // Create a timeout promise - 30 seconds to allow more time for slow connections
+    // Create a timeout promise - 45 seconds (increased from 30s) to allow more time for slow connections
     const timeoutPromise = new Promise<null>((resolve) => {
       setTimeout(() => {
-        console.warn('getCurrentUserData timeout reached after 30 seconds');
+        console.warn('getCurrentUserData timeout reached after 45 seconds');
         resolve(null);
-      }, 30000); // 30 seconds timeout
+      }, 45000); // Increased from 30s to 45s
     });
     
     if (supabase) {
@@ -90,9 +89,22 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
         console.time('fetchUserData');
         console.log('Fetching fresh user data from Supabase');
         
+        // Show loading toast for long-running data fetches
+        let loadingToastId: string | number | undefined;
+        const loadingToastTimer = setTimeout(() => {
+          loadingToastId = toast.loading('Loading your profile data...');
+        }, 3000); // Only show after 3 seconds to avoid flicker
+        
         // Race between the data fetch and timeout
         const dataPromise = fetchUserData(userType, userId);
         const result = await Promise.race([dataPromise, timeoutPromise]);
+        
+        // Clear loading toast if it was shown
+        clearTimeout(loadingToastTimer);
+        if (loadingToastId !== undefined) {
+          toast.dismiss(loadingToastId);
+        }
+        
         console.timeEnd('fetchUserData');
         
         if (result === null) {
@@ -103,10 +115,11 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
             // We've timed out but have local data, so let's still update the timestamp
             // to prevent excessive retries in rapid succession
             localStorage.setItem(`userDataTime_${userId}`, Date.now().toString());
+            toast.warning('Profile data is taking longer than expected to load. Using cached data for now.');
             return localData;
           } else {
             console.error('No user data found in localStorage either');
-            toast.error('Failed to load profile data: Connection timeout');
+            toast.error('Failed to load profile data: Connection timeout. Please try refreshing the page.');
           }
           return null;
         }
@@ -127,13 +140,13 @@ export const getCurrentUserData = async (): Promise<Developer | Client | null> =
         return result;
       } catch (error) {
         console.error('Exception fetching user data from Supabase:', error);
-        toast.error('Error fetching your profile: Network or server issue');
+        toast.error('Error fetching your profile: Network or server issue. Please try refreshing the page.');
         // Fall back to localStorage
         return getUserDataFromLocalStorage(userType, userId);
       }
     } else {
       console.error('Supabase client not available');
-      toast.error('Supabase client not available');
+      toast.error('Database connection not available. Please refresh the page.');
       // Use localStorage as fallback
       return getUserDataFromLocalStorage(userType, userId);
     }

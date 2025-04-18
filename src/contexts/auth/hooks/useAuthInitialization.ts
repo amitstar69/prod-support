@@ -45,13 +45,13 @@ export const initializeAuthState = async (
       }
     }
     
-    // Set a maximum timeout for the entire auth initialization process
+    // Set a maximum timeout for the entire auth initialization process - increased from 5s to 10s
     const authTimeoutPromise = new Promise<void>((resolve) => {
       setTimeout(() => {
         console.warn('Auth initialization global timeout reached');
         setIsLoading(false);
         resolve();
-      }, 5000); // 5 second global timeout
+      }, 10000); // Increased from 5s to 10s global timeout
     });
     
     // Race between the actual check and the global timeout
@@ -60,12 +60,12 @@ export const initializeAuthState = async (
         // Then check Supabase session with timeout handling
         if (supabase) {
           try {
-            // Create a timeout promise
+            // Create a timeout promise - increased from 3s to 7s
             const timeoutPromise = new Promise<null>((resolve) => {
               setTimeout(() => {
                 console.warn('Supabase auth check timed out');
                 resolve(null);
-              }, 3000); // Reduced from 5s to 3s for faster UI response
+              }, 7000); // Increased from 3s to 7s for slower networks
             });
             
             // Race between the actual check and the timeout

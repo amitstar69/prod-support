@@ -47,7 +47,7 @@ const loadingTimeout = setTimeout(() => {
       `;
     }
   }
-}, 12000); // Reduced from 15000 to fail faster
+}, 20000); // Increased from 12000ms to 20000ms for slower connections
 
 // Render the application
 try {
