@@ -5,6 +5,8 @@ import ClientTicketCard from './ClientTicketCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import { Badge } from '../../ui/badge';
 import LoadingState from '../LoadingState';
+import DashboardHeader from '../DashboardHeader';
+import { Filter, ListFilter, KanbanSquare } from 'lucide-react';
 
 interface ClientTicketBoardProps {
   tickets: HelpRequest[];
@@ -13,6 +15,7 @@ interface ClientTicketBoardProps {
 
 const ClientTicketBoard: React.FC<ClientTicketBoardProps> = ({ tickets, isLoading }) => {
   const [activeView, setActiveView] = useState<string>('board');
+  const [showFilters, setShowFilters] = useState(false);
   
   // Group tickets by status
   const openTickets = tickets.filter(ticket => 
@@ -35,6 +38,11 @@ const ClientTicketBoard: React.FC<ClientTicketBoardProps> = ({ tickets, isLoadin
     return <LoadingState />;
   }
   
+  const handleRefresh = () => {
+    // Placeholder for refresh functionality
+    console.log('Refreshing tickets...');
+  };
+  
   if (!tickets || tickets.length === 0) {
     return (
       <div className="py-10 text-center">
@@ -45,12 +53,12 @@ const ClientTicketBoard: React.FC<ClientTicketBoardProps> = ({ tickets, isLoadin
   }
 
   const BoardColumn = ({ title, tickets, count }: { title: string, tickets: HelpRequest[], count: number }) => (
-    <div className="flex-1 min-w-[280px] max-w-sm bg-secondary/20 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium">{title}</h3>
-        <Badge variant="outline">{count}</Badge>
+    <div className="flex-1 min-w-[280px] max-w-sm bg-card rounded-lg border">
+      <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+        <h3 className="font-medium text-sm">{title}</h3>
+        <Badge variant="outline" className="bg-background">{count}</Badge>
       </div>
-      <div className="space-y-3">
+      <div className="p-2 space-y-2 min-h-[200px]">
         {tickets.length > 0 ? (
           tickets.map(ticket => (
             <ClientTicketCard key={ticket.id} ticket={ticket} compact />
@@ -65,29 +73,61 @@ const ClientTicketBoard: React.FC<ClientTicketBoardProps> = ({ tickets, isLoadin
   );
 
   return (
-    <Tabs defaultValue={activeView} value={activeView} onValueChange={setActiveView} className="w-full">
-      <TabsList className="grid w-full grid-cols-2 mb-6">
-        <TabsTrigger value="board">Board View</TabsTrigger>
-        <TabsTrigger value="list">List View</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="board" className="mt-4">
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          <BoardColumn title="Open" tickets={openTickets} count={openTickets.length} />
-          <BoardColumn title="In Progress" tickets={inProgressTickets} count={inProgressTickets.length} />
-          <BoardColumn title="Review" tickets={reviewTickets} count={reviewTickets.length} />
-          <BoardColumn title="Completed" tickets={completedTickets} count={completedTickets.length} />
+    <div className="space-y-6">
+      <DashboardHeader
+        showFilters={showFilters}
+        setShowFilters={setShowFilters}
+        onRefresh={handleRefresh}
+        title="Tickets Dashboard"
+        description="Manage your help requests and developer applications"
+      />
+      
+      <div className="bg-card rounded-lg border shadow-sm">
+        <div className="border-b">
+          <Tabs defaultValue={activeView} value={activeView} onValueChange={setActiveView} className="w-full">
+            <div className="px-4 flex items-center justify-between">
+              <TabsList className="h-14 w-auto gap-4">
+                <TabsTrigger value="board" className="gap-2 data-[state=active]:bg-primary/10">
+                  <KanbanSquare className="h-4 w-4" />
+                  Board View
+                </TabsTrigger>
+                <TabsTrigger value="list" className="gap-2 data-[state=active]:bg-primary/10">
+                  <ListFilter className="h-4 w-4" />
+                  List View
+                </TabsTrigger>
+              </TabsList>
+              
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>{tickets.length} total tickets</span>
+                <span>•</span>
+                <span>{openTickets.length} open</span>
+                <span>•</span>
+                <span>{completedTickets.length} completed</span>
+              </div>
+            </div>
+          </Tabs>
         </div>
-      </TabsContent>
 
-      <TabsContent value="list">
-        <div className="space-y-4">
-          {tickets.map(ticket => (
-            <ClientTicketCard key={ticket.id} ticket={ticket} />
-          ))}
-        </div>
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="board" className="m-0 p-4">
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            <BoardColumn title="Open" tickets={openTickets} count={openTickets.length} />
+            <BoardColumn title="In Progress" tickets={inProgressTickets} count={inProgressTickets.length} />
+            <BoardColumn title="Review" tickets={reviewTickets} count={reviewTickets.length} />
+            <BoardColumn title="Completed" tickets={completedTickets} count={completedTickets.length} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="list" className="m-0">
+          <div className="divide-y">
+            {tickets.map(ticket => (
+              <div key={ticket.id} className="p-4">
+                <ClientTicketCard ticket={ticket} />
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+      </div>
+    </div>
   );
 };
 
