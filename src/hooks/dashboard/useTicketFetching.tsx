@@ -67,10 +67,18 @@ export const useTicketFetching = (
     }
   };
 
+  // Add the missing handleForceRefresh function
+  const handleForceRefresh = () => {
+    toast.info('Refreshing tickets...');
+    fetchTickets(true);
+  };
+
   return {
     tickets,
     isLoading,
     dataSource,
     fetchTickets,
+    handleForceRefresh,
   };
 };
+
