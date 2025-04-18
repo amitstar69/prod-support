@@ -26,7 +26,7 @@ const Navbar: React.FC = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <DesktopNav isOpen={isOpen} setIsOpen={setIsOpen} />
+          <DesktopNav />
 
           {/* Mobile menu button */}
           {isMobile && (
