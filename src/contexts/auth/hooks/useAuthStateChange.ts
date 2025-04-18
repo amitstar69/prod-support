@@ -41,13 +41,14 @@ export const setupAuthStateChangeListener = (
               }, 10000); // Increased from 5s to 10s
               
               // Attempt to fetch additional profile data
-              // Use the signal from the AbortController
+              // Use the signal parameter in the fetch options instead of abortSignal method
               const { data: profileData, error } = await supabase
                 .from('profiles')
                 .select('user_type')
                 .eq('id', session.user.id)
-                .single()
-                .abortSignal(controller.signal);
+                .single({
+                  signal: controller.signal
+                });
                 
               clearTimeout(timeoutId);
                 
