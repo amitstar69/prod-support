@@ -16,75 +16,72 @@ export const setupAuthStateChangeListener = (
     }
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log(`Auth state changed: ${event}`, session ? 'Has session' : 'No session');
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
-            try {
-              // Add timeout protection for the profile fetch
-              const controller = new AbortController();
-              const timeoutId = setTimeout(() => {
-                controller.abort();
-                console.warn('Profile fetch timed out');
-              }, 5000); // Reduced from 8000 to fail faster
-              
-              const { data: profileData, error } = await supabase
-                .from('profiles')
-                .select('user_type')
-                .eq('id', session.user.id)
-                .single();
+            // Initial update with basic auth info
+            const basicAuthState: AuthState = {
+              isAuthenticated: true,
+              userId: session.user.id,
+              userType: null // Will be populated later
+            };
+            
+            setAuthState(basicAuthState);
+            
+            // Use setTimeout to avoid blocking UI thread
+            setTimeout(async () => {
+              try {
+                console.time('profile-fetch');
+                // Add timeout protection for the profile fetch
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                  controller.abort();
+                  console.warn('Profile fetch timed out');
+                }, 4000); // Reduced from 5000 to fail faster
                 
-              clearTimeout(timeoutId);
+                const { data: profileData, error } = await supabase
+                  .from('profiles')
+                  .select('user_type')
+                  .eq('id', session.user.id)
+                  .abortSignal(controller.signal)
+                  .single();
+                  
+                clearTimeout(timeoutId);
+                console.timeEnd('profile-fetch');
+                  
+                if (error) {
+                  console.error('Error fetching user type:', error);
+                  
+                  // User already has basic auth state from earlier
+                  toast.error("Couldn't fetch your user profile. Some features may be limited.");
+                  return;
+                }
                 
-              if (error) {
-                console.error('Error fetching user type:', error);
+                let userType: 'developer' | 'client' | null = null;
                 
-                // Still update auth state as authenticated but without user type
-                const basicAuthState: AuthState = {
+                if (profileData?.user_type === 'developer') {
+                  userType = 'developer';
+                } else if (profileData?.user_type === 'client') {
+                  userType = 'client';
+                }
+                
+                const newAuthState: AuthState = {
                   isAuthenticated: true,
                   userId: session.user.id,
-                  userType: null
+                  userType: userType
                 };
                 
-                setAuthState(basicAuthState);
-                localStorage.setItem('authState', JSON.stringify(basicAuthState));
+                setAuthState(newAuthState);
+                localStorage.setItem('authState', JSON.stringify(newAuthState));
+                console.log('Updated auth state from session change:', newAuthState);
+              } catch (error) {
+                console.error('Error fetching user type during auth change:', error);
                 
-                // Notify user of the issue
-                toast.error("Couldn't fetch your user profile. Some features may be limited.");
-                return;
+                // User already has basic auth state from earlier
               }
-              
-              let userType: 'developer' | 'client' | null = null;
-              
-              if (profileData?.user_type === 'developer') {
-                userType = 'developer';
-              } else if (profileData?.user_type === 'client') {
-                userType = 'client';
-              }
-              
-              const newAuthState: AuthState = {
-                isAuthenticated: true,
-                userId: session.user.id,
-                userType: userType
-              };
-              
-              setAuthState(newAuthState);
-              localStorage.setItem('authState', JSON.stringify(newAuthState));
-              console.log('Updated auth state from session change:', newAuthState);
-            } catch (error) {
-              console.error('Error fetching user type during auth change:', error);
-              
-              // Still update with basic auth information even if profile fetch fails
-              const fallbackAuthState: AuthState = {
-                isAuthenticated: true,
-                userId: session.user.id,
-                userType: null
-              };
-              
-              setAuthState(fallbackAuthState);
-              localStorage.setItem('authState', JSON.stringify(fallbackAuthState));
-            }
+            }, 0);
           }
         } else if (event === 'SIGNED_OUT') {
           const newState: AuthState = {

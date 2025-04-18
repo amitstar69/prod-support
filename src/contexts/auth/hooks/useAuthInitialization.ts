@@ -12,6 +12,7 @@ export const initializeAuthState = async (
   try {
     setIsLoading(true);
     console.log('Beginning auth initialization');
+    console.time('auth-initialization');
     
     // First, set a reliable initial state
     setAuthState({
@@ -44,26 +45,44 @@ export const initializeAuthState = async (
       }
     }
     
-    // Then check Supabase session with timeout handling
-    if (supabase) {
-      try {
-        // Create a timeout promise
-        const timeoutPromise = new Promise<null>((resolve) => {
-          setTimeout(() => {
-            console.warn('Supabase auth check timed out');
-            resolve(null);
-          }, 5000); // 5 second timeout
-        });
-        
-        // Race between the actual check and the timeout
-        const sessionPromise = checkSupabaseSession(setAuthState);
-        await Promise.race([sessionPromise, timeoutPromise]);
-      } catch (error) {
-        console.error('Error checking Supabase session:', error);
-      }
-    } else {
-      console.warn('Supabase client not initialized');
-    }
+    // Set a maximum timeout for the entire auth initialization process
+    const authTimeoutPromise = new Promise<void>((resolve) => {
+      setTimeout(() => {
+        console.warn('Auth initialization global timeout reached');
+        setIsLoading(false);
+        resolve();
+      }, 5000); // 5 second global timeout
+    });
+    
+    // Race between the actual check and the global timeout
+    await Promise.race([
+      (async () => {
+        // Then check Supabase session with timeout handling
+        if (supabase) {
+          try {
+            // Create a timeout promise
+            const timeoutPromise = new Promise<null>((resolve) => {
+              setTimeout(() => {
+                console.warn('Supabase auth check timed out');
+                resolve(null);
+              }, 3000); // Reduced from 5s to 3s for faster UI response
+            });
+            
+            // Race between the actual check and the timeout
+            const sessionPromise = checkSupabaseSession(setAuthState);
+            await Promise.race([sessionPromise, timeoutPromise]);
+          } catch (error) {
+            console.error('Error checking Supabase session:', error);
+          }
+        } else {
+          console.warn('Supabase client not initialized');
+        }
+        setIsLoading(false);
+      })(),
+      authTimeoutPromise
+    ]);
+    
+    console.timeEnd('auth-initialization');
   } catch (error) {
     console.error('Fatal error checking session:', error);
     // Fallback to logged out state to ensure app can start
@@ -72,9 +91,7 @@ export const initializeAuthState = async (
       userType: null,
       userId: null
     });
-    toast.error('Error initializing authentication. Please refresh the page.');
-  } finally {
     setIsLoading(false);
-    console.log('Auth initialization complete');
+    toast.error('Error initializing authentication. Please refresh the page.');
   }
 };

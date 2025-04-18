@@ -14,9 +14,11 @@ export const useAuthState = (): AuthContextType => {
   });
   
   const [isLoading, setIsLoading] = useState(true);
+  const [initializationFailed, setInitializationFailed] = useState(false);
   
   useEffect(() => {
     console.log('useAuthState - checking session on mount');
+    console.time('auth-total-init');
     
     // Initialize auth state from localStorage and Supabase session
     const initialize = async () => {
@@ -25,16 +27,35 @@ export const useAuthState = (): AuthContextType => {
       } catch (error) {
         console.error('Error initializing auth state:', error);
         setIsLoading(false);
+        setInitializationFailed(true);
+        
+        // Set safe fallback state
+        setAuthState({
+          isAuthenticated: false,
+          userType: null,
+          userId: null,
+        });
+      } finally {
+        console.timeEnd('auth-total-init');
       }
     };
     
     initialize();
+    
+    // Force loading state to finish after a maximum timeout
+    const forceLoadingTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('Auth state initialization force timeout reached');
+        setIsLoading(false);
+      }
+    }, 7000); // Absolute maximum: 7 seconds
     
     // Set up auth state change listener
     const subscription = setupAuthStateChangeListener(setAuthState);
     
     return () => {
       subscription.unsubscribe();
+      clearTimeout(forceLoadingTimeout);
     };
   }, []);
   
@@ -61,5 +82,6 @@ export const useAuthState = (): AuthContextType => {
     logout: handleLogout,
     logoutUser: handleLogout,
     isLoading,
+    initializationFailed,
   };
 };

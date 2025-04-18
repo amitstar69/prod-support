@@ -48,13 +48,22 @@ export const useLoginSubmission = ({
     setIsLoading(true);
     debugLog(`Login request started for ${email} as ${userType}`);
     
+    // Force loading to stop after a maximum time
+    const maxLoadingTimeout = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+        toast.error("Login is taking too long. Please try again.");
+        debugLog('Login max loading time reached');
+      }
+    }, 15000); // Absolute maximum 15 seconds
+    
     try {
       // Create abort controller for login timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         controller.abort();
         debugLog('Login request timed out after 8 seconds');
-      }, 8000); // Reduced from 10000 to 8000ms
+      }, 8000); // login timeout
       
       const loginPromise = login(email, password, userType, rememberMe);
       
@@ -88,8 +97,8 @@ export const useLoginSubmission = ({
         const profileController = new AbortController();
         const profileTimeoutId = setTimeout(() => {
           profileController.abort();
-          debugLog('Profile fetch timed out after 5 seconds');
-        }, 5000);
+          debugLog('Profile fetch timed out after 4 seconds');
+        }, 4000); // Reduced from 5s to 4s
         
         try {
           // Fetch user profile after successful login
@@ -183,8 +192,9 @@ export const useLoginSubmission = ({
       return false;
     } finally {
       setIsLoading(false);
+      clearTimeout(maxLoadingTimeout);
     }
-  }, [login, navigate, location.search, consecutiveErrors, onSuccess, onError, onVerificationRequired]);
+  }, [login, navigate, location.search, consecutiveErrors, onSuccess, onError, onVerificationRequired, isLoading]);
 
   return {
     isLoading,

@@ -1,28 +1,67 @@
 
 import { UserType } from '../contexts/auth/types';
 
+// Cache of resolved routes to avoid repeated calculations
+const routeCache: Record<string, string> = {};
+
 // Map user types to their primary landing URLs
 export const getUserHomePage = (userType: UserType | null): string => {
-  if (!userType) return '/';
+  const cacheKey = `home_${userType || 'null'}`;
   
-  return userType === 'developer' ? '/developer' : '/client';
+  if (routeCache[cacheKey]) {
+    return routeCache[cacheKey];
+  }
+  
+  let route = '/';
+  if (userType === 'developer') {
+    route = '/developer';
+  } else if (userType === 'client') {
+    route = '/client';
+  }
+  
+  routeCache[cacheKey] = route;
+  return route;
 };
 
 // Map specific dashboard routes
 export const getUserDashboardPage = (userType: UserType | null): string => {
-  if (!userType) return '/login';
+  const cacheKey = `dashboard_${userType || 'null'}`;
   
-  return userType === 'developer' ? '/developer/dashboard' : '/client/dashboard';
+  if (routeCache[cacheKey]) {
+    return routeCache[cacheKey];
+  }
+  
+  let route = '/login';
+  if (userType === 'developer') {
+    route = '/developer/dashboard';
+  } else if (userType === 'client') {
+    route = '/client/dashboard';
+  }
+  
+  routeCache[cacheKey] = route;
+  return route;
 };
 
 // Get the sessions history page for the user type
 export const getSessionsHistoryPage = (userType: UserType | null): string => {
-  if (!userType) return '/login';
+  const cacheKey = `sessions_${userType || 'null'}`;
   
-  return userType === 'developer' ? '/developer/sessions' : '/client/sessions';
+  if (routeCache[cacheKey]) {
+    return routeCache[cacheKey];
+  }
+  
+  let route = '/login';
+  if (userType === 'developer') {
+    route = '/developer/sessions';
+  } else if (userType === 'client') {
+    route = '/client/sessions';
+  }
+  
+  routeCache[cacheKey] = route;
+  return route;
 };
 
-// Check if current path belongs to user type
+// Check if current path belongs to user type - with performance optimization
 export const isCorrectUserPath = (
   path: string, 
   userType: UserType | null
@@ -32,8 +71,25 @@ export const isCorrectUserPath = (
   // Special case for root path - always allow
   if (path === '/') return true;
   
+  // Fast check for common routes
+  if (path === '/search' || path.startsWith('/product/') || path.startsWith('/developer-profiles/')) {
+    return true;
+  }
+  
   // Check if the path matches the user type prefix
   return userType === 'developer' 
     ? path.startsWith('/developer') 
     : path.startsWith('/client');
+};
+
+// Force navigation if needed (for critical redirects)
+export const performNavigation = (url: string): void => {
+  try {
+    // Use this for emergency navigation when normal router isn't working
+    window.location.href = url;
+  } catch (error) {
+    console.error('Navigation error:', error);
+    // Last resort - force reload to home
+    window.location.href = '/';
+  }
 };

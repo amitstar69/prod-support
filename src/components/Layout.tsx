@@ -11,15 +11,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   console.log('Layout component rendering');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pageReady, setPageReady] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   
   useEffect(() => {
     // Track page load status
     console.log('Layout mounting - setting up page');
+    console.time('layout-ready');
     
-    const timeoutId = setTimeout(() => {
+    const readyTimeoutId = setTimeout(() => {
       setPageReady(true);
       console.log('Layout ready - page fully loaded');
+      console.timeEnd('layout-ready');
     }, 100);
+    
+    // Add a timeout to prevent infinite loading
+    const loadingTimeoutId = setTimeout(() => {
+      if (!pageReady) {
+        console.warn('Layout loading timeout reached - forcing ready state');
+        setPageReady(true);
+        setLoadingTimeout(true);
+        toast.error("Page took too long to load. Some features may be limited.", {
+          duration: 5000,
+        });
+      }
+    }, 5000); // Maximum 5s loading time
     
     // Setup network status monitoring
     const handleOnline = () => {
@@ -36,14 +51,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     window.addEventListener('offline', handleOffline);
     
     return () => {
-      clearTimeout(timeoutId);
+      clearTimeout(readyTimeoutId);
+      clearTimeout(loadingTimeoutId);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       console.log('Layout unmounted');
     };
   }, []);
   
-  console.log('Layout render state', { pageReady });
+  console.log('Layout render state', { pageReady, loadingTimeout });
   
   if (!pageReady) {
     return (
@@ -63,6 +79,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {!isOnline && (
         <div className="bg-amber-500 text-white text-center py-1 px-2 text-sm">
           You are currently offline. Limited functionality available.
+        </div>
+      )}
+      
+      {loadingTimeout && (
+        <div className="bg-yellow-500 text-white text-center py-1 px-2 text-sm">
+          Page loaded with timeout. Some data might not be available.
         </div>
       )}
       
