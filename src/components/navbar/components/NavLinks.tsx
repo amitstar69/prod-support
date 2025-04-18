@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/auth';
@@ -37,12 +38,33 @@ const NavLink = ({ to, onClick, children, isMobile = false }: NavLinkProps) => {
 export const NavLinks = ({ isMobile = false, onLinkClick }: { isMobile?: boolean, onLinkClick?: () => void }) => {
   const { isAuthenticated, userType } = useAuth();
 
+  const renderDeveloperLinks = () => {
+    if (!isAuthenticated || userType !== 'developer') return null;
+    
+    return (
+      <>
+        <NavLink to="/developer" onClick={onLinkClick} isMobile={isMobile}>
+          Dashboard
+        </NavLink>
+        <NavLink to="/developer/tickets" onClick={onLinkClick} isMobile={isMobile}>
+          Gigs
+        </NavLink>
+        <NavLink to="/developer/applications" onClick={onLinkClick} isMobile={isMobile}>
+          Applications
+        </NavLink>
+        <NavLink to="/developer/profile" onClick={onLinkClick} isMobile={isMobile}>
+          Profile
+        </NavLink>
+      </>
+    );
+  };
+
   const renderClientLinks = () => {
     if (!isAuthenticated || userType !== 'client') return null;
     
     return (
       <>
-        <NavLink to="/client/dashboard" onClick={onLinkClick} isMobile={isMobile}>
+        <NavLink to="/client" onClick={onLinkClick} isMobile={isMobile}>
           Dashboard
         </NavLink>
         <NavLink to="/client/tickets" onClick={onLinkClick} isMobile={isMobile}>
@@ -56,27 +78,6 @@ export const NavLinks = ({ isMobile = false, onLinkClick }: { isMobile?: boolean
         </NavLink>
         <NavLink to="/client/sessions" onClick={onLinkClick} isMobile={isMobile}>
           Session History
-        </NavLink>
-      </>
-    );
-  };
-
-  const renderDeveloperLinks = () => {
-    if (!isAuthenticated || userType !== 'developer') return null;
-    
-    return (
-      <>
-        <NavLink to="/developer/dashboard" onClick={onLinkClick} isMobile={isMobile}>
-          Dashboard
-        </NavLink>
-        <NavLink to="/developer/tickets" onClick={onLinkClick} isMobile={isMobile}>
-          Gigs
-        </NavLink>
-        <NavLink to="/developer/applications" onClick={onLinkClick} isMobile={isMobile}>
-          Applications
-        </NavLink>
-        <NavLink to="/developer/profile" onClick={onLinkClick} isMobile={isMobile}>
-          Profile
         </NavLink>
       </>
     );

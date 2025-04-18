@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -237,7 +236,7 @@ const ClientProfile: React.FC = () => {
                   <p className="text-muted-foreground mb-4">No active sessions found</p>
                   <Button 
                     variant="outline" 
-                    onClick={() => navigate('/client/help')}
+                    onClick={() => navigate('/get-help')}
                   >
                     Request help
                   </Button>

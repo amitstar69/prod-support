@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
@@ -27,7 +28,6 @@ import DeveloperTicketDetail from './pages/DeveloperTicketDetail';
 import MyApplicationsPage from './pages/MyApplicationsPage';
 import VerificationSuccessPage from './pages/VerificationSuccessPage';
 import VerificationCanceledPage from './pages/VerificationCanceledPage';
-import ClientTicketsView from './pages/ClientTicketsView';
 
 import { AuthProvider, useAuth } from './contexts/auth';
 import { HelpRequestProvider } from './contexts/HelpRequestContext';
@@ -139,7 +139,7 @@ function App() {
             
             <Route path="/client/tickets" element={
               <ProtectedRoute requiredUserType="client">
-                <ClientTicketsView />
+                <ClientDashboard />
               </ProtectedRoute>
             } />
             

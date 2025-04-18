@@ -36,18 +36,14 @@ export const useLoginForm = () => {
   // Auth status hooks
   const { checkAuthStatus, handleResendVerification } = useAuthStatus();
   
-  // Submission logic with improved error handling
+  // Submission logic
   const {
     isLoading,
     handleLoginSubmit
   } = useLoginSubmission({
     login,
-    onError: (error) => {
-      console.log("Login error handled:", error);
-      setGeneralError(error);
-    },
+    onError: setGeneralError,
     onVerificationRequired: (email) => {
-      console.log("Verification required for:", email);
       setGeneralError('Please verify your email before logging in.');
     }
   });
@@ -62,7 +58,6 @@ export const useLoginForm = () => {
       return;
     }
     
-    console.log("Starting login submission with valid form data");
     await handleLoginSubmit(email, password, loginUserType, rememberMe, true);
   }, [email, password, loginUserType, rememberMe, clearErrors, validateForm, handleLoginSubmit]);
 

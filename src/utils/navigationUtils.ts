@@ -5,7 +5,7 @@ import { UserType } from '../contexts/auth/types';
 export const getUserHomePage = (userType: UserType | null): string => {
   if (!userType) return '/';
   
-  return userType === 'developer' ? '/developer/dashboard' : '/client/dashboard';
+  return userType === 'developer' ? '/developer' : '/client';
 };
 
 // Map specific dashboard routes
@@ -20,13 +20,6 @@ export const getSessionsHistoryPage = (userType: UserType | null): string => {
   if (!userType) return '/login';
   
   return userType === 'developer' ? '/developer/sessions' : '/client/sessions';
-};
-
-// Get the profile page for the user type
-export const getUserProfilePage = (userType: UserType | null): string => {
-  if (!userType) return '/login';
-  
-  return userType === 'developer' ? '/developer/profile' : '/client/profile';
 };
 
 // Check if current path belongs to user type

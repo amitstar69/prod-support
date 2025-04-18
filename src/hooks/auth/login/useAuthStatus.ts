@@ -1,81 +1,92 @@
 
 import { useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../../../integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const useAuthStatus = () => {
-  /**
-   * Check the current authentication status
-   * @returns Promise that resolves to a boolean indicating if user is authenticated
-   */
-  const checkAuthStatus = useCallback(async (): Promise<boolean> => {
+  const checkAuthStatus = useCallback(async () => {
     try {
-      // Create AbortController for timeout
+      // Add timeout handling for auth check
       const controller = new AbortController();
-      
-      // Set timeout to 5 seconds (reduced from standard 8s)
       const timeoutId = setTimeout(() => {
         controller.abort();
         console.warn('Auth status check timed out after 5 seconds');
       }, 5000);
       
-      // Get current session with timeout
-      const sessionPromise = supabase.auth.getSession();
-      const timeoutPromise = new Promise((_, reject) => {
+      // Create timeout promise
+      const timeoutPromise = new Promise<boolean>((resolve) => {
         controller.signal.addEventListener('abort', () => {
-          reject(new Error('Auth status check timed out'));
+          console.warn('Auth status check aborted due to timeout');
+          resolve(false); // Resolve as not authenticated on timeout
         });
       });
       
-      // Race between session fetch and timeout
-      const { data } = await Promise.race([
-        sessionPromise,
-        timeoutPromise,
-      ]) as { data: { session: any } };
+      // Create auth check promise
+      const authCheckPromise = new Promise<boolean>(async (resolve) => {
+        try {
+          const { data } = await supabase.auth.getSession();
+          console.log('Current auth status:', { session: data.session });
+          resolve(!!data.session);
+        } catch (error) {
+          console.error('Error checking auth status:', error);
+          resolve(false);
+        }
+      });
       
+      // Race between auth check and timeout
+      const result = await Promise.race([authCheckPromise, timeoutPromise]);
       clearTimeout(timeoutId);
-      return !!data.session;
+      return result;
     } catch (error) {
-      console.warn('Auth status check aborted due to timeout');
-      // If timed out or failed, assume not authenticated for safety
+      console.error('Error checking auth status:', error);
       return false;
     }
   }, []);
 
-  /**
-   * Resend verification email to user
-   * @param email The email address to send verification to
-   * @returns Promise that resolves when the verification is sent
-   */
   const handleResendVerification = useCallback(async (email: string) => {
     if (!email) {
-      throw new Error('Email is required to resend verification');
+      throw new Error('Please enter your email address first');
     }
     
     try {
-      // Add timeout to avoid hanging
+      // Add timeout handling
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.warn('Resend verification timed out after 8 seconds');
+      }, 8000);
       
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email,
-        options: {
-          emailRedirectTo: window.location.origin + '/email-confirmed',
-        }
+      // Create timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        controller.signal.addEventListener('abort', () => {
+          reject(new Error('Request timed out. Please try again.'));
+        });
       });
       
+      // Create resend promise
+      const resendPromise = supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      });
+      
+      // Race between resend and timeout
+      const { error } = await Promise.race([resendPromise, timeoutPromise]) as {error: any};
       clearTimeout(timeoutId);
       
       if (error) {
         console.error('Error resending verification:', error);
+        toast.error(`Failed to resend: ${error.message}`);
         throw error;
       }
       
-      return true;
+      toast.success('Verification email sent! Please check your inbox.');
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        throw new Error('Verification request timed out. Please try again.');
+      console.error('Error in resend verification:', error);
+      if (error.name === 'AbortError' || error.message?.includes('timed out')) {
+        toast.error('Request timed out. Please check your internet connection.');
+        throw new Error('Request timed out. Please try again.');
       }
+      toast.error('Failed to resend verification email');
       throw error;
     }
   }, []);
