@@ -1,3 +1,4 @@
+
 import { supabase } from '../../integrations/supabase/client';
 import { AuthError } from '@supabase/supabase-js';
 import { toast } from 'sonner';
@@ -130,6 +131,8 @@ export const loginWithEmailAndPassword = async (
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
     
+    let authData;
+    
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -138,6 +141,8 @@ export const loginWithEmailAndPassword = async (
       
       clearTimeout(timeoutId);
       console.timeEnd('auth-signin');
+      
+      authData = data; // Store the data in an accessible variable
 
       if (error) {
         recordLoginAttempt(email, false);
@@ -164,7 +169,7 @@ export const loginWithEmailAndPassword = async (
         };
       }
 
-      if (!data.user) {
+      if (!authData.user) {
         recordLoginAttempt(email, false);
         console.error('No user returned after login');
         return {
@@ -173,7 +178,7 @@ export const loginWithEmailAndPassword = async (
         };
       }
       
-      if (data.user.email_confirmed_at === null) {
+      if (authData.user.email_confirmed_at === null) {
         recordLoginAttempt(email, false);
         console.log('User email is not verified');
         await supabase.auth.signOut();
@@ -196,7 +201,7 @@ export const loginWithEmailAndPassword = async (
       throw error;
     }
 
-    const userId = data.user.id;
+    const userId = authData.user.id;
     const cachedProfile = profileCache.get(userId);
     const now = Date.now();
     
