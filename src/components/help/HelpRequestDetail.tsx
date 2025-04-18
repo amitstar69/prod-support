@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -17,12 +16,14 @@ import {
   ClipboardCheck, 
   UserCheck, 
   ThumbsUp, 
-  CheckCircle 
+  CheckCircle,
+  Loader2
 } from 'lucide-react';
 import CancelHelpRequestDialog from './CancelHelpRequestDialog';
 import HelpRequestHistoryDialog from './HelpRequestHistoryDialog';
 import ClientReviewDialog from './ClientReviewDialog';
 import { useAuth } from '../../contexts/auth';
+import { supabase } from '../../integrations/supabase/client';
 
 const HelpRequestDetail: React.FC = () => {
   const { requestId } = useParams<{ requestId: string }>();
@@ -36,9 +37,55 @@ const HelpRequestDetail: React.FC = () => {
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   
   useEffect(() => {
-    if (requestId) {
-      fetchHelpRequest(requestId);
-    }
+    if (!requestId) return;
+    
+    const channel = supabase
+      .channel(`request-updates-${requestId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', 
+          schema: 'public',
+          table: 'help_requests',
+          filter: `id=eq.${requestId}`
+        },
+        (payload) => {
+          console.log('Help request updated:', payload);
+          fetchHelpRequest(requestId);
+          
+          if (payload.new && payload.old && payload.new.status !== payload.old.status) {
+            const newStatus = payload.new.status;
+            
+            let message = '';
+            let description = '';
+            
+            switch(newStatus) {
+              case 'in-progress':
+                message = 'Developer is working on your request';
+                description = 'The developer has started work on your ticket';
+                break;
+              case 'developer-qa':
+                message = 'Developer is reviewing their work';
+                description = 'The developer has completed work and is reviewing it';
+                break;
+              case 'client-review':
+                message = 'Your review is needed';
+                description = 'The developer has completed work and awaits your review';
+                toast.info(message, { description });
+                break;
+            }
+            
+            if (message) {
+              toast.info(message, { description });
+            }
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [requestId]);
   
   const fetchHelpRequest = async (id: string) => {
@@ -69,7 +116,6 @@ const HelpRequestDetail: React.FC = () => {
   };
   
   const handleEditRequest = () => {
-    // Navigate to edit page or show edit dialog
     toast.info('Edit functionality will be implemented soon');
   };
   
@@ -81,11 +127,11 @@ const HelpRequestDetail: React.FC = () => {
     if (!helpRequest || !requestId) return;
     
     try {
-      const { error } = await updateHelpRequest(requestId, {
+      const { success, error } = await updateHelpRequest(requestId, {
         status: 'completed'
       });
       
-      if (error) {
+      if (!success) {
         toast.error('Failed to complete the request');
         return;
       }
@@ -94,6 +140,27 @@ const HelpRequestDetail: React.FC = () => {
       fetchHelpRequest(requestId);
     } catch (error) {
       console.error('Error completing request:', error);
+      toast.error('An error occurred');
+    }
+  };
+  
+  const handleApproveWork = async () => {
+    if (!helpRequest || !requestId) return;
+    
+    try {
+      const { success, error } = await updateHelpRequest(requestId, {
+        status: 'client-approved'
+      });
+      
+      if (!success) {
+        toast.error('Failed to approve the work');
+        return;
+      }
+      
+      toast.success('Work approved! The request will be marked as completed soon.');
+      fetchHelpRequest(requestId);
+    } catch (error) {
+      console.error('Error approving work:', error);
       toast.error('An error occurred');
     }
   };
@@ -142,7 +209,8 @@ const HelpRequestDetail: React.FC = () => {
   
   const canCancel = ['open', 'pending', 'matching'].includes(helpRequest.status);
   const canEdit = ['open', 'pending', 'matching'].includes(helpRequest.status);
-  const canReview = helpRequest.status === 'developer-qa' && userType === 'client';
+  const canReview = helpRequest.status === 'client-review' && userType === 'client';
+  const canApprove = helpRequest.status === 'client-review' && userType === 'client';
   const canComplete = helpRequest.status === 'client-approved' && (userType === 'client' || userType === 'admin' as string);
   const isCancelled = helpRequest.status === 'cancelled';
   const isCompleted = helpRequest.status === 'completed';
@@ -311,6 +379,17 @@ const HelpRequestDetail: React.FC = () => {
               </Button>
             )}
             
+            {canApprove && (
+              <Button 
+                variant="default" 
+                onClick={handleApproveWork}
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+              >
+                <ThumbsUp className="h-4 w-4" />
+                Approve Work
+              </Button>
+            )}
+            
             {canComplete && (
               <Button 
                 variant="default" 
@@ -336,7 +415,6 @@ const HelpRequestDetail: React.FC = () => {
         </CardFooter>
       </Card>
       
-      {/* Cancel Dialog */}
       <CancelHelpRequestDialog 
         isOpen={showCancelDialog}
         onClose={() => setShowCancelDialog(false)}
@@ -345,7 +423,6 @@ const HelpRequestDetail: React.FC = () => {
         onRequestCancelled={handleRequestCancelled}
       />
       
-      {/* History Dialog */}
       <HelpRequestHistoryDialog
         isOpen={showHistoryDialog}
         onClose={() => setShowHistoryDialog(false)}
@@ -353,7 +430,6 @@ const HelpRequestDetail: React.FC = () => {
         requestTitle={helpRequest.title}
       />
       
-      {/* Client Review Dialog */}
       <ClientReviewDialog 
         isOpen={showReviewDialog}
         onClose={() => setShowReviewDialog(false)}
