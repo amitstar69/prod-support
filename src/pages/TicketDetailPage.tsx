@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -18,12 +19,18 @@ const TicketDetailPage = () => {
     const fetchTicketDetails = async () => {
       if (!ticketId) return;
       
+      setIsLoading(true);
       const response = await getHelpRequest(ticketId);
+      setIsLoading(false);
       
       if (isApiSuccess(response)) {
         setTicket(response.data);
       } else if (isApiError(response)) {
-        toast.error(response.error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: response.error || "Failed to load ticket details",
+        });
         navigate('/tickets');
       }
     };
@@ -42,7 +49,7 @@ const TicketDetailPage = () => {
     );
   }
 
-  if (!ticket) {
+  if (isLoading) {
     return (
       <Layout>
         <div className="container mx-auto py-8">
@@ -60,7 +67,6 @@ const TicketDetailPage = () => {
         {ticket && (
           <HelpRequestDetail
             ticket={ticket}
-            ticketId={ticketId}
             onUpdate={(updatedTicket: HelpRequest) => {
               setTicket(updatedTicket);
             }}

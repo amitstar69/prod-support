@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { useNavigate, Route, Routes } from 'react-router-dom';
+import { useNavigate, Route, Routes, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import HelpRequestForm from '../components/help/HelpRequestForm';
 import HelpRequestSuccess from '../components/help/HelpRequestSuccess';
@@ -8,6 +8,15 @@ import HelpRequestsTracking from '../components/help/HelpRequestsTracking';
 import HelpRequestDetail from '../components/help/HelpRequestDetail';
 import { ArrowLeft } from 'lucide-react';
 import { initEmergencyRecovery } from '../utils/emergencyRecovery';
+
+// Create a wrapper component for the request detail route
+const HelpRequestDetailWrapper = () => {
+  const { requestId } = useParams<{ requestId: string }>();
+  
+  return (
+    <HelpRequestDetail ticketId={requestId} />
+  );
+};
 
 const GetHelpPage: React.FC = () => {
   const navigate = useNavigate();
@@ -73,7 +82,7 @@ const GetHelpPage: React.FC = () => {
           <Route index element={<HelpRequestForm />} />
           <Route path="success" element={<HelpRequestSuccess />} />
           <Route path="tracking" element={<HelpRequestsTracking />} />
-          <Route path="request/:requestId" element={<HelpRequestDetail />} />
+          <Route path="request/:requestId" element={<HelpRequestDetailWrapper />} />
         </Routes>
       </div>
     </Layout>

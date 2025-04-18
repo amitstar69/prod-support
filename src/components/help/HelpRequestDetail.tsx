@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Badge } from '../ui/badge';
@@ -18,50 +19,80 @@ import { Input } from '../ui/input';
 import { isApiSuccess, isApiError } from '../../types/api';
 
 interface HelpRequestDetailProps {
-  ticket: HelpRequest;
+  ticket?: HelpRequest;
+  ticketId?: string;
   onUpdate?: (updatedTicket: HelpRequest) => void;
 }
 
 const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({ 
   ticket,
+  ticketId,
   onUpdate
 }) => {
-  const [developerQANotes, setDeveloperQANotes] = useState<string>(ticket.developer_qa_notes || '');
-  const [clientFeedback, setClientFeedback] = useState<string>(ticket.client_feedback || '');
+  // Skip if no ticket is provided
+  if (!ticket && !ticketId) {
+    return <div>No ticket information available.</div>;
+  }
+
+  const [developerQANotes, setDeveloperQANotes] = useState<string>(ticket?.developer_qa_notes || '');
+  const [clientFeedback, setClientFeedback] = useState<string>(ticket?.client_feedback || '');
   const [isSaving, setIsSaving] = useState(false);
-  const ticketId = ticket.id || '';
+  const currentTicketId = ticket?.id || ticketId || '';
 
   const handleStatusUpdate = async (newStatus: string) => {
-    const response = await updateHelpRequest(ticketId, { status: newStatus });
+    const response = await updateHelpRequest(currentTicketId, { status: newStatus });
     
     if (isApiSuccess(response)) {
       onUpdate?.(response.data);
-      toast.success('Status updated successfully');
+      toast({
+        title: "Success",
+        description: "Status updated successfully",
+      });
     } else if (isApiError(response)) {
-      toast.error(response.error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: response.error || "Failed to update status",
+      });
     }
   };
 
   const handleSaveNotes = async () => {
     setIsSaving(true);
     try {
-      const response = await updateHelpRequest(ticketId, { 
+      const response = await updateHelpRequest(currentTicketId, { 
         developer_qa_notes: developerQANotes,
         client_feedback: clientFeedback
       });
       
       if (isApiSuccess(response)) {
         onUpdate?.(response.data);
-        toast.success('Notes saved successfully');
+        toast({
+          title: "Success",
+          description: "Notes saved successfully",
+        });
       } else if (isApiError(response)) {
-        toast.error(response.error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: response.error || "Failed to save notes",
+        });
       }
     } catch (error) {
-      toast.error('Failed to save notes');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred",
+      });
     } finally {
       setIsSaving(false);
     }
   };
+
+  // If we only have ticketId but no ticket data, show loading or fetch the ticket
+  if (!ticket) {
+    return <div>Loading ticket information...</div>;
+  }
 
   return (
     <Card className="w-full">
