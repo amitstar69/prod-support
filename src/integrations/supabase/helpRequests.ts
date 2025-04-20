@@ -1,4 +1,3 @@
-
 import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
 import { 
   createHelpRequest,
@@ -35,6 +34,32 @@ export const getHelpRequestHistory = async (requestId: string) => {
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error fetching history' 
+    };
+  }
+};
+
+// Check if help request exists (ignoring RLS)
+export const checkHelpRequestExists = async (requestId: string) => {
+  try {
+    if (!requestId) {
+      return { success: false, error: 'Request ID is required' };
+    }
+    
+    const { data, error } = await supabase.rpc('check_help_request_exists', {
+      request_id: requestId
+    });
+    
+    if (error) {
+      console.error('Error checking help request existence:', error);
+      return { success: false, error: error.message };
+    }
+    
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception checking help request existence:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error checking request existence' 
     };
   }
 };

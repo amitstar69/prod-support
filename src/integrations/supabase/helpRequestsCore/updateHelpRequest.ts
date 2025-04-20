@@ -1,4 +1,3 @@
-
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
@@ -26,6 +25,9 @@ export const updateHelpRequest = async (
   userType: 'client' | 'developer'
 ) => {
   try {
+    console.log(`[updateHelpRequest] Starting update for requestId: ${requestId}, userType: ${userType}`);
+    console.log('[updateHelpRequest] Updates:', JSON.stringify(updates));
+
     if (isLocalId(requestId)) {
       const localHelpRequests = getLocalHelpRequests();
       const requestIndex = localHelpRequests.findIndex(
@@ -33,6 +35,7 @@ export const updateHelpRequest = async (
       );
 
       if (requestIndex === -1) {
+        console.error(`[updateHelpRequest] Help request not found in local storage: ${requestId}`);
         return { success: false, error: 'Help request not found in local storage' };
       }
 
@@ -45,32 +48,85 @@ export const updateHelpRequest = async (
       localHelpRequests[requestIndex] = updatedRequest;
       saveLocalHelpRequests(localHelpRequests);
 
+      console.log('[updateHelpRequest] Successfully updated local storage request');
       return { success: true, data: updatedRequest, storageMethod: 'localStorage' };
     }
 
     if (isValidUUID(requestId)) {
+      console.log(`[updateHelpRequest] Valid UUID detected: ${requestId}`);
+
       if (updates.status) {
+        console.log(`[updateHelpRequest] Status update requested: ${updates.status}`);
+        
         const { data: currentRequest, error: fetchError } = await supabase
           .from('help_requests')
-          .select('status')
+          .select('status, client_id')
           .eq('id', requestId)
           .maybeSingle();
 
         if (fetchError) {
-          console.error('Error fetching current help request:', fetchError);
-          return { success: false, error: 'Failed to validate status transition' };
+          console.error('[updateHelpRequest] Error fetching current help request:', fetchError);
+          return { success: false, error: `Failed to validate status transition: ${fetchError.message}` };
         }
 
         if (!currentRequest) {
-          return { success: false, error: 'Help request not found' };
+          console.error(`[updateHelpRequest] Help request not found or insufficient permissions: ${requestId}`);
+          
+          const { data: user } = await supabase.auth.getUser();
+          console.log('[updateHelpRequest] Current user:', user?.id);
+          
+          const { data: requestExists, error: checkError } = await supabase
+            .rpc('check_help_request_exists', { request_id: requestId });
+            
+          console.log('[updateHelpRequest] Request exists check:', requestExists, checkError);
+          
+          return { 
+            success: false, 
+            error: `Help request not found or you don't have permission to update it.`
+          };
+        }
+
+        console.log('[updateHelpRequest] Found current request:', currentRequest);
+
+        if (userType === 'developer') {
+          const { data: matchData, error: matchError } = await supabase
+            .from('help_request_matches')
+            .select('status')
+            .eq('request_id', requestId)
+            .eq('developer_id', (await supabase.auth.getUser()).data.user?.id)
+            .maybeSingle();
+            
+          console.log('[updateHelpRequest] Developer match check:', matchData, matchError);
+            
+          if (matchError || !matchData) {
+            console.error('[updateHelpRequest] Developer not matched with this request:', matchError);
+            return { 
+              success: false, 
+              error: `You are not assigned to this help request or the match status is pending.` 
+            };
+          }
+        }
+        
+        if (userType === 'client') {
+          const currentUserId = (await supabase.auth.getUser()).data.user?.id;
+          if (currentRequest.client_id !== currentUserId) {
+            console.error(`[updateHelpRequest] Client ${currentUserId} does not own request ${requestId}`);
+            return { 
+              success: false, 
+              error: 'You do not have permission to update this help request' 
+            };
+          }
         }
 
         if (!isValidStatusTransition(currentRequest.status, updates.status, userType)) {
+          console.error(`[updateHelpRequest] Invalid status transition from ${currentRequest.status} to ${updates.status} by ${userType}`);
           return { 
             success: false, 
             error: `Invalid status transition from ${currentRequest.status} to ${updates.status}` 
           };
         }
+        
+        console.log(`[updateHelpRequest] Status transition validated: ${currentRequest.status} -> ${updates.status}`);
       }
 
       const now = new Date().toISOString();
@@ -92,6 +148,7 @@ export const updateHelpRequest = async (
         }
       }
 
+      console.log('[updateHelpRequest] Sending update to Supabase:', updates);
       const { data, error } = await supabase
         .from('help_requests')
         .update({
@@ -103,37 +160,50 @@ export const updateHelpRequest = async (
         .maybeSingle();
         
       if (error) {
-        console.error('Error updating help request in Supabase:', error);
-        return { success: false, error: error.message };
+        console.error('[updateHelpRequest] Error updating help request in Supabase:', error);
+        return { success: false, error: `Database update failed: ${error.message}` };
       }
 
       if (!data) {
-        return { success: false, error: 'Help request not found' };
+        console.error('[updateHelpRequest] No data returned after update');
+        return { success: false, error: 'Help request not found or update failed' };
       }
       
+      console.log('[updateHelpRequest] Update successful, data:', data);
+      
       if (updates.status) {
-        const currentUserId = supabase.auth.getUser().then(res => res.data.user?.id) || 'anonymous';
-        
-        const historyEntry = {
-          help_request_id: requestId,
-          change_type: 'STATUS_CHANGE',
-          previous_status: data.status !== updates.status ? data.status : null,
-          new_status: updates.status,
-          changed_by: await currentUserId,
-          change_details: {
-            updated_by_type: userType,
-            timestamp: now
-          }
-        };
+        try {
+          const currentUserId = (await supabase.auth.getUser()).data.user?.id;
+          
+          const historyEntry = {
+            help_request_id: requestId,
+            change_type: 'STATUS_CHANGE',
+            previous_status: data.status !== updates.status ? data.status : null,
+            new_status: updates.status,
+            changed_by: currentUserId,
+            change_details: {
+              updated_by_type: userType,
+              timestamp: now
+            }
+          };
 
-        await supabase
-          .from('help_request_history')
-          .insert(historyEntry);
+          console.log('[updateHelpRequest] Creating history entry:', historyEntry);
+          const { error: historyError } = await supabase
+            .from('help_request_history')
+            .insert(historyEntry);
+            
+          if (historyError) {
+            console.error('[updateHelpRequest] Error creating history entry:', historyError);
+          }
+        } catch (historyError) {
+          console.error('[updateHelpRequest] Exception in history creation:', historyError);
+        }
       }
       
       return { success: true, data, storageMethod: 'Supabase' };
     }
     
+    console.error(`[updateHelpRequest] Invalid help request ID format: ${requestId}`);
     return { success: false, error: 'Invalid help request ID format' };
     
   } catch (error) {

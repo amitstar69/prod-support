@@ -6,17 +6,21 @@ import {
   ClipboardCheck, 
   UserCheck, 
   ThumbsUp, 
-  CheckCircle
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react';
+import { Alert, AlertDescription } from '../ui/alert';
 
 interface RequestStatusFlowProps {
   currentStatus: string;
   userType?: 'client' | 'developer';
+  error?: string | null;
 }
 
 const RequestStatusFlow: React.FC<RequestStatusFlowProps> = ({ 
   currentStatus,
-  userType = 'client'
+  userType = 'client',
+  error = null
 }) => {
   // Define the statuses in the flow with roles that can trigger them
   const statuses = [
@@ -66,6 +70,15 @@ const RequestStatusFlow: React.FC<RequestStatusFlowProps> = ({
 
   // For waiting statuses
   const waitingStatuses = ['open', 'pending', 'matching', 'scheduled'];
+  
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4 mr-2" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
   
   if (waitingStatuses.includes(currentStatus)) {
     return (

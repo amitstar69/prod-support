@@ -607,6 +607,22 @@ const DeveloperTicketDetail: React.FC = () => {
                 </CardContent>
               </Card>
             )}
+            
+            {userType === 'client' && ['client-review', 'completed'].includes(ticket?.status || '') && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Review Work</CardTitle>
+                  <CardDescription>Review and approve the work or request changes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ClientStatusUpdate 
+                    ticketId={ticketId || ''}
+                    currentStatus={ticket?.status || ''}
+                    onStatusUpdated={fetchLatestTicketData}
+                  />
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

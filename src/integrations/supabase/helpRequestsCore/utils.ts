@@ -1,4 +1,3 @@
-
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 
@@ -38,4 +37,21 @@ export const handleError = (error: any, customMessage: string = 'Unknown error')
     success: false, 
     error: error instanceof Error ? error.message : customMessage 
   };
+};
+
+/**
+ * Checks if a help request exists in Supabase regardless of RLS
+ * This is used for debugging purposes
+ */
+export const checkHelpRequestExists = async (requestId: string) => {
+  try {
+    const { data, error } = await supabase.rpc('check_help_request_exists', { 
+      request_id: requestId 
+    });
+    
+    return { data, error };
+  } catch (error) {
+    console.error('Error checking if help request exists:', error);
+    return { data: false, error };
+  }
 };

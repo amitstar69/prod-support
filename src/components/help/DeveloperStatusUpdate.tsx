@@ -9,8 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { Loader2, CheckCircle2, ArrowRightCircle, ClipboardCheck, UserCheck } from 'lucide-react';
+import { Loader2, CheckCircle2, ArrowRightCircle, ClipboardCheck, UserCheck, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
+import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
 interface DeveloperStatusUpdateProps {
   ticketId: string;
@@ -25,6 +26,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
 }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>(currentStatus);
+  const [error, setError] = useState<string | null>(null);
   const { userType } = useAuth();
 
   const getNextStatus = (current: string): string => {
@@ -69,7 +71,11 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     }
 
     setIsUpdating(true);
+    setError(null);
+    
     try {
+      console.log(`Updating ticket ${ticketId} status to ${selectedStatus}`);
+      
       const response = await updateHelpRequest(
         ticketId,
         { status: selectedStatus },
@@ -80,10 +86,13 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
         toast.success(`Ticket status updated to ${selectedStatus}`);
         onStatusUpdated();
       } else {
+        setError(response.error || 'Failed to update status');
         toast.error(response.error || 'Failed to update status');
       }
     } catch (error) {
       console.error('Error updating ticket status:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      setError(errorMessage);
       toast.error('An error occurred while updating the status');
     } finally {
       setIsUpdating(false);
@@ -94,8 +103,11 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     const nextStatus = getNextStatus(currentStatus);
     setSelectedStatus(nextStatus);
     setIsUpdating(true);
+    setError(null);
     
     try {
+      console.log(`Quick updating ticket ${ticketId} status to ${nextStatus}`);
+      
       const response = await updateHelpRequest(
         ticketId,
         { status: nextStatus },
@@ -106,10 +118,13 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
         toast.success(`Ticket status updated to ${nextStatus}`);
         onStatusUpdated();
       } else {
+        setError(response.error || 'Failed to update status');
         toast.error(response.error || 'Failed to update status');
       }
     } catch (error) {
       console.error('Error updating ticket status:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      setError(errorMessage);
       toast.error('An error occurred while updating the status');
     } finally {
       setIsUpdating(false);
@@ -150,6 +165,14 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
 
   return (
     <div className="space-y-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
       <div className="flex flex-col sm:flex-row gap-2">
         <Button
           onClick={handleQuickUpdate}
