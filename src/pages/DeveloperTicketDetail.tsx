@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -511,28 +510,24 @@ const DeveloperTicketDetail: React.FC = () => {
           </div>
           
           <div>
-            {isApproved || isInProgress ? (
-              // Show status update card for approved tickets
+            {(isApproved || isInProgress) ? (
+              // Show status update card for approved/in-progress tickets
               <Card className="mb-6">
                 <CardHeader>
-                  <CardTitle>Update Status</CardTitle>
-                  <CardDescription>Track your progress on this ticket</CardDescription>
+                  <CardTitle>Status & Progress</CardTitle>
+                  <CardDescription>
+                    {ticket.status &&
+                      `Current: ${getStatusLabel(ticket.status)}`
+                    }
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {shouldShowStatusUpdate ? (
-                    <DeveloperStatusUpdate 
-                      ticketId={ticketId || ''}
-                      currentStatus={ticket?.status || ''}
-                      onStatusUpdated={fetchLatestTicketData}
-                    />
-                  ) : (
-                    <Alert>
-                      <AlertTitle>Status Locked</AlertTitle>
-                      <AlertDescription>
-                        You don't have permission to update the status of this ticket.
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                  {/* Always show DeveloperStatusUpdate if developer is assigned (approved), and the ticket is in an editable state */}
+                  <DeveloperStatusUpdate
+                    ticketId={ticketId || ''}
+                    currentStatus={ticket?.status || ''}
+                    onStatusUpdated={fetchLatestTicketData}
+                  />
                 </CardContent>
               </Card>
             ) : !hasApplied ? (
