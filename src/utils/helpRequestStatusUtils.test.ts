@@ -2,7 +2,7 @@
 import {
   isValidStatusTransition,
   getNextStatus,
-  getAllowedActions,
+  getAllowedStatusTransitions,
   STATUSES
 } from './helpRequestStatusUtils';
 
@@ -39,19 +39,19 @@ describe('Help Request Status Utilities', () => {
     });
   });
 
-  describe('getAllowedActions', () => {
-    it('returns correct actions for developers', () => {
-      const devInProgressActions = getAllowedActions('in-progress', 'developer');
-      expect(devInProgressActions).toContain('developer-qa');
+  describe('getAllowedStatusTransitions', () => {
+    it('returns correct transitions for developers', () => {
+      const devInProgressTransitions = getAllowedStatusTransitions('in-progress', 'developer');
+      expect(devInProgressTransitions).toContain('developer-qa');
       
-      const devQAActions = getAllowedActions('developer-qa', 'developer');
-      expect(devQAActions).toContain('client-review');
+      const devQATransitions = getAllowedStatusTransitions('developer-qa', 'developer');
+      expect(devQATransitions).toContain('client-review');
     });
 
-    it('returns correct actions for clients', () => {
-      const clientReviewActions = getAllowedActions('client-review', 'client');
-      expect(clientReviewActions).toContain('client-approved');
-      expect(clientReviewActions).toContain('in-progress');
+    it('returns correct transitions for clients', () => {
+      const clientReviewTransitions = getAllowedStatusTransitions('client-review', 'client');
+      expect(clientReviewTransitions).toContain('client-approved');
+      expect(clientReviewTransitions).toContain('in-progress');
     });
   });
 });
