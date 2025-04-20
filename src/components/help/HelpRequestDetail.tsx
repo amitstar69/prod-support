@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { toast } from '../ui/use-toast';
-import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
 import {
   Card,
   CardContent,
@@ -12,12 +10,14 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "../ui/card";
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Input } from '../ui/input';
-import { isApiSuccess, isApiError } from '../../types/api';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
+import { NotesSection } from './request-detail/NotesSection';
+import { useHelpRequestActions } from '../../hooks/help-request/useHelpRequestActions';
+import { Loader2 } from 'lucide-react';
 
 interface HelpRequestDetailProps {
   ticket?: HelpRequest;
@@ -44,42 +44,18 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
 
   const [developerQANotes, setDeveloperQANotes] = useState<string>(ticket?.developer_qa_notes || '');
   const [clientFeedback, setClientFeedback] = useState<string>(ticket?.client_feedback || '');
-  const [isSaving, setIsSaving] = useState(false);
+  
   const currentTicketId = ticket?.id || ticketId || '';
-
-  const handleStatusUpdate = async (newStatus: string) => {
-    const response = await updateHelpRequest(currentTicketId, { status: newStatus });
-    
-    if (isApiSuccess(response)) {
-      onUpdate?.(response.data);
-      toast("Status updated successfully");
-    } else if (isApiError(response)) {
-      toast(response.error || "Failed to update status");
-    }
-  };
+  const { isSaving, updateStatus, saveNotes } = useHelpRequestActions(currentTicketId, onUpdate);
 
   const handleSaveNotes = async () => {
-    setIsSaving(true);
-    try {
-      const response = await updateHelpRequest(currentTicketId, { 
-        developer_qa_notes: developerQANotes,
-        client_feedback: clientFeedback
-      });
-      
-      if (isApiSuccess(response)) {
-        onUpdate?.(response.data);
-        toast("Notes saved successfully");
-      } else if (isApiError(response)) {
-        toast(response.error || "Failed to save notes");
-      }
-    } catch (error) {
-      toast("An unexpected error occurred");
-    } finally {
-      setIsSaving(false);
-    }
+    await saveNotes({
+      developer_qa_notes: developerQANotes,
+      client_feedback: clientFeedback
+    });
   };
 
-  // If we only have ticketId but no ticket data, show loading or fetch the ticket
+  // If we only have ticketId but no ticket data, show loading
   if (!ticket) {
     return (
       <div className="p-4">
@@ -97,7 +73,9 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
         <CardTitle>{ticket.title}</CardTitle>
         <CardDescription>Ticket Number: {ticket.ticket_number}</CardDescription>
       </CardHeader>
+      
       <CardContent className="grid gap-4">
+        {/* Basic Information */}
         <div className="grid gap-2">
           <Label htmlFor="description">Description</Label>
           <Textarea
@@ -107,6 +85,8 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
             className="resize-none"
           />
         </div>
+
+        {/* Technical Details */}
         <div className="grid gap-2">
           <Label htmlFor="technicalArea">Technical Area</Label>
           <Input
@@ -115,14 +95,8 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
             readOnly
           />
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="urgency">Urgency</Label>
-          <Input
-            id="urgency"
-            value={ticket.urgency || ''}
-            readOnly
-          />
-        </div>
+
+        {/* Status and Metadata */}
         <div className="grid gap-2">
           <Label htmlFor="status">Status</Label>
           <div className="flex items-center space-x-2">
@@ -135,36 +109,22 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
           </div>
         </div>
 
-        {/* Developer QA Notes Section */}
-        <div className="grid gap-2">
-          <Label htmlFor="developerQANotes">Developer QA Notes</Label>
-          <Textarea
-            id="developerQANotes"
-            placeholder="Add your QA notes here..."
-            value={developerQANotes}
-            onChange={(e) => setDeveloperQANotes(e.target.value)}
-            className="resize-none"
-          />
-        </div>
-
-        {/* Client Feedback Section */}
-        <div className="grid gap-2">
-          <Label htmlFor="clientFeedback">Client Feedback</Label>
-          <Textarea
-            id="clientFeedback"
-            placeholder="Enter client feedback here..."
-            value={clientFeedback}
-            onChange={(e) => setClientFeedback(e.target.value)}
-            className="resize-none"
-          />
-        </div>
+        {/* Notes Section */}
+        <NotesSection 
+          developerQANotes={developerQANotes}
+          clientFeedback={clientFeedback}
+          onDeveloperNotesChange={setDeveloperQANotes}
+          onClientFeedbackChange={setClientFeedback}
+        />
       </CardContent>
+
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={() => handleStatusUpdate('resolved')}>
+        <Button variant="outline" onClick={() => updateStatus('resolved')}>
           Mark as Resolved
         </Button>
         <Button onClick={handleSaveNotes} disabled={isSaving}>
-          {isSaving ? 'Saving...' : 'Save Notes'}
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Notes
         </Button>
       </CardFooter>
     </Card>
