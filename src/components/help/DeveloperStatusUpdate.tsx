@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
 import { Button } from '../ui/button';
@@ -35,16 +34,65 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>(currentStatus);
   const [error, setError] = useState<string | null>(null);
-  const { userType } = useAuth();
+  const { userType, userId } = useAuth();
   const [availableStatuses, setAvailableStatuses] = useState<Array<{value: string, label: string}>>([]);
   const [nextStatus, setNextStatus] = useState<string | null>(null);
 
-  // Get available statuses based on current status for the developer
+  useEffect(() => {
+    const logDebugInfo = async () => {
+      if (!currentStatus || !ticketId) return;
+      
+      console.log("DeveloperStatusUpdate debug info:");
+      console.log("- Current status:", currentStatus);
+      console.log("- Current user type:", userType);
+      console.log("- Current user ID:", userId);
+      
+      try {
+        // Check if developer is matched with this request
+        const { data: matchData } = await supabase
+          .from('help_request_matches')
+          .select('status')
+          .eq('request_id', ticketId)
+          .eq('developer_id', userId)
+          .maybeSingle();
+          
+        console.log("- Developer match status:", matchData?.status || "No match found");
+      } catch (error) {
+        console.error("Error checking match status:", error);
+      }
+    };
+    
+    logDebugInfo();
+  }, [currentStatus, ticketId, userType, userId]);
+
   useEffect(() => {
     if (!currentStatus || userType !== 'developer') return;
     
-    // Get allowed transitions
-    const allowedTransitions = getAllowedStatusTransitions(currentStatus, 'developer');
+    console.log("Getting available transitions for status:", currentStatus);
+    
+    // Define manual transitions based on current status
+    let allowedTransitions: string[] = [];
+    
+    // Hardcoded status transitions to ensure they work properly
+    switch (currentStatus) {
+      case 'approved':
+        allowedTransitions = ['in_progress'];
+        break;
+      case 'in_progress':
+        allowedTransitions = ['ready_for_qa'];
+        break;
+      case 'ready_for_qa':
+        // No transitions from here, this is handled by the QA dialog
+        allowedTransitions = [];
+        break;
+      case 'pending_match':
+        allowedTransitions = ['dev_requested'];
+        break;
+      default:
+        // Try to use the helper function as fallback
+        allowedTransitions = getAllowedStatusTransitions(currentStatus, 'developer');
+    }
+    
     console.log("Available status transitions:", allowedTransitions);
     
     // Set available statuses
@@ -59,6 +107,8 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     if (allowedTransitions.length > 0) {
       setNextStatus(allowedTransitions[0]);
       setSelectedStatus(allowedTransitions[0]);
+    } else {
+      setNextStatus(null);
     }
   }, [currentStatus, userType]);
 
@@ -163,7 +213,6 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     }
   };
 
-  // If there are no available status transitions, don't show the component
   if (availableStatuses.length === 0) {
     return null;
   }
@@ -178,7 +227,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
         </Alert>
       )}
       
-      {nextStatus && (
+      {nextStatus ? (
         <div className="flex flex-col sm:flex-row gap-2">
           <Button
             onClick={handleQuickUpdate}
@@ -193,43 +242,54 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
             <span className="ml-2">{getNextStatusButtonText(currentStatus)}</span>
           </Button>
         </div>
+      ) : (
+        <Alert>
+          <AlertTitle>No Available Status Updates</AlertTitle>
+          <AlertDescription>
+            {currentStatus === 'ready_for_qa' 
+              ? "You've submitted this work for QA. Waiting for client review." 
+              : "No status transitions available at this time."}
+          </AlertDescription>
+        </Alert>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-2 items-center">
-        <div className="w-full sm:w-2/3">
-          <Select
-            value={selectedStatus}
-            onValueChange={setSelectedStatus}
-            disabled={isUpdating}
+      {availableStatuses.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-2 items-center">
+          <div className="w-full sm:w-2/3">
+            <Select
+              value={selectedStatus}
+              onValueChange={setSelectedStatus}
+              disabled={isUpdating || availableStatuses.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableStatuses.map((status) => (
+                  <SelectItem key={status.value} value={status.value}>
+                    <div className="flex items-center">
+                      {getStatusIcon(status.value)}
+                      <span className="ml-2">{status.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleUpdateStatus}
+            disabled={isUpdating || selectedStatus === currentStatus || availableStatuses.length === 0}
+            className="w-full sm:w-1/3"
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableStatuses.map((status) => (
-                <SelectItem key={status.value} value={status.value}>
-                  <div className="flex items-center">
-                    {getStatusIcon(status.value)}
-                    <span className="ml-2">{status.label}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {isUpdating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              'Update'
+            )}
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          onClick={handleUpdateStatus}
-          disabled={isUpdating || selectedStatus === currentStatus}
-          className="w-full sm:w-1/3"
-        >
-          {isUpdating ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            'Update'
-          )}
-        </Button>
-      </div>
+      )}
       
       <div className="mt-4 bg-muted p-3 rounded text-sm">
         <p className="font-medium">Current Status: {getStatusLabel(currentStatus)}</p>

@@ -87,9 +87,13 @@ const DeveloperTicketDetail: React.FC = () => {
             }
           }
           
-          // For testing purposes, if no match exists and status is approved, still allow updates
-          if (ticketData && ['approved', 'in_progress', 'ready_for_qa'].includes(ticketData.status)) {
-            setCanUpdateStatus(true);
+          // Check if the current developer is assigned to this ticket
+          // and if the status allows for updating
+          if (ticketData) {
+            const canUpdate = ['approved', 'in_progress', 'ready_for_qa'].includes(ticketData.status);
+            if (matchData?.status === 'approved' && canUpdate) {
+              setCanUpdateStatus(true);
+            }
           }
         }
       } catch (error) {
@@ -287,9 +291,8 @@ const DeveloperTicketDetail: React.FC = () => {
   // Determine if status update should be shown
   const shouldShowStatusUpdate = 
     userType === 'developer' && 
-    canUpdateStatus && 
     (applicationStatus === 'approved' || 
-     ['approved', 'in_progress'].includes(ticket.status));
+     ['approved', 'in_progress', 'ready_for_qa'].includes(ticket.status || ''));
   
   return (
     <Layout>
@@ -510,19 +513,15 @@ const DeveloperTicketDetail: React.FC = () => {
           </div>
           
           <div>
-            {(isApproved || isInProgress) ? (
-              // Show status update card for approved/in-progress tickets
+            {shouldShowStatusUpdate ? (
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle>Status & Progress</CardTitle>
                   <CardDescription>
-                    {ticket.status &&
-                      `Current: ${getStatusLabel(ticket.status)}`
-                    }
+                    {ticket?.status && `Current: ${getStatusLabel(ticket.status)}`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {/* Always show DeveloperStatusUpdate if developer is assigned (approved), and the ticket is in an editable state */}
                   <DeveloperStatusUpdate
                     ticketId={ticketId || ''}
                     currentStatus={ticket?.status || ''}
@@ -544,9 +543,9 @@ const DeveloperTicketDetail: React.FC = () => {
                   <Button 
                     className="w-full" 
                     onClick={handleApplyClick}
-                    disabled={ticket.status !== 'pending_match'}
+                    disabled={ticket?.status !== 'pending_match'}
                   >
-                    {ticket.status === 'pending_match' ? 'Apply Now' : 'Unavailable'}
+                    {ticket?.status === 'pending_match' ? 'Apply Now' : 'Unavailable'}
                   </Button>
                 </CardContent>
               </Card>

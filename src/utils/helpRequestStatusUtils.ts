@@ -71,7 +71,9 @@ export const getStatusLabel = (status: string): string => {
     'qa_feedback': 'QA Feedback',
     'complete': 'Complete',
     'cancelled_by_client': 'Cancelled by Client',
-    'abandoned_by_dev': 'Abandoned by Developer'
+    'abandoned_by_dev': 'Abandoned by Developer',
+    'client_review': 'Client Review',
+    'client_approved': 'Client Approved'
   };
 
   return statusLabels[status] || status;
@@ -90,7 +92,9 @@ export const getStatusDescription = (status: string): string => {
     'qa_feedback': 'Client has provided feedback requiring changes',
     'complete': 'Request has been completed successfully',
     'cancelled_by_client': 'Request was cancelled by the client',
-    'abandoned_by_dev': 'Developer has abandoned this request'
+    'abandoned_by_dev': 'Developer has abandoned this request',
+    'client_review': 'Client is reviewing the completed work',
+    'client_approved': 'Client has approved the completed work'
   };
 
   return statusDescriptions[status] || 'Status information unavailable';
@@ -137,5 +141,7 @@ export const STATUSES = {
   QA_FEEDBACK: 'qa_feedback',
   COMPLETE: 'complete',
   CANCELLED_BY_CLIENT: 'cancelled_by_client',
-  ABANDONED_BY_DEV: 'abandoned_by_dev'
+  ABANDONED_BY_DEV: 'abandoned_by_dev',
+  CLIENT_REVIEW: 'client_review',
+  CLIENT_APPROVED: 'client_approved'
 };
