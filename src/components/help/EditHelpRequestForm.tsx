@@ -17,6 +17,7 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '../../integrations/supabase/client';
 import { HelpRequest, technicalAreaOptions, communicationOptions, budgetRangeOptions, urgencyOptions } from '../../types/helpRequest';
 import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
+import { useAuth } from '../../contexts/auth';
 
 interface EditHelpRequestFormProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ const EditHelpRequestForm: React.FC<EditHelpRequestFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTechnicalAreas, setSelectedTechnicalAreas] = useState<string[]>([]);
   const [selectedCommunicationPreferences, setSelectedCommunicationPreferences] = useState<string[]>([]);
+  const { userType } = useAuth();
 
   useEffect(() => {
     if (helpRequest) {
@@ -113,7 +115,11 @@ const EditHelpRequestForm: React.FC<EditHelpRequestFormProps> = ({
         communication_preference: selectedCommunicationPreferences
       };
       
-      const response = await updateHelpRequest(helpRequest.id, updatedHelpRequest);
+      const response = await updateHelpRequest(
+        helpRequest.id, 
+        updatedHelpRequest, 
+        userType || 'client'
+      );
       
       if (response.success) {
         toast.success('Help request updated successfully');

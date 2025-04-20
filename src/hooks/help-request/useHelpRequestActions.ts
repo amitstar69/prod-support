@@ -4,6 +4,7 @@ import { HelpRequest } from '../../types/helpRequest';
 import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
 import { isApiSuccess, isApiError } from '../../types/api';
 import { toast } from 'sonner';
+import { useAuth } from '../../contexts/auth';
 
 // Helper validation functions
 const isValidStatus = (status: string): boolean => {
@@ -33,6 +34,7 @@ export const useHelpRequestActions = (
   onUpdate?: (updatedRequest: HelpRequest) => void
 ) => {
   const [isSaving, setIsSaving] = useState(false);
+  const { userType } = useAuth();
 
   // Validate request ID
   const validateRequestId = (): boolean => {
@@ -52,7 +54,11 @@ export const useHelpRequestActions = (
       return;
     }
     
-    const response = await updateHelpRequest(requestId, { status: newStatus });
+    const response = await updateHelpRequest(
+      requestId, 
+      { status: newStatus }, 
+      userType || 'client'
+    );
     
     if (isApiSuccess(response)) {
       onUpdate?.(response.data);
@@ -82,7 +88,11 @@ export const useHelpRequestActions = (
     
     setIsSaving(true);
     try {
-      const response = await updateHelpRequest(requestId, sanitizedNotes);
+      const response = await updateHelpRequest(
+        requestId, 
+        sanitizedNotes, 
+        userType || 'client'
+      );
       
       if (isApiSuccess(response)) {
         onUpdate?.(response.data);

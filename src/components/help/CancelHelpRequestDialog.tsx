@@ -13,6 +13,7 @@ import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
+import { useAuth } from '../../contexts/auth';
 
 interface CancelHelpRequestDialogProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ const CancelHelpRequestDialog: React.FC<CancelHelpRequestDialogProps> = ({
 }) => {
   const [cancellationReason, setCancellationReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { userType } = useAuth();
 
   const handleCancellation = async () => {
     if (!requestId) return;
@@ -46,7 +48,7 @@ const CancelHelpRequestDialog: React.FC<CancelHelpRequestDialogProps> = ({
       const response = await updateHelpRequest(requestId, {
         status: 'cancelled',
         cancellation_reason: cancellationReason
-      });
+      }, userType || 'client');
       
       if (response.success) {
         toast.success('Help request cancelled successfully');

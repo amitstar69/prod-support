@@ -1,3 +1,4 @@
+
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
@@ -111,11 +112,14 @@ export const updateHelpRequest = async (
       }
       
       if (updates.status) {
+        const currentUserId = supabase.auth.getUser().then(res => res.data.user?.id) || 'anonymous';
+        
         const historyEntry = {
           help_request_id: requestId,
           change_type: 'STATUS_CHANGE',
-          previous_status: data.status,
+          previous_status: data.status !== updates.status ? data.status : null,
           new_status: updates.status,
+          changed_by: await currentUserId,
           change_details: {
             updated_by_type: userType,
             timestamp: now
