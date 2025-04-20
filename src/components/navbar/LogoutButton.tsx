@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/auth';
 import { Button } from '../ui/button';
 import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
+import { performEmergencyLogout } from '../../utils/recovery';
 
 interface LogoutButtonProps {
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
@@ -54,24 +55,6 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  // Emergency logout when Supabase is having issues
-  const performEmergencyLogout = () => {
-    console.info('Performing emergency logout');
-    
-    // Clear all auth data from localStorage to ensure user is logged out client-side
-    localStorage.removeItem('authState');
-    localStorage.removeItem('supabase.auth.token');
-    
-    // Force a page reload to reset all state
-    toast.info('Emergency recovery performed. Reloading page...');
-    navigate('/', { replace: true });
-    
-    // Use small delay before reload to ensure navigation completes
-    setTimeout(() => {
-      window.location.reload();
-    }, 300);
   };
   
   return (

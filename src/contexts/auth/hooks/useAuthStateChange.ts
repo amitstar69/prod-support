@@ -21,16 +21,19 @@ export const setupAuthStateChangeListener = (
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
-            // Initial update with basic auth info
-            const basicAuthState: AuthState = {
-              isAuthenticated: true,
-              userId: session.user.id,
-              userType: null // Will be populated later
-            };
+            // Using a synchronized update pattern to avoid race conditions
+            setAuthState(prevState => {
+              // Initial update with basic auth info
+              const basicAuthState: AuthState = {
+                isAuthenticated: true,
+                userId: session.user.id,
+                userType: prevState.userType // Preserve existing userType if available
+              };
+              
+              return basicAuthState;
+            });
             
-            setAuthState(basicAuthState);
-            
-            // Use setTimeout to avoid blocking UI thread
+            // Defer profile fetch to avoid blocking the auth state update
             setTimeout(async () => {
               try {
                 console.time('profile-fetch');
@@ -39,7 +42,7 @@ export const setupAuthStateChangeListener = (
                 const timeoutId = setTimeout(() => {
                   controller.abort();
                   console.warn('Profile fetch timed out');
-                }, 4000); // Reduced from 5000 to fail faster
+                }, 4000);
                 
                 const { data: profileData, error } = await supabase
                   .from('profiles')
@@ -67,30 +70,44 @@ export const setupAuthStateChangeListener = (
                   userType = 'client';
                 }
                 
-                const newAuthState: AuthState = {
-                  isAuthenticated: true,
-                  userId: session.user.id,
-                  userType: userType
-                };
-                
-                setAuthState(newAuthState);
-                localStorage.setItem('authState', JSON.stringify(newAuthState));
-                console.log('Updated auth state from session change:', newAuthState);
+                // Use functional state update to avoid race conditions
+                setAuthState(prevState => {
+                  const newAuthState: AuthState = {
+                    isAuthenticated: true,
+                    userId: session.user.id,
+                    userType: userType
+                  };
+                  
+                  try {
+                    localStorage.setItem('authState', JSON.stringify(newAuthState));
+                  } catch (storageError) {
+                    console.error('Error saving auth state to localStorage:', storageError);
+                  }
+                  
+                  console.log('Updated auth state from session change:', newAuthState);
+                  return newAuthState;
+                });
               } catch (error) {
                 console.error('Error fetching user type during auth change:', error);
-                
-                // User already has basic auth state from earlier
               }
             }, 0);
           }
         } else if (event === 'SIGNED_OUT') {
+          // Immediately clear auth state on sign out
           const newState: AuthState = {
             isAuthenticated: false,
             userType: null,
             userId: null,
           };
+          
           setAuthState(newState);
-          localStorage.removeItem('authState');
+          
+          try {
+            localStorage.removeItem('authState');
+          } catch (storageError) {
+            console.error('Error removing auth state from localStorage:', storageError);
+          }
+          
           console.log('Cleared auth state on sign out');
         }
       }
