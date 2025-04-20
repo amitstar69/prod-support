@@ -24,7 +24,7 @@ export const initEmergencyRecovery = (): (() => void) => {
   };
 };
 
-// Export all utility functions
+// Export all utility functions for use by other modules
 export {
   setGlobalLoadingTimeout,
   performEmergencyLogout,
