@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -20,6 +21,8 @@ import DeveloperQADialog from '../components/help/DeveloperQADialog';
 import DeveloperStatusUpdate from '../components/help/DeveloperStatusUpdate';
 import ClientStatusUpdate from '../components/help/ClientStatusUpdate';
 import { setupApplicationsSubscription } from '../integrations/supabase/realtime';
+import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
+import { getStatusLabel } from '../utils/helpRequestStatusUtils';
 
 const DeveloperTicketDetail: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -31,6 +34,7 @@ const DeveloperTicketDetail: React.FC = () => {
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showQADialog, setShowQADialog] = useState(false);
+  const [canUpdateStatus, setCanUpdateStatus] = useState(false);
   
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || userType !== 'developer')) {
@@ -77,6 +81,16 @@ const DeveloperTicketDetail: React.FC = () => {
           } else if (matchData) {
             setHasApplied(true);
             setApplicationStatus(matchData.status);
+            
+            // Check if developer can update status (approved match)
+            if (matchData.status === 'approved') {
+              setCanUpdateStatus(true);
+            }
+          }
+          
+          // For testing purposes, if no match exists and status is approved, still allow updates
+          if (ticketData && ['approved', 'in_progress', 'ready_for_qa'].includes(ticketData.status)) {
+            setCanUpdateStatus(true);
           }
         }
       } catch (error) {
@@ -264,11 +278,19 @@ const DeveloperTicketDetail: React.FC = () => {
   
   const shortTicketId = ticket?.id ? `HELP-${ticket.id.substring(0, 4)}` : 'Unknown ID';
   
-  const isInProgress = ticket?.status === 'in-progress';
+  const isInProgress = ticket?.status === 'in_progress';
+  const isApproved = ticket?.status === 'approved';
   const canSubmitQA = isInProgress && userType === 'developer';
-  const isInQA = ticket?.status === 'developer-qa';
-  const isInClientReview = ticket?.status === 'client-review';
-  const isClientApproved = ticket?.status === 'client-approved';
+  const isInQA = ticket?.status === 'ready_for_qa';
+  const isInClientReview = ticket?.status === 'client_review';
+  const isClientApproved = ticket?.status === 'client_approved';
+  
+  // Determine if status update should be shown
+  const shouldShowStatusUpdate = 
+    userType === 'developer' && 
+    canUpdateStatus && 
+    (applicationStatus === 'approved' || 
+     ['approved', 'in_progress'].includes(ticket.status));
   
   return (
     <Layout>
@@ -291,17 +313,17 @@ const DeveloperTicketDetail: React.FC = () => {
                 <Badge 
                   variant="outline"
                   className={`
-                    ${ticket.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
-                      ticket.status === 'developer-qa' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
-                      ticket.status === 'client-review' ? 'bg-orange-50 text-orange-800 border-orange-200' :
-                      ticket.status === 'client-approved' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                      ticket.status === 'completed' ? 'bg-slate-50 text-slate-800 border-slate-200' :
-                      ticket.status === 'cancelled' ? 'bg-red-50 text-red-800 border-red-200' :
-                      ticket.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                    ${ticket.status === 'in_progress' ? 'bg-green-50 text-green-800 border-green-200' : 
+                      ticket.status === 'ready_for_qa' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
+                      ticket.status === 'client_review' ? 'bg-orange-50 text-orange-800 border-orange-200' :
+                      ticket.status === 'client_approved' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                      ticket.status === 'complete' ? 'bg-slate-50 text-slate-800 border-slate-200' :
+                      ticket.status === 'cancelled_by_client' ? 'bg-red-50 text-red-800 border-red-200' :
+                      ticket.status === 'pending_match' ? 'bg-blue-50 text-blue-800 border-blue-200' :
                       'bg-yellow-50 text-yellow-800 border-yellow-200'}
                   `}
                 >
-                  {ticket.status}
+                  {getStatusLabel(ticket.status)}
                 </Badge>
               )}
             </div>
@@ -489,34 +511,66 @@ const DeveloperTicketDetail: React.FC = () => {
           </div>
           
           <div>
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Apply for This Ticket</CardTitle>
-                <CardDescription>Share your expertise with the client</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Ready to help with this problem? Submit your application to connect with the client and start earning.
-                </p>
-                
-                {hasApplied ? (
+            {isApproved || isInProgress ? (
+              // Show status update card for approved tickets
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Update Status</CardTitle>
+                  <CardDescription>Track your progress on this ticket</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {shouldShowStatusUpdate ? (
+                    <DeveloperStatusUpdate 
+                      ticketId={ticketId || ''}
+                      currentStatus={ticket?.status || ''}
+                      onStatusUpdated={fetchLatestTicketData}
+                    />
+                  ) : (
+                    <Alert>
+                      <AlertTitle>Status Locked</AlertTitle>
+                      <AlertDescription>
+                        You don't have permission to update the status of this ticket.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            ) : !hasApplied ? (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Apply for This Ticket</CardTitle>
+                  <CardDescription>Share your expertise with the client</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Ready to help with this problem? Submit your application to connect with the client and start earning.
+                  </p>
+                  
+                  <Button 
+                    className="w-full" 
+                    onClick={handleApplyClick}
+                    disabled={ticket.status !== 'pending_match'}
+                  >
+                    {ticket.status === 'pending_match' ? 'Apply Now' : 'Unavailable'}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Application Status</CardTitle>
+                  <CardDescription>Your application for this ticket</CardDescription>
+                </CardHeader>
+                <CardContent>
                   <div className="bg-blue-50 border border-blue-100 rounded-md p-4 text-center">
                     <h3 className="font-medium text-blue-800">Application Submitted</h3>
                     <p className="text-sm text-blue-700 mt-1">
                       Status: <span className="font-medium capitalize">{applicationStatus || 'Pending Review'}</span>
                     </p>
                   </div>
-                ) : (
-                  <Button 
-                    className="w-full" 
-                    onClick={handleApplyClick}
-                    disabled={ticket.status !== 'open' && ticket.status !== 'pending'}
-                  >
-                    {ticket.status === 'open' || ticket.status === 'pending' ? 'Apply Now' : 'Unavailable'}
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
             
             <Card>
               <CardHeader>
@@ -574,22 +628,8 @@ const DeveloperTicketDetail: React.FC = () => {
               </CardContent>
             </Card>
             
-            {canSubmitQA ? (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle>Update Ticket Status</CardTitle>
-                  <CardDescription>Update the progress of your work on this ticket</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <DeveloperStatusUpdate 
-                    ticketId={ticketId || ''}
-                    currentStatus={ticket?.status || 'in-progress'}
-                    onStatusUpdated={fetchLatestTicketData}
-                  />
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="mb-6">
+            {canSubmitQA && (
+              <Card className="mt-6">
                 <CardHeader>
                   <CardTitle>Submit for QA</CardTitle>
                   <CardDescription>Mark your work as ready for review</CardDescription>
@@ -605,22 +645,6 @@ const DeveloperTicketDetail: React.FC = () => {
                     <ClipboardCheck className="h-4 w-4 mr-2" />
                     Submit for QA
                   </Button>
-                </CardContent>
-              </Card>
-            )}
-            
-            {userType === 'client' && ['client-review', 'completed'].includes(ticket?.status || '') && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle>Review Work</CardTitle>
-                  <CardDescription>Review and approve the work or request changes</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ClientStatusUpdate 
-                    ticketId={ticketId || ''}
-                    currentStatus={ticket?.status || ''}
-                    onStatusUpdated={fetchLatestTicketData}
-                  />
                 </CardContent>
               </Card>
             )}

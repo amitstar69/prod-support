@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
@@ -16,8 +16,10 @@ import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { 
   getAllowedStatusTransitions, 
   getStatusLabel, 
-  STATUSES 
+  STATUSES,
+  getStatusDescription 
 } from '../../utils/helpRequestStatusUtils';
+import { HelpRequest } from '../../types/helpRequest';
 
 interface DeveloperStatusUpdateProps {
   ticketId: string;
@@ -34,30 +36,31 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>(currentStatus);
   const [error, setError] = useState<string | null>(null);
   const { userType } = useAuth();
+  const [availableStatuses, setAvailableStatuses] = useState<Array<{value: string, label: string}>>([]);
+  const [nextStatus, setNextStatus] = useState<string | null>(null);
 
-  // Get next status based on current status for developer
-  const getNextStatus = (current: string): string => {
-    switch (current) {
-      case STATUSES.PENDING_MATCH:
-        return STATUSES.DEV_REQUESTED;
-      case STATUSES.APPROVED:
-        return STATUSES.IN_PROGRESS;
-      case STATUSES.IN_PROGRESS:
-        return STATUSES.READY_FOR_QA;
-      default:
-        return current;
-    }
-  };
-
-  // Get available status options for developer based on current status
-  const getAvailableStatuses = (): { value: string; label: string; }[] => {
-    const allowedTransitions = getAllowedStatusTransitions(currentStatus, 'developer');
+  // Get available statuses based on current status for the developer
+  useEffect(() => {
+    if (!currentStatus || userType !== 'developer') return;
     
-    return allowedTransitions.map(status => ({
+    // Get allowed transitions
+    const allowedTransitions = getAllowedStatusTransitions(currentStatus, 'developer');
+    console.log("Available status transitions:", allowedTransitions);
+    
+    // Set available statuses
+    const statusOptions = allowedTransitions.map(status => ({
       value: status,
       label: getStatusLabel(status)
     }));
-  };
+    
+    setAvailableStatuses(statusOptions);
+    
+    // Set next logical status if available
+    if (allowedTransitions.length > 0) {
+      setNextStatus(allowedTransitions[0]);
+      setSelectedStatus(allowedTransitions[0]);
+    }
+  }, [currentStatus, userType]);
 
   const handleUpdateStatus = async () => {
     if (selectedStatus === currentStatus) {
@@ -96,7 +99,11 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   };
 
   const handleQuickUpdate = async () => {
-    const nextStatus = getNextStatus(currentStatus);
+    if (!nextStatus) {
+      toast.error('No valid next status available');
+      return;
+    }
+    
     setSelectedStatus(nextStatus);
     setIsUpdating(true);
     setError(null);
@@ -143,8 +150,8 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     }
   };
 
-  const getNextStatusButtonText = (current: string): string => {
-    switch (current) {
+  const getNextStatusButtonText = (status: string): string => {
+    switch (status) {
       case STATUSES.PENDING_MATCH:
         return 'Request Assignment';
       case STATUSES.APPROVED:
@@ -156,18 +163,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     }
   };
 
-  // Only show status updates for relevant statuses
-  const developerActionableStatuses = [
-    STATUSES.PENDING_MATCH,
-    STATUSES.APPROVED,
-    STATUSES.IN_PROGRESS
-  ];
-  
-  if (!developerActionableStatuses.includes(currentStatus)) {
-    return null;
-  }
-
-  const availableStatuses = getAvailableStatuses();
+  // If there are no available status transitions, don't show the component
   if (availableStatuses.length === 0) {
     return null;
   }
@@ -182,20 +178,22 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
         </Alert>
       )}
       
-      <div className="flex flex-col sm:flex-row gap-2">
-        <Button
-          onClick={handleQuickUpdate}
-          disabled={isUpdating}
-          className="w-full"
-        >
-          {isUpdating ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            getStatusIcon(getNextStatus(currentStatus))
-          )}
-          <span className="ml-2">{getNextStatusButtonText(currentStatus)}</span>
-        </Button>
-      </div>
+      {nextStatus && (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            onClick={handleQuickUpdate}
+            disabled={isUpdating}
+            className="w-full"
+          >
+            {isUpdating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              getStatusIcon(nextStatus)
+            )}
+            <span className="ml-2">{getNextStatusButtonText(currentStatus)}</span>
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-2 items-center">
         <div className="w-full sm:w-2/3">
@@ -231,6 +229,11 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
             'Update'
           )}
         </Button>
+      </div>
+      
+      <div className="mt-4 bg-muted p-3 rounded text-sm">
+        <p className="font-medium">Current Status: {getStatusLabel(currentStatus)}</p>
+        <p className="text-muted-foreground text-xs mt-1">{getStatusDescription(currentStatus)}</p>
       </div>
     </div>
   );
