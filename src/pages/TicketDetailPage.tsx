@@ -8,7 +8,7 @@ import { HelpRequest } from '../types/helpRequest';
 import LoadingState from '../components/dashboard/LoadingState';
 import { toast } from '../components/ui/use-toast';
 import { isApiSuccess, isApiError } from '../types/api';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
 
 const TicketDetailPage = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
