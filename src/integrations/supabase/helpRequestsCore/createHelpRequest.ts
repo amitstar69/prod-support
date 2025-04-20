@@ -3,10 +3,23 @@ import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, saveLocalHelpRequests, getLocalHelpRequests, handleError } from './utils';
 import { toast } from 'sonner';
+import { UserType } from '../../../contexts/auth/types';
 
 // Core function to create a help request
-export const createHelpRequest = async (helpRequest: Omit<HelpRequest, 'id' | 'created_at' | 'updated_at' | 'ticket_number'>) => {
+export const createHelpRequest = async (
+  helpRequest: Omit<HelpRequest, 'id' | 'created_at' | 'updated_at' | 'ticket_number'>,
+  userType: UserType | null = null
+) => {
   try {
+    // Verify that only clients can create help requests
+    if (userType !== 'client') {
+      console.error('Only clients can create help requests');
+      return { 
+        success: false, 
+        error: 'Permission denied: Only clients can create help requests' 
+      };
+    }
+    
     const { client_id } = helpRequest;
     
     // Validate client ID

@@ -1,8 +1,10 @@
 
 import React from 'react';
 import { useHelpRequest } from '../../../contexts/HelpRequestContext';
+import { useAuth } from '../../../contexts/auth';
 import { Button } from '../../ui/button';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface StepButtonsProps {
   totalSteps: number;
@@ -11,6 +13,18 @@ interface StepButtonsProps {
 
 const StepButtons: React.FC<StepButtonsProps> = ({ totalSteps, onSubmit }) => {
   const { currentStep, isSubmitting, prevStep, nextStep } = useHelpRequest();
+  const { userType } = useAuth();
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    // Prevent developers from submitting help requests
+    if (userType === 'developer') {
+      e.preventDefault();
+      toast.error("Developers cannot create help requests");
+      return;
+    }
+    
+    onSubmit(e);
+  };
   
   return (
     <div className="flex justify-between mt-8 pt-4 border-t border-gray-200">
@@ -42,9 +56,9 @@ const StepButtons: React.FC<StepButtonsProps> = ({ totalSteps, onSubmit }) => {
       ) : (
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || userType === 'developer'}
           className="px-6"
-          onClick={(e) => onSubmit(e)}
+          onClick={handleSubmit}
         >
           {isSubmitting ? (
             <>

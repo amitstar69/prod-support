@@ -1,11 +1,15 @@
 
 import React from 'react';
+import { useAuth } from '../../contexts/auth';
 import { HelpRequestProvider } from '../../contexts/HelpRequestContext';
+import { Navigate } from 'react-router-dom';
 
 // Import form components
 import FormContainer from './form/FormContainer';
 import Step1BasicInfo from './form/Step1BasicInfo';
 import Step2AdditionalInfo from './form/Step2AdditionalInfo';
+import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 const HelpRequestFormContent: React.FC = () => {
   return (
@@ -17,6 +21,28 @@ const HelpRequestFormContent: React.FC = () => {
 };
 
 const HelpRequestForm: React.FC = () => {
+  const { isAuthenticated, userType } = useAuth();
+
+  // If user is authenticated as a developer, show permission error or redirect
+  if (isAuthenticated && userType === 'developer') {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <Alert variant="destructive" className="mb-8">
+          <AlertTriangle className="h-4 w-4 mr-2" />
+          <AlertTitle>Permission Denied</AlertTitle>
+          <AlertDescription>
+            Developers cannot create help requests. Please switch to a client account or contact support.
+          </AlertDescription>
+        </Alert>
+        <div className="text-center mt-8">
+          <a href="/developer-dashboard" className="text-primary hover:text-primary/80">
+            Return to developer dashboard
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <HelpRequestProvider>
       <HelpRequestFormContent />
