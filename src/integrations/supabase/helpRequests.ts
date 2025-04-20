@@ -1,3 +1,4 @@
+
 import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
 import { 
   createHelpRequest,
@@ -45,16 +46,19 @@ export const checkHelpRequestExists = async (requestId: string) => {
       return { success: false, error: 'Request ID is required' };
     }
     
-    const { data, error } = await supabase.rpc('check_help_request_exists', {
-      request_id: requestId
-    });
+    // Instead of using RPC, use a direct query
+    const { data, error } = await supabase
+      .from('help_requests')
+      .select('id')
+      .eq('id', requestId)
+      .maybeSingle();
     
     if (error) {
       console.error('Error checking help request existence:', error);
       return { success: false, error: error.message };
     }
     
-    return { success: true, data };
+    return { success: true, data: !!data };
   } catch (error) {
     console.error('Exception checking help request existence:', error);
     return { 

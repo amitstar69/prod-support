@@ -18,6 +18,7 @@ import { HelpRequest, HelpRequestMatch } from '../types/helpRequest';
 import DeveloperApplicationModal from '../components/apply/DeveloperApplicationModal';
 import DeveloperQADialog from '../components/help/DeveloperQADialog';
 import DeveloperStatusUpdate from '../components/help/DeveloperStatusUpdate';
+import ClientStatusUpdate from '../components/help/ClientStatusUpdate';
 import { setupApplicationsSubscription } from '../integrations/supabase/realtime';
 
 const DeveloperTicketDetail: React.FC = () => {

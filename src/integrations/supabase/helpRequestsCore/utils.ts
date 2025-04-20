@@ -1,3 +1,4 @@
+
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 
@@ -45,11 +46,14 @@ export const handleError = (error: any, customMessage: string = 'Unknown error')
  */
 export const checkHelpRequestExists = async (requestId: string) => {
   try {
-    const { data, error } = await supabase.rpc('check_help_request_exists', { 
-      request_id: requestId 
-    });
+    // Instead of using RPC, use a direct query
+    const { data, error } = await supabase
+      .from('help_requests')
+      .select('id')
+      .eq('id', requestId)
+      .maybeSingle();
     
-    return { data, error };
+    return { data: !!data, error };
   } catch (error) {
     console.error('Error checking if help request exists:', error);
     return { data: false, error };

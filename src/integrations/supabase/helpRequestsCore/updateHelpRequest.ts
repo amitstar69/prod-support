@@ -1,3 +1,4 @@
+
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
@@ -72,13 +73,18 @@ export const updateHelpRequest = async (
         if (!currentRequest) {
           console.error(`[updateHelpRequest] Help request not found or insufficient permissions: ${requestId}`);
           
-          const { data: user } = await supabase.auth.getUser();
-          console.log('[updateHelpRequest] Current user:', user?.id);
+          const { data: userData } = await supabase.auth.getUser();
+          const userId = userData?.user?.id;
+          console.log('[updateHelpRequest] Current user:', userId);
           
+          // Use direct query instead of RPC
           const { data: requestExists, error: checkError } = await supabase
-            .rpc('check_help_request_exists', { request_id: requestId });
+            .from('help_requests')
+            .select('id')
+            .eq('id', requestId)
+            .maybeSingle();
             
-          console.log('[updateHelpRequest] Request exists check:', requestExists, checkError);
+          console.log('[updateHelpRequest] Request exists check:', !!requestExists, checkError);
           
           return { 
             success: false, 
@@ -173,7 +179,13 @@ export const updateHelpRequest = async (
       
       if (updates.status) {
         try {
-          const currentUserId = (await supabase.auth.getUser()).data.user?.id;
+          const { data: userData } = await supabase.auth.getUser();
+          const currentUserId = userData.user?.id;
+          
+          if (!currentUserId) {
+            console.error('[updateHelpRequest] No authenticated user found');
+            return { success: true, data, storageMethod: 'Supabase' };
+          }
           
           const historyEntry = {
             help_request_id: requestId,
