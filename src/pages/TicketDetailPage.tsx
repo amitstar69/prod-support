@@ -27,10 +27,7 @@ const TicketDetailPage = () => {
       if (isApiSuccess(response)) {
         setTicket(response.data);
       } else if (isApiError(response)) {
-        toast({
-          description: response.error || "Failed to load ticket details",
-          variant: "destructive",
-        });
+        toast(response.error || "Failed to load ticket details");
         navigate('/tickets');
       }
     };
