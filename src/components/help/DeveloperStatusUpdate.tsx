@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
 import { Button } from '../ui/button';
@@ -12,6 +13,11 @@ import {
 import { Loader2, CheckCircle2, ArrowRightCircle, ClipboardCheck, UserCheck, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
+import { 
+  getAllowedStatusTransitions, 
+  getStatusLabel, 
+  STATUSES 
+} from '../../utils/helpRequestStatusUtils';
 
 interface DeveloperStatusUpdateProps {
   ticketId: string;
@@ -29,44 +35,33 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   const [error, setError] = useState<string | null>(null);
   const { userType } = useAuth();
 
+  // Get next status based on current status for developer
   const getNextStatus = (current: string): string => {
     switch (current) {
-      case 'in-progress':
-        return 'developer-qa';
-      case 'developer-qa':
-        return 'client-review';
-      case 'client-review':
-        return 'client-review';
-      case 'client-approved':
-        return 'completed';
+      case STATUSES.PENDING_MATCH:
+        return STATUSES.DEV_REQUESTED;
+      case STATUSES.APPROVED:
+        return STATUSES.IN_PROGRESS;
+      case STATUSES.IN_PROGRESS:
+        return STATUSES.READY_FOR_QA;
       default:
-        return 'in-progress';
+        return current;
     }
   };
 
-  const getAvailableStatuses = (current: string): { value: string; label: string; }[] => {
-    const statuses = [
-      { value: 'in-progress', label: 'In Progress' },
-    ];
-
-    if (current === 'in-progress' || current === 'client-review') {
-      statuses.push({ value: 'developer-qa', label: 'Ready for QA' });
-    }
-
-    if (current === 'developer-qa' || current === 'in-progress') {
-      statuses.push({ value: 'client-review', label: 'Submit for Client Review' });
-    }
-
-    if (current === 'client-approved') {
-      statuses.push({ value: 'completed', label: 'Mark as Completed' });
-    }
-
-    return statuses;
+  // Get available status options for developer based on current status
+  const getAvailableStatuses = (): { value: string; label: string; }[] => {
+    const allowedTransitions = getAllowedStatusTransitions(currentStatus, 'developer');
+    
+    return allowedTransitions.map(status => ({
+      value: status,
+      label: getStatusLabel(status)
+    }));
   };
 
   const handleUpdateStatus = async () => {
     if (selectedStatus === currentStatus) {
-      toast.info('Status is already set to ' + selectedStatus);
+      toast.info('Status is already set to ' + getStatusLabel(selectedStatus));
       return;
     }
 
@@ -83,7 +78,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       );
 
       if (response.success) {
-        toast.success(`Ticket status updated to ${selectedStatus}`);
+        toast.success(`Ticket status updated to ${getStatusLabel(selectedStatus)}`);
         onStatusUpdated();
       } else {
         setError(response.error || 'Failed to update status');
@@ -116,7 +111,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       );
 
       if (response.success) {
-        toast.success(`Ticket status updated to ${nextStatus}`);
+        toast.success(`Ticket status updated to ${getStatusLabel(nextStatus)}`);
         onStatusUpdated();
       } else {
         setError(response.error || 'Failed to update status');
@@ -135,13 +130,13 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'in-progress':
+      case STATUSES.IN_PROGRESS:
         return <ArrowRightCircle className="h-4 w-4" />;
-      case 'developer-qa':
+      case STATUSES.READY_FOR_QA:
         return <ClipboardCheck className="h-4 w-4" />;
-      case 'client-review':
+      case STATUSES.DEV_REQUESTED:
         return <UserCheck className="h-4 w-4" />;
-      case 'completed':
+      case STATUSES.COMPLETE:
         return <CheckCircle2 className="h-4 w-4" />;
       default:
         return null;
@@ -150,18 +145,30 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
 
   const getNextStatusButtonText = (current: string): string => {
     switch (current) {
-      case 'in-progress':
-        return 'Mark Ready for QA';
-      case 'developer-qa':
-        return 'Submit for Client Review';
-      case 'client-approved':
-        return 'Mark as Complete';
+      case STATUSES.PENDING_MATCH:
+        return 'Request Assignment';
+      case STATUSES.APPROVED:
+        return 'Start Working';
+      case STATUSES.IN_PROGRESS:
+        return 'Submit for QA';
       default:
         return 'Update Status';
     }
   };
 
-  if (!['in-progress', 'developer-qa', 'client-approved'].includes(currentStatus)) {
+  // Only show status updates for relevant statuses
+  const developerActionableStatuses = [
+    STATUSES.PENDING_MATCH,
+    STATUSES.APPROVED,
+    STATUSES.IN_PROGRESS
+  ];
+  
+  if (!developerActionableStatuses.includes(currentStatus)) {
+    return null;
+  }
+
+  const availableStatuses = getAvailableStatuses();
+  if (availableStatuses.length === 0) {
     return null;
   }
 
@@ -178,7 +185,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       <div className="flex flex-col sm:flex-row gap-2">
         <Button
           onClick={handleQuickUpdate}
-          disabled={isUpdating || currentStatus === 'client-review'}
+          disabled={isUpdating}
           className="w-full"
         >
           {isUpdating ? (
@@ -201,7 +208,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
-              {getAvailableStatuses(currentStatus).map((status) => (
+              {availableStatuses.map((status) => (
                 <SelectItem key={status.value} value={status.value}>
                   <div className="flex items-center">
                     {getStatusIcon(status.value)}

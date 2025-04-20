@@ -3,22 +3,7 @@ import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
 import { getUserHomeRoute } from '../../../contexts/auth/authUtils';
-
-const isValidStatusTransition = (currentStatus: string, newStatus: string, userType: string): boolean => {
-  const developerTransitions: Record<string, string[]> = {
-    'in-progress': ['developer-qa'],
-    'developer-qa': ['client-review'],
-    'client-approved': ['completed']
-  };
-
-  const clientTransitions: Record<string, string[]> = {
-    'client-review': ['client-approved', 'in-progress'],
-    'completed': ['in-progress']
-  };
-
-  const transitions = userType === 'developer' ? developerTransitions : clientTransitions;
-  return transitions[currentStatus]?.includes(newStatus) || false;
-};
+import { isValidStatusTransition } from '../../../utils/helpRequestStatusUtils';
 
 export const updateHelpRequest = async (
   requestId: string,
@@ -56,133 +41,122 @@ export const updateHelpRequest = async (
     if (isValidUUID(requestId)) {
       console.log(`[updateHelpRequest] Valid UUID detected: ${requestId}`);
 
-      if (updates.status) {
-        console.log(`[updateHelpRequest] Status update requested: ${updates.status}`);
+      // Get current user ID
+      const { data: userData } = await supabase.auth.getUser();
+      const currentUserId = userData?.user?.id;
+      
+      if (!currentUserId) {
+        console.error('[updateHelpRequest] No authenticated user found');
+        return { success: false, error: 'You must be authenticated to update a help request' };
+      }
+      
+      // First, get the current state of the help request
+      const { data: currentRequest, error: fetchError } = await supabase
+        .from('help_requests')
+        .select('status, client_id')
+        .eq('id', requestId)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('[updateHelpRequest] Error fetching current help request:', fetchError);
+        return { success: false, error: `Failed to validate status transition: ${fetchError.message}` };
+      }
+
+      if (!currentRequest) {
+        console.error(`[updateHelpRequest] Help request not found: ${requestId}`);
         
-        const { data: currentRequest, error: fetchError } = await supabase
+        // Check if request exists at all to provide better error messages
+        const { data: requestExists } = await supabase
           .from('help_requests')
-          .select('status, client_id')
+          .select('id')
           .eq('id', requestId)
           .maybeSingle();
-
-        if (fetchError) {
-          console.error('[updateHelpRequest] Error fetching current help request:', fetchError);
-          return { success: false, error: `Failed to validate status transition: ${fetchError.message}` };
+          
+        if (requestExists) {
+          return { 
+            success: false, 
+            error: `You don't have permission to update this help request.`
+          };
+        } else {
+          return { 
+            success: false, 
+            error: `Help request not found.`
+          };
         }
+      }
 
-        if (!currentRequest) {
-          console.error(`[updateHelpRequest] Help request not found or insufficient permissions: ${requestId}`);
+      console.log('[updateHelpRequest] Found current request:', currentRequest);
+
+      // === Permission checks based on user type ===
+      
+      // Check client permissions
+      if (userType === 'client') {
+        // Client can only update their own requests
+        if (currentRequest.client_id !== currentUserId) {
+          console.error(`[updateHelpRequest] Client ${currentUserId} does not own request ${requestId}`);
+          return { 
+            success: false, 
+            error: 'You do not have permission to update this help request' 
+          };
+        }
+      }
+      
+      // Check developer permissions
+      else if (userType === 'developer') {
+        // Developer must be matched with this request to update it
+        const { data: matchData, error: matchError } = await supabase
+          .from('help_request_matches')
+          .select('status')
+          .eq('request_id', requestId)
+          .eq('developer_id', currentUserId)
+          .maybeSingle();
           
-          const { data: userData } = await supabase.auth.getUser();
-          const userId = userData?.user?.id;
-          console.log('[updateHelpRequest] Current user:', userId);
+        if (matchError) {
+          console.error('[updateHelpRequest] Error checking developer match:', matchError);
+          return { 
+            success: false, 
+            error: `Error verifying your assignment to this help request.` 
+          };
+        }
+        
+        // Developer must be assigned to this request
+        if (!matchData) {
+          console.error('[updateHelpRequest] Developer not matched with this request');
           
-          // Use direct query instead of RPC
-          const { data: requestExists, error: checkError } = await supabase
-            .from('help_requests')
-            .select('id')
-            .eq('id', requestId)
-            .maybeSingle();
+          // Get all matches for this request to provide better error message
+          const { data: allMatches } = await supabase
+            .from('help_request_matches')
+            .select('developer_id, status')
+            .eq('request_id', requestId);
             
-          console.log('[updateHelpRequest] Request exists check:', !!requestExists, checkError);
+          console.log('[updateHelpRequest] All matches for this request:', allMatches);
           
           return { 
             success: false, 
-            error: `Help request not found or you don't have permission to update it.`
+            error: `You are not assigned to this help request. Please request assignment first.` 
           };
         }
-
-        console.log('[updateHelpRequest] Found current request:', currentRequest);
-
-        // Enhanced developer permission check - verify matching
-        if (userType === 'developer') {
-          const currentUserId = (await supabase.auth.getUser()).data.user?.id;
-          
-          // Check if the developer is actually matched with this request - modified to be less strict
-          const { data: matchData, error: matchError } = await supabase
-            .from('help_request_matches')
-            .select('status')
-            .eq('request_id', requestId)
-            .eq('developer_id', currentUserId)
-            .maybeSingle();
-            
-          console.log('[updateHelpRequest] Developer match check:', matchData, matchError);
-            
-          if (matchError) {
-            console.error('[updateHelpRequest] Error checking developer match:', matchError);
-            return { 
-              success: false, 
-              error: `Error verifying your assignment to this help request.` 
-            };
-          }
-          
-          // Modified check: Accept any match status for testing/development
-          if (!matchData) {
-            console.error('[updateHelpRequest] Developer not matched with this request');
-            
-            // Look for any matches for this request to understand the issue
-            const { data: allMatches } = await supabase
-              .from('help_request_matches')
-              .select('developer_id, status')
-              .eq('request_id', requestId);
-              
-            console.log('[updateHelpRequest] All matches for this request:', allMatches);
-            
-            // For testing/debugging: Add a match record for the current developer if none exists
-            if (!allMatches || allMatches.length === 0) {
-              console.log('[updateHelpRequest] No matches exist, creating a test match for development');
-              
-              // Create a match for development/testing purposes
-              const { data: newMatch, error: createError } = await supabase
-                .from('help_request_matches')
-                .insert({
-                  request_id: requestId,
-                  developer_id: currentUserId,
-                  status: 'approved',
-                  proposed_message: 'Automatically assigned for testing'
-                })
-                .select();
-                
-              if (createError) {
-                console.error('[updateHelpRequest] Error creating test match:', createError);
-                return { 
-                  success: false, 
-                  error: `You are not assigned to this help request. Error adding test match: ${createError.message}` 
-                };
-              }
-              
-              console.log('[updateHelpRequest] Created test match:', newMatch);
-            } else {
-              return { 
-                success: false, 
-                error: `You are not assigned to this help request. Current matches: ${allMatches.length}` 
-              };
-            }
-          }
-          
-          // Temporarily bypass status check for testing purposes
-          /*
-          if (matchData.status !== 'approved') {
-            console.error('[updateHelpRequest] Developer match not approved:', matchData.status);
-            return { 
-              success: false, 
-              error: `Your application to this help request is still ${matchData.status}. You need approved status to update it.` 
-            };
-          }
-          */
+        
+        // If the match is not approved (still pending), developer can't update
+        if (matchData.status !== 'approved' && 
+            updates.status !== 'dev_requested' && 
+            updates.status !== 'abandoned_by_dev') {
+          console.error('[updateHelpRequest] Developer match not approved:', matchData.status);
+          return { 
+            success: false, 
+            error: `Your application to this help request is ${matchData.status}. You need approved status to update it.` 
+          };
         }
         
-        if (userType === 'client') {
-          const currentUserId = (await supabase.auth.getUser()).data.user?.id;
-          if (currentRequest.client_id !== currentUserId) {
-            console.error(`[updateHelpRequest] Client ${currentUserId} does not own request ${requestId}`);
-            return { 
-              success: false, 
-              error: 'You do not have permission to update this help request' 
-            };
-          }
+        // Special case: A developer with pending status CAN transition to dev_requested
+        if (matchData.status === 'pending' && updates.status === 'dev_requested') {
+          // This is allowed
         }
+      }
 
+      // Check status transition validity if status is being updated
+      if (updates.status && currentRequest.status !== updates.status) {
+        // Validate the status transition based on user role
         if (!isValidStatusTransition(currentRequest.status, updates.status, userType)) {
           console.error(`[updateHelpRequest] Invalid status transition from ${currentRequest.status} to ${updates.status} by ${userType}`);
           return { 
@@ -194,25 +168,25 @@ export const updateHelpRequest = async (
         console.log(`[updateHelpRequest] Status transition validated: ${currentRequest.status} -> ${updates.status}`);
       }
 
+      // Update timestamp fields based on status changes
       const now = new Date().toISOString();
       
       if (updates.status) {
+        // Add appropriate timestamps based on status transitions
         switch(updates.status) {
-          case 'developer-qa':
+          case 'ready_for_qa':
             updates.qa_start_time = now;
             break;
-          case 'client-review':
+          case 'qa_feedback':
             updates.client_review_start_time = now;
             break;
-          case 'client-approved':
+          case 'complete':
             updates.client_review_complete_time = now;
-            break;
-          case 'completed':
-            updates.updated_at = now;
             break;
         }
       }
 
+      // Perform the update
       console.log('[updateHelpRequest] Sending update to Supabase:', updates);
       const { data, error } = await supabase
         .from('help_requests')
@@ -236,20 +210,13 @@ export const updateHelpRequest = async (
       
       console.log('[updateHelpRequest] Update successful, data:', data);
       
-      if (updates.status) {
+      // Log history entry for status changes
+      if (updates.status && updates.status !== currentRequest.status) {
         try {
-          const { data: userData } = await supabase.auth.getUser();
-          const currentUserId = userData.user?.id;
-          
-          if (!currentUserId) {
-            console.error('[updateHelpRequest] No authenticated user found');
-            return { success: true, data, storageMethod: 'Supabase' };
-          }
-          
           const historyEntry = {
             help_request_id: requestId,
             change_type: 'STATUS_CHANGE',
-            previous_status: data.status !== updates.status ? data.status : null,
+            previous_status: currentRequest.status,
             new_status: updates.status,
             changed_by: currentUserId,
             change_details: {

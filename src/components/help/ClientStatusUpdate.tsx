@@ -13,6 +13,11 @@ import {
 import { Loader2, CheckCircle2, ArrowRightCircle, ArrowUpLeft, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
+import { 
+  getAllowedStatusTransitions, 
+  getStatusLabel, 
+  STATUSES 
+} from '../../utils/helpRequestStatusUtils';
 
 interface ClientStatusUpdateProps {
   ticketId: string;
@@ -30,36 +35,31 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
   const [error, setError] = useState<string | null>(null);
   const { userType } = useAuth();
 
-  // Define valid status transitions for clients
+  // Define next status based on current status for client
   const getNextStatus = (current: string): string => {
     switch (current) {
-      case 'client-review':
-        return 'client-approved';
-      case 'client-approved':
-        return 'completed';
+      case STATUSES.AWAITING_CLIENT_APPROVAL:
+        return STATUSES.APPROVED;
+      case STATUSES.READY_FOR_QA:
+        return STATUSES.COMPLETE;
       default:
         return current;
     }
   };
 
-  const getAvailableStatuses = (current: string): { value: string; label: string; }[] => {
-    const statuses = [];
-
-    if (current === 'client-review') {
-      statuses.push({ value: 'client-approved', label: 'Approve Work' });
-      statuses.push({ value: 'in-progress', label: 'Request Changes' });
-    }
-
-    if (current === 'client-approved' || current === 'completed') {
-      statuses.push({ value: 'in-progress', label: 'Reopen Request' });
-    }
-
-    return statuses;
+  // Get available status options for client based on current status
+  const getAvailableStatuses = (): { value: string; label: string; }[] => {
+    const allowedTransitions = getAllowedStatusTransitions(currentStatus, 'client');
+    
+    return allowedTransitions.map(status => ({
+      value: status,
+      label: getStatusLabel(status)
+    }));
   };
 
   const handleUpdateStatus = async () => {
     if (selectedStatus === currentStatus) {
-      toast.info(`Status is already set to ${selectedStatus}`);
+      toast.info(`Status is already set to ${getStatusLabel(selectedStatus)}`);
       return;
     }
 
@@ -76,11 +76,12 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
       );
 
       if (response.success) {
-        toast.success(`Ticket status updated to ${selectedStatus}`);
+        toast.success(`Ticket status updated to ${getStatusLabel(selectedStatus)}`);
         onStatusUpdated();
       } else {
         setError(response.error || 'Failed to update status');
         toast.error(response.error || 'Failed to update status');
+        console.error('Status update error details:', response);
       }
     } catch (error) {
       console.error('Error updating ticket status:', error);
@@ -108,11 +109,12 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
       );
 
       if (response.success) {
-        toast.success(`Ticket status updated to ${nextStatus}`);
+        toast.success(`Ticket status updated to ${getStatusLabel(nextStatus)}`);
         onStatusUpdated();
       } else {
         setError(response.error || 'Failed to update status');
         toast.error(response.error || 'Failed to update status');
+        console.error('Status update error details:', response);
       }
     } catch (error) {
       console.error('Error updating ticket status:', error);
@@ -126,12 +128,14 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'client-approved':
+      case STATUSES.APPROVED:
         return <CheckCircle2 className="h-4 w-4" />;
-      case 'in-progress':
-        return <ArrowUpLeft className="h-4 w-4" />; // Updated to use ArrowUpLeft instead of ArrowUturnLeft
-      case 'completed':
+      case STATUSES.COMPLETE:
         return <CheckCircle2 className="h-4 w-4" />;
+      case STATUSES.QA_FEEDBACK:
+        return <ArrowUpLeft className="h-4 w-4" />;
+      case STATUSES.CANCELLED_BY_CLIENT:
+        return <ArrowUpLeft className="h-4 w-4" />;
       default:
         return <ArrowRightCircle className="h-4 w-4" />;
     }
@@ -139,21 +143,26 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
 
   const getNextStatusButtonText = (current: string): string => {
     switch (current) {
-      case 'client-review':
-        return 'Approve Work';
-      case 'client-approved':
+      case STATUSES.AWAITING_CLIENT_APPROVAL:
+        return 'Approve Developer';
+      case STATUSES.READY_FOR_QA:
         return 'Mark as Complete';
       default:
         return 'Update Status';
     }
   };
 
-  // Only render for relevant statuses
-  if (!['client-review', 'client-approved', 'completed'].includes(currentStatus)) {
+  // Only show for relevant statuses where client actions are needed
+  const clientActionableStatuses = [
+    STATUSES.AWAITING_CLIENT_APPROVAL,
+    STATUSES.READY_FOR_QA
+  ];
+  
+  if (!clientActionableStatuses.includes(currentStatus)) {
     return null;
   }
 
-  const availableStatuses = getAvailableStatuses(currentStatus);
+  const availableStatuses = getAvailableStatuses();
   if (availableStatuses.length === 0) {
     return null;
   }
