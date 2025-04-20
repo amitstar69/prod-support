@@ -53,14 +53,12 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
     if (isApiSuccess(response)) {
       onUpdate?.(response.data);
       toast({
-        title: "Success",
         description: "Status updated successfully",
       });
     } else if (isApiError(response)) {
       toast({
-        variant: "destructive",
-        title: "Error",
         description: response.error || "Failed to update status",
+        variant: "destructive",
       });
     }
   };
@@ -76,21 +74,18 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
       if (isApiSuccess(response)) {
         onUpdate?.(response.data);
         toast({
-          title: "Success",
           description: "Notes saved successfully",
         });
       } else if (isApiError(response)) {
         toast({
-          variant: "destructive",
-          title: "Error",
           description: response.error || "Failed to save notes",
+          variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        variant: "destructive",
-        title: "Error",
         description: "An unexpected error occurred",
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
