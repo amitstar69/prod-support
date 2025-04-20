@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
 import { Button } from '../ui/button';
@@ -75,7 +74,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     setError(null);
     
     try {
-      console.log(`Updating ticket ${ticketId} status to ${selectedStatus}`);
+      console.log(`Updating ticket ${ticketId} status from ${currentStatus} to ${selectedStatus}`);
       
       const response = await updateHelpRequest(
         ticketId,
@@ -89,6 +88,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       } else {
         setError(response.error || 'Failed to update status');
         toast.error(response.error || 'Failed to update status');
+        console.error('Status update error details:', response);
       }
     } catch (error) {
       console.error('Error updating ticket status:', error);
@@ -121,6 +121,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       } else {
         setError(response.error || 'Failed to update status');
         toast.error(response.error || 'Failed to update status');
+        console.error('Quick update error details:', response);
       }
     } catch (error) {
       console.error('Error updating ticket status:', error);
