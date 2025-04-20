@@ -14,6 +14,11 @@ export const STATUS_TRANSITIONS = {
 
 export type UserType = 'client' | 'developer';
 
+// Define a proper type for the transitions object structure
+type TransitionMap = {
+  [key: string]: string[];
+};
+
 // Helper function to check if a status transition is valid
 export const isValidStatusTransition = (
   currentStatus: string,
@@ -21,16 +26,20 @@ export const isValidStatusTransition = (
   userType: UserType
 ): boolean => {
   const transitions = userType === 'developer' ? STATUS_TRANSITIONS.developer : STATUS_TRANSITIONS.client;
-  // Check if the current status exists in transitions and if the new status is included
-  return Boolean(transitions[currentStatus as keyof typeof transitions]?.includes(newStatus));
+  
+  // Use type assertion to help TypeScript understand the structure
+  const allowedTransitions = (transitions as TransitionMap)[currentStatus];
+  return Array.isArray(allowedTransitions) && allowedTransitions.includes(newStatus);
 };
 
 // Get next logical status in the workflow
 export const getNextStatus = (currentStatus: string, userType: UserType): string | null => {
   const transitions = userType === 'developer' ? STATUS_TRANSITIONS.developer : STATUS_TRANSITIONS.client;
-  const nextStatuses = transitions[currentStatus as keyof typeof transitions];
   
-  return nextStatuses && nextStatuses.length > 0 ? nextStatuses[0] : null;
+  // Use type assertion to help TypeScript understand the structure
+  const nextStatuses = (transitions as TransitionMap)[currentStatus];
+  
+  return Array.isArray(nextStatuses) && nextStatuses.length > 0 ? nextStatuses[0] : null;
 };
 
 // Get human-readable status label
@@ -64,7 +73,11 @@ export const getStatusDescription = (status: string): string => {
 // Get allowed actions for a user type and status
 export const getAllowedActions = (status: string, userType: UserType): string[] => {
   const transitions = userType === 'developer' ? STATUS_TRANSITIONS.developer : STATUS_TRANSITIONS.client;
-  return transitions[status as keyof typeof transitions] || [];
+  
+  // Use type assertion to help TypeScript understand the structure
+  const actions = (transitions as TransitionMap)[status];
+  
+  return Array.isArray(actions) ? actions : [];
 };
 
 // Get status type (for styling, etc)
