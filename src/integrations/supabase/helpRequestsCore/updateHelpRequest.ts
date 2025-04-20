@@ -94,21 +94,41 @@ export const updateHelpRequest = async (
 
         console.log('[updateHelpRequest] Found current request:', currentRequest);
 
+        // Enhanced developer permission check - verify matching
         if (userType === 'developer') {
+          const currentUserId = (await supabase.auth.getUser()).data.user?.id;
+          
+          // Check if the developer is actually matched with this request
           const { data: matchData, error: matchError } = await supabase
             .from('help_request_matches')
             .select('status')
             .eq('request_id', requestId)
-            .eq('developer_id', (await supabase.auth.getUser()).data.user?.id)
+            .eq('developer_id', currentUserId)
             .maybeSingle();
             
           console.log('[updateHelpRequest] Developer match check:', matchData, matchError);
             
-          if (matchError || !matchData) {
-            console.error('[updateHelpRequest] Developer not matched with this request:', matchError);
+          if (matchError) {
+            console.error('[updateHelpRequest] Error checking developer match:', matchError);
+            return { 
+              success: false, 
+              error: `Error verifying your assignment to this help request.` 
+            };
+          }
+          
+          if (!matchData) {
+            console.error('[updateHelpRequest] Developer not matched with this request');
             return { 
               success: false, 
               error: `You are not assigned to this help request or the match status is pending.` 
+            };
+          }
+          
+          if (matchData.status !== 'approved') {
+            console.error('[updateHelpRequest] Developer match not approved:', matchData.status);
+            return { 
+              success: false, 
+              error: `Your application to this help request is still ${matchData.status}. You need approved status to update it.` 
             };
           }
         }
