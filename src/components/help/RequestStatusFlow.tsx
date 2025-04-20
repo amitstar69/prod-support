@@ -11,23 +11,57 @@ import {
 
 interface RequestStatusFlowProps {
   currentStatus: string;
+  userType?: 'client' | 'developer';
 }
 
-const RequestStatusFlow: React.FC<RequestStatusFlowProps> = ({ currentStatus }) => {
-  // Define the statuses in the flow
+const RequestStatusFlow: React.FC<RequestStatusFlowProps> = ({ 
+  currentStatus,
+  userType = 'client'
+}) => {
+  // Define the statuses in the flow with roles that can trigger them
   const statuses = [
-    { id: 'in-progress', label: 'In Progress', icon: <ArrowRightCircle className="h-4 w-4" /> },
-    { id: 'developer-qa', label: 'Dev QA', icon: <ClipboardCheck className="h-4 w-4" /> },
-    { id: 'client-review', label: 'Review', icon: <UserCheck className="h-4 w-4" /> },
-    { id: 'client-approved', label: 'Approved', icon: <ThumbsUp className="h-4 w-4" /> },
-    { id: 'completed', label: 'Completed', icon: <CheckCircle className="h-4 w-4" /> }
+    { 
+      id: 'in-progress', 
+      label: 'In Progress', 
+      icon: <ArrowRightCircle className="h-4 w-4" />,
+      allowedRoles: ['developer']
+    },
+    { 
+      id: 'developer-qa', 
+      label: 'Dev QA', 
+      icon: <ClipboardCheck className="h-4 w-4" />,
+      allowedRoles: ['developer']
+    },
+    { 
+      id: 'client-review', 
+      label: 'Review', 
+      icon: <UserCheck className="h-4 w-4" />,
+      allowedRoles: ['client', 'developer']
+    },
+    { 
+      id: 'client-approved', 
+      label: 'Approved', 
+      icon: <ThumbsUp className="h-4 w-4" />,
+      allowedRoles: ['client']
+    },
+    { 
+      id: 'completed', 
+      label: 'Completed', 
+      icon: <CheckCircle className="h-4 w-4" />,
+      allowedRoles: ['developer']
+    }
   ];
 
   // Find the current status index
   const currentIndex = statuses.findIndex(status => status.id === currentStatus);
+  
   const isActive = (index: number) => {
     if (currentStatus === 'cancelled') return false;
     return index <= currentIndex;
+  };
+
+  const canUpdateStatus = (status: typeof statuses[0]) => {
+    return status.allowedRoles.includes(userType);
   };
 
   // For waiting statuses

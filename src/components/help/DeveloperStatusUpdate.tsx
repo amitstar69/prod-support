@@ -1,9 +1,7 @@
-
 import React, { useState } from 'react';
 import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
-import { HelpRequest } from '../../types/helpRequest';
 import {
   Select,
   SelectContent,
@@ -12,6 +10,7 @@ import {
   SelectValue,
 } from '../ui/select';
 import { Loader2, CheckCircle2, ArrowRightCircle, ClipboardCheck, UserCheck } from 'lucide-react';
+import { useAuth } from '../../contexts/auth';
 
 interface DeveloperStatusUpdateProps {
   ticketId: string;
@@ -25,9 +24,9 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   onStatusUpdated,
 }) => {
   const [isUpdating, setIsUpdating] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<string>(currentStatus || 'in-progress');
+  const [selectedStatus, setSelectedStatus] = useState<string>(currentStatus);
+  const { userType } = useAuth();
 
-  // Get the next logical status based on current status
   const getNextStatus = (current: string): string => {
     switch (current) {
       case 'in-progress':
@@ -35,7 +34,6 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       case 'developer-qa':
         return 'client-review';
       case 'client-review':
-        // Client needs to approve, developer can't change from here
         return 'client-review';
       case 'client-approved':
         return 'completed';
@@ -44,14 +42,11 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     }
   };
 
-  // Get status options based on current status
   const getAvailableStatuses = (current: string): { value: string; label: string; }[] => {
-    // Base statuses always available to developer
     const statuses = [
       { value: 'in-progress', label: 'In Progress' },
     ];
 
-    // Add next statuses based on workflow
     if (current === 'in-progress' || current === 'client-review') {
       statuses.push({ value: 'developer-qa', label: 'Ready for QA' });
     }
@@ -75,15 +70,17 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
 
     setIsUpdating(true);
     try {
-      const response = await updateHelpRequest(ticketId, {
-        status: selectedStatus,
-      });
+      const response = await updateHelpRequest(
+        ticketId,
+        { status: selectedStatus },
+        userType || 'developer'
+      );
 
       if (response.success) {
         toast.success(`Ticket status updated to ${selectedStatus}`);
         onStatusUpdated();
       } else {
-        toast.error(`Failed to update status: ${response.error}`);
+        toast.error(response.error || 'Failed to update status');
       }
     } catch (error) {
       console.error('Error updating ticket status:', error);
@@ -99,15 +96,17 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     setIsUpdating(true);
     
     try {
-      const response = await updateHelpRequest(ticketId, {
-        status: nextStatus,
-      });
+      const response = await updateHelpRequest(
+        ticketId,
+        { status: nextStatus },
+        userType || 'developer'
+      );
 
       if (response.success) {
         toast.success(`Ticket status updated to ${nextStatus}`);
         onStatusUpdated();
       } else {
-        toast.error(`Failed to update status: ${response.error}`);
+        toast.error(response.error || 'Failed to update status');
       }
     } catch (error) {
       console.error('Error updating ticket status:', error);
@@ -145,7 +144,6 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     }
   };
 
-  // Only show the component if the developer can update the status
   if (!['in-progress', 'developer-qa', 'client-approved'].includes(currentStatus)) {
     return null;
   }
