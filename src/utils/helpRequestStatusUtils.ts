@@ -21,7 +21,8 @@ export const isValidStatusTransition = (
   userType: UserType
 ): boolean => {
   const transitions = userType === 'developer' ? STATUS_TRANSITIONS.developer : STATUS_TRANSITIONS.client;
-  return transitions[currentStatus as keyof typeof transitions]?.includes(newStatus) || false;
+  // Check if the current status exists in transitions and if the new status is included
+  return Boolean(transitions[currentStatus as keyof typeof transitions]?.includes(newStatus));
 };
 
 // Get next logical status in the workflow

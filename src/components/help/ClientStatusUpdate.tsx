@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { Loader2, CheckCircle2, ArrowRightCircle, ArrowUturnLeft, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle2, ArrowRightCircle, ArrowUpLeft, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
@@ -129,7 +129,7 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
       case 'client-approved':
         return <CheckCircle2 className="h-4 w-4" />;
       case 'in-progress':
-        return <ArrowUturnLeft className="h-4 w-4" />;
+        return <ArrowUpLeft className="h-4 w-4" />; // Updated to use ArrowUpLeft instead of ArrowUturnLeft
       case 'completed':
         return <CheckCircle2 className="h-4 w-4" />;
       default:
