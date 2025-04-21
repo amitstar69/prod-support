@@ -24,7 +24,7 @@ export const useTicketFetching = (
       }
       
       // Set a global timeout to prevent the app from getting stuck
-      const clearLoadingTimeout = setGlobalLoadingTimeout(() => {
+      const clearTimeout = setGlobalLoadingTimeout(() => {
         setIsLoading(false);
         toast.error('Failed to load tickets. Please try again.');
       }, 15000);
@@ -33,7 +33,7 @@ export const useTicketFetching = (
         console.log('[Ticket Fetching] Using sample tickets for unauthenticated user');
         setTickets(sampleTickets);
         setDataSource('sample');
-        clearLoadingTimeout();
+        clearTimeout();
         setIsLoading(false);
         return;
       }
@@ -74,7 +74,7 @@ export const useTicketFetching = (
         toast.error('An unexpected error occurred');
       }
     } finally {
-      clearLoadingTimeout?.();
+      clearTimeout?.();
       if (showLoading) {
         setIsLoading(false);
       }
