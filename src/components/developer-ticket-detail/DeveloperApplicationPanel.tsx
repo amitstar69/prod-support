@@ -7,6 +7,7 @@ import { HelpRequest } from "../../types/helpRequest";
 import DeveloperStatusUpdate from "../help/DeveloperStatusUpdate";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Info } from "lucide-react";
+import { getAllowedStatusTransitions } from "../../utils/helpRequestStatusUtils";
 
 interface DeveloperApplicationPanelProps {
   devUpdateVisibility: {
@@ -34,6 +35,7 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
 }) => {
   if (!ticket) return null;
 
+  // Always show the status update component for approved developers
   const showStatusUpdate = userType === "developer" && hasApplied && applicationStatus === "approved";
   const showApplyButton = userType === "developer" && !hasApplied;
 

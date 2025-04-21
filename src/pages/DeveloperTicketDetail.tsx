@@ -288,9 +288,7 @@ const DeveloperTicketDetail: React.FC = () => {
     show:
       userType === "developer" &&
       hasApplied &&
-      applicationStatus === "approved" &&
-      ticket &&
-      getAllowedStatusTransitions(ticket.status, "developer").length > 0,
+      applicationStatus === "approved",
     reason:
       !hasApplied
         ? ""

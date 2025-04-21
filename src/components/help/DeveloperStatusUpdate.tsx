@@ -69,13 +69,17 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
           .maybeSingle();
 
         if (error) {
+          console.error('Error checking match status:', error);
           setMatchStatus(null);
         } else if (matchData) {
+          console.log('Match data found:', matchData);
           setMatchStatus(matchData.status);
         } else {
+          console.log('No match data found');
           setMatchStatus(null);
         }
-      } catch {
+      } catch (error) {
+        console.error('Exception checking developer permission:', error);
         setMatchStatus(null);
       } finally {
         setIsPermissionChecking(false);
@@ -87,29 +91,32 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   useEffect(() => {
     // This centralizes ALL transition logic
     // Only STATUS_TRANSITIONS + helpers used here
-    let transitions = getAllowedStatusTransitions(currentStatus, 'developer');
-    
-    // Backend: only developers with approved match can go beyond DEV_REQUESTED
-    if (matchStatus !== 'approved' && matchStatus != null) {
-      transitions = transitions.filter(
-        s => s === STATUSES.DEV_REQUESTED
-      );
-    }
+    const transitions = getAllowedStatusTransitions(currentStatus, 'developer');
     
     console.log('Available transitions for developer:', transitions);
     console.log('Current status:', currentStatus);
     console.log('Match status:', matchStatus);
     
+    // Filter transitions based on match status
+    let filteredTransitions = [...transitions];
+    
+    // Only developers with approved match can update the status
+    if (matchStatus !== 'approved') {
+      filteredTransitions = transitions.filter(
+        s => s === STATUSES.DEV_REQUESTED
+      );
+    }
+    
     setAvailableStatuses(
-      transitions.map(s => ({
+      filteredTransitions.map(s => ({
         value: s,
         label: getStatusLabel(s)
       }))
     );
     
-    if (transitions.length > 0) {
-      setNextStatus(transitions[0]);
-      setSelectedStatus(transitions[0]);
+    if (filteredTransitions.length > 0) {
+      setNextStatus(filteredTransitions[0]);
+      setSelectedStatus(filteredTransitions[0]);
     } else {
       setNextStatus(null);
       setSelectedStatus(currentStatus);
