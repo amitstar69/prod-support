@@ -77,10 +77,10 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     // This centralizes ALL transition logic
     // Only STATUS_TRANSITIONS + helpers used here
     let transitions = getAllowedStatusTransitions(currentStatus, 'developer');
-    // Backend: only developers with approved match can go beyond DEV_REQUESTED/ABANDONED_BY_DEV
+    // Backend: only developers with approved match can go beyond DEV_REQUESTED
     if (matchStatus !== 'approved' && matchStatus != null) {
       transitions = transitions.filter(
-        s => s === STATUSES.DEV_REQUESTED || s === STATUSES.ABANDONED_BY_DEV
+        s => s === STATUSES.DEV_REQUESTED
       );
     }
     setAvailableStatuses(
@@ -200,7 +200,6 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     if (status === STATUSES.READY_FOR_QA) return <ClipboardCheck className="h-4 w-4" />;
     if (status === STATUSES.DEV_REQUESTED) return <UserCheck className="h-4 w-4" />;
     if (status === STATUSES.COMPLETE) return <CheckCircle2 className="h-4 w-4" />;
-    if (status === STATUSES.ABANDONED_BY_DEV) return <ShieldAlert className="h-4 w-4" />;
     return null;
   };
 
@@ -210,7 +209,6 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     if (next === STATUSES.DEV_REQUESTED) return 'Request Assignment';
     if (next === STATUSES.IN_PROGRESS) return 'Start Working';
     if (next === STATUSES.READY_FOR_QA) return 'Submit for QA';
-    if (next === STATUSES.ABANDONED_BY_DEV) return 'Abandon';
     return getStatusLabel(next);
   };
 
@@ -303,4 +301,3 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
 };
 
 export default DeveloperStatusUpdate;
-
