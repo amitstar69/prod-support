@@ -1,26 +1,26 @@
 
 import React from 'react';
 import { toast } from 'sonner';
-import StatusDropdown from './StatusDropdown';
+import StatusDropdown from '../developer-actions/StatusDropdown';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { supabase } from '../../integrations/supabase/client';
 
-interface DeveloperActionStatusProps {
+interface ClientActionStatusProps {
   ticketId: string;
   currentStatus?: string;
   onStatusUpdate?: () => void;
 }
 
-const DeveloperActionStatus: React.FC<DeveloperActionStatusProps> = ({
+const ClientActionStatus: React.FC<ClientActionStatusProps> = ({
   ticketId,
   currentStatus,
   onStatusUpdate
 }) => {
-  console.log("DeveloperActionStatus render with:", { ticketId, currentStatus });
+  console.log("ClientActionStatus render with:", { ticketId, currentStatus });
 
   const handleStatusChange = async (newStatusId: string) => {
     try {
-      console.log(`Updating ticket ${ticketId} status from ${currentStatus} to ${newStatusId}`);
+      console.log(`Client updating ticket ${ticketId} status from ${currentStatus} to ${newStatusId}`);
       
       if (newStatusId === currentStatus) {
         console.log("No status change detected");
@@ -47,7 +47,7 @@ const DeveloperActionStatus: React.FC<DeveloperActionStatusProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Update Status</CardTitle>
+        <CardTitle className="text-lg">Update Request Status</CardTitle>
       </CardHeader>
       <CardContent>
         <StatusDropdown
@@ -55,11 +55,11 @@ const DeveloperActionStatus: React.FC<DeveloperActionStatusProps> = ({
           onStatusChange={handleStatusChange}
           placeholder="Select new status"
           required={true}
-          userType="developer"
+          userType="client"
         />
       </CardContent>
     </Card>
   );
 };
 
-export default DeveloperActionStatus;
+export default ClientActionStatus;

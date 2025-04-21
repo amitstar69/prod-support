@@ -4,25 +4,7 @@ import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
 import { supabase } from '../../integrations/supabase/client';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
-import { 
-  Loader2, 
-  CheckCircle2, 
-  ArrowRightCircle, 
-  ClipboardCheck, 
-  UserCheck, 
-  AlertTriangle, 
-  ShieldAlert, 
-  FileQuestion,
-  MessageCircle,
-  FileCheck
-} from 'lucide-react';
+import { Loader2, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { 
@@ -31,6 +13,7 @@ import {
   getStatusDescription, 
   STATUSES
 } from '../../utils/helpRequestStatusUtils';
+import StatusDropdown from '../developer-actions/StatusDropdown';
 
 interface DeveloperStatusUpdateProps {
   ticketId: string;
@@ -44,13 +27,12 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   onStatusUpdated,
 }) => {
   const [isUpdating, setIsUpdating] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<string>(currentStatus);
   const [error, setError] = useState<string | null>(null);
   const { userType, userId } = useAuth();
-  const [availableStatuses, setAvailableStatuses] = useState<Array<{value: string, label: string}>>([]);
-  const [nextStatus, setNextStatus] = useState<string | null>(null);
   const [matchStatus, setMatchStatus] = useState<string | null>(null);
   const [isPermissionChecking, setIsPermissionChecking] = useState<boolean>(true);
+  const [availableTransitions, setAvailableTransitions] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string>(currentStatus);
 
   // Normalize the current status for consistency
   const normalizedCurrentStatus = currentStatus?.replace(/-/g, '_') || '';
@@ -110,73 +92,39 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       );
     }
     
-    setAvailableStatuses(
-      filteredTransitions.map(s => ({
-        value: s,
-        label: getStatusLabel(s)
-      }))
-    );
+    setAvailableTransitions(filteredTransitions);
     
     if (filteredTransitions.length > 0) {
-      setNextStatus(filteredTransitions[0]);
       setSelectedStatus(filteredTransitions[0]);
     } else {
-      setNextStatus(null);
       setSelectedStatus(normalizedCurrentStatus || currentStatus);
     }
   }, [currentStatus, matchStatus, normalizedCurrentStatus]);
 
-  const handleUpdateStatus = async () => {
-    if (selectedStatus === currentStatus || selectedStatus === normalizedCurrentStatus) {
-      toast.info(`Status is already set to ${getStatusLabel(selectedStatus)}`);
+  const handleUpdateStatus = async (newStatusId: string) => {
+    if (newStatusId === currentStatus || newStatusId === normalizedCurrentStatus) {
+      toast.info(`Status is already set to ${getStatusLabel(newStatusId)}`);
       return;
     }
+    
     setIsUpdating(true);
     setError(null);
+    setSelectedStatus(newStatusId);
 
     try {
-      console.log(`Updating status from ${currentStatus} to ${selectedStatus}`);
+      console.log(`Updating status from ${currentStatus} to ${newStatusId}`);
       const response = await updateHelpRequest(
         ticketId,
-        { status: selectedStatus },
+        { status: newStatusId },
         userType || 'developer'
       );
+      
       if (response.success) {
-        toast.success(`Ticket status updated to ${getStatusLabel(selectedStatus)}`);
+        toast.success(`Ticket status updated to ${getStatusLabel(newStatusId)}`);
         onStatusUpdated();
       } else {
         setError(response.error || 'Failed to update status');
         toast.error(response.error || 'Permission denied: ' + (response.error || 'Cannot update status'));
-      }
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'An unknown error occurred');
-      toast.error('An error occurred while updating the status');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleQuickUpdate = async () => {
-    if (!nextStatus) {
-      toast.error('No valid next status available');
-      return;
-    }
-    setSelectedStatus(nextStatus);
-    setIsUpdating(true);
-    setError(null);
-    try {
-      console.log(`Quick updating status from ${currentStatus} to ${nextStatus}`);
-      const response = await updateHelpRequest(
-        ticketId,
-        { status: nextStatus },
-        userType || 'developer'
-      );
-      if (response.success) {
-        toast.success(`Ticket status updated to ${getStatusLabel(nextStatus)}`);
-        onStatusUpdated();
-      } else {
-        setError(response.error || 'Failed to update status');
-        toast.error(response.error || 'Permission denied: cannot update status');
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
@@ -211,7 +159,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     );
   }
 
-  if (!availableStatuses.length) {
+  if (!availableTransitions.length) {
     return (
       <Alert>
         <AlertTitle>No Available Status Updates</AlertTitle>
@@ -228,38 +176,6 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     );
   }
 
-  // Simple icon logic based on status value
-  const getStatusIcon = (status: string) => {
-    if (status === STATUSES.IN_PROGRESS) return <ArrowRightCircle className="h-4 w-4" />;
-    if (status === STATUSES.READY_FOR_CLIENT_QA) return <ClipboardCheck className="h-4 w-4" />;
-    if (status === STATUSES.DEV_REQUESTED) return <UserCheck className="h-4 w-4" />;
-    if (status === STATUSES.RESOLVED) return <CheckCircle2 className="h-4 w-4" />;
-    if (status === STATUSES.REQUIREMENTS_REVIEW) return <FileQuestion className="h-4 w-4" />;
-    if (status === STATUSES.NEED_MORE_INFO) return <MessageCircle className="h-4 w-4" />;
-    if (status === STATUSES.READY_FOR_FINAL_ACTION) return <FileCheck className="h-4 w-4" />;
-    return null;
-  };
-
-  // More maintainable labels
-  const getNextStatusButtonText = (next: string | null): string => {
-    if (!next) return 'Update Status';
-    if (next === STATUSES.DEV_REQUESTED) return 'Request Assignment';
-    if (next === STATUSES.IN_PROGRESS) return 'Start Working';
-    if (next === STATUSES.READY_FOR_CLIENT_QA) return 'Submit for QA';
-    if (next === STATUSES.REQUIREMENTS_REVIEW) return 'Start Review';
-    if (next === STATUSES.NEED_MORE_INFO) return 'Need More Info';
-    if (next === STATUSES.RESOLVED) return 'Mark as Resolved';
-    if (next === STATUSES.READY_FOR_FINAL_ACTION) return 'Final Actions';
-    return getStatusLabel(next);
-  };
-
-  // Button variants based on action type
-  const getButtonVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    if (status === STATUSES.NEED_MORE_INFO) return "secondary";
-    if (status === STATUSES.RESOLVED) return "default";
-    return "default";
-  };
-
   return (
     <div className="space-y-4">
       {error && (
@@ -270,70 +186,23 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
         </Alert>
       )}
 
-      {nextStatus ? (
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button
-            onClick={handleQuickUpdate}
-            disabled={isUpdating}
-            className="w-full"
-            variant={getButtonVariant(nextStatus)}
-          >
-            {isUpdating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              getStatusIcon(nextStatus)
-            )}
-            <span className="ml-2">{getNextStatusButtonText(nextStatus)}</span>
-          </Button>
-        </div>
-      ) : (
-        <Alert>
-          <AlertTitle>No Available Status Updates</AlertTitle>
-          <AlertDescription>
-            {currentStatus === 'ready_for_client_qa'
-              ? "You've submitted for QA. Waiting for client review."
-              : "No status transitions available at this time."}
-          </AlertDescription>
-        </Alert>
-      )}
+      <div className="space-y-4">
+        <StatusDropdown
+          defaultStatusId={selectedStatus}
+          onStatusChange={handleUpdateStatus}
+          placeholder="Select new status"
+          required={true}
+          userType="developer"
+          disabled={isUpdating}
+        />
 
-      {availableStatuses.length > 1 && (
-        <div className="flex flex-col sm:flex-row gap-2 items-center">
-          <div className="w-full sm:w-2/3">
-            <Select
-              value={selectedStatus}
-              onValueChange={setSelectedStatus}
-              disabled={isUpdating || !availableStatuses.length}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableStatuses.map((status) => (
-                  <SelectItem key={status.value} value={status.value}>
-                    <div className="flex items-center">
-                      {getStatusIcon(status.value)}
-                      <span className="ml-2">{status.label}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {isUpdating && (
+          <div className="flex items-center justify-center p-2">
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <span>Updating status...</span>
           </div>
-          <Button
-            variant="outline"
-            onClick={handleUpdateStatus}
-            disabled={isUpdating || selectedStatus === currentStatus || !availableStatuses.length}
-            className="w-full sm:w-1/3"
-          >
-            {isUpdating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              'Update'
-            )}
-          </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="mt-4 bg-muted p-3 rounded text-sm">
         <p className="font-medium">Current Status: {getStatusLabel(currentStatus)}</p>

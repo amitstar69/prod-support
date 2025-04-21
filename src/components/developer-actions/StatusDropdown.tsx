@@ -17,6 +17,7 @@ interface StatusDropdownProps {
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
+  userType?: 'client' | 'developer'; // Add user type to filter available statuses
 }
 
 const StatusDropdown: React.FC<StatusDropdownProps> = ({
@@ -25,8 +26,15 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
   placeholder = "Select Status",
   required = false,
   disabled = false,
+  userType = 'developer'
 }) => {
-  const { statuses, isLoading, error } = useApplicationStatuses();
+  const { statuses, isLoading, error } = useApplicationStatuses(userType);
+  
+  console.log("StatusDropdown rendering with:", { 
+    defaultStatusId, 
+    statusesCount: statuses.length,
+    userType 
+  });
 
   if (error) {
     return (
