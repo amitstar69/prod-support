@@ -44,14 +44,14 @@ export const useMyTicketApplications = () => {
         console.log('[Applications] Request timed out');
       }, 8000); // Reduced from 10s to 8s
       
-      // Use a more detailed query to get both help_request and match data
+      // Fix the query syntax - use proper join structure
       const { data: applications, error } = await supabase
         .from('help_request_matches')
         .select(`
           id, 
-          status as application_status, 
-          developer_id, 
-          help_requests(*)
+          status, 
+          developer_id,
+          help_requests (*)
         `)
         .eq('developer_id', currentUserId)
         .eq('status', VALID_MATCH_STATUSES.APPROVED)
@@ -82,7 +82,7 @@ export const useMyTicketApplications = () => {
           ...app.help_requests,
           developer_id: currentUserId,
           application_id: app.id,
-          application_status: app.application_status,
+          application_status: app.status,
           isApplication: true // Mark as an application for UI logic
         })) as HelpRequest[];
       

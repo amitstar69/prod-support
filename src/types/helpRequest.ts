@@ -26,6 +26,10 @@ export interface HelpRequest {
   client_review_complete_time?: string;
   developer_qa_notes?: string;
   client_feedback?: string;
+  isApplication?: boolean;
+  application_id?: string;
+  application_status?: string;
+  developer_id?: string;
 }
 
 export interface HelpRequestMatch {
