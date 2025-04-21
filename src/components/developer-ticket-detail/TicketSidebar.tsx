@@ -1,6 +1,7 @@
 
 import React from "react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge } from "../../components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 import { CalendarClock, Clock, DollarSign, Zap, ClipboardCheck } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { HelpRequest } from "../../types/helpRequest";

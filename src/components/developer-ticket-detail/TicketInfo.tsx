@@ -1,7 +1,9 @@
 
 import React from "react";
 import { HelpRequest } from "../../types/helpRequest";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, Separator, Badge } from "../../components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/card";
+import { Separator } from "../../components/ui/separator";
+import { Badge } from "../../components/ui/badge";
 import { FileCode, Award, Users, MessageSquare, Code, ClipboardCheck } from "lucide-react";
 
 interface TicketInfoProps {

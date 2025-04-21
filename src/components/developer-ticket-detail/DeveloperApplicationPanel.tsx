@@ -29,6 +29,9 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
   onApply,
   fetchLatestTicketData
 }) => {
+  // Convert userType to the correct type for RequestStatusFlow
+  const userTypeFormatted = userType === 'developer' ? 'developer' : 'client' as 'developer' | 'client';
+
   if (devUpdateVisibility.show) {
     return (
       <Card className="mb-6">
@@ -41,7 +44,7 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
         <CardContent>
           <RequestStatusFlow
             currentStatus={ticket?.status || ""}
-            userType={userType}
+            userType={userTypeFormatted}
           />
           <div className="mt-4">
             <DeveloperStatusUpdate
@@ -61,7 +64,7 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
           <CardDescription>Current: {ticket?.status || ""}</CardDescription>
         </CardHeader>
         <CardContent>
-          <RequestStatusFlow currentStatus={ticket?.status || ""} userType={userType} />
+          <RequestStatusFlow currentStatus={ticket?.status || ""} userType={userTypeFormatted} />
           <Alert className="mt-4 bg-blue-50 border-blue-200">
             <ShieldAlert className="h-4 w-4" />
             <AlertTitle>Waiting for Client Approval</AlertTitle>
@@ -81,7 +84,7 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
           <CardDescription>Current: {ticket?.status || ""}</CardDescription>
         </CardHeader>
         <CardContent>
-          <RequestStatusFlow currentStatus={ticket?.status || ""} userType={userType} />
+          <RequestStatusFlow currentStatus={ticket?.status || ""} userType={userTypeFormatted} />
           <Alert variant="destructive" className="mt-4">
             <ShieldAlert className="h-4 w-4" />
             <AlertTitle>Application Rejected</AlertTitle>
