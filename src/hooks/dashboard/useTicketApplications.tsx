@@ -12,7 +12,7 @@ export interface UseTicketApplicationsResult {
   recommendedTickets: HelpRequest[];
   myApplications: HelpRequest[];
   handleClaimTicket: (ticketId: string) => void;
-  fetchMyApplications: (userId: string | null) => Promise<void>;
+  fetchMyApplications: (isAuthenticated: boolean, userId: string | null) => Promise<void>;
   checkApplicationStatus: (ticketId: string, userId: string) => Promise<string | null>;
 }
 
