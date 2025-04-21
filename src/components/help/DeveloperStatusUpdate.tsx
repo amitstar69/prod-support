@@ -88,18 +88,25 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     // This centralizes ALL transition logic
     // Only STATUS_TRANSITIONS + helpers used here
     let transitions = getAllowedStatusTransitions(currentStatus, 'developer');
+    
     // Backend: only developers with approved match can go beyond DEV_REQUESTED
     if (matchStatus !== 'approved' && matchStatus != null) {
       transitions = transitions.filter(
         s => s === STATUSES.DEV_REQUESTED
       );
     }
+    
+    console.log('Available transitions for developer:', transitions);
+    console.log('Current status:', currentStatus);
+    console.log('Match status:', matchStatus);
+    
     setAvailableStatuses(
       transitions.map(s => ({
         value: s,
         label: getStatusLabel(s)
       }))
     );
+    
     if (transitions.length > 0) {
       setNextStatus(transitions[0]);
       setSelectedStatus(transitions[0]);
@@ -278,7 +285,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
         </Alert>
       )}
 
-      {availableStatuses.length > 0 && (
+      {availableStatuses.length > 1 && (
         <div className="flex flex-col sm:flex-row gap-2 items-center">
           <div className="w-full sm:w-2/3">
             <Select

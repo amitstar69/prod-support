@@ -12,7 +12,8 @@ export const STATUS_TRANSITIONS = {
     'requirements_review': ['in_progress', 'need_more_info'],
     'need_more_info': ['requirements_review', 'in_progress'],
     'in_progress': ['ready_for_client_qa'],
-    'qa_fail': ['in_progress'],
+    'qa_fail': ['in_progress', 'ready_for_client_qa'],
+    'qa_pass': ['ready_for_final_action'],
     'ready_for_final_action': ['resolved']
   },
   client: {
@@ -130,7 +131,7 @@ export const getAllowedStatusTransitions = (
   let allowedTransitions = transitions[currentStatus] || [];
   
   // Add special 'any' transitions if applicable
-  if (userType === 'client' && transitions['any']) {
+  if (transitions['any']) {
     allowedTransitions = [...allowedTransitions, ...transitions['any']];
   }
   

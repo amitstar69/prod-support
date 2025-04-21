@@ -72,6 +72,13 @@ const TicketStatusPanel: React.FC<{ ticket: HelpRequest }> = ({ ticket }) => {
       iconColor: "text-green-600",
       title: "Request Resolved",
       description: "This request has been successfully completed!"
+    },
+    [STATUSES.APPROVED]: {
+      bg: "bg-green-50 border-green-200",
+      icon: Users,
+      iconColor: "text-green-600",
+      title: "Developer Approved",
+      description: "Developer has been approved and can start working on this request."
     }
   };
 
