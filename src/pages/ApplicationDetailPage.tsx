@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import { useAuth } from '../contexts/auth';
-import { HelpRequestMatch } from '../types/helpRequest';
+import { HelpRequestMatch, ApplicationStatus } from '../types/helpRequest';
 import { toast } from 'sonner';
 import { updateApplicationStatus, VALID_MATCH_STATUSES } from '../integrations/supabase/helpRequestsApplications';
 import { 
