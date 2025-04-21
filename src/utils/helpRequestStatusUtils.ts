@@ -1,4 +1,3 @@
-
 // Define valid status transitions
 export const STATUS_TRANSITIONS = {
   system: {
@@ -14,7 +13,8 @@ export const STATUS_TRANSITIONS = {
     'in_progress': ['ready_for_client_qa'],
     'qa_fail': ['in_progress', 'ready_for_client_qa'],
     'qa_pass': ['ready_for_final_action'],
-    'ready_for_final_action': ['resolved']
+    'ready_for_final_action': ['resolved'],
+    'in-progress': ['ready_for_client_qa']
   },
   client: {
     'awaiting_client_approval': ['approved', 'pending_match'], // Can reject back to pending
@@ -39,15 +39,20 @@ export const isValidStatusTransition = (
     return true;
   }
   
+  // Handle hyphenated statuses (for compatibility)
+  const normalizedCurrentStatus = currentStatus.replace(/-/g, '_');
+  
   // Regular transition check
-  const allowedTransitions = transitions[currentStatus];
+  const allowedTransitions = transitions[normalizedCurrentStatus] || transitions[currentStatus];
   return Array.isArray(allowedTransitions) && allowedTransitions.includes(newStatus);
 };
 
 // Get next logical status in the workflow
 export const getNextStatus = (currentStatus: string, userType: UserType): string | null => {
   const transitions = STATUS_TRANSITIONS[userType];
-  const nextStatuses = transitions[currentStatus];
+  // Handle hyphenated statuses (for compatibility)
+  const normalizedCurrentStatus = currentStatus.replace(/-/g, '_');
+  const nextStatuses = transitions[normalizedCurrentStatus] || transitions[currentStatus];
   return Array.isArray(nextStatuses) && nextStatuses.length > 0 ? nextStatuses[0] : null;
 };
 
@@ -127,8 +132,14 @@ export const getAllowedStatusTransitions = (
   currentStatus: string,
   userType: UserType
 ): string[] => {
+  if (!currentStatus) return [];
+  
   const transitions = STATUS_TRANSITIONS[userType];
-  let allowedTransitions = transitions[currentStatus] || [];
+  
+  // Handle hyphenated statuses (for compatibility)
+  const normalizedCurrentStatus = currentStatus.replace(/-/g, '_');
+  
+  let allowedTransitions = transitions[normalizedCurrentStatus] || transitions[currentStatus] || [];
   
   // Add special 'any' transitions if applicable
   if (transitions['any']) {

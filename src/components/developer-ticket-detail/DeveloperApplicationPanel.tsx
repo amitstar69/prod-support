@@ -39,6 +39,15 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
   const showStatusUpdate = userType === "developer" && hasApplied && applicationStatus === "approved";
   const showApplyButton = userType === "developer" && !hasApplied;
 
+  console.log("DeveloperApplicationPanel render state:", {
+    showStatusUpdate,
+    showApplyButton,
+    applicationStatus,
+    hasApplied,
+    userType,
+    ticketStatus: ticket.status
+  });
+
   return (
     <Card className="mb-6">
       <CardHeader className="pb-2">
@@ -82,7 +91,7 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
               </AlertDescription>
             </Alert>
             
-            {devUpdateVisibility && !devUpdateVisibility.show && devUpdateVisibility.reason && (
+            {!devUpdateVisibility.show && devUpdateVisibility.reason && (
               <p className="text-sm text-muted-foreground">
                 {devUpdateVisibility.reason}
               </p>

@@ -89,12 +89,13 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   }, [ticketId, userId]);
 
   useEffect(() => {
-    // This centralizes ALL transition logic
-    // Only STATUS_TRANSITIONS + helpers used here
-    const transitions = getAllowedStatusTransitions(currentStatus, 'developer');
+    const normalizedStatus = currentStatus?.replace(/-/g, '_') || '';
+    // Get all available transitions for the current status
+    const transitions = getAllowedStatusTransitions(normalizedStatus || currentStatus, 'developer');
     
     console.log('Available transitions for developer:', transitions);
     console.log('Current status:', currentStatus);
+    console.log('Normalized status:', normalizedStatus);
     console.log('Match status:', matchStatus);
     
     // Filter transitions based on match status
@@ -119,7 +120,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       setSelectedStatus(filteredTransitions[0]);
     } else {
       setNextStatus(null);
-      setSelectedStatus(currentStatus);
+      setSelectedStatus(normalizedStatus || currentStatus);
     }
   }, [currentStatus, matchStatus]);
 
