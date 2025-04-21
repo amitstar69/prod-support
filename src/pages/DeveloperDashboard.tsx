@@ -1,149 +1,97 @@
 
 import React from 'react';
 import Layout from '../components/Layout';
-import DashboardBanner from '../components/dashboard/DashboardBanner';
-import DashboardHeader from '../components/dashboard/DashboardHeader';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
 import LoginPrompt from '../components/dashboard/LoginPrompt';
-import TicketFiltersContainer from '../components/dashboard/TicketFiltersContainer';
-import TicketList from '../components/tickets/TicketList';
-import LoadingState from '../components/dashboard/LoadingState';
-import EmptyTicketState from '../components/dashboard/EmptyTicketState';
-import TicketControls from '../components/dashboard/TicketControls';
-import TicketSummary from '../components/dashboard/TicketSummary';
-import { useDeveloperDashboard } from '../hooks/dashboard/useDeveloperDashboard';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
-// Check if we're in development mode - explicitly using import.meta.env
-const isDevelopment = process.env.NODE_ENV === 'development' || import.meta.env.DEV === true;
-
-const DeveloperDashboard = () => {
-  const {
-    tickets,
-    filteredTickets,
-    recommendedTickets,
-    isLoading,
-    filters,
-    showFilters,
-    setShowFilters,
-    isAuthenticated,
-    userId,
-    activeTab,
-    setActiveTab,
-    dataSource,
-    handleFilterChange,
-    handleClaimTicket,
-    handleForceRefresh,
-    fetchTickets
-  } = useDeveloperDashboard();
-
+const DeveloperDashboard: React.FC = () => {
+  const isLoggedIn = false; // This would normally come from auth context
+  
   return (
     <Layout>
-      <DashboardBanner />
-      
-      <div className="container mx-auto py-8 px-4">
-        <DashboardHeader 
-          showFilters={showFilters} 
-          setShowFilters={setShowFilters} 
-          onRefresh={fetchTickets} 
-          title="Available Gigs"
-          description="Find and apply for client help requests that match your skills"
-        />
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Developer Dashboard</h1>
         
-        {!isAuthenticated && (
-          <div className="mb-8">
-            <LoginPrompt />
-          </div>
-        )}
+        {!isLoggedIn && <LoginPrompt />}
         
-        <TicketControls 
-          onForceRefresh={handleForceRefresh}
-          showLoadMore={filteredTickets.length >= 5}
-        />
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Active Sessions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">2</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Completed Sessions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">18</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Earnings This Month</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">$840</p>
+            </CardContent>
+          </Card>
+        </div>
         
-        {showFilters && (
-          <div className="mb-6">
-            <TicketFiltersContainer 
-              filters={filters} 
-              onFilterChange={handleFilterChange}
-              onClose={() => setShowFilters(false)}
-            />
-          </div>
-        )}
-
-        {isLoading ? (
-          <LoadingState />
-        ) : (
-          <Tabs 
-            defaultValue={activeTab} 
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <TabsList className="mb-6">
-              {isAuthenticated && (
-                <TabsTrigger value="recommended" className="flex-1">
-                  Recommended for You
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="all" className="flex-1">
-                All Gigs
-              </TabsTrigger>
-            </TabsList>
-            
-            {isAuthenticated && (
-              <TabsContent value="recommended" className="mt-0">
-                <TicketSummary 
-                  filteredCount={recommendedTickets.length} 
-                  totalCount={tickets.length} 
-                  dataSource={dataSource}
-                  categoryTitle="Recommended Gigs"
-                />
-                
-                {recommendedTickets.length > 0 ? (
-                  <TicketList 
-                    tickets={recommendedTickets} 
-                    onClaimTicket={handleClaimTicket}
-                    currentUserId={userId}
-                    isAuthenticated={isAuthenticated}
-                    isRecommended={true}
-                  />
-                ) : (
-                  <EmptyTicketState 
-                    tickets={tickets}
-                    isAuthenticated={isAuthenticated}
-                    onRefresh={fetchTickets}
-                    dataSource={dataSource}
-                    customMessage="No recommended gigs found. We'll suggest gigs that match your skills as they become available."
-                  />
-                )}
-              </TabsContent>
-            )}
-            
-            <TabsContent value="all" className="mt-0">
-              <TicketSummary 
-                filteredCount={filteredTickets.length} 
-                totalCount={tickets.length} 
-                dataSource={dataSource}
-                categoryTitle="All Available Gigs"
-              />
-              
-              {filteredTickets.length > 0 ? (
-                <TicketList 
-                  tickets={filteredTickets} 
-                  onClaimTicket={handleClaimTicket}
-                  currentUserId={userId}
-                  isAuthenticated={isAuthenticated}
-                />
-              ) : (
-                <EmptyTicketState 
-                  tickets={tickets}
-                  isAuthenticated={isAuthenticated}
-                  onRefresh={fetchTickets}
-                  dataSource={dataSource}
-                />
-              )}
-            </TabsContent>
-          </Tabs>
-        )}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Available Help Requests</h2>
+          <Button size="sm" variant="outline">View All</Button>
+        </div>
+        
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex justify-between">
+                <CardTitle>React useEffect causing infinite loop</CardTitle>
+                <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">Medium Priority</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm mb-4 line-clamp-2">
+                I have a useEffect hook that seems to be causing an infinite loop. I'm not sure how to fix it.
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex gap-1">
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">React</span>
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">JavaScript</span>
+                </div>
+                <a href="/ticket/1" className="text-primary hover:underline text-sm">View Details</a>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex justify-between">
+                <CardTitle>Database query performance issue</CardTitle>
+                <span className="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800">High Priority</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm mb-4 line-clamp-2">
+                My PostgreSQL query is taking too long to execute. Need help optimizing it.
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex gap-1">
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">SQL</span>
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">PostgreSQL</span>
+                </div>
+                <a href="/ticket/2" className="text-primary hover:underline text-sm">View Details</a>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </Layout>
   );
