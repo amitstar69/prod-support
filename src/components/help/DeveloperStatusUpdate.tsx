@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
 import { supabase } from '../../integrations/supabase/client';
@@ -68,61 +67,26 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   }, [currentStatus, ticketId, userType, userId]);
 
   useEffect(() => {
-    if (!currentStatus || userType !== 'developer') return;
-    
-    console.log("Getting available transitions for status:", currentStatus);
-    
-    // Define manual transitions based on current status
-    let allowedTransitions: string[] = [];
-    
-    // Hardcoded status transitions to ensure they work properly
-    switch (currentStatus) {
-      case 'approved':
-        allowedTransitions = ['in_progress'];
-        break;
-      case 'in_progress':
-        allowedTransitions = ['ready_for_qa'];
-        break;
-      case 'ready_for_qa':
-        // No transitions from here, this is handled by the QA dialog
-        allowedTransitions = [];
-        break;
-      case 'pending_match':
-        allowedTransitions = ['dev_requested'];
-        break;
-      default:
-        // Try to use the helper function as fallback
-        allowedTransitions = getAllowedStatusTransitions(currentStatus, 'developer');
-    }
-    
-    console.log("Available status transitions:", allowedTransitions);
-    
-    // Set available statuses
-    const statusOptions = allowedTransitions.map(status => ({
-      value: status,
-      label: getStatusLabel(status)
-    }));
-    
-    setAvailableStatuses(statusOptions);
-    
-    // Set next logical status if available
-    if (allowedTransitions.length > 0) {
-      setNextStatus(allowedTransitions[0]);
-      setSelectedStatus(allowedTransitions[0]);
-    } else {
-      setNextStatus(null);
-    }
-  }, [currentStatus, userType]);
+    // Always get allowed transitions from centralized helper
+    const transitions = getAllowedStatusTransitions(currentStatus, 'developer');
+    setAvailableStatuses(
+      transitions.map(status => ({
+        value: status,
+        label: getStatusLabel(status)
+      }))
+    );
+    setNextStatus(transitions.length ? transitions[0] : null);
+    setSelectedStatus(transitions.length ? transitions[0] : currentStatus);
+  }, [currentStatus]);
 
   const handleUpdateStatus = async () => {
     if (selectedStatus === currentStatus) {
       toast.info('Status is already set to ' + getStatusLabel(selectedStatus));
       return;
     }
-
     setIsUpdating(true);
     setError(null);
-    
+
     try {
       console.log(`Updating ticket ${ticketId} status from ${currentStatus} to ${selectedStatus}`);
       
@@ -155,11 +119,11 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       toast.error('No valid next status available');
       return;
     }
-    
+
     setSelectedStatus(nextStatus);
     setIsUpdating(true);
     setError(null);
-    
+
     try {
       console.log(`Quick updating ticket ${ticketId} status to ${nextStatus}`);
       
@@ -202,20 +166,17 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     }
   };
 
-  const getNextStatusButtonText = (status: string): string => {
-    switch (status) {
-      case STATUSES.PENDING_MATCH:
-        return 'Request Assignment';
-      case STATUSES.APPROVED:
-        return 'Start Working';
-      case STATUSES.IN_PROGRESS:
-        return 'Submit for QA';
-      default:
-        return 'Update Status';
-    }
+  // Text for the "quick transition" button; still keep this for user-friendliness
+  const getNextStatusButtonText = (status: string, nextStatus: string | null): string => {
+    if (!nextStatus) return 'Update Status';
+    if (nextStatus === STATUSES.DEV_REQUESTED) return 'Request Assignment';
+    if (nextStatus === STATUSES.IN_PROGRESS) return 'Start Working';
+    if (nextStatus === STATUSES.READY_FOR_QA) return 'Submit for QA';
+    return 'Update Status';
   };
 
-  if (availableStatuses.length === 0) {
+  // Hide if no valid actions
+  if (!availableStatuses.length) {
     return null;
   }
 
@@ -228,7 +189,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      
+
       {nextStatus ? (
         <div className="flex flex-col sm:flex-row gap-2">
           <Button
@@ -241,7 +202,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
             ) : (
               getStatusIcon(nextStatus)
             )}
-            <span className="ml-2">{getNextStatusButtonText(currentStatus)}</span>
+            <span className="ml-2">{getNextStatusButtonText(currentStatus, nextStatus)}</span>
           </Button>
         </div>
       ) : (
@@ -261,7 +222,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
             <Select
               value={selectedStatus}
               onValueChange={setSelectedStatus}
-              disabled={isUpdating || availableStatuses.length === 0}
+              disabled={isUpdating || !availableStatuses.length}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
@@ -281,7 +242,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
           <Button
             variant="outline"
             onClick={handleUpdateStatus}
-            disabled={isUpdating || selectedStatus === currentStatus || availableStatuses.length === 0}
+            disabled={isUpdating || selectedStatus === currentStatus || !availableStatuses.length}
             className="w-full sm:w-1/3"
           >
             {isUpdating ? (
@@ -292,7 +253,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
           </Button>
         </div>
       )}
-      
+
       <div className="mt-4 bg-muted p-3 rounded text-sm">
         <p className="font-medium">Current Status: {getStatusLabel(currentStatus)}</p>
         <p className="text-muted-foreground text-xs mt-1">{getStatusDescription(currentStatus)}</p>
