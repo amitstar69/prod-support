@@ -1,4 +1,3 @@
-
 // Define valid status transitions
 export const STATUS_TRANSITIONS = {
   system: {
@@ -11,8 +10,8 @@ export const STATUS_TRANSITIONS = {
     'approved': ['requirements_review', 'need_more_info'],
     'requirements_review': ['in_progress', 'need_more_info'],
     'need_more_info': ['requirements_review', 'in_progress'],
-    'in_progress': ['ready_for_client_qa'],
-    'in-progress': ['ready_for_client_qa'], // Add support for hyphenated version
+    'in_progress': ['ready_for_client_qa', 'requirements_review'], // Added 'requirements_review' here
+    'in-progress': ['ready_for_client_qa', 'requirements_review'], // Added for hyphenated version too
     'qa_fail': ['in_progress', 'ready_for_client_qa'],
     'qa_pass': ['ready_for_final_action'],
     'ready_for_final_action': ['resolved']

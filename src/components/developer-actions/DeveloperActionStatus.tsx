@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 import StatusDropdown from './StatusDropdown';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { supabase } from '../../integrations/supabase/client';
+import { Alert, AlertDescription } from '../ui/alert';
+import { getStatusLabel } from '../../utils/helpRequestStatusUtils';
 
 interface DeveloperActionStatusProps {
   ticketId: string;
@@ -17,6 +19,7 @@ const DeveloperActionStatus: React.FC<DeveloperActionStatusProps> = ({
   onStatusUpdate
 }) => {
   console.log("DeveloperActionStatus render with:", { ticketId, currentStatus });
+  const [error, setError] = useState<string | null>(null);
 
   const handleStatusChange = async (newStatusId: string) => {
     try {
@@ -27,19 +30,27 @@ const DeveloperActionStatus: React.FC<DeveloperActionStatusProps> = ({
         return;
       }
       
-      const { error } = await supabase
+      setError(null);
+      
+      const { data, error } = await supabase
         .from('help_requests')
         .update({ status: newStatusId })
         .eq('id', ticketId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating status:', error);
+        setError(error.message || 'Failed to update status');
+        toast.error(`Status update failed: ${error.message || 'Unknown error'}`);
+        return;
+      }
 
-      toast.success('Status updated successfully');
+      toast.success(`Status updated successfully to ${getStatusLabel(newStatusId)}`);
       if (onStatusUpdate) {
         onStatusUpdate();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating status:', error);
+      setError(error.message || 'Failed to update status');
       toast.error('Failed to update status');
     }
   };
@@ -50,6 +61,11 @@ const DeveloperActionStatus: React.FC<DeveloperActionStatusProps> = ({
         <CardTitle className="text-lg">Update Status</CardTitle>
       </CardHeader>
       <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         <StatusDropdown
           defaultStatusId={currentStatus}
           onStatusChange={handleStatusChange}
@@ -57,6 +73,11 @@ const DeveloperActionStatus: React.FC<DeveloperActionStatusProps> = ({
           required={true}
           userType="developer"
         />
+        {currentStatus && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Current status: {getStatusLabel(currentStatus)}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
