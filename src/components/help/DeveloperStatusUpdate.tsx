@@ -52,6 +52,9 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   const [matchStatus, setMatchStatus] = useState<string | null>(null);
   const [isPermissionChecking, setIsPermissionChecking] = useState<boolean>(true);
 
+  // Normalize the current status for consistency
+  const normalizedCurrentStatus = currentStatus?.replace(/-/g, '_') || '';
+
   useEffect(() => {
     const checkDeveloperPermission = async () => {
       if (!ticketId || !userId) {
@@ -89,13 +92,12 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   }, [ticketId, userId]);
 
   useEffect(() => {
-    const normalizedStatus = currentStatus?.replace(/-/g, '_') || '';
     // Get all available transitions for the current status
-    const transitions = getAllowedStatusTransitions(normalizedStatus || currentStatus, 'developer');
+    const transitions = getAllowedStatusTransitions(normalizedCurrentStatus || currentStatus, 'developer');
     
     console.log('Available transitions for developer:', transitions);
     console.log('Current status:', currentStatus);
-    console.log('Normalized status:', normalizedStatus);
+    console.log('Normalized status:', normalizedCurrentStatus);
     console.log('Match status:', matchStatus);
     
     // Filter transitions based on match status
@@ -120,12 +122,12 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       setSelectedStatus(filteredTransitions[0]);
     } else {
       setNextStatus(null);
-      setSelectedStatus(normalizedStatus || currentStatus);
+      setSelectedStatus(normalizedCurrentStatus || currentStatus);
     }
-  }, [currentStatus, matchStatus]);
+  }, [currentStatus, matchStatus, normalizedCurrentStatus]);
 
   const handleUpdateStatus = async () => {
-    if (selectedStatus === currentStatus) {
+    if (selectedStatus === currentStatus || selectedStatus === normalizedCurrentStatus) {
       toast.info(`Status is already set to ${getStatusLabel(selectedStatus)}`);
       return;
     }
@@ -133,6 +135,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     setError(null);
 
     try {
+      console.log(`Updating status from ${currentStatus} to ${selectedStatus}`);
       const response = await updateHelpRequest(
         ticketId,
         { status: selectedStatus },
@@ -162,6 +165,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     setIsUpdating(true);
     setError(null);
     try {
+      console.log(`Quick updating status from ${currentStatus} to ${nextStatus}`);
       const response = await updateHelpRequest(
         ticketId,
         { status: nextStatus },
@@ -193,7 +197,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   }
 
   // Waiting for client approval or other blocked state
-  if ((matchStatus === 'pending' || matchStatus === 'rejected') && currentStatus !== 'pending_match') {
+  if ((matchStatus === 'pending' || matchStatus === 'rejected') && normalizedCurrentStatus !== 'pending_match') {
     return (
       <Alert className="bg-blue-50 border-blue-200">
         <ShieldAlert className="h-4 w-4" />
@@ -212,11 +216,11 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       <Alert>
         <AlertTitle>No Available Status Updates</AlertTitle>
         <AlertDescription>
-          {currentStatus === 'ready_for_client_qa'
+          {normalizedCurrentStatus === 'ready_for_client_qa'
             ? "You've submitted for QA. Waiting for client review."
-            : currentStatus === 'qa_fail'
+            : normalizedCurrentStatus === 'qa_fail'
             ? "Client has requested changes. Please update the implementation."
-            : currentStatus === 'resolved'
+            : normalizedCurrentStatus === 'resolved'
             ? "This ticket has been successfully resolved."
             : "No status transitions available at this time."}
         </AlertDescription>

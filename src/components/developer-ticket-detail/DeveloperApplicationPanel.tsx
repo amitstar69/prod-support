@@ -1,13 +1,12 @@
 
 import React from "react";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { HelpRequest } from "../../types/helpRequest";
 import DeveloperStatusUpdate from "../help/DeveloperStatusUpdate";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Info } from "lucide-react";
-import { getAllowedStatusTransitions } from "../../utils/helpRequestStatusUtils";
 
 interface DeveloperApplicationPanelProps {
   devUpdateVisibility: {
@@ -90,12 +89,6 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
                   : `Application status: ${applicationStatus}`}
               </AlertDescription>
             </Alert>
-            
-            {!devUpdateVisibility.show && devUpdateVisibility.reason && (
-              <p className="text-sm text-muted-foreground">
-                {devUpdateVisibility.reason}
-              </p>
-            )}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">

@@ -1,3 +1,4 @@
+
 // Define valid status transitions
 export const STATUS_TRANSITIONS = {
   system: {
@@ -11,10 +12,10 @@ export const STATUS_TRANSITIONS = {
     'requirements_review': ['in_progress', 'need_more_info'],
     'need_more_info': ['requirements_review', 'in_progress'],
     'in_progress': ['ready_for_client_qa'],
+    'in-progress': ['ready_for_client_qa'], // Add support for hyphenated version
     'qa_fail': ['in_progress', 'ready_for_client_qa'],
     'qa_pass': ['ready_for_final_action'],
-    'ready_for_final_action': ['resolved'],
-    'in-progress': ['ready_for_client_qa']
+    'ready_for_final_action': ['resolved']
   },
   client: {
     'awaiting_client_approval': ['approved', 'pending_match'], // Can reject back to pending
@@ -67,6 +68,7 @@ export const getStatusLabel = (status: string): string => {
     'requirements_review': 'Requirements Review',
     'need_more_info': 'Need More Info',
     'in_progress': 'In Progress',
+    'in-progress': 'In Progress', // Add the hyphenated version
     'ready_for_client_qa': 'Ready for Client QA',
     'qa_fail': 'QA Failed',
     'qa_pass': 'QA Passed',
@@ -80,6 +82,9 @@ export const getStatusLabel = (status: string): string => {
 
 // Get status descriptions
 export const getStatusDescription = (status: string): string => {
+  // Normalize status for consistent lookups
+  const normalizedStatus = status.replace(/-/g, '_');
+  
   const statusDescriptions: Record<string, string> = {
     'submitted': 'Request has been submitted but not yet processed',
     'pending_match': 'Request is awaiting a developer match',
@@ -97,7 +102,7 @@ export const getStatusDescription = (status: string): string => {
     'cancelled_by_client': 'Request was cancelled by the client'
   };
 
-  return statusDescriptions[status] || 'Status information unavailable';
+  return statusDescriptions[normalizedStatus] || 'Status information unavailable';
 };
 
 // Global status constants
