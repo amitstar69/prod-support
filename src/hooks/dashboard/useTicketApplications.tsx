@@ -127,7 +127,7 @@ export const useTicketApplications = (
     try {
       console.log('[useTicketApplications] Fetching applications for developer:', currentUserId);
       
-      // Get all applications for the current developer that are approved
+      // Get only applications that are approved for the current developer
       const { data: applications, error } = await supabase
         .from('help_request_matches')
         .select('*, help_requests(*)')
@@ -147,7 +147,8 @@ export const useTicketApplications = (
         return;
       }
       
-      // Transform the data to match the HelpRequest type expected by the UI
+      // Filter out applications where help_requests is null (join failed)
+      // and transform the data to match the HelpRequest type expected by the UI
       const approvedTickets = applications
         .filter(app => app.help_requests) // Ensure the join worked
         .map(app => ({

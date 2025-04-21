@@ -3,7 +3,6 @@ import React, { useEffect } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
-import TicketList from '../components/tickets/TicketList';
 import LoadingState from '../components/dashboard/LoadingState';
 import EmptyTicketState from '../components/dashboard/EmptyTicketState';
 import TicketSummary from '../components/dashboard/TicketSummary';
@@ -17,12 +16,10 @@ const MyApplicationsPage = () => {
   const { userId, userType, isAuthenticated } = useAuth();
   
   const {
-    tickets,
     myApplications,
     isLoading,
     dataSource,
     handleClaimTicket,
-    fetchTickets,
     fetchMyApplications
   } = useDeveloperDashboard();
 
@@ -39,10 +36,6 @@ const MyApplicationsPage = () => {
       fetchMyApplications(userId);
     }
   }, [userId, fetchMyApplications]);
-
-  const handleOpenChat = (helpRequestId: string, clientId: string, clientName?: string) => {
-    navigate(`/chat/${helpRequestId}/${clientId}`);
-  };
 
   return (
     <Layout>
@@ -80,7 +73,7 @@ const MyApplicationsPage = () => {
               />
             ) : (
               <EmptyTicketState 
-                tickets={tickets}
+                tickets={[]}
                 isAuthenticated={isAuthenticated}
                 onRefresh={() => fetchMyApplications(userId)}
                 dataSource={dataSource}

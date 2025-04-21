@@ -55,7 +55,8 @@ const TicketList: React.FC<TicketListProps> = ({
 
   const handleViewDetails = (ticketId: string) => {
     if (isAuthenticated) {
-      navigate(`/developer/tickets/${ticketId}`);
+      // For approved tickets viewed on my applications page, navigate to developer ticket detail
+      navigate(isApplication ? `/developer/tickets/${ticketId}` : `/developer/tickets/${ticketId}`);
     } else {
       setPendingAction({ type: 'view', ticketId });
       setShowAuthDialog(true);

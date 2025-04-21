@@ -40,7 +40,8 @@ export const submitDeveloperApplication = async (
       console.log('Developer already applied with status:', existingApplication.status);
       return { 
         success: false, 
-        error: `You have already applied to this request (Status: ${existingApplication.status})` 
+        error: `You have already applied to this request (Status: ${existingApplication.status})`,
+        isUpdate: false
       };
     }
     
@@ -68,7 +69,7 @@ export const submitDeveloperApplication = async (
     
     if (error) {
       console.error('Error submitting developer application:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, isUpdate: false };
     }
     
     return { success: true, data, isUpdate: false };
@@ -76,7 +77,8 @@ export const submitDeveloperApplication = async (
     console.error('Exception submitting developer application:', error);
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error submitting application' 
+      error: error instanceof Error ? error.message : 'Unknown error submitting application',
+      isUpdate: false
     };
   }
 };
