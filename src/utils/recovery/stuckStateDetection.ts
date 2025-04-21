@@ -28,7 +28,7 @@ export const initStuckStateDetection = (): (() => void) => {
 
   document.addEventListener('visibilitychange', handleVisibilityChange);
   
-  // Check app health on initial load
+  // Check app health on initial load with a delay to allow normal rendering
   setTimeout(checkAppHealth, 5000);
   
   // Return cleanup function
@@ -55,7 +55,11 @@ export const isAppStuck = (): boolean => {
 export const checkAppHealth = (): void => {
   // Check if the main UI has rendered
   const mainContent = document.querySelector('main');
-  if (!mainContent) {
+  
+  // If we're on the /search route, we might not have a main yet since it's being rendered
+  const isSearchRoute = window.location.pathname.startsWith('/search');
+  
+  if (!mainContent && !isSearchRoute) {
     console.warn('Main content not found in DOM - possible rendering issue');
     
     // Check if we're just in a loading state or actually broken
@@ -66,7 +70,8 @@ export const checkAppHealth = (): void => {
         console.warn('Loading state persisted for too long, attempting recovery');
         attemptRecovery();
       }
-    } else if (!isLoading) {
+    } else if (!isLoading && document.readyState === 'complete') {
+      // Only attempt recovery if the document has fully loaded
       console.warn('App appears broken (no content, no loading state)');
       attemptRecovery();
     }

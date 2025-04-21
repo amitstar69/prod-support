@@ -13,6 +13,7 @@ import { Toaster } from 'sonner';
 import PublicHelpRequests from './pages/PublicHelpRequests';
 import TicketDetailPage from './pages/TicketDetailPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';
+import Search from './pages/Search';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/help-request" element={<HelpRequestForm />} />
             <Route path="/public-requests" element={<PublicHelpRequests />} />
+            <Route path="/search" element={<Search />} />
             
             {/* Unified Ticket Detail Page */}
             <Route path="/ticket/:ticketId" element={<TicketDetailPage />} />
