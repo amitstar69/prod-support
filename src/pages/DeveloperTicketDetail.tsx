@@ -1,27 +1,45 @@
+
+// Fix variable redeclaration and improve status update visibility logic
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { 
-  ArrowLeft, Clock, Zap, DollarSign, Code, MessageSquare, 
-  CalendarClock, FileCode, Users, Award, ClipboardCheck, Loader2, ShieldAlert
+import {
+  ArrowLeft,
+  Clock,
+  Zap,
+  DollarSign,
+  Code,
+  MessageSquare,
+  CalendarClock,
+  FileCode,
+  Users,
+  Award,
+  ClipboardCheck,
+  Loader2,
+  ShieldAlert,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card';
 import { Separator } from '../components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useAuth } from '../contexts/auth';
 import { supabase } from '../integrations/supabase/client';
-import { HelpRequest, HelpRequestMatch } from '../types/helpRequest';
+import { HelpRequest } from '../types/helpRequest';
 import DeveloperApplicationModal from '../components/apply/DeveloperApplicationModal';
 import DeveloperQADialog from '../components/help/DeveloperQADialog';
 import DeveloperStatusUpdate from '../components/help/DeveloperStatusUpdate';
-import ClientStatusUpdate from '../components/help/ClientStatusUpdate';
-import { getAllowedStatusTransitions } from '../utils/helpRequestStatusUtils';
+import { getAllowedStatusTransitions, getStatusLabel } from '../utils/helpRequestStatusUtils';
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
-import { getStatusLabel } from '../utils/helpRequestStatusUtils';
 import RequestStatusFlow from '../components/help/RequestStatusFlow';
 
 const DeveloperTicketDetail: React.FC = () => {
@@ -34,8 +52,7 @@ const DeveloperTicketDetail: React.FC = () => {
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showQADialog, setShowQADialog] = useState(false);
-  const [canUpdateStatus, setCanUpdateStatus] = useState(false);
-  
+
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || userType !== 'developer')) {
       toast.error('You must be logged in as a developer to view this page');
@@ -50,24 +67,24 @@ const DeveloperTicketDetail: React.FC = () => {
         toast.error('Invalid ticket ID');
         return;
       }
-      
+
       try {
         setIsLoading(true);
-        
+
         const { data: ticketData, error: ticketError } = await supabase
           .from('help_requests')
           .select('*')
           .eq('id', ticketId)
           .single();
-        
+
         if (ticketError) {
           console.error('Error fetching ticket:', ticketError);
           toast.error('Failed to load ticket details');
           return;
         }
-        
+
         setTicket(ticketData as HelpRequest);
-        
+
         if (isAuthenticated && userId) {
           const { data: matchData, error: matchError } = await supabase
             .from('help_request_matches')
@@ -75,26 +92,12 @@ const DeveloperTicketDetail: React.FC = () => {
             .eq('request_id', ticketId)
             .eq('developer_id', userId)
             .maybeSingle();
-          
+
           if (matchError) {
             console.error('Error checking application status:', matchError);
           } else if (matchData) {
             setHasApplied(true);
             setApplicationStatus(matchData.status);
-            
-            // Check if developer can update status (approved match)
-            if (matchData.status === 'approved') {
-              setCanUpdateStatus(true);
-            }
-          }
-          
-          // Check if the current developer is assigned to this ticket
-          // and if the status allows for updating
-          if (ticketData) {
-            const canUpdate = ['approved', 'in_progress', 'ready_for_qa'].includes(ticketData.status);
-            if (matchData?.status === 'approved' && canUpdate) {
-              setCanUpdateStatus(true);
-            }
           }
         }
       } catch (error) {
@@ -104,29 +107,29 @@ const DeveloperTicketDetail: React.FC = () => {
         setIsLoading(false);
       }
     };
-    
+
     if (isAuthenticated) {
       fetchTicketDetails();
     } else {
       setIsLoading(false);
     }
   }, [ticketId, isAuthenticated, userId]);
-  
+
   const fetchLatestTicketData = async () => {
     if (!ticketId) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')
         .eq('id', ticketId)
         .single();
-        
+
       if (error) {
         console.error('Error fetching ticket:', error);
         return;
       }
-      
+
       if (data) {
         setTicket(data as HelpRequest);
       }
@@ -134,10 +137,10 @@ const DeveloperTicketDetail: React.FC = () => {
       console.error('Exception in fetchLatestTicketData:', error);
     }
   };
-  
+
   useEffect(() => {
     if (!ticketId || !isAuthenticated) return;
-    
+
     const channel = supabase
       .channel(`ticket-updates-${ticketId}`)
       .on(
@@ -154,32 +157,32 @@ const DeveloperTicketDetail: React.FC = () => {
         }
       )
       .subscribe();
-      
+
     return () => {
       supabase.removeChannel(channel);
     };
   }, [ticketId, isAuthenticated]);
-  
+
   const handleBackClick = () => {
     navigate('/developer-dashboard');
   };
-  
+
   const handleApplyClick = () => {
     if (!isAuthenticated) {
       toast.error('You must be logged in to apply for this ticket');
       navigate('/login', { state: { returnTo: `/developer/tickets/${ticketId}` } });
       return;
     }
-    
+
     setShowApplicationModal(true);
   };
-  
+
   const handleApplicationSuccess = async () => {
     setShowApplicationModal(false);
     setHasApplied(true);
     setApplicationStatus('pending');
     toast.success('Your application has been submitted successfully!');
-    
+
     if (isAuthenticated && userId && ticketId) {
       const { data } = await supabase
         .from('help_request_matches')
@@ -187,13 +190,13 @@ const DeveloperTicketDetail: React.FC = () => {
         .eq('request_id', ticketId)
         .eq('developer_id', userId)
         .maybeSingle();
-        
+
       if (data) {
         setApplicationStatus(data.status);
       }
     }
   };
-  
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     try {
@@ -202,38 +205,34 @@ const DeveloperTicketDetail: React.FC = () => {
       return 'Invalid date';
     }
   };
-  
+
   const handleSubmitQA = () => {
     setShowQADialog(true);
   };
-  
+
   const handleQASubmitted = async () => {
     setShowQADialog(false);
     toast.success('QA submitted successfully');
-    
+
     if (ticketId) {
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')
         .eq('id', ticketId)
         .single();
-        
+
       if (!error && data) {
         setTicket(data as HelpRequest);
       }
     }
   };
-  
+
   if (isLoading) {
     return (
       <Layout>
         <div className="container max-w-5xl mx-auto py-8 px-4">
           <div className="flex items-center mb-6">
-            <Button 
-              variant="ghost" 
-              onClick={handleBackClick}
-              className="mr-2"
-            >
+            <Button variant="ghost" onClick={handleBackClick} className="mr-2">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
@@ -248,17 +247,13 @@ const DeveloperTicketDetail: React.FC = () => {
       </Layout>
     );
   }
-  
+
   if (!ticket) {
     return (
       <Layout>
         <div className="container max-w-5xl mx-auto py-8 px-4">
           <div className="flex items-center mb-6">
-            <Button 
-              variant="ghost" 
-              onClick={handleBackClick}
-              className="mr-2"
-            >
+            <Button variant="ghost" onClick={handleBackClick} className="mr-2">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
@@ -267,10 +262,7 @@ const DeveloperTicketDetail: React.FC = () => {
           <Card>
             <CardContent className="pt-6">
               <p className="text-muted-foreground">The ticket you're looking for does not exist or has been removed.</p>
-              <Button 
-                onClick={handleBackClick} 
-                className="mt-4"
-              >
+              <Button onClick={handleBackClick} className="mt-4">
                 Return to Dashboard
               </Button>
             </CardContent>
@@ -279,72 +271,56 @@ const DeveloperTicketDetail: React.FC = () => {
       </Layout>
     );
   }
-  
+
+  // Only declare each variable once here to fix redeclarations
   const shortTicketId = ticket?.id ? `HELP-${ticket.id.substring(0, 4)}` : 'Unknown ID';
-  
+
   const isInProgress = ticket?.status === 'in_progress';
   const isApproved = ticket?.status === 'approved';
   const canSubmitQA = isInProgress && userType === 'developer';
   const isInQA = ticket?.status === 'ready_for_qa';
   const isInClientReview = ticket?.status === 'client_review';
   const isClientApproved = ticket?.status === 'client_approved';
-  
-  // ---- Improved unified logic for when to display status update controls ----
-  // Now matches the backend/permission rules more closely, and provides clarity when blocked.
 
-  // Helper: Should developer see DeveloperStatusUpdate?
+  // ---- Improved unified logic for when to display status update controls ----
+  // Matches backend permissions and provides fallback messages
+
+  // Determine if developer should see DeveloperStatusUpdate
   const shouldShowDevStatusUpdate = (() => {
-    // Only show for developer user, ticket loaded, and has approved application
-    if (userType !== "developer" || !ticket) return false;
+    if (userType !== 'developer' || !ticket) return false;
     if (!applicationStatus) return false;
-    // Application rejected: cannot act (notice below)
-    if (applicationStatus === "rejected") return false;
-    // Application pending: cannot act (notice below)
-    if (applicationStatus === "pending") return false;
-    // Application approved, but check allowed transitions
-    if (applicationStatus === "approved") {
-      const devTransitions = getAllowedStatusTransitions(ticket.status, "developer");
+    if (applicationStatus === 'rejected') return false;
+    if (applicationStatus === 'pending') return false;
+    if (applicationStatus === 'approved') {
+      const devTransitions = getAllowedStatusTransitions(ticket.status, 'developer');
       return devTransitions.length > 0;
     }
-    // All other states: fallback
     return false;
   })();
 
-  // Helper: Should developer see ClientStatusUpdate? (rare, but for "client handoff" UX testing or superusers)
+  // Determine if client should see ClientStatusUpdate (disabled now, can be enabled if needed)
   const shouldShowClientStatusUpdate = false;
 
-  // Fallback message when no status transitions are possible for developer
-  let devBlockedReason = "";
-  if (userType === "developer" && ticket && applicationStatus) {
-    if (applicationStatus === "pending") devBlockedReason = "Waiting for client to approve your application.";
-    else if (applicationStatus === "rejected") devBlockedReason = "Your application was rejected by the client.";
-    else if (applicationStatus === "approved") {
-      const devTransitions = getAllowedStatusTransitions(ticket.status, "developer");
+  // Fallback message to display when dev status updates are blocked but expected
+  let devBlockedReason = '';
+  if (userType === 'developer' && ticket && applicationStatus) {
+    if (applicationStatus === 'pending') {
+      devBlockedReason = 'Waiting for client to approve your application.';
+    } else if (applicationStatus === 'rejected') {
+      devBlockedReason = 'Your application was rejected by the client.';
+    } else if (applicationStatus === 'approved') {
+      const devTransitions = getAllowedStatusTransitions(ticket.status, 'developer');
       if (devTransitions.length === 0) {
-        // Show specific message for "nothing to do"
-        devBlockedReason = "No further developer actions are available at this stage. Please wait for client action.";
+        devBlockedReason = 'No further developer actions are available at this stage. Please wait for client action.';
       }
     }
   }
-
-  const shortTicketId = ticket?.id ? `HELP-${ticket.id.substring(0, 4)}` : 'Unknown ID';
-  
-  const isInProgress = ticket?.status === 'in_progress';
-  const isApproved = ticket?.status === 'approved';
-  const canSubmitQA = isInProgress && userType === 'developer';
-  const isInQA = ticket?.status === 'ready_for_qa';
-  const isInClientReview = ticket?.status === 'client_review';
-  const isClientApproved = ticket?.status === 'client_approved';
 
   return (
     <Layout>
       <div className="container max-w-5xl mx-auto py-8 px-4">
         <div className="flex items-center mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={handleBackClick}
-            className="mr-2"
-          >
+          <Button variant="ghost" onClick={handleBackClick} className="mr-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -354,17 +330,17 @@ const DeveloperTicketDetail: React.FC = () => {
                 {shortTicketId}
               </Badge>
               {ticket?.status && (
-                <Badge 
+                <Badge
                   variant="outline"
                   className={`
-                    ${ticket.status === 'in_progress' ? 'bg-green-50 text-green-800 border-green-200' : 
-                      ticket.status === 'ready_for_qa' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
-                      ticket.status === 'client_review' ? 'bg-orange-50 text-orange-800 border-orange-200' :
-                      ticket.status === 'client_approved' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                      ticket.status === 'complete' ? 'bg-slate-50 text-slate-800 border-slate-200' :
-                      ticket.status === 'cancelled_by_client' ? 'bg-red-50 text-red-800 border-red-200' :
-                      ticket.status === 'pending_match' ? 'bg-blue-50 text-blue-800 border-blue-200' :
-                      'bg-yellow-50 text-yellow-800 border-yellow-200'}
+                    ${ticket.status === 'in_progress' ? 'bg-green-50 text-green-800 border-green-200'
+                      : ticket.status === 'ready_for_qa' ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                      : ticket.status === 'client_review' ? 'bg-orange-50 text-orange-800 border-orange-200'
+                      : ticket.status === 'client_approved' ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      : ticket.status === 'complete' ? 'bg-slate-50 text-slate-800 border-slate-200'
+                      : ticket.status === 'cancelled_by_client' ? 'bg-red-50 text-red-800 border-red-200'
+                      : ticket.status === 'pending_match' ? 'bg-blue-50 text-blue-800 border-blue-200'
+                      : 'bg-yellow-50 text-yellow-800 border-yellow-200'}
                   `}
                 >
                   {getStatusLabel(ticket.status)}
@@ -374,13 +350,15 @@ const DeveloperTicketDetail: React.FC = () => {
             <h1 className="text-2xl font-bold mt-1">{ticket?.title}</h1>
           </div>
         </div>
-        
+
         {(isInQA || isInClientReview || isClientApproved) && (
-          <div className={`mb-6 p-4 rounded-md ${
-            isInQA ? 'bg-indigo-50 border border-indigo-200' :
-            isInClientReview ? 'bg-orange-50 border border-orange-200' :
-            'bg-emerald-50 border border-emerald-200'
-          }`}>
+          <div
+            className={`mb-6 p-4 rounded-md ${
+              isInQA ? 'bg-indigo-50 border border-indigo-200' :
+              isInClientReview ? 'bg-orange-50 border border-orange-200' :
+              'bg-emerald-50 border border-emerald-200'
+            }`}
+          >
             <div className="flex items-center">
               {isInQA && (
                 <>
@@ -393,7 +371,7 @@ const DeveloperTicketDetail: React.FC = () => {
                   </div>
                 </>
               )}
-              
+
               {isInClientReview && (
                 <>
                   <Users className="h-5 w-5 text-orange-600 mr-3" />
@@ -405,7 +383,7 @@ const DeveloperTicketDetail: React.FC = () => {
                   </div>
                 </>
               )}
-              
+
               {isClientApproved && (
                 <>
                   <Award className="h-5 w-5 text-emerald-600 mr-3" />
@@ -420,7 +398,7 @@ const DeveloperTicketDetail: React.FC = () => {
             </div>
           </div>
         )}
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Card className="mb-6">
@@ -432,7 +410,7 @@ const DeveloperTicketDetail: React.FC = () => {
                 <p className="whitespace-pre-line text-foreground/90">
                   {ticket.description}
                 </p>
-                
+
                 {ticket.code_snippet && (
                   <div className="mt-6">
                     <h3 className="text-sm font-medium mb-2 flex items-center gap-1.5">
@@ -446,7 +424,7 @@ const DeveloperTicketDetail: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Technical Requirements</CardTitle>
@@ -467,23 +445,23 @@ const DeveloperTicketDetail: React.FC = () => {
                       ))}
                     </div>
                   </div>
-                  
+
                   <div>
                     <h3 className="text-sm font-medium mb-2 flex items-center gap-1.5">
                       <Users className="h-4 w-4" />
                       Desired Developer Experience
                     </h3>
-                    <Badge 
-                      variant="outline" 
+                    <Badge
+                      variant="outline"
                       className="bg-emerald-50 text-emerald-800 border-emerald-200 capitalize"
                     >
                       {ticket.preferred_developer_experience || 'Any level'}
                     </Badge>
                   </div>
                 </div>
-                
+
                 <Separator className="my-6" />
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <h3 className="text-sm font-medium mb-2 flex items-center gap-1.5">
@@ -498,16 +476,16 @@ const DeveloperTicketDetail: React.FC = () => {
                       ))}
                     </div>
                   </div>
-                  
+
                   <div>
                     <h3 className="text-sm font-medium mb-2 flex items-center gap-1.5">
                       <Code className="h-4 w-4" />
                       Complexity Level
                     </h3>
-                    <Badge 
-                      variant="outline" 
+                    <Badge
+                      variant="outline"
                       className={`
-                        ${ticket.complexity_level === 'easy' ? 'bg-green-50 text-green-800 border-green-200' : 
+                        ${ticket.complexity_level === 'easy' ? 'bg-green-50 text-green-800 border-green-200' :
                           ticket.complexity_level === 'hard' ? 'bg-red-50 text-red-800 border-red-200' :
                           'bg-orange-50 text-orange-800 border-orange-200'} capitalize
                       `}
@@ -518,7 +496,7 @@ const DeveloperTicketDetail: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             {ticket?.developer_qa_notes && (
               <Card className="mt-6">
                 <CardHeader>
@@ -529,13 +507,11 @@ const DeveloperTicketDetail: React.FC = () => {
                   <CardDescription>QA notes provided by the developer</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="whitespace-pre-line">
-                    {ticket.developer_qa_notes}
-                  </div>
+                  <div className="whitespace-pre-line">{ticket.developer_qa_notes}</div>
                 </CardContent>
               </Card>
             )}
-            
+
             {ticket?.client_feedback && (
               <Card className="mt-6">
                 <CardHeader>
@@ -546,33 +522,26 @@ const DeveloperTicketDetail: React.FC = () => {
                   <CardDescription>Feedback provided by the client</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="whitespace-pre-line">
-                    {ticket.client_feedback}
-                  </div>
+                  <div className="whitespace-pre-line">{ticket.client_feedback}</div>
                 </CardContent>
               </Card>
             )}
           </div>
-          
+
           <div>
-            {/* ======== Status Update Area: now with explicit visibility and fallback logic ======= */}
+            {/* ======== Status Update Area: explicit visibility and fallback logic ======= */}
             {shouldShowDevStatusUpdate ? (
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle>Status & Progress</CardTitle>
-                  <CardDescription>
-                    {ticket?.status && `Current: ${getStatusLabel(ticket.status)}`}
-                  </CardDescription>
+                  <CardDescription>{ticket?.status && `Current: ${getStatusLabel(ticket.status)}`}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <RequestStatusFlow
-                    currentStatus={ticket?.status || ""}
-                    userType={userType}
-                  />
+                  <RequestStatusFlow currentStatus={ticket?.status || ''} userType={userType} />
                   <div className="mt-4">
                     <DeveloperStatusUpdate
-                      ticketId={ticketId || ""}
-                      currentStatus={ticket?.status || ""}
+                      ticketId={ticketId || ''}
+                      currentStatus={ticket?.status || ''}
                       onStatusUpdated={fetchLatestTicketData}
                     />
                   </div>
@@ -582,21 +551,14 @@ const DeveloperTicketDetail: React.FC = () => {
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle>Status & Progress</CardTitle>
-                  <CardDescription>
-                    {ticket?.status && `Current: ${getStatusLabel(ticket.status)}`}
-                  </CardDescription>
+                  <CardDescription>{ticket?.status && `Current: ${getStatusLabel(ticket.status)}`}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <RequestStatusFlow
-                    currentStatus={ticket?.status || ""}
-                    userType={userType}
-                  />
+                  <RequestStatusFlow currentStatus={ticket?.status || ''} userType={userType} />
                   <Alert className="mt-4 bg-blue-50 border-blue-200">
                     <ShieldAlert className="h-4 w-4" />
                     <AlertTitle>No Actions Available</AlertTitle>
-                    <AlertDescription>
-                      {devBlockedReason}
-                    </AlertDescription>
+                    <AlertDescription>{devBlockedReason}</AlertDescription>
                   </Alert>
                 </CardContent>
               </Card>
@@ -612,12 +574,8 @@ const DeveloperTicketDetail: React.FC = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     Ready to help with this problem? Submit your application to connect with the client and start earning.
                   </p>
-                  
-                  <Button 
-                    className="w-full" 
-                    onClick={handleApplyClick}
-                    disabled={ticket?.status !== 'pending_match'}
-                  >
+
+                  <Button className="w-full" onClick={handleApplyClick} disabled={ticket?.status !== 'pending_match'}>
                     {ticket?.status === 'pending_match' ? 'Apply Now' : 'Unavailable'}
                   </Button>
                 </CardContent>
@@ -638,7 +596,7 @@ const DeveloperTicketDetail: React.FC = () => {
                 </CardContent>
               </Card>
             )}
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Project Details</CardTitle>
@@ -650,43 +608,42 @@ const DeveloperTicketDetail: React.FC = () => {
                     <CalendarClock className="h-4 w-4" />
                     Request Submitted
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(ticket.created_at)}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{formatDate(ticket.created_at)}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium mb-1 flex items-center gap-1.5">
                     <Clock className="h-4 w-4" />
                     Estimated Duration
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {ticket.estimated_duration} minutes
-                  </p>
+                  <p className="text-sm text-muted-foreground">{ticket.estimated_duration} minutes</p>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium mb-1 flex items-center gap-1.5">
                     <DollarSign className="h-4 w-4" />
                     Budget Range
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {ticket.budget_range}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{ticket.budget_range}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium mb-1 flex items-center gap-1.5">
                     <Zap className="h-4 w-4" />
                     Urgency
                   </h3>
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className={`
-                      ${ticket.urgency === 'low' ? 'bg-blue-50 text-blue-800 border-blue-200' : 
-                        ticket.urgency === 'high' ? 'bg-orange-50 text-orange-800 border-orange-200' :
-                        ticket.urgency === 'critical' ? 'bg-red-50 text-red-800 border-red-200' :
-                        'bg-yellow-50 text-yellow-800 border-yellow-200'} capitalize
+                      ${
+                        ticket.urgency === 'low'
+                          ? 'bg-blue-50 text-blue-800 border-blue-200'
+                          : ticket.urgency === 'high'
+                          ? 'bg-orange-50 text-orange-800 border-orange-200'
+                          : ticket.urgency === 'critical'
+                          ? 'bg-red-50 text-red-800 border-red-200'
+                          : 'bg-yellow-50 text-yellow-800 border-yellow-200'
+                      } capitalize
                     `}
                   >
                     {ticket.urgency}
@@ -694,7 +651,7 @@ const DeveloperTicketDetail: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             {canSubmitQA && (
               <Card className="mt-6">
                 <CardHeader>
@@ -705,10 +662,7 @@ const DeveloperTicketDetail: React.FC = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     When you've completed the requested work, submit it for QA and client review.
                   </p>
-                  <Button 
-                    className="w-full" 
-                    onClick={handleSubmitQA}
-                  >
+                  <Button className="w-full" onClick={handleSubmitQA}>
                     <ClipboardCheck className="h-4 w-4 mr-2" />
                     Submit for QA
                   </Button>
@@ -718,16 +672,16 @@ const DeveloperTicketDetail: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      <DeveloperQADialog 
+
+      <DeveloperQADialog
         isOpen={showQADialog}
         onClose={() => setShowQADialog(false)}
         requestId={ticketId || ''}
         requestTitle={ticket?.title || ''}
         onQASubmitted={handleQASubmitted}
       />
-      
-      <DeveloperApplicationModal 
+
+      <DeveloperApplicationModal
         isOpen={showApplicationModal}
         onClose={() => setShowApplicationModal(false)}
         ticket={ticket}
@@ -738,3 +692,4 @@ const DeveloperTicketDetail: React.FC = () => {
 };
 
 export default DeveloperTicketDetail;
+
