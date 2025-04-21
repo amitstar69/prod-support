@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { Loader2, CheckCircle2, ArrowRightCircle, ArrowUpLeft, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle2, ArrowRightCircle, ArrowUpLeft, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { 
@@ -39,18 +39,14 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
   const [nextStatus, setNextStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    // Always get allowed transitions from centralized helper
+    // Only STATUS_TRANSITIONS + helpers control transitions now
     const transitions = getAllowedStatusTransitions(currentStatus, 'client');
-    
-    console.log("Client available transitions for", currentStatus, ":", transitions);
-    
     setAvailableStatuses(
       transitions.map(status => ({
         value: status,
         label: getStatusLabel(status)
       }))
     );
-    
     setNextStatus(transitions.length ? transitions[0] : null);
     setSelectedStatus(transitions.length ? transitions[0] : currentStatus);
   }, [currentStatus]);
@@ -60,7 +56,6 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
       toast.info(`Status is already set to ${getStatusLabel(selectedStatus)}`);
       return;
     }
-
     setIsUpdating(true);
     setError(null);
 
@@ -70,13 +65,12 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
         { status: selectedStatus },
         userType || 'client'
       );
-
       if (response.success) {
         toast.success(`Ticket status updated to ${getStatusLabel(selectedStatus)}`);
         onStatusUpdated();
       } else {
         setError(response.error || 'Failed to update status');
-        toast.error(response.error || 'Failed to update status');
+        toast.error(response.error || 'Permission denied: cannot update status');
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -95,20 +89,18 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
     setSelectedStatus(nextStatus);
     setIsUpdating(true);
     setError(null);
-
     try {
       const response = await updateHelpRequest(
         ticketId,
         { status: nextStatus },
         userType || 'client'
       );
-
       if (response.success) {
         toast.success(`Ticket status updated to ${getStatusLabel(nextStatus)}`);
         onStatusUpdated();
       } else {
         setError(response.error || 'Failed to update status');
-        toast.error(response.error || 'Failed to update status');
+        toast.error(response.error || 'Permission denied: cannot update status');
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -119,34 +111,34 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
     }
   };
 
+  // Remove all switch statements; single source of truth for icons/text
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case STATUSES.APPROVED:
-        return <CheckCircle2 className="h-4 w-4" />;
-      case STATUSES.COMPLETE:
-        return <CheckCircle2 className="h-4 w-4" />;
-      case STATUSES.QA_FEEDBACK:
-        return <ArrowUpLeft className="h-4 w-4" />;
-      case STATUSES.CANCELLED_BY_CLIENT:
-        return <ArrowUpLeft className="h-4 w-4" />;
-      default:
-        return <ArrowRightCircle className="h-4 w-4" />;
-    }
+    if (status === STATUSES.APPROVED) return <CheckCircle2 className="h-4 w-4" />;
+    if (status === STATUSES.COMPLETE) return <CheckCircle2 className="h-4 w-4" />;
+    if (status === STATUSES.QA_FEEDBACK) return <ArrowUpLeft className="h-4 w-4" />;
+    if (status === STATUSES.CANCELLED_BY_CLIENT) return <ArrowUpLeft className="h-4 w-4" />;
+    return <ArrowRightCircle className="h-4 w-4" />;
   };
 
-  // Improved: Button text matches transition
   const getNextStatusButtonText = (nextStatus: string | null): string => {
     if (!nextStatus) return 'Update Status';
     if (nextStatus === STATUSES.APPROVED) return 'Approve Developer';
     if (nextStatus === STATUSES.COMPLETE) return 'Mark as Complete';
     if (nextStatus === STATUSES.QA_FEEDBACK) return 'Request Changes';
     if (nextStatus === STATUSES.CANCELLED_BY_CLIENT) return 'Cancel Request';
-    return 'Update Status';
+    return getStatusLabel(nextStatus);
   };
 
-  // Only show for statuses where transitions are actually available
+  // No transitions: UI fallback (centralized logic to avoid visibility bugs)
   if (!availableStatuses.length) {
-    return null;
+    return (
+      <Alert>
+        <AlertTitle>No Available Status Updates</AlertTitle>
+        <AlertDescription>
+          No status transitions available at this time.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   return (
@@ -231,3 +223,4 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
 };
 
 export default ClientStatusUpdate;
+

@@ -11,14 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { Loader2, CheckCircle2, ArrowRightCircle, ClipboardCheck, UserCheck, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle2, ArrowRightCircle, ClipboardCheck, UserCheck, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { 
   getAllowedStatusTransitions, 
   getStatusLabel, 
-  STATUSES,
-  getStatusDescription 
+  getStatusDescription, 
+  STATUSES
 } from '../../utils/helpRequestStatusUtils';
 
 interface DeveloperStatusUpdateProps {
@@ -40,70 +40,58 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
   const [nextStatus, setNextStatus] = useState<string | null>(null);
   const [matchStatus, setMatchStatus] = useState<string | null>(null);
   const [isPermissionChecking, setIsPermissionChecking] = useState<boolean>(true);
-  
+
   useEffect(() => {
     const checkDeveloperPermission = async () => {
       if (!ticketId || !userId) {
         setIsPermissionChecking(false);
         return;
       }
-      
       setIsPermissionChecking(true);
-      
+
       try {
-        // Check if developer is matched with this request
         const { data: matchData, error } = await supabase
           .from('help_request_matches')
           .select('status')
           .eq('request_id', ticketId)
           .eq('developer_id', userId)
           .maybeSingle();
-          
+
         if (error) {
-          console.error("Error checking match status:", error);
           setMatchStatus(null);
         } else if (matchData) {
           setMatchStatus(matchData.status);
-          console.log("Developer match status:", matchData.status);
         } else {
           setMatchStatus(null);
         }
-      } catch (error) {
-        console.error("Exception checking match status:", error);
+      } catch {
         setMatchStatus(null);
       } finally {
         setIsPermissionChecking(false);
       }
     };
-    
     checkDeveloperPermission();
-    
   }, [ticketId, userId]);
 
   useEffect(() => {
-    // Always get allowed transitions from centralized helper
-    const transitions = getAllowedStatusTransitions(currentStatus, 'developer');
-    
-    // Filter transitions further based on match status
-    let filteredTransitions = [...transitions];
-    
-    if (matchStatus !== 'approved' && matchStatus !== null) {
-      // Only allow dev_requested and abandoned_by_dev for non-approved matches
-      filteredTransitions = filteredTransitions.filter(
-        status => status === STATUSES.DEV_REQUESTED || status === STATUSES.ABANDONED_BY_DEV
+    // This centralizes ALL transition logic
+    // Only STATUS_TRANSITIONS + helpers used here
+    let transitions = getAllowedStatusTransitions(currentStatus, 'developer');
+    // Backend: only developers with approved match can go beyond DEV_REQUESTED/ABANDONED_BY_DEV
+    if (matchStatus !== 'approved' && matchStatus != null) {
+      transitions = transitions.filter(
+        s => s === STATUSES.DEV_REQUESTED || s === STATUSES.ABANDONED_BY_DEV
       );
     }
-    
     setAvailableStatuses(
-      filteredTransitions.map(status => ({
-        value: status,
-        label: getStatusLabel(status)
+      transitions.map(s => ({
+        value: s,
+        label: getStatusLabel(s)
       }))
     );
-    
-    if (filteredTransitions.length > 0) {
-      setNextStatus(filteredTransitions[0]);
-      setSelectedStatus(filteredTransitions[0]);
+    if (transitions.length > 0) {
+      setNextStatus(transitions[0]);
+      setSelectedStatus(transitions[0]);
     } else {
       setNextStatus(null);
       setSelectedStatus(currentStatus);
@@ -112,33 +100,27 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
 
   const handleUpdateStatus = async () => {
     if (selectedStatus === currentStatus) {
-      toast.info('Status is already set to ' + getStatusLabel(selectedStatus));
+      toast.info(`Status is already set to ${getStatusLabel(selectedStatus)}`);
       return;
     }
     setIsUpdating(true);
     setError(null);
 
     try {
-      console.log(`Updating ticket ${ticketId} status from ${currentStatus} to ${selectedStatus}`);
-      
       const response = await updateHelpRequest(
         ticketId,
         { status: selectedStatus },
         userType || 'developer'
       );
-
       if (response.success) {
         toast.success(`Ticket status updated to ${getStatusLabel(selectedStatus)}`);
         onStatusUpdated();
       } else {
         setError(response.error || 'Failed to update status');
-        toast.error(response.error || 'Failed to update status');
-        console.error('Status update error details:', response);
+        toast.error(response.error || 'Permission denied: ' + (response.error || 'Cannot update status'));
       }
     } catch (error) {
-      console.error('Error updating ticket status:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      setError(errorMessage);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
       toast.error('An error occurred while updating the status');
     } finally {
       setIsUpdating(false);
@@ -150,63 +132,31 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       toast.error('No valid next status available');
       return;
     }
-
     setSelectedStatus(nextStatus);
     setIsUpdating(true);
     setError(null);
-
     try {
-      console.log(`Quick updating ticket ${ticketId} status to ${nextStatus}`);
-      
       const response = await updateHelpRequest(
         ticketId,
         { status: nextStatus },
         userType || 'developer'
       );
-
       if (response.success) {
         toast.success(`Ticket status updated to ${getStatusLabel(nextStatus)}`);
         onStatusUpdated();
       } else {
         setError(response.error || 'Failed to update status');
-        toast.error(response.error || 'Failed to update status');
-        console.error('Quick update error details:', response);
+        toast.error(response.error || 'Permission denied: cannot update status');
       }
     } catch (error) {
-      console.error('Error updating ticket status:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      setError(errorMessage);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
       toast.error('An error occurred while updating the status');
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case STATUSES.IN_PROGRESS:
-        return <ArrowRightCircle className="h-4 w-4" />;
-      case STATUSES.READY_FOR_QA:
-        return <ClipboardCheck className="h-4 w-4" />;
-      case STATUSES.DEV_REQUESTED:
-        return <UserCheck className="h-4 w-4" />;
-      case STATUSES.COMPLETE:
-        return <CheckCircle2 className="h-4 w-4" />;
-      default:
-        return null;
-    }
-  };
-
-  // Text for the "quick transition" button; still keep this for user-friendliness
-  const getNextStatusButtonText = (status: string, nextStatus: string | null): string => {
-    if (!nextStatus) return 'Update Status';
-    if (nextStatus === STATUSES.DEV_REQUESTED) return 'Request Assignment';
-    if (nextStatus === STATUSES.IN_PROGRESS) return 'Start Working';
-    if (nextStatus === STATUSES.READY_FOR_QA) return 'Submit for QA';
-    return 'Update Status';
-  };
-
-  // If still checking permissions, show loading
+  // Show info if still permission checking
   if (isPermissionChecking) {
     return (
       <div className="flex items-center justify-center p-4">
@@ -215,33 +165,54 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       </div>
     );
   }
-  
-  // Hide if the developer doesn't have a match
-  if (matchStatus === null && currentStatus !== 'pending_match') {
+
+  // Waiting for client approval or other blocked state
+  if ((matchStatus === 'pending' || matchStatus === 'rejected') && currentStatus !== 'pending_match') {
     return (
       <Alert className="bg-blue-50 border-blue-200">
-        <UserCheck className="h-4 w-4" />
-        <AlertTitle>Request Assignment</AlertTitle>
+        <ShieldAlert className="h-4 w-4" />
+        <AlertTitle>{matchStatus === 'pending' ? 'Waiting for Client Approval' : 'Application Rejected'}</AlertTitle>
         <AlertDescription>
-          You need to request assignment to this ticket before you can update its status.
+          {matchStatus === 'pending'
+            ? "Your application is pending client approval. You can't update the ticket until approved."
+            : "You can't update this ticket because your application was rejected."}
         </AlertDescription>
       </Alert>
     );
   }
 
-  // Hide if no valid actions
   if (!availableStatuses.length) {
     return (
       <Alert>
         <AlertTitle>No Available Status Updates</AlertTitle>
         <AlertDescription>
-          {currentStatus === 'ready_for_qa' 
-            ? "You've submitted this work for QA. Waiting for client review." 
+          {currentStatus === 'ready_for_qa'
+            ? "You've submitted for QA. Waiting for client review."
             : "No status transitions available at this time."}
         </AlertDescription>
       </Alert>
     );
   }
+
+  // Simple icon logic based on status value (not hardcoded with a switch)
+  const getStatusIcon = (status: string) => {
+    if (status === STATUSES.IN_PROGRESS) return <ArrowRightCircle className="h-4 w-4" />;
+    if (status === STATUSES.READY_FOR_QA) return <ClipboardCheck className="h-4 w-4" />;
+    if (status === STATUSES.DEV_REQUESTED) return <UserCheck className="h-4 w-4" />;
+    if (status === STATUSES.COMPLETE) return <CheckCircle2 className="h-4 w-4" />;
+    if (status === STATUSES.ABANDONED_BY_DEV) return <ShieldAlert className="h-4 w-4" />;
+    return null;
+  };
+
+  // More maintainable labels
+  const getNextStatusButtonText = (next: string | null): string => {
+    if (!next) return 'Update Status';
+    if (next === STATUSES.DEV_REQUESTED) return 'Request Assignment';
+    if (next === STATUSES.IN_PROGRESS) return 'Start Working';
+    if (next === STATUSES.READY_FOR_QA) return 'Submit for QA';
+    if (next === STATUSES.ABANDONED_BY_DEV) return 'Abandon';
+    return getStatusLabel(next);
+  };
 
   return (
     <div className="space-y-4">
@@ -265,15 +236,15 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
             ) : (
               getStatusIcon(nextStatus)
             )}
-            <span className="ml-2">{getNextStatusButtonText(currentStatus, nextStatus)}</span>
+            <span className="ml-2">{getNextStatusButtonText(nextStatus)}</span>
           </Button>
         </div>
       ) : (
         <Alert>
           <AlertTitle>No Available Status Updates</AlertTitle>
           <AlertDescription>
-            {currentStatus === 'ready_for_qa' 
-              ? "You've submitted this work for QA. Waiting for client review." 
+            {currentStatus === 'ready_for_qa'
+              ? "You've submitted for QA. Waiting for client review."
               : "No status transitions available at this time."}
           </AlertDescription>
         </Alert>
@@ -320,11 +291,10 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       <div className="mt-4 bg-muted p-3 rounded text-sm">
         <p className="font-medium">Current Status: {getStatusLabel(currentStatus)}</p>
         <p className="text-muted-foreground text-xs mt-1">{getStatusDescription(currentStatus)}</p>
-        
         {matchStatus && matchStatus !== 'approved' && (
           <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded text-amber-800 text-xs">
-            Your match status is <span className="font-medium capitalize">{matchStatus}</span>. 
-            {matchStatus === 'pending' ? ' Waiting for client approval.' : ''}
+            Your application status: <span className="font-medium capitalize">{matchStatus}</span>.
+            {matchStatus === 'pending' ? ' Waiting for client approval.' : ' Not eligible for status changes.'}
           </div>
         )}
       </div>
@@ -333,3 +303,4 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
 };
 
 export default DeveloperStatusUpdate;
+

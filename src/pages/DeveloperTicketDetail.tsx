@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { 
   ArrowLeft, Clock, Zap, DollarSign, Code, MessageSquare, 
-  CalendarClock, FileCode, Users, Award, ClipboardCheck, Loader2 
+  CalendarClock, FileCode, Users, Award, ClipboardCheck, Loader2, ShieldAlert
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Layout from '../components/Layout';
@@ -19,7 +19,7 @@ import DeveloperApplicationModal from '../components/apply/DeveloperApplicationM
 import DeveloperQADialog from '../components/help/DeveloperQADialog';
 import DeveloperStatusUpdate from '../components/help/DeveloperStatusUpdate';
 import ClientStatusUpdate from '../components/help/ClientStatusUpdate';
-import { setupApplicationsSubscription } from '../integrations/supabase/realtime';
+import { getAllowedStatusTransitions } from '../utils/helpRequestStatusUtils';
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
 import { getStatusLabel } from '../utils/helpRequestStatusUtils';
 
@@ -288,12 +288,27 @@ const DeveloperTicketDetail: React.FC = () => {
   const isInClientReview = ticket?.status === 'client_review';
   const isClientApproved = ticket?.status === 'client_approved';
   
-  // Determine if status update should be shown
-  const shouldShowStatusUpdate = 
-    userType === 'developer' && 
-    (applicationStatus === 'approved' || 
-     ['approved', 'in_progress', 'ready_for_qa'].includes(ticket.status || ''));
-  
+  // NEW: Helper for status update component visibility and fallback rules
+const getDeveloperStatusUpdateVisibility = (userType, applicationStatus, ticket) => {
+  // Only developer can see developer updates logic
+  if (userType !== 'developer' || !ticket) return { show: false, reason: "Not a developer" };
+  // Developer must have applied for (at least) - fallback for error states
+  if (!applicationStatus) return { show: false, reason: "Not applied" };
+  // Client must have approved the match to allow full transitions
+  if (applicationStatus === 'approved') {
+    // Only show for statuses with transitions from STATUS_TRANSITIONS
+    const devTransitions = getAllowedStatusTransitions(ticket.status, 'developer');
+    return { show: devTransitions.length > 0, reason: devTransitions.length ? "" : "No available developer transitions" };
+  }
+  // If still pending, show a waiting-for-client message
+  if (applicationStatus === 'pending') return { show: false, reason: "Waiting for client approval" };
+  if (applicationStatus === 'rejected') return { show: false, reason: "Rejected by client" };
+  // Fallback: blocked
+  return { show: false, reason: "Not eligible" };
+}
+
+  const devUpdateVisibility = getDeveloperStatusUpdateVisibility(userType, applicationStatus, ticket);
+
   return (
     <Layout>
       <div className="container max-w-5xl mx-auto py-8 px-4">
@@ -513,7 +528,7 @@ const DeveloperTicketDetail: React.FC = () => {
           </div>
           
           <div>
-            {shouldShowStatusUpdate ? (
+            {devUpdateVisibility.show ? (
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle>Status & Progress</CardTitle>
@@ -529,7 +544,42 @@ const DeveloperTicketDetail: React.FC = () => {
                   />
                 </CardContent>
               </Card>
-            ) : !hasApplied ? (
+            ) : devUpdateVisibility.reason === "Waiting for client approval" ? (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Status & Progress</CardTitle>
+                  <CardDescription>Current: {getStatusLabel(ticket?.status || '')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Alert className="bg-blue-50 border-blue-200">
+                    <ShieldAlert className="h-4 w-4" />
+                    <AlertTitle>Waiting for Client Approval</AlertTitle>
+                    <AlertDescription>
+                      Your application to this ticket is pending client approval.
+                      Status updates will be available if your application is approved.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            ) : devUpdateVisibility.reason === "Rejected by client" ? (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Status & Progress</CardTitle>
+                  <CardDescription>Current: {getStatusLabel(ticket?.status || '')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Alert variant="destructive">
+                    <ShieldAlert className="h-4 w-4" />
+                    <AlertTitle>Application Rejected</AlertTitle>
+                    <AlertDescription>
+                      Your application was rejected. You can't update this ticket.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {!hasApplied ? (
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle>Apply for This Ticket</CardTitle>

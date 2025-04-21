@@ -128,11 +128,21 @@ export const updateHelpRequest = async (
         
         // If the match is not approved (still pending), developer can't update
         // except for specific allowed cases
-        if (matchData.status !== 'approved' && 
-            updates.status !== 'dev_requested' && 
-            updates.status !== 'abandoned_by_dev') {
+        if (matchData.status === 'pending' && updates.status &&
+            updates.status !== 'dev_requested' && updates.status !== 'abandoned_by_dev') {
           console.error('[updateHelpRequest] Developer match not approved:', matchData.status);
-          permissionError = `Your application to this help request is ${matchData.status}. You need approved status to update it.`;
+          permissionError = 'Your application to this help request is pending. You must be approved by the client before updating its status.';
+        }
+        
+        if (matchData.status === 'rejected') {
+          console.error('[updateHelpRequest] Developer match not approved:', matchData.status);
+          permissionError = 'Your application to this help request was rejected. You cannot update this request.';
+        }
+        
+        if (matchData.status !== 'approved' && (
+              updates.status !== 'dev_requested' && updates.status !== 'abandoned_by_dev')) {
+          console.error('[updateHelpRequest] Developer match not approved:', matchData.status);
+          permissionError = 'You are not approved for this request. Only assignment or abandonment is allowed.';
         }
       }
 
