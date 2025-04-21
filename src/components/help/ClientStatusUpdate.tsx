@@ -17,6 +17,7 @@ import {
   getAllowedStatusTransitions, 
   getStatusLabel, 
   STATUSES,
+  getStatusDescription
 } from '../../utils/helpRequestStatusUtils';
 
 interface ClientStatusUpdateProps {
@@ -40,12 +41,16 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
   useEffect(() => {
     // Always get allowed transitions from centralized helper
     const transitions = getAllowedStatusTransitions(currentStatus, 'client');
+    
+    console.log("Client available transitions for", currentStatus, ":", transitions);
+    
     setAvailableStatuses(
       transitions.map(status => ({
         value: status,
         label: getStatusLabel(status)
       }))
     );
+    
     setNextStatus(transitions.length ? transitions[0] : null);
     setSelectedStatus(transitions.length ? transitions[0] : currentStatus);
   }, [currentStatus]);
@@ -131,9 +136,11 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
 
   // Improved: Button text matches transition
   const getNextStatusButtonText = (nextStatus: string | null): string => {
+    if (!nextStatus) return 'Update Status';
     if (nextStatus === STATUSES.APPROVED) return 'Approve Developer';
     if (nextStatus === STATUSES.COMPLETE) return 'Mark as Complete';
     if (nextStatus === STATUSES.QA_FEEDBACK) return 'Request Changes';
+    if (nextStatus === STATUSES.CANCELLED_BY_CLIENT) return 'Cancel Request';
     return 'Update Status';
   };
 
@@ -158,6 +165,7 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
             onClick={handleQuickUpdate}
             disabled={isUpdating}
             className="w-full"
+            variant={nextStatus === STATUSES.CANCELLED_BY_CLIENT ? "destructive" : "default"}
           >
             {isUpdating ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -176,7 +184,7 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
         </Alert>
       )}
 
-      {availableStatuses.length > 0 && (
+      {availableStatuses.length > 1 && (
         <div className="flex flex-col sm:flex-row gap-2 items-center">
           <div className="w-full sm:w-2/3">
             <Select
@@ -213,6 +221,11 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
           </Button>
         </div>
       )}
+
+      <div className="mt-4 bg-muted p-3 rounded text-sm">
+        <p className="font-medium">Current Status: {getStatusLabel(currentStatus)}</p>
+        <p className="text-muted-foreground text-xs mt-1">{getStatusDescription(currentStatus)}</p>
+      </div>
     </div>
   );
 };

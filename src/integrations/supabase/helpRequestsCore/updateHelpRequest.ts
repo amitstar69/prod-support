@@ -1,9 +1,8 @@
-
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
 import { getUserHomeRoute } from '../../../contexts/auth/authUtils';
-import { isValidStatusTransition } from '../../../utils/helpRequestStatusUtils';
+import { isValidStatusTransition, getStatusLabel } from '../../../utils/helpRequestStatusUtils';
 
 export const updateHelpRequest = async (
   requestId: string,
@@ -88,16 +87,14 @@ export const updateHelpRequest = async (
       console.log('[updateHelpRequest] Found current request:', currentRequest);
 
       // === Permission checks based on user type ===
+      let permissionError: string | null = null;
       
       // Check client permissions
       if (userType === 'client') {
         // Client can only update their own requests
         if (currentRequest.client_id !== currentUserId) {
+          permissionError = 'You can only update help requests that you created';
           console.error(`[updateHelpRequest] Client ${currentUserId} does not own request ${requestId}`);
-          return { 
-            success: false, 
-            error: 'You do not have permission to update this help request' 
-          };
         }
       }
       
@@ -123,14 +120,6 @@ export const updateHelpRequest = async (
         if (!matchData) {
           console.error('[updateHelpRequest] Developer not matched with this request');
           
-          // Get all matches for this request to provide better error message
-          const { data: allMatches } = await supabase
-            .from('help_request_matches')
-            .select('developer_id, status')
-            .eq('request_id', requestId);
-            
-          console.log('[updateHelpRequest] All matches for this request:', allMatches);
-          
           return { 
             success: false, 
             error: `You are not assigned to this help request. Please request assignment first.` 
@@ -138,30 +127,31 @@ export const updateHelpRequest = async (
         }
         
         // If the match is not approved (still pending), developer can't update
+        // except for specific allowed cases
         if (matchData.status !== 'approved' && 
             updates.status !== 'dev_requested' && 
             updates.status !== 'abandoned_by_dev') {
           console.error('[updateHelpRequest] Developer match not approved:', matchData.status);
-          return { 
-            success: false, 
-            error: `Your application to this help request is ${matchData.status}. You need approved status to update it.` 
-          };
+          permissionError = `Your application to this help request is ${matchData.status}. You need approved status to update it.`;
         }
-        
-        // Special case: A developer with pending status CAN transition to dev_requested
-        if (matchData.status === 'pending' && updates.status === 'dev_requested') {
-          // This is allowed
-        }
+      }
+
+      // Return early if there's a permission error
+      if (permissionError) {
+        return { success: false, error: permissionError };
       }
 
       // Check status transition validity if status is being updated
       if (updates.status && currentRequest.status !== updates.status) {
         // Validate the status transition based on user role
         if (!isValidStatusTransition(currentRequest.status, updates.status, userType)) {
+          const fromStatus = getStatusLabel(currentRequest.status);
+          const toStatus = getStatusLabel(updates.status);
+          
           console.error(`[updateHelpRequest] Invalid status transition from ${currentRequest.status} to ${updates.status} by ${userType}`);
           return { 
             success: false, 
-            error: `Invalid status transition from ${currentRequest.status} to ${updates.status}` 
+            error: `Invalid status transition from "${fromStatus}" to "${toStatus}". This action is not allowed.` 
           };
         }
         
