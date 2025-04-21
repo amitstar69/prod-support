@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../integrations/supabase/client';
+import { STATUSES, getStatusLabel } from '../utils/helpRequestStatusUtils';
 
 export interface ApplicationStatus {
   id: string;
@@ -20,38 +20,41 @@ export const useApplicationStatuses = (): UseApplicationStatusesResult => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStatuses = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+    try {
+      setIsLoading(true);
+      setError(null);
 
-        // Fetch statuses from Supabase
-        const { data, error: fetchError } = await supabase
-          .from('help_request_status_types')
-          .select('*')
-          .order('display_order', { ascending: true });
+      // Create status list from the predefined statuses in helpRequestStatusUtils.ts
+      const statusList = Object.entries(STATUSES).map(([key, value]) => ({
+        id: value,
+        label: getStatusLabel(value),
+        value: value
+      }));
 
-        if (fetchError) {
-          throw new Error(fetchError.message);
-        }
+      // Sort the statuses in a logical order for workflow progression
+      const orderedStatuses = [
+        STATUSES.REQUIREMENTS_REVIEW,
+        STATUSES.NEED_MORE_INFO,
+        STATUSES.IN_PROGRESS,
+        STATUSES.READY_FOR_CLIENT_QA,
+        STATUSES.READY_FOR_FINAL_ACTION,
+        STATUSES.RESOLVED,
+      ];
 
-        if (data) {
-          const formattedStatuses = data.map(status => ({
-            id: status.id,
-            label: status.display_name,
-            value: status.status_code
-          }));
-          setStatuses(formattedStatuses);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unable to load status options');
-        console.error('Error fetching application statuses:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      // Filter and sort the status list
+      const formattedStatuses = statusList
+        .filter(status => orderedStatuses.includes(status.value))
+        .sort((a, b) => {
+          return orderedStatuses.indexOf(a.value) - orderedStatuses.indexOf(b.value);
+        });
 
-    fetchStatuses();
+      setStatuses(formattedStatuses);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load status options');
+      console.error('Error preparing application statuses:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   return { statuses, isLoading, error };
