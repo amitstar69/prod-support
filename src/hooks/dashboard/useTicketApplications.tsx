@@ -11,6 +11,7 @@ import { useTicketApplicationsSubscriptions } from './useTicketApplicationsSubsc
 export interface UseTicketApplicationsResult {
   recommendedTickets: HelpRequest[];
   myApplications: HelpRequest[];
+  isLoadingApplications: boolean;
   handleClaimTicket: (ticketId: string) => void;
   fetchMyApplications: (isAuthenticated: boolean, userId: string | null) => Promise<void>;
   checkApplicationStatus: (ticketId: string, userId: string) => Promise<string | null>;
@@ -24,7 +25,7 @@ export const useTicketApplications = (
   refreshTickets: () => void
 ): UseTicketApplicationsResult => {
   const recommendedTickets = useRecommendedTickets(tickets, isAuthenticated, userId);
-  const { myApplications, fetchMyApplications } = useMyTicketApplications();
+  const { myApplications, fetchMyApplications, isLoading: isLoadingApplications } = useMyTicketApplications();
   const { handleClaimTicket, checkApplicationStatus } = useTicketApplicationActions(
     isAuthenticated, userId, userType, refreshTickets, fetchMyApplications
   );
@@ -48,6 +49,7 @@ export const useTicketApplications = (
   return {
     recommendedTickets,
     myApplications,
+    isLoadingApplications,
     handleClaimTicket,
     fetchMyApplications,
     checkApplicationStatus

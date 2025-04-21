@@ -7,6 +7,7 @@ import { VALID_MATCH_STATUSES } from '../../integrations/supabase/helpRequestsAp
 
 export const useMyTicketApplications = () => {
   const [myApplications, setMyApplications] = useState<HelpRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchMyApplications = async (
     isAuthenticated: boolean,
@@ -17,22 +18,30 @@ export const useMyTicketApplications = () => {
       return;
     }
     
+    setIsLoading(true);
+    
     try {
-      // Create a timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-        console.log('Fetch applications request timed out');
-      }, 10000); // 10 second timeout
+      // Create a manual timeout instead of using AbortController
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Request timed out'));
+        }, 10000);
+      });
       
-      const { data: applications, error } = await supabase
+      const fetchPromise = supabase
         .from('help_request_matches')
         .select('*, help_requests(*)')
         .eq('developer_id', currentUserId)
-        .eq('status', VALID_MATCH_STATUSES.APPROVED)
-        .abortSignal(controller.signal);
+        .eq('status', VALID_MATCH_STATUSES.APPROVED);
       
-      clearTimeout(timeoutId);
+      // Race between the fetch and the timeout
+      const { data: applications, error } = await Promise.race([
+        fetchPromise,
+        timeoutPromise.then(() => {
+          console.log('Fetch applications request timed out');
+          throw new Error('Request timed out');
+        })
+      ]) as any;
 
       if (error) {
         console.error('Failed to load applications:', error);
@@ -57,15 +66,17 @@ export const useMyTicketApplications = () => {
       
       setMyApplications(approvedTickets);
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+      console.error('Error fetching applications:', error);
+      if (error instanceof Error && error.message === 'Request timed out') {
         toast.error('Request timed out. Please check your connection');
       } else {
         toast.error('An unexpected error occurred while fetching your applications');
       }
-      console.error('Error fetching applications:', error);
       setMyApplications([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return { myApplications, fetchMyApplications };
+  return { myApplications, fetchMyApplications, isLoading };
 };

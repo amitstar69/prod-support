@@ -31,6 +31,7 @@ export const useDeveloperDashboard = () => {
   const {
     recommendedTickets,
     myApplications,
+    isLoadingApplications,
     handleClaimTicket,
     fetchMyApplications,
     checkApplicationStatus
@@ -67,6 +68,7 @@ export const useDeveloperDashboard = () => {
     recommendedTickets,
     myApplications,
     isLoading,
+    isLoadingApplications,
     filters,
     showFilters,
     setShowFilters,

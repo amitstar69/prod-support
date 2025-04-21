@@ -18,6 +18,7 @@ const MyApplicationsPage = () => {
   const {
     myApplications,
     isLoading,
+    isLoadingApplications,
     dataSource,
     handleClaimTicket,
     fetchMyApplications
@@ -56,7 +57,7 @@ const MyApplicationsPage = () => {
           hideFilterButton={true}
         />
         
-        {isLoading ? (
+        {isLoading || isLoadingApplications ? (
           <LoadingState />
         ) : (
           <div>
@@ -82,7 +83,7 @@ const MyApplicationsPage = () => {
                 isAuthenticated={isAuthenticated}
                 onRefresh={fetchApplications}
                 dataSource={dataSource}
-                customMessage="You don't have any approved tickets yet. Apply to available tickets and wait for client approval."
+                customMessage="You don't have any approved tickets yet. Apply to available tickets and wait for client approval to see them here."
               />
             )}
           </div>
