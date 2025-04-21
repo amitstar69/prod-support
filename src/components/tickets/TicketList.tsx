@@ -96,6 +96,8 @@ const TicketList: React.FC<TicketListProps> = ({
     // This will be implemented by the parent component
   };
 
+  console.log('TicketList rendering with isApplication:', isApplication, 'and tickets:', tickets.length);
+
   if (tickets.length === 0) {
     return (
       <EmptyTicketsView 
@@ -115,10 +117,10 @@ const TicketList: React.FC<TicketListProps> = ({
         {tickets.map((ticket) => (
           <TicketListItem
             key={ticket.id}
-            ticket={ticket}
+            ticket={{...ticket, isApplication: isApplication || ticket.isApplication}}
             expandedTicket={expandedTicket}
             isRecommended={isRecommended}
-            isApplication={isApplication}
+            isApplication={isApplication || !!ticket.isApplication}
             onTicketClick={handleTicketClick}
             onViewDetails={handleViewDetails}
             onClaimClick={handleClaimClick}

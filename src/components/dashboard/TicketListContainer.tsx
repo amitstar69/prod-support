@@ -14,6 +14,7 @@ interface TicketListContainerProps {
   userId: string | null;
   isAuthenticated: boolean;
   onRefresh?: () => void;
+  isApplication?: boolean;
 }
 
 const TicketListContainer: React.FC<TicketListContainerProps> = ({ 
@@ -22,7 +23,8 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
   onClaimTicket, 
   userId, 
   isAuthenticated,
-  onRefresh
+  onRefresh,
+  isApplication = false
 }) => {
   const [chatDialogOpen, setChatDialogOpen] = React.useState(false);
   const [currentChat, setCurrentChat] = React.useState<{
@@ -44,6 +46,8 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
     });
     setChatDialogOpen(true);
   };
+
+  console.log('TicketListContainer rendering with isApplication:', isApplication);
 
   if (actualTicketCount === 0) {
     return (
@@ -109,6 +113,7 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
           isAuthenticated={isAuthenticated}
           onOpenChat={handleOpenChat}
           viewMode={viewMode}
+          isApplication={isApplication}
         />
       </div>
 

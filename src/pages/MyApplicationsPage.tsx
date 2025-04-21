@@ -158,6 +158,7 @@ const MyApplicationsPage = () => {
                 userId={userId}
                 isAuthenticated={isAuthenticated}
                 onRefresh={fetchApplications}
+                isApplication={true}
               />
             ) : (
               <EmptyTicketState 
