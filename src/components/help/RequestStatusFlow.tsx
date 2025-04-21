@@ -1,15 +1,29 @@
 
 import React from 'react';
-import { 
-  Clock, 
+import {
+  Clock,
   ArrowRightCircle,
-  ClipboardCheck, 
-  UserCheck, 
-  ThumbsUp, 
+  ClipboardCheck,
+  UserCheck,
+  ThumbsUp,
   CheckCircle,
   AlertTriangle
 } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
+
+// Who is expected to act for each status
+const stageRoleMap: Record<string, 'client' | 'developer' | 'either' | 'system' | null> = {
+  // old mapping (legacy): currently unused but defined for clarity
+  open: null,
+  pending: null,
+  matching: null,
+  scheduled: null,
+  in_progress: 'developer',
+  developer_qa: 'developer',
+  client_review: 'client',
+  client_approved: 'client',
+  completed: null
+};
 
 interface RequestStatusFlowProps {
   currentStatus: string;
@@ -17,60 +31,63 @@ interface RequestStatusFlowProps {
   error?: string | null;
 }
 
-const RequestStatusFlow: React.FC<RequestStatusFlowProps> = ({ 
+const roleLabelMap: Record<'client' | 'developer' | 'either' | 'system', string> = {
+  client: 'Client Action',
+  developer: 'Developer Action',
+  either: 'Client/Developer',
+  system: 'System'
+};
+
+const statusFlow = [
+  {
+    id: 'in_progress',
+    label: 'In Progress',
+    icon: ArrowRightCircle,
+    actor: 'developer' as const
+  },
+  {
+    id: 'developer_qa',
+    label: 'Dev QA',
+    icon: ClipboardCheck,
+    actor: 'developer' as const
+  },
+  {
+    id: 'client_review',
+    label: 'Review',
+    icon: UserCheck,
+    actor: 'client' as const
+  },
+  {
+    id: 'client_approved',
+    label: 'Approved',
+    icon: ThumbsUp,
+    actor: 'client' as const
+  },
+  {
+    id: 'completed',
+    label: 'Completed',
+    icon: CheckCircle,
+    actor: 'system' as const
+  }
+];
+
+const waitingStatuses = ['open', 'pending', 'matching', 'scheduled'];
+
+// Utility
+const getStageIndex = (status: string) =>
+  statusFlow.findIndex(stage => stage.id === status) !== -1
+    ? statusFlow.findIndex(stage => stage.id === status)
+    : -1;
+
+const getCurrentActor = (status: string) =>
+  statusFlow.find(stage => stage.id === status)?.actor || null;
+
+const RequestStatusFlow: React.FC<RequestStatusFlowProps> = ({
   currentStatus,
   userType = 'client',
   error = null
 }) => {
-  // Define the statuses in the flow with roles that can trigger them
-  const statuses = [
-    { 
-      id: 'in-progress', 
-      label: 'In Progress', 
-      icon: <ArrowRightCircle className="h-4 w-4" />,
-      allowedRoles: ['developer']
-    },
-    { 
-      id: 'developer-qa', 
-      label: 'Dev QA', 
-      icon: <ClipboardCheck className="h-4 w-4" />,
-      allowedRoles: ['developer']
-    },
-    { 
-      id: 'client-review', 
-      label: 'Review', 
-      icon: <UserCheck className="h-4 w-4" />,
-      allowedRoles: ['client', 'developer']
-    },
-    { 
-      id: 'client-approved', 
-      label: 'Approved', 
-      icon: <ThumbsUp className="h-4 w-4" />,
-      allowedRoles: ['client']
-    },
-    { 
-      id: 'completed', 
-      label: 'Completed', 
-      icon: <CheckCircle className="h-4 w-4" />,
-      allowedRoles: ['developer']
-    }
-  ];
-
-  // Find the current status index
-  const currentIndex = statuses.findIndex(status => status.id === currentStatus);
-  
-  const isActive = (index: number) => {
-    if (currentStatus === 'cancelled') return false;
-    return index <= currentIndex;
-  };
-
-  const canUpdateStatus = (status: typeof statuses[0]) => {
-    return status.allowedRoles.includes(userType);
-  };
-
-  // For waiting statuses
-  const waitingStatuses = ['open', 'pending', 'matching', 'scheduled'];
-  
+  // Handle error first
   if (error) {
     return (
       <Alert variant="destructive">
@@ -79,7 +96,8 @@ const RequestStatusFlow: React.FC<RequestStatusFlowProps> = ({
       </Alert>
     );
   }
-  
+
+  // Waiting (pre-matching etc)
   if (waitingStatuses.includes(currentStatus)) {
     return (
       <div className="py-2 px-3 bg-blue-50 dark:bg-blue-950 rounded border border-blue-200 dark:border-blue-800 flex items-center">
@@ -91,7 +109,8 @@ const RequestStatusFlow: React.FC<RequestStatusFlowProps> = ({
     );
   }
 
-  if (currentStatus === 'cancelled') {
+  // Cancelled
+  if (currentStatus === 'cancelled' || currentStatus === 'cancelled_by_client') {
     return (
       <div className="py-2 px-3 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800 flex items-center">
         <Clock className="h-5 w-5 text-red-500 mr-2" />
@@ -102,44 +121,102 @@ const RequestStatusFlow: React.FC<RequestStatusFlowProps> = ({
     );
   }
 
-  return (
-    <div className="flex items-center justify-between">
-      {statuses.map((status, index) => (
-        <React.Fragment key={status.id}>
-          <div className="flex flex-col items-center">
-            <div 
-              className={`
-                w-8 h-8 rounded-full flex items-center justify-center
-                ${isActive(index) 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-muted text-muted-foreground'}
-              `}
-            >
-              {status.icon}
-            </div>
-            <span 
-              className={`
-                text-xs mt-1
-                ${isActive(index) 
-                  ? 'font-medium text-foreground' 
-                  : 'text-muted-foreground'}
-              `}
-            >
-              {status.label}
-            </span>
-          </div>
+  // Compute current index and actor
+  const currentIndex = getStageIndex(currentStatus);
 
-          {/* Show connector line between status items except for the last one */}
-          {index < statuses.length - 1 && (
-            <div 
-              className={`
-                flex-1 h-0.5 mx-1
-                ${isActive(index + 1) ? 'bg-primary' : 'bg-muted'}
-              `}
-            ></div>
-          )}
-        </React.Fragment>
-      ))}
+  // Show "No further actions" if completed or not found in active steps (blocked)
+  const noMoreActions =
+    currentStatus === 'completed' ||
+    currentStatus === 'client_approved' ||
+    currentStatus === 'completed' ||
+    currentIndex === -1;
+
+  // For system step
+  const actorLabel = (actor: 'developer' | 'client' | 'either' | 'system', current: boolean) => {
+    if (actor === 'system') return (
+      <span className="text-xs text-muted-foreground mt-0.5">System</span>
+    );
+    if (!current) return (
+      <span className="text-xs text-muted-foreground mt-0.5">{roleLabelMap[actor]}</span>
+    );
+    // For current step
+    if (actor === userType)
+      return <span className="text-xs text-primary mt-0.5 font-semibold">{roleLabelMap[actor]} (You)</span>;
+    return (
+      <span className="text-xs text-warning-foreground mt-0.5 font-medium">
+        {roleLabelMap[actor]}
+      </span>
+    );
+  };
+
+  // COMPONENT UI FLOW
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        {statusFlow.map((stage, idx) => {
+          // State
+          const IconComp = stage.icon;
+          const isDone = idx < currentIndex;
+          const isActive = idx === currentIndex;
+          const isFuture = idx > currentIndex;
+
+          return (
+            <React.Fragment key={stage.id}>
+              <div className="flex flex-col items-center min-w-[72px]">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center border-2
+                    transition-all duration-200
+                    ${isActive
+                      ? 'bg-primary text-primary-foreground border-primary shadow-lg animate-scale-in'
+                      : isDone
+                        ? 'bg-green-100 text-green-700 border-green-300'
+                        : 'bg-muted text-muted-foreground border-muted-foreground opacity-60'
+                    }
+                  `}
+                  style={isActive ? { transform: 'scale(1.1)' } : undefined}
+                >
+                  <IconComp
+                    className={`w-5 h-5
+                      ${isActive
+                        ? 'animate-pulse'
+                        : ''}
+                    `}
+                  />
+                </div>
+                <span className={`text-xs mt-2 text-center ${isActive ? 'font-semibold text-primary' : isDone ? 'text-green-700' : 'text-muted-foreground'}`}>
+                  {stage.label}
+                </span>
+                {/* Show who is expected to act */}
+                {actorLabel(stage.actor, isActive)}
+              </div>
+              {/* Connector lines */}
+              {idx < statusFlow.length - 1 && (
+                <div className={`flex-1 h-0.5 mx-0.5
+                  ${isDone
+                    ? 'bg-primary'
+                    : isActive
+                      ? 'bg-gradient-to-r from-primary to-muted'
+                      : 'bg-muted'
+                  }`}
+                  style={{
+                    minWidth: "22px",
+                    maxWidth: "50px"
+                  }}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      {/* At the end, if no further actions */}
+      {noMoreActions && (
+        <div className="mt-4 flex items-center justify-center rounded bg-slate-50 border border-slate-200 p-2 dark:bg-slate-900 dark:border-slate-800">
+          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+          <span className="text-green-800 dark:text-green-200 text-sm font-semibold">
+            No further actions available. All stages completed for this request.
+          </span>
+        </div>
+      )}
     </div>
   );
 };
