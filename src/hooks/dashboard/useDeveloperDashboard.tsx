@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth';
 import { useTicketFetching } from './useTicketFetching';
@@ -11,6 +11,7 @@ export const useDeveloperDashboard = () => {
   const [activeTab, setActiveTab] = useState('all');
   const navigate = useNavigate();
   const { userId, userType, isAuthenticated } = useAuth();
+  const initialFetchCompleted = useRef(false);
   
   const {
     tickets,
@@ -36,8 +37,13 @@ export const useDeveloperDashboard = () => {
   } = useTicketApplications(tickets, isAuthenticated, userId, userType, fetchTickets);
   
   useEffect(() => {
-    fetchTickets();
-  }, [fetchTickets]);
+    // Only fetch on initial mount and when auth state changes
+    if (!initialFetchCompleted.current || isAuthenticated !== undefined) {
+      console.log('Fetching tickets on auth change or initial load');
+      fetchTickets();
+      initialFetchCompleted.current = true;
+    }
+  }, [fetchTickets, isAuthenticated]);
 
   // Listen for viewMyApplication events dispatched from notifications
   useEffect(() => {

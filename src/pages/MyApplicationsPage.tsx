@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
@@ -22,6 +22,13 @@ const MyApplicationsPage = () => {
     handleClaimTicket,
     fetchMyApplications
   } = useDeveloperDashboard();
+  
+  // Memoize fetchApplications to prevent recreation on render
+  const fetchApplications = useCallback(() => {
+    if (userId && isAuthenticated) {
+      fetchMyApplications(isAuthenticated, userId);
+    }
+  }, [userId, isAuthenticated, fetchMyApplications]);
 
   useEffect(() => {
     // Check that this page is only accessed by developers
@@ -32,10 +39,8 @@ const MyApplicationsPage = () => {
   
   useEffect(() => {
     // Fetch applications when component mounts or userId changes
-    if (userId && isAuthenticated) {
-      fetchMyApplications(isAuthenticated, userId);
-    }
-  }, [userId, isAuthenticated, fetchMyApplications]);
+    fetchApplications();
+  }, [fetchApplications]);
 
   return (
     <Layout>
@@ -45,7 +50,7 @@ const MyApplicationsPage = () => {
         <DashboardHeader 
           showFilters={false}
           setShowFilters={() => {}} 
-          onRefresh={() => fetchMyApplications(isAuthenticated, userId)}
+          onRefresh={fetchApplications}
           title="My Applications"
           description="Manage and track your approved tickets"
           hideFilterButton={true}
@@ -69,13 +74,13 @@ const MyApplicationsPage = () => {
                 onClaimTicket={handleClaimTicket}
                 userId={userId}
                 isAuthenticated={isAuthenticated}
-                onRefresh={() => fetchMyApplications(isAuthenticated, userId)}
+                onRefresh={fetchApplications}
               />
             ) : (
               <EmptyTicketState 
                 tickets={[]}
                 isAuthenticated={isAuthenticated}
-                onRefresh={() => fetchMyApplications(isAuthenticated, userId)}
+                onRefresh={fetchApplications}
                 dataSource={dataSource}
                 customMessage="You don't have any approved tickets yet. Apply to available tickets and wait for client approval."
               />

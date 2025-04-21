@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequest } from '../../types/helpRequest';
-import { getAllPublicHelpRequests, testDatabaseAccess } from '../../integrations/supabase/helpRequests';
+import { getAllPublicHelpRequests } from '../../integrations/supabase/helpRequests';
 import { sampleTickets } from './sampleData';
-import { isApiSuccess, isApiError } from '../../types/api';
+import { isApiSuccess } from '../../types/api';
+import { setGlobalLoadingTimeout } from '../../utils/recovery';
 
 export const useTicketFetching = (
   isAuthenticated: boolean, 
@@ -22,14 +23,30 @@ export const useTicketFetching = (
         setIsLoading(true);
       }
       
+      // Set a global timeout to prevent the app from getting stuck
+      const clearLoadingTimeout = setGlobalLoadingTimeout(() => {
+        setIsLoading(false);
+        toast.error('Failed to load tickets. Please try again.');
+      }, 15000);
+      
       if (!isAuthenticated) {
         console.log('[Ticket Fetching] Using sample tickets for unauthenticated user');
         setTickets(sampleTickets);
         setDataSource('sample');
+        clearLoadingTimeout();
+        setIsLoading(false);
         return;
       }
 
+      // Add a controller to handle timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.log('[Ticket Fetching] Request timed out');
+      }, 10000);
+
       const response = await getAllPublicHelpRequests(isAuthenticated);
+      clearTimeout(timeoutId);
       
       if (isApiSuccess(response)) {
         console.log('[Ticket Fetching] All fetched tickets:', response.data.length);
@@ -51,8 +68,13 @@ export const useTicketFetching = (
     } catch (error) {
       console.error('[Ticket Fetching] Exception:', error);
       setTickets([]);
-      toast.error('An unexpected error occurred');
+      if (error instanceof Error && error.name === 'AbortError') {
+        toast.error('Request timed out. Please check your connection');
+      } else {
+        toast.error('An unexpected error occurred');
+      }
     } finally {
+      clearLoadingTimeout?.();
       if (showLoading) {
         setIsLoading(false);
       }
