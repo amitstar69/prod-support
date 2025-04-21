@@ -22,6 +22,7 @@ import ClientStatusUpdate from '../components/help/ClientStatusUpdate';
 import { getAllowedStatusTransitions } from '../utils/helpRequestStatusUtils';
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
 import { getStatusLabel } from '../utils/helpRequestStatusUtils';
+import RequestStatusFlow from '../components/help/RequestStatusFlow';
 
 const DeveloperTicketDetail: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -288,26 +289,52 @@ const DeveloperTicketDetail: React.FC = () => {
   const isInClientReview = ticket?.status === 'client_review';
   const isClientApproved = ticket?.status === 'client_approved';
   
-  // NEW: Helper for status update component visibility and fallback rules
-const getDeveloperStatusUpdateVisibility = (userType, applicationStatus, ticket) => {
-  // Only developer can see developer updates logic
-  if (userType !== 'developer' || !ticket) return { show: false, reason: "Not a developer" };
-  // Developer must have applied for (at least) - fallback for error states
-  if (!applicationStatus) return { show: false, reason: "Not applied" };
-  // Client must have approved the match to allow full transitions
-  if (applicationStatus === 'approved') {
-    // Only show for statuses with transitions from STATUS_TRANSITIONS
-    const devTransitions = getAllowedStatusTransitions(ticket.status, 'developer');
-    return { show: devTransitions.length > 0, reason: devTransitions.length ? "" : "No available developer transitions" };
-  }
-  // If still pending, show a waiting-for-client message
-  if (applicationStatus === 'pending') return { show: false, reason: "Waiting for client approval" };
-  if (applicationStatus === 'rejected') return { show: false, reason: "Rejected by client" };
-  // Fallback: blocked
-  return { show: false, reason: "Not eligible" };
-}
+  // ---- Improved unified logic for when to display status update controls ----
+  // Now matches the backend/permission rules more closely, and provides clarity when blocked.
 
-  const devUpdateVisibility = getDeveloperStatusUpdateVisibility(userType, applicationStatus, ticket);
+  // Helper: Should developer see DeveloperStatusUpdate?
+  const shouldShowDevStatusUpdate = (() => {
+    // Only show for developer user, ticket loaded, and has approved application
+    if (userType !== "developer" || !ticket) return false;
+    if (!applicationStatus) return false;
+    // Application rejected: cannot act (notice below)
+    if (applicationStatus === "rejected") return false;
+    // Application pending: cannot act (notice below)
+    if (applicationStatus === "pending") return false;
+    // Application approved, but check allowed transitions
+    if (applicationStatus === "approved") {
+      const devTransitions = getAllowedStatusTransitions(ticket.status, "developer");
+      return devTransitions.length > 0;
+    }
+    // All other states: fallback
+    return false;
+  })();
+
+  // Helper: Should developer see ClientStatusUpdate? (rare, but for "client handoff" UX testing or superusers)
+  const shouldShowClientStatusUpdate = false;
+
+  // Fallback message when no status transitions are possible for developer
+  let devBlockedReason = "";
+  if (userType === "developer" && ticket && applicationStatus) {
+    if (applicationStatus === "pending") devBlockedReason = "Waiting for client to approve your application.";
+    else if (applicationStatus === "rejected") devBlockedReason = "Your application was rejected by the client.";
+    else if (applicationStatus === "approved") {
+      const devTransitions = getAllowedStatusTransitions(ticket.status, "developer");
+      if (devTransitions.length === 0) {
+        // Show specific message for "nothing to do"
+        devBlockedReason = "No further developer actions are available at this stage. Please wait for client action.";
+      }
+    }
+  }
+
+  const shortTicketId = ticket?.id ? `HELP-${ticket.id.substring(0, 4)}` : 'Unknown ID';
+  
+  const isInProgress = ticket?.status === 'in_progress';
+  const isApproved = ticket?.status === 'approved';
+  const canSubmitQA = isInProgress && userType === 'developer';
+  const isInQA = ticket?.status === 'ready_for_qa';
+  const isInClientReview = ticket?.status === 'client_review';
+  const isClientApproved = ticket?.status === 'client_approved';
 
   return (
     <Layout>
@@ -528,7 +555,8 @@ const getDeveloperStatusUpdateVisibility = (userType, applicationStatus, ticket)
           </div>
           
           <div>
-            {devUpdateVisibility.show ? (
+            {/* ======== Status Update Area: now with explicit visibility and fallback logic ======= */}
+            {shouldShowDevStatusUpdate ? (
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle>Status & Progress</CardTitle>
@@ -537,42 +565,37 @@ const getDeveloperStatusUpdateVisibility = (userType, applicationStatus, ticket)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <DeveloperStatusUpdate
-                    ticketId={ticketId || ''}
-                    currentStatus={ticket?.status || ''}
-                    onStatusUpdated={fetchLatestTicketData}
+                  <RequestStatusFlow
+                    currentStatus={ticket?.status || ""}
+                    userType={userType}
                   />
+                  <div className="mt-4">
+                    <DeveloperStatusUpdate
+                      ticketId={ticketId || ""}
+                      currentStatus={ticket?.status || ""}
+                      onStatusUpdated={fetchLatestTicketData}
+                    />
+                  </div>
                 </CardContent>
               </Card>
-            ) : devUpdateVisibility.reason === "Waiting for client approval" ? (
+            ) : devBlockedReason ? (
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle>Status & Progress</CardTitle>
-                  <CardDescription>Current: {getStatusLabel(ticket?.status || '')}</CardDescription>
+                  <CardDescription>
+                    {ticket?.status && `Current: ${getStatusLabel(ticket.status)}`}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Alert className="bg-blue-50 border-blue-200">
+                  <RequestStatusFlow
+                    currentStatus={ticket?.status || ""}
+                    userType={userType}
+                  />
+                  <Alert className="mt-4 bg-blue-50 border-blue-200">
                     <ShieldAlert className="h-4 w-4" />
-                    <AlertTitle>Waiting for Client Approval</AlertTitle>
+                    <AlertTitle>No Actions Available</AlertTitle>
                     <AlertDescription>
-                      Your application to this ticket is pending client approval.
-                      Status updates will be available if your application is approved.
-                    </AlertDescription>
-                  </Alert>
-                </CardContent>
-              </Card>
-            ) : devUpdateVisibility.reason === "Rejected by client" ? (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle>Status & Progress</CardTitle>
-                  <CardDescription>Current: {getStatusLabel(ticket?.status || '')}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Alert variant="destructive">
-                    <ShieldAlert className="h-4 w-4" />
-                    <AlertTitle>Application Rejected</AlertTitle>
-                    <AlertDescription>
-                      Your application was rejected. You can't update this ticket.
+                      {devBlockedReason}
                     </AlertDescription>
                   </Alert>
                 </CardContent>
