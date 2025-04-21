@@ -32,10 +32,10 @@ const MyApplicationsPage = () => {
   
   useEffect(() => {
     // Fetch applications when component mounts or userId changes
-    if (userId) {
-      fetchMyApplications(userId);
+    if (userId && isAuthenticated) {
+      fetchMyApplications(isAuthenticated, userId);
     }
-  }, [userId, fetchMyApplications]);
+  }, [userId, isAuthenticated, fetchMyApplications]);
 
   return (
     <Layout>
@@ -45,7 +45,7 @@ const MyApplicationsPage = () => {
         <DashboardHeader 
           showFilters={false}
           setShowFilters={() => {}} 
-          onRefresh={() => fetchMyApplications(userId)}
+          onRefresh={() => fetchMyApplications(isAuthenticated, userId)}
           title="My Applications"
           description="Manage and track your approved tickets"
           hideFilterButton={true}
@@ -69,13 +69,13 @@ const MyApplicationsPage = () => {
                 onClaimTicket={handleClaimTicket}
                 userId={userId}
                 isAuthenticated={isAuthenticated}
-                onRefresh={() => fetchMyApplications(userId)}
+                onRefresh={() => fetchMyApplications(isAuthenticated, userId)}
               />
             ) : (
               <EmptyTicketState 
                 tickets={[]}
                 isAuthenticated={isAuthenticated}
-                onRefresh={() => fetchMyApplications(userId)}
+                onRefresh={() => fetchMyApplications(isAuthenticated, userId)}
                 dataSource={dataSource}
                 customMessage="You don't have any approved tickets yet. Apply to available tickets and wait for client approval."
               />

@@ -10,7 +10,7 @@ export const useTicketApplicationsSubscriptions = (
   isAuthenticated: boolean,
   userId: string | null,
   userType: string | null,
-  fetchMyApplications: (userId: string | null) => void
+  fetchMyApplications: (isAuthenticated: boolean, userId: string | null) => void
 ) => {
   useEffect(() => {
     if (!isAuthenticated || !userId || userType !== 'developer') return;
@@ -30,7 +30,7 @@ export const useTicketApplicationsSubscriptions = (
                 }
               }
             });
-            fetchMyApplications(userId);
+            fetchMyApplications(isAuthenticated, userId);
           } else if (payload.new.status === VALID_MATCH_STATUSES.REJECTED) {
             toast('Your application has been rejected', {
               description: `Your application for "${ticket.title}" was not accepted.`

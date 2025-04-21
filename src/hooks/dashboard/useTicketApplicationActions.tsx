@@ -9,7 +9,7 @@ export const useTicketApplicationActions = (
   userId: string | null,
   userType: string | null,
   refreshTickets: () => void,
-  fetchMyApplications: (userId: string | null) => Promise<void>
+  fetchMyApplications: (isAuthenticated: boolean, userId: string | null) => Promise<void>
 ) => {
   const handleClaimTicket = async (ticketId: string) => {
     if (!isAuthenticated || !userId) {
@@ -41,7 +41,7 @@ export const useTicketApplicationActions = (
         toast.success('Application submitted successfully!');
         refreshTickets();
         if (userId) {
-          await fetchMyApplications(userId);
+          await fetchMyApplications(isAuthenticated, userId);
         }
       } else {
         toast.error(`Failed to submit application: ${result.error}`);

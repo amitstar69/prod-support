@@ -1,3 +1,4 @@
+
 // Refactored: Root hook delegates to focused hooks for logic
 import { useState, useEffect } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
@@ -41,14 +42,14 @@ export const useTicketApplications = (
     isAuthenticated,
     userId,
     userType,
-    (id) => fetchMyApplications(isAuthenticated, id)
+    fetchMyApplications
   );
 
   return {
     recommendedTickets,
     myApplications,
     handleClaimTicket,
-    fetchMyApplications: (id) => fetchMyApplications(isAuthenticated, id),
+    fetchMyApplications,
     checkApplicationStatus
   };
 };
