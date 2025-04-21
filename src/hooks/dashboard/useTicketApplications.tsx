@@ -1,12 +1,15 @@
+
 import { useState, useEffect } from 'react';
 import { HelpRequest, ApplicationStatus } from '../../types/helpRequest';
 import { toast } from 'sonner';
 import { 
   submitDeveloperApplication, 
-  getDeveloperApplicationsForRequest, 
+  getDeveloperApplicationsForRequest,
+  getDeveloperApplications,
   VALID_MATCH_STATUSES 
 } from '../../integrations/supabase/helpRequestsApplications';
 import { setupApplicationsSubscription } from '../../integrations/supabase/realtime';
+import { supabase } from '../../integrations/supabase/client';
 
 // Constants to prevent numeric overflow
 const MAX_RATE = 9.99; // Maximum rate in USD (precision 3, scale 2)
@@ -122,13 +125,44 @@ export const useTicketApplications = (
     }
 
     try {
-      const applications = tickets.filter(ticket => 
-        ticket.status === 'claimed' || ticket.status === 'in-progress'
-      );
+      console.log('[useTicketApplications] Fetching applications for developer:', currentUserId);
       
-      setMyApplications(applications);
+      // Get all applications for the current developer that are approved
+      const { data: applications, error } = await supabase
+        .from('help_request_matches')
+        .select('*, help_requests(*)')
+        .eq('developer_id', currentUserId)
+        .eq('status', VALID_STATUS_VALUES.APPROVED);
+      
+      if (error) {
+        console.error('Error fetching approved applications:', error);
+        toast.error('Failed to load your approved applications');
+        setMyApplications([]);
+        return;
+      }
+      
+      if (!applications || applications.length === 0) {
+        console.log('[useTicketApplications] No approved applications found');
+        setMyApplications([]);
+        return;
+      }
+      
+      // Transform the data to match the HelpRequest type expected by the UI
+      const approvedTickets = applications
+        .filter(app => app.help_requests) // Ensure the join worked
+        .map(app => ({
+          ...app.help_requests,
+          developer_id: currentUserId,
+          application_id: app.id,
+          application_status: app.status
+        })) as HelpRequest[];
+      
+      console.log('[useTicketApplications] Approved tickets:', approvedTickets.length);
+      setMyApplications(approvedTickets);
     } catch (error) {
-      console.error('Error fetching my applications:', error);
+      console.error('Error in fetchMyApplications:', error);
+      toast.error('An unexpected error occurred while fetching your applications');
+      setMyApplications([]);
     }
   };
 
@@ -158,13 +192,14 @@ export const useTicketApplications = (
                 }
               }
             });
+            
+            // Refresh the applications list
+            fetchMyApplications(userId);
           } else if (payload.new.status === VALID_STATUS_VALUES.REJECTED) {
             toast('Your application has been rejected', {
               description: `Your application for "${ticket.title}" was not accepted.`
             });
           }
-          
-          fetchMyApplications(userId);
         }
       });
     }).filter(Boolean);
@@ -178,7 +213,7 @@ export const useTicketApplications = (
     if (isAuthenticated && userId) {
       fetchMyApplications(userId);
     }
-  }, [tickets, isAuthenticated, userId]);
+  }, [isAuthenticated, userId]);
 
   return {
     recommendedTickets,

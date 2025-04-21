@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
@@ -7,19 +7,42 @@ import TicketList from '../components/tickets/TicketList';
 import LoadingState from '../components/dashboard/LoadingState';
 import EmptyTicketState from '../components/dashboard/EmptyTicketState';
 import TicketSummary from '../components/dashboard/TicketSummary';
+import TicketListContainer from '../components/dashboard/TicketListContainer';
 import { useDeveloperDashboard } from '../hooks/dashboard/useDeveloperDashboard';
+import { useAuth } from '../contexts/auth';
+import { useNavigate } from 'react-router-dom';
 
 const MyApplicationsPage = () => {
+  const navigate = useNavigate();
+  const { userId, userType, isAuthenticated } = useAuth();
+  
   const {
     tickets,
     myApplications,
     isLoading,
-    isAuthenticated,
-    userId,
     dataSource,
     handleClaimTicket,
-    fetchTickets
+    fetchTickets,
+    fetchMyApplications
   } = useDeveloperDashboard();
+
+  useEffect(() => {
+    // Check that this page is only accessed by developers
+    if (isAuthenticated && userType !== 'developer') {
+      navigate('/client-dashboard');
+    }
+  }, [isAuthenticated, userType, navigate]);
+  
+  useEffect(() => {
+    // Fetch applications when component mounts or userId changes
+    if (userId) {
+      fetchMyApplications(userId);
+    }
+  }, [userId, fetchMyApplications]);
+
+  const handleOpenChat = (helpRequestId: string, clientId: string, clientName?: string) => {
+    navigate(`/chat/${helpRequestId}/${clientId}`);
+  };
 
   return (
     <Layout>
@@ -29,9 +52,9 @@ const MyApplicationsPage = () => {
         <DashboardHeader 
           showFilters={false}
           setShowFilters={() => {}} 
-          onRefresh={fetchTickets}
+          onRefresh={() => fetchMyApplications(userId)}
           title="My Applications"
-          description="Manage and track your active gig applications"
+          description="Manage and track your approved tickets"
           hideFilterButton={true}
         />
         
@@ -43,24 +66,25 @@ const MyApplicationsPage = () => {
               filteredCount={myApplications.length} 
               totalCount={myApplications.length} 
               dataSource={dataSource}
-              categoryTitle="My Applications"
+              categoryTitle="My Approved Tickets"
             />
             
             {myApplications.length > 0 ? (
-              <TicketList 
-                tickets={myApplications} 
+              <TicketListContainer
+                filteredTickets={myApplications}
+                totalTickets={myApplications.length}
                 onClaimTicket={handleClaimTicket}
-                currentUserId={userId}
+                userId={userId}
                 isAuthenticated={isAuthenticated}
-                isApplication={true}
+                onRefresh={() => fetchMyApplications(userId)}
               />
             ) : (
               <EmptyTicketState 
                 tickets={tickets}
                 isAuthenticated={isAuthenticated}
-                onRefresh={fetchTickets}
+                onRefresh={() => fetchMyApplications(userId)}
                 dataSource={dataSource}
-                customMessage="You haven't applied to any tickets yet. Browse available tickets and start applying!"
+                customMessage="You don't have any approved tickets yet. Apply to available tickets and wait for client approval."
               />
             )}
           </div>
