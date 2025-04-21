@@ -2,7 +2,7 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { initEmergencyRecovery } from './utils/recovery'
+import { initEmergencyRecovery } from './utils/emergencyRecovery.ts'
 import { Toaster } from './components/ui/sonner'
 
 // Initialize emergency recovery mechanism

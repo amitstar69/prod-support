@@ -38,7 +38,7 @@ export const initEmergencyRecovery = () => {
     }
   });
   
-  // Check app health on initial load with a delay to allow normal rendering
+  // Check app health on initial load
   setTimeout(checkAppHealth, 5000);
   
   // Return cleanup function
@@ -61,14 +61,6 @@ const isAppStuck = () => {
 const checkAppHealth = () => {
   // Check if the main UI has rendered
   const mainContent = document.querySelector('main');
-  
-  // If we're on the /search route, we'll ignore the check temporarily
-  const isSearchRoute = window.location.pathname.startsWith('/search');
-  if (isSearchRoute) {
-    console.log('On search route, skipping content check');
-    return;
-  }
-  
   if (!mainContent) {
     console.warn('Main content not found in DOM - possible rendering issue');
     
@@ -80,8 +72,7 @@ const checkAppHealth = () => {
         console.warn('Loading state persisted for too long, attempting recovery');
         attemptRecovery();
       }
-    } else if (!isLoading && document.readyState === 'complete') {
-      // Only attempt recovery if the document has fully loaded
+    } else if (!isLoading) {
       console.warn('App appears broken (no content, no loading state)');
       attemptRecovery();
     }
