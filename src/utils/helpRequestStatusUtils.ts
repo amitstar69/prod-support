@@ -1,30 +1,26 @@
 
-// Status transition definitions for the help request workflow
+// Define valid status transitions
 export const STATUS_TRANSITIONS = {
   system: {
     'submitted': ['pending_match'],
     'dev_requested': ['awaiting_client_approval'],
-    'any': ['cancelled_by_client', 'abandoned_by_dev'] // Special case handled in validation
+    'any': ['cancelled_by_client'] // Special case handled in validation
   },
   developer: {
     'pending_match': ['dev_requested'],
     'approved': ['in_progress'],
     'in_progress': ['ready_for_qa'],
-    'any': ['abandoned_by_dev'] // Special case handled in validation
+    'ready_for_qa': ['in_progress'] // Allow moving back if changes needed
   },
   client: {
-    'awaiting_client_approval': ['approved'],
+    'awaiting_client_approval': ['approved', 'pending_match'], // Can reject back to pending
     'ready_for_qa': ['qa_feedback', 'complete'],
-    'any': ['cancelled_by_client'] // Special case handled in validation
+    'qa_feedback': ['in_progress', 'complete'],
+    'any': ['cancelled_by_client'] // Client can cancel anytime
   }
 };
 
 export type UserType = 'client' | 'developer' | 'system';
-
-// Define a proper type for the transitions object structure
-type TransitionMap = {
-  [key: string]: string[];
-};
 
 // Helper function to check if a status transition is valid
 export const isValidStatusTransition = (
@@ -32,14 +28,10 @@ export const isValidStatusTransition = (
   newStatus: string,
   userType: UserType
 ): boolean => {
-  const transitions = STATUS_TRANSITIONS[userType] as TransitionMap;
+  const transitions = STATUS_TRANSITIONS[userType];
   
-  // Special case for 'any' transitions (cancel/abandon)
+  // Special case for cancellation by client
   if (newStatus === 'cancelled_by_client' && userType === 'client') {
-    return true;
-  }
-  
-  if (newStatus === 'abandoned_by_dev' && userType === 'developer') {
     return true;
   }
   
@@ -50,11 +42,8 @@ export const isValidStatusTransition = (
 
 // Get next logical status in the workflow
 export const getNextStatus = (currentStatus: string, userType: UserType): string | null => {
-  const transitions = STATUS_TRANSITIONS[userType] as TransitionMap;
-  
-  // Use type assertion to help TypeScript understand the structure
+  const transitions = STATUS_TRANSITIONS[userType];
   const nextStatuses = transitions[currentStatus];
-  
   return Array.isArray(nextStatuses) && nextStatuses.length > 0 ? nextStatuses[0] : null;
 };
 
@@ -70,8 +59,7 @@ export const getStatusLabel = (status: string): string => {
     'ready_for_qa': 'Ready for QA',
     'qa_feedback': 'QA Feedback',
     'complete': 'Complete',
-    'cancelled_by_client': 'Cancelled by Client',
-    'abandoned_by_dev': 'Abandoned by Developer',
+    'cancelled_by_client': 'Cancelled',
     'client_review': 'Client Review',
     'client_approved': 'Client Approved'
   };
@@ -92,41 +80,11 @@ export const getStatusDescription = (status: string): string => {
     'qa_feedback': 'Client has provided feedback requiring changes',
     'complete': 'Request has been completed successfully',
     'cancelled_by_client': 'Request was cancelled by the client',
-    'abandoned_by_dev': 'Developer has abandoned this request',
     'client_review': 'Client is reviewing the completed work',
     'client_approved': 'Client has approved the completed work'
   };
 
   return statusDescriptions[status] || 'Status information unavailable';
-};
-
-// Helper function to check if the current user can update to a given status
-export const canUpdateToStatus = (
-  currentStatus: string,
-  newStatus: string,
-  userType: UserType
-): boolean => {
-  return isValidStatusTransition(currentStatus, newStatus, userType);
-};
-
-// Get allowed statuses based on current status and user type
-export const getAllowedStatusTransitions = (
-  currentStatus: string,
-  userType: UserType
-): string[] => {
-  const transitions = STATUS_TRANSITIONS[userType] as TransitionMap;
-  
-  // Start with regular transitions
-  let allowedTransitions = transitions[currentStatus] || [];
-  
-  // Add special 'any' transitions if applicable
-  if (userType === 'client' && transitions['any']) {
-    allowedTransitions = [...allowedTransitions, ...transitions['any']];
-  } else if (userType === 'developer' && transitions['any']) {
-    allowedTransitions = [...allowedTransitions, ...transitions['any']];
-  }
-  
-  return allowedTransitions;
 };
 
 // Global status constants
@@ -141,7 +99,32 @@ export const STATUSES = {
   QA_FEEDBACK: 'qa_feedback',
   COMPLETE: 'complete',
   CANCELLED_BY_CLIENT: 'cancelled_by_client',
-  ABANDONED_BY_DEV: 'abandoned_by_dev',
   CLIENT_REVIEW: 'client_review',
   CLIENT_APPROVED: 'client_approved'
 };
+
+// Helper function to check if the current user can update to a given status
+export const canUpdateToStatus = (
+  currentStatus: string,
+  newStatus: string,
+  userType: UserType
+): boolean => {
+  return isValidStatusTransition(currentStatus, newStatus, userType);
+};
+
+// Get allowed status transitions based on current status and user type
+export const getAllowedStatusTransitions = (
+  currentStatus: string,
+  userType: UserType
+): string[] => {
+  const transitions = STATUS_TRANSITIONS[userType];
+  let allowedTransitions = transitions[currentStatus] || [];
+  
+  // Add special 'any' transitions if applicable
+  if (userType === 'client' && transitions['any']) {
+    allowedTransitions = [...allowedTransitions, ...transitions['any']];
+  }
+  
+  return allowedTransitions;
+};
+

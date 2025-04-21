@@ -127,18 +127,18 @@ export const locationOptions = [
 ];
 
 export const requestStatusOptions = [
-  { value: 'open', label: 'Open' },
-  { value: 'claimed', label: 'Claimed' },
-  { value: 'in-progress', label: 'In Progress' },
-  { value: 'developer-qa', label: 'Developer QA' },
-  { value: 'client-review', label: 'Client Review' },
-  { value: 'client-approved', label: 'Client Approved' },
-  { value: 'resolved', label: 'Resolved' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'matching', label: 'Matching' },
-  { value: 'scheduled', label: 'Scheduled' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' }
+  { value: 'submitted', label: 'Submitted' },
+  { value: 'pending_match', label: 'Pending Match' },
+  { value: 'dev_requested', label: 'Developer Requested' },
+  { value: 'awaiting_client_approval', label: 'Awaiting Approval' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'ready_for_qa', label: 'Ready for QA' },
+  { value: 'qa_feedback', label: 'QA Feedback' },
+  { value: 'complete', label: 'Complete' },
+  { value: 'cancelled_by_client', label: 'Cancelled' },
+  { value: 'client_review', label: 'Client Review' },
+  { value: 'client_approved', label: 'Client Approved' }
 ];
 
 export const matchStatusOptions = [
