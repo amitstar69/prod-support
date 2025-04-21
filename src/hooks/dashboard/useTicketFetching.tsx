@@ -19,7 +19,7 @@ export const useTicketFetching = (
 
   const fetchTickets = async (showLoading = true) => {
     // Variable to hold the timeout clear function
-    let clearTimeoutFn: (() => void) | undefined;
+    let clearTimeoutFn: (() => void) | null = null;
     
     try {
       if (showLoading) {
@@ -30,13 +30,12 @@ export const useTicketFetching = (
       clearTimeoutFn = setGlobalLoadingTimeout(() => {
         setIsLoading(false);
         toast.error('Failed to load tickets. Please try again.');
-      }, 15000);
+      });
       
       if (!isAuthenticated) {
         console.log('[Ticket Fetching] Using sample tickets for unauthenticated user');
         setTickets(sampleTickets);
         setDataSource('sample');
-        if (clearTimeoutFn) clearTimeoutFn();
         setIsLoading(false);
         return;
       }
@@ -77,7 +76,11 @@ export const useTicketFetching = (
         toast.error('An unexpected error occurred');
       }
     } finally {
-      if (clearTimeoutFn) clearTimeoutFn();
+      // Ensure we clear any timeout we created
+      if (clearTimeoutFn) {
+        clearTimeoutFn();
+      }
+      
       if (showLoading) {
         setIsLoading(false);
       }

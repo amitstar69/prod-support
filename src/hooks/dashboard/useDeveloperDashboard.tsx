@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/auth';
 import { useTicketFetching } from './useTicketFetching';
 import { useTicketFilters } from './useTicketFilters';
 import { useTicketApplications } from './useTicketApplications';
+import { toast } from 'sonner';
 
 export const useDeveloperDashboard = () => {
   const [showFilters, setShowFilters] = useState(false);
@@ -12,6 +13,7 @@ export const useDeveloperDashboard = () => {
   const navigate = useNavigate();
   const { userId, userType, isAuthenticated } = useAuth();
   const initialFetchCompleted = useRef(false);
+  const isMounted = useRef(true);
   
   const {
     tickets,
@@ -37,14 +39,24 @@ export const useDeveloperDashboard = () => {
     checkApplicationStatus
   } = useTicketApplications(tickets, isAuthenticated, userId, userType, fetchTickets);
   
-  useEffect(() => {
-    // Only fetch on initial mount and when auth state changes
+  // Memoize the fetchTickets call to prevent unnecessary re-renders
+  const fetchTicketsIfNeeded = useCallback(() => {
     if (!initialFetchCompleted.current || isAuthenticated !== undefined) {
-      console.log('Fetching tickets on auth change or initial load');
+      console.log('[Developer Dashboard] Fetching tickets on auth change or initial load');
       fetchTickets();
       initialFetchCompleted.current = true;
     }
   }, [fetchTickets, isAuthenticated]);
+
+  // Initial fetch when component mounts
+  useEffect(() => {
+    isMounted.current = true;
+    fetchTicketsIfNeeded();
+    
+    return () => {
+      isMounted.current = false;
+    };
+  }, [fetchTicketsIfNeeded]);
 
   // Listen for viewMyApplication events dispatched from notifications
   useEffect(() => {
@@ -61,6 +73,18 @@ export const useDeveloperDashboard = () => {
       window.removeEventListener('viewMyApplication', handleViewApplication);
     };
   }, [navigate]);
+
+  // Debug: Log render info
+  useEffect(() => {
+    console.log('[Developer Dashboard] Render state:', {
+      isAuthenticated,
+      userId,
+      userType,
+      ticketsCount: tickets.length,
+      isLoading,
+      isLoadingApplications,
+    });
+  }, [isAuthenticated, userId, userType, tickets, isLoading, isLoadingApplications]);
 
   return {
     tickets,

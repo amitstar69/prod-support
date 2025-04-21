@@ -45,19 +45,19 @@ export const setupHelpRequestsSubscription = (callback: (payload: any) => void) 
 };
 
 // Setup realtime subscription for help request applications
-export const setupApplicationsSubscription = (requestId: string, callback: (payload: any) => void) => {
-  console.log('Setting up applications subscription for request:', requestId);
+export const setupApplicationsSubscription = (developerId: string, callback: (payload: any) => void) => {
+  console.log('Setting up applications subscription for developer:', developerId);
   
   try {
     const channel = supabase
-      .channel(`applications_changes_${requestId}`)
+      .channel(`applications_changes_${developerId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'help_request_matches',
-          filter: `request_id=eq.${requestId}`
+          filter: `developer_id=eq.${developerId}`
         },
         (payload) => {
           console.log('Application change received:', payload);

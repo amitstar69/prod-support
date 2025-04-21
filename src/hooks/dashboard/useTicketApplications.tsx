@@ -1,6 +1,5 @@
-
 // Refactored: Root hook delegates to focused hooks for logic
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { useRecommendedTickets } from './useRecommendedTickets';
 import { useMyTicketApplications } from './useMyTicketApplications';
@@ -30,16 +29,21 @@ export const useTicketApplications = (
     isAuthenticated, userId, userType, refreshTickets, fetchMyApplications
   );
 
-  // Refreshed list of applications when user changes or is authenticated
-  useEffect(() => {
+  // Memoize the function call to prevent unnecessary re-renders
+  const fetchApplicationsIfAuthenticated = useCallback(() => {
     if (isAuthenticated && userId) {
+      console.log('[Applications] Auto-fetching applications for user', userId);
       fetchMyApplications(isAuthenticated, userId);
     }
   }, [isAuthenticated, userId, fetchMyApplications]);
+  
+  // Refreshed list of applications when user changes or is authenticated
+  useEffect(() => {
+    fetchApplicationsIfAuthenticated();
+  }, [fetchApplicationsIfAuthenticated]);
 
   // Real-time subscription for application status change notifications
   useTicketApplicationsSubscriptions(
-    recommendedTickets,
     isAuthenticated,
     userId,
     userType,
