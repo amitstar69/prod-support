@@ -71,7 +71,7 @@ export const submitDeveloperApplication = async (
       return { success: false, error: error.message };
     }
     
-    return { success: true, data };
+    return { success: true, data, isUpdate: false };
   } catch (error) {
     console.error('Exception submitting developer application:', error);
     return { 

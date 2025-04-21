@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -117,7 +116,7 @@ const ApplicationDetailPage: React.FC = () => {
       
       const result = await updateApplicationStatus(
         applicationId,
-        VALID_MATCH_STATUSES.APPROVED,
+        VALID_MATCH_STATUSES.APPROVED as ApplicationStatus,
         userId
       );
       
@@ -149,7 +148,7 @@ const ApplicationDetailPage: React.FC = () => {
       
       const result = await updateApplicationStatus(
         applicationId,
-        VALID_MATCH_STATUSES.REJECTED,
+        VALID_MATCH_STATUSES.REJECTED as ApplicationStatus,
         userId
       );
       
