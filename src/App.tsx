@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/ui/theme-provider';
@@ -11,6 +12,7 @@ import HelpRequestForm from './pages/HelpRequestForm';
 import { Toaster } from 'sonner';
 import PublicHelpRequests from './pages/PublicHelpRequests';
 import TicketDetailPage from './pages/TicketDetailPage';
+import ApplicationDetailPage from './pages/ApplicationDetailPage';
 
 function App() {
   return (
@@ -30,6 +32,8 @@ function App() {
             {/* Unified Ticket Detail Page */}
             <Route path="/ticket/:ticketId" element={<TicketDetailPage />} />
             
+            {/* Client Application Detail Route */}
+            <Route path="/client/applications/:applicationId" element={<ApplicationDetailPage />} />
           </Routes>
         </AuthProvider>
       </ThemeProvider>
