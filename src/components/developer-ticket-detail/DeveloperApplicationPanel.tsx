@@ -1,22 +1,25 @@
 
 import React from "react";
-import RequestStatusFlow from "../../components/help/RequestStatusFlow";
-import DeveloperStatusUpdate from "../../components/help/DeveloperStatusUpdate";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/card";
-import { Alert, AlertTitle, AlertDescription } from "../../components/ui/alert";
-import { ShieldAlert } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { HelpRequest } from "../../types/helpRequest";
+import DeveloperStatusUpdate from "../help/DeveloperStatusUpdate";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { Info } from "lucide-react";
 
 interface DeveloperApplicationPanelProps {
-  devUpdateVisibility: { show: boolean; reason: string };
+  devUpdateVisibility: {
+    show: boolean;
+    reason: string;
+  };
   ticket: HelpRequest;
-  ticketId: string | undefined;
-  userType: string | null | undefined;
+  ticketId?: string;
+  userType?: string | null;
   applicationStatus: string | null;
   hasApplied: boolean;
   onApply: () => void;
-  fetchLatestTicketData: () => void;
+  fetchLatestTicketData: () => Promise<void>;
 }
 
 const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
@@ -29,111 +32,65 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
   onApply,
   fetchLatestTicketData
 }) => {
-  // Convert userType to the correct type for RequestStatusFlow
-  const userTypeFormatted = userType === 'developer' ? 'developer' : 'client' as 'developer' | 'client';
+  if (!ticket) return null;
 
-  if (devUpdateVisibility.show) {
-    return (
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Status & Progress</CardTitle>
-          <CardDescription>
-            {ticket?.status && `Current: ${ticket.status}`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RequestStatusFlow
-            currentStatus={ticket?.status || ""}
-            userType={userTypeFormatted}
-          />
-          <div className="mt-4">
-            <DeveloperStatusUpdate
-              ticketId={ticketId || ""}
-              currentStatus={ticket?.status || ""}
-              onStatusUpdated={fetchLatestTicketData}
-            />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  } else if (devUpdateVisibility.reason === "Waiting for client approval") {
-    return (
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Status & Progress</CardTitle>
-          <CardDescription>Current: {ticket?.status || ""}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RequestStatusFlow currentStatus={ticket?.status || ""} userType={userTypeFormatted} />
-          <Alert className="mt-4 bg-blue-50 border-blue-200">
-            <ShieldAlert className="h-4 w-4" />
-            <AlertTitle>Waiting for Client Approval</AlertTitle>
-            <AlertDescription>
-              Your application to this ticket is pending client approval.
-              Status updates will be available if your application is approved.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  } else if (devUpdateVisibility.reason === "Rejected by client") {
-    return (
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Status & Progress</CardTitle>
-          <CardDescription>Current: {ticket?.status || ""}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RequestStatusFlow currentStatus={ticket?.status || ""} userType={userTypeFormatted} />
-          <Alert variant="destructive" className="mt-4">
-            <ShieldAlert className="h-4 w-4" />
-            <AlertTitle>Application Rejected</AlertTitle>
-            <AlertDescription>
-              Your application was rejected. You can't update this ticket.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
+  const showStatusUpdate = userType === "developer" && hasApplied && applicationStatus === "approved";
+  const showApplyButton = userType === "developer" && !hasApplied;
 
-  if (!hasApplied) {
-    return (
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Apply for This Ticket</CardTitle>
-          <CardDescription>Share your expertise with the client</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Ready to help with this problem? Submit your application to connect with the client and start earning.
-          </p>
-          <Button
-            className="w-full"
-            onClick={onApply}
-            disabled={ticket?.status !== 'pending_match'}
-          >
-            {ticket?.status === 'pending_match' ? 'Apply Now' : 'Unavailable'}
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Default: application submitted status
   return (
     <Card className="mb-6">
-      <CardHeader>
-        <CardTitle>Application Status</CardTitle>
-        <CardDescription>Your application for this ticket</CardDescription>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg">Developer Actions</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="bg-blue-50 border border-blue-100 rounded-md p-4 text-center">
-          <h3 className="font-medium text-blue-800">Application Submitted</h3>
-          <p className="text-sm text-blue-700 mt-1">
-            Status: <span className="font-medium capitalize">{applicationStatus || 'Pending Review'}</span>
+        {showStatusUpdate ? (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium text-sm">Update Status</h3>
+              <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
+                {applicationStatus || "Unknown"}
+              </Badge>
+            </div>
+            <DeveloperStatusUpdate
+              ticketId={ticketId || ticket.id || ''}
+              currentStatus={ticket.status || ''}
+              onStatusUpdated={fetchLatestTicketData}
+            />
+          </>
+        ) : showApplyButton ? (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              You can apply to help with this ticket if you have the required skills and availability.
+            </p>
+            <Button onClick={onApply} className="w-full">
+              Apply for This Ticket
+            </Button>
+          </div>
+        ) : hasApplied ? (
+          <div className="space-y-4">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Application {applicationStatus}</AlertTitle>
+              <AlertDescription>
+                {applicationStatus === "pending"
+                  ? "Your application is pending client approval."
+                  : applicationStatus === "rejected"
+                  ? "Your application was rejected by the client."
+                  : `Application status: ${applicationStatus}`}
+              </AlertDescription>
+            </Alert>
+            
+            {devUpdateVisibility && !devUpdateVisibility.show && devUpdateVisibility.reason && (
+              <p className="text-sm text-muted-foreground">
+                {devUpdateVisibility.reason}
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            You must be logged in as a developer to apply for this ticket.
           </p>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

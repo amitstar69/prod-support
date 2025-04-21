@@ -10,7 +10,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { Loader2, CheckCircle2, ArrowRightCircle, ArrowUpLeft, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { 
+  Loader2, 
+  CheckCircle2, 
+  ArrowRightCircle, 
+  ArrowUpLeft, 
+  AlertTriangle, 
+  ShieldAlert, 
+  ThumbsUp,
+  ThumbsDown,
+  CheckCheck
+} from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { 
@@ -114,19 +124,31 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
   // Remove all switch statements; single source of truth for icons/text
   const getStatusIcon = (status: string) => {
     if (status === STATUSES.APPROVED) return <CheckCircle2 className="h-4 w-4" />;
-    if (status === STATUSES.COMPLETE) return <CheckCircle2 className="h-4 w-4" />;
-    if (status === STATUSES.QA_FEEDBACK) return <ArrowUpLeft className="h-4 w-4" />;
+    if (status === STATUSES.RESOLVED) return <CheckCircle2 className="h-4 w-4" />;
+    if (status === STATUSES.QA_FAIL) return <ThumbsDown className="h-4 w-4" />;
+    if (status === STATUSES.QA_PASS) return <ThumbsUp className="h-4 w-4" />;
     if (status === STATUSES.CANCELLED_BY_CLIENT) return <ArrowUpLeft className="h-4 w-4" />;
+    if (status === STATUSES.READY_FOR_FINAL_ACTION) return <CheckCheck className="h-4 w-4" />;
     return <ArrowRightCircle className="h-4 w-4" />;
   };
 
   const getNextStatusButtonText = (nextStatus: string | null): string => {
     if (!nextStatus) return 'Update Status';
     if (nextStatus === STATUSES.APPROVED) return 'Approve Developer';
-    if (nextStatus === STATUSES.COMPLETE) return 'Mark as Complete';
-    if (nextStatus === STATUSES.QA_FEEDBACK) return 'Request Changes';
+    if (nextStatus === STATUSES.RESOLVED) return 'Mark as Complete';
+    if (nextStatus === STATUSES.QA_FAIL) return 'Request Changes';
+    if (nextStatus === STATUSES.QA_PASS) return 'Approve Work';
+    if (nextStatus === STATUSES.READY_FOR_FINAL_ACTION) return 'Ready for Final Action';
     if (nextStatus === STATUSES.CANCELLED_BY_CLIENT) return 'Cancel Request';
     return getStatusLabel(nextStatus);
+  };
+
+  // Button variants based on action type
+  const getButtonVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    if (status === STATUSES.QA_FAIL) return "secondary";
+    if (status === STATUSES.CANCELLED_BY_CLIENT) return "destructive";
+    if (status === STATUSES.QA_PASS || status === STATUSES.RESOLVED) return "default";
+    return "default";
   };
 
   // No transitions: UI fallback (centralized logic to avoid visibility bugs)
@@ -135,7 +157,11 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
       <Alert>
         <AlertTitle>No Available Status Updates</AlertTitle>
         <AlertDescription>
-          No status transitions available at this time.
+          {currentStatus === 'ready_for_final_action'
+            ? "Developer is performing final actions on your request."
+            : currentStatus === 'resolved'
+            ? "This ticket has been successfully resolved."
+            : "No status transitions available at this time."}
         </AlertDescription>
       </Alert>
     );
@@ -157,7 +183,7 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
             onClick={handleQuickUpdate}
             disabled={isUpdating}
             className="w-full"
-            variant={nextStatus === STATUSES.CANCELLED_BY_CLIENT ? "destructive" : "default"}
+            variant={getButtonVariant(nextStatus)}
           >
             {isUpdating ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -217,10 +243,15 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
       <div className="mt-4 bg-muted p-3 rounded text-sm">
         <p className="font-medium">Current Status: {getStatusLabel(currentStatus)}</p>
         <p className="text-muted-foreground text-xs mt-1">{getStatusDescription(currentStatus)}</p>
+        
+        {currentStatus === STATUSES.READY_FOR_CLIENT_QA && (
+          <div className="mt-2 p-2 bg-blue-50 border border-blue-100 rounded text-blue-800 text-xs">
+            Developer has submitted work for your review. Please review and either approve or request changes.
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default ClientStatusUpdate;
-

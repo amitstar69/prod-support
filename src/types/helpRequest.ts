@@ -132,13 +132,15 @@ export const requestStatusOptions = [
   { value: 'dev_requested', label: 'Developer Requested' },
   { value: 'awaiting_client_approval', label: 'Awaiting Approval' },
   { value: 'approved', label: 'Approved' },
+  { value: 'requirements_review', label: 'Requirements Review' },
+  { value: 'need_more_info', label: 'Need More Info' },
   { value: 'in_progress', label: 'In Progress' },
-  { value: 'ready_for_qa', label: 'Ready for QA' },
-  { value: 'qa_feedback', label: 'QA Feedback' },
-  { value: 'complete', label: 'Complete' },
-  { value: 'cancelled_by_client', label: 'Cancelled' },
-  { value: 'client_review', label: 'Client Review' },
-  { value: 'client_approved', label: 'Client Approved' }
+  { value: 'ready_for_client_qa', label: 'Ready for Client QA' },
+  { value: 'qa_fail', label: 'QA Failed' },
+  { value: 'qa_pass', label: 'QA Passed' },
+  { value: 'ready_for_final_action', label: 'Ready for Final Action' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'cancelled_by_client', label: 'Cancelled' }
 ];
 
 export const matchStatusOptions = [

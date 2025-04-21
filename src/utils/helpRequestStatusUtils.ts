@@ -8,14 +8,17 @@ export const STATUS_TRANSITIONS = {
   },
   developer: {
     'pending_match': ['dev_requested'],
-    'approved': ['in_progress'],
-    'in_progress': ['ready_for_qa'],
-    'ready_for_qa': ['in_progress'] // Allow moving back if changes needed
+    'approved': ['requirements_review', 'need_more_info'],
+    'requirements_review': ['in_progress', 'need_more_info'],
+    'need_more_info': ['requirements_review', 'in_progress'],
+    'in_progress': ['ready_for_client_qa'],
+    'qa_fail': ['in_progress'],
+    'ready_for_final_action': ['resolved']
   },
   client: {
     'awaiting_client_approval': ['approved', 'pending_match'], // Can reject back to pending
-    'ready_for_qa': ['qa_feedback', 'complete'],
-    'qa_feedback': ['in_progress', 'complete'],
+    'ready_for_client_qa': ['qa_fail', 'qa_pass'],
+    'qa_pass': ['ready_for_final_action'],
     'any': ['cancelled_by_client'] // Client can cancel anytime
   }
 };
@@ -55,13 +58,15 @@ export const getStatusLabel = (status: string): string => {
     'dev_requested': 'Developer Requested',
     'awaiting_client_approval': 'Awaiting Client Approval',
     'approved': 'Approved',
+    'requirements_review': 'Requirements Review',
+    'need_more_info': 'Need More Info',
     'in_progress': 'In Progress',
-    'ready_for_qa': 'Ready for QA',
-    'qa_feedback': 'QA Feedback',
-    'complete': 'Complete',
-    'cancelled_by_client': 'Cancelled',
-    'client_review': 'Client Review',
-    'client_approved': 'Client Approved'
+    'ready_for_client_qa': 'Ready for Client QA',
+    'qa_fail': 'QA Failed',
+    'qa_pass': 'QA Passed',
+    'ready_for_final_action': 'Ready for Final Action',
+    'resolved': 'Resolved',
+    'cancelled_by_client': 'Cancelled'
   };
 
   return statusLabels[status] || status;
@@ -75,13 +80,15 @@ export const getStatusDescription = (status: string): string => {
     'dev_requested': 'A developer has requested to be assigned',
     'awaiting_client_approval': 'Awaiting client approval for developer assignment',
     'approved': 'Developer has been approved and can start work',
+    'requirements_review': 'Developer is reviewing requirements before starting work',
+    'need_more_info': 'Developer needs more information to proceed',
     'in_progress': 'Developer is actively working on this request',
-    'ready_for_qa': 'Developer has completed work and it is ready for client review',
-    'qa_feedback': 'Client has provided feedback requiring changes',
-    'complete': 'Request has been completed successfully',
-    'cancelled_by_client': 'Request was cancelled by the client',
-    'client_review': 'Client is reviewing the completed work',
-    'client_approved': 'Client has approved the completed work'
+    'ready_for_client_qa': 'Developer has completed work and it is ready for client review',
+    'qa_fail': 'Client has reviewed the work and found issues that need fixing',
+    'qa_pass': 'Client has confirmed the work meets requirements',
+    'ready_for_final_action': 'Ready for developer to take final actions',
+    'resolved': 'Request has been completed and resolved successfully',
+    'cancelled_by_client': 'Request was cancelled by the client'
   };
 
   return statusDescriptions[status] || 'Status information unavailable';
@@ -94,13 +101,15 @@ export const STATUSES = {
   DEV_REQUESTED: 'dev_requested',
   AWAITING_CLIENT_APPROVAL: 'awaiting_client_approval',
   APPROVED: 'approved',
+  REQUIREMENTS_REVIEW: 'requirements_review',
+  NEED_MORE_INFO: 'need_more_info',
   IN_PROGRESS: 'in_progress',
-  READY_FOR_QA: 'ready_for_qa',
-  QA_FEEDBACK: 'qa_feedback',
-  COMPLETE: 'complete',
-  CANCELLED_BY_CLIENT: 'cancelled_by_client',
-  CLIENT_REVIEW: 'client_review',
-  CLIENT_APPROVED: 'client_approved'
+  READY_FOR_CLIENT_QA: 'ready_for_client_qa',
+  QA_FAIL: 'qa_fail',
+  QA_PASS: 'qa_pass',
+  READY_FOR_FINAL_ACTION: 'ready_for_final_action',
+  RESOLVED: 'resolved',
+  CANCELLED_BY_CLIENT: 'cancelled_by_client'
 };
 
 // Helper function to check if the current user can update to a given status

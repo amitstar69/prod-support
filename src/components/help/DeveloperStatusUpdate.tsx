@@ -11,7 +11,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { Loader2, CheckCircle2, ArrowRightCircle, ClipboardCheck, UserCheck, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { 
+  Loader2, 
+  CheckCircle2, 
+  ArrowRightCircle, 
+  ClipboardCheck, 
+  UserCheck, 
+  AlertTriangle, 
+  ShieldAlert, 
+  FileQuestion,
+  MessageCircle,
+  FileCheck
+} from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { 
@@ -186,20 +197,27 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
       <Alert>
         <AlertTitle>No Available Status Updates</AlertTitle>
         <AlertDescription>
-          {currentStatus === 'ready_for_qa'
+          {currentStatus === 'ready_for_client_qa'
             ? "You've submitted for QA. Waiting for client review."
+            : currentStatus === 'qa_fail'
+            ? "Client has requested changes. Please update the implementation."
+            : currentStatus === 'resolved'
+            ? "This ticket has been successfully resolved."
             : "No status transitions available at this time."}
         </AlertDescription>
       </Alert>
     );
   }
 
-  // Simple icon logic based on status value (not hardcoded with a switch)
+  // Simple icon logic based on status value
   const getStatusIcon = (status: string) => {
     if (status === STATUSES.IN_PROGRESS) return <ArrowRightCircle className="h-4 w-4" />;
-    if (status === STATUSES.READY_FOR_QA) return <ClipboardCheck className="h-4 w-4" />;
+    if (status === STATUSES.READY_FOR_CLIENT_QA) return <ClipboardCheck className="h-4 w-4" />;
     if (status === STATUSES.DEV_REQUESTED) return <UserCheck className="h-4 w-4" />;
-    if (status === STATUSES.COMPLETE) return <CheckCircle2 className="h-4 w-4" />;
+    if (status === STATUSES.RESOLVED) return <CheckCircle2 className="h-4 w-4" />;
+    if (status === STATUSES.REQUIREMENTS_REVIEW) return <FileQuestion className="h-4 w-4" />;
+    if (status === STATUSES.NEED_MORE_INFO) return <MessageCircle className="h-4 w-4" />;
+    if (status === STATUSES.READY_FOR_FINAL_ACTION) return <FileCheck className="h-4 w-4" />;
     return null;
   };
 
@@ -208,8 +226,19 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     if (!next) return 'Update Status';
     if (next === STATUSES.DEV_REQUESTED) return 'Request Assignment';
     if (next === STATUSES.IN_PROGRESS) return 'Start Working';
-    if (next === STATUSES.READY_FOR_QA) return 'Submit for QA';
+    if (next === STATUSES.READY_FOR_CLIENT_QA) return 'Submit for QA';
+    if (next === STATUSES.REQUIREMENTS_REVIEW) return 'Start Review';
+    if (next === STATUSES.NEED_MORE_INFO) return 'Need More Info';
+    if (next === STATUSES.RESOLVED) return 'Mark as Resolved';
+    if (next === STATUSES.READY_FOR_FINAL_ACTION) return 'Final Actions';
     return getStatusLabel(next);
+  };
+
+  // Button variants based on action type
+  const getButtonVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    if (status === STATUSES.NEED_MORE_INFO) return "secondary";
+    if (status === STATUSES.RESOLVED) return "default";
+    return "default";
   };
 
   return (
@@ -228,6 +257,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
             onClick={handleQuickUpdate}
             disabled={isUpdating}
             className="w-full"
+            variant={getButtonVariant(nextStatus)}
           >
             {isUpdating ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -241,7 +271,7 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
         <Alert>
           <AlertTitle>No Available Status Updates</AlertTitle>
           <AlertDescription>
-            {currentStatus === 'ready_for_qa'
+            {currentStatus === 'ready_for_client_qa'
               ? "You've submitted for QA. Waiting for client review."
               : "No status transitions available at this time."}
           </AlertDescription>
