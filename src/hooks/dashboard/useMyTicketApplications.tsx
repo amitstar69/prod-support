@@ -8,6 +8,8 @@ import { VALID_MATCH_STATUSES } from '../../integrations/supabase/helpRequestsAp
 export const useMyTicketApplications = () => {
   const [myApplications, setMyApplications] = useState<HelpRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
+  const [hasError, setHasError] = useState(false);
 
   const fetchMyApplications = useCallback(async (
     isAuthenticated: boolean,
@@ -15,13 +17,24 @@ export const useMyTicketApplications = () => {
   ) => {
     console.log('[Applications] Fetching applications for user', currentUserId);
     
+    // Throttle repeated calls - prevent multiple fetch attempts within 5 seconds
+    const now = Date.now();
+    if (now - lastFetchTime < 5000) {
+      console.log('[Applications] Throttling fetch - last fetch was', (now - lastFetchTime) / 1000, 'seconds ago');
+      return;
+    }
+    
+    setLastFetchTime(now);
+    
     if (!isAuthenticated || !currentUserId) {
       console.log('[Applications] User not authenticated or no user ID');
       setMyApplications([]);
+      setIsLoading(false);
       return;
     }
     
     setIsLoading(true);
+    setHasError(false);
     
     try {
       // Create a controller for timeout handling
@@ -29,7 +42,7 @@ export const useMyTicketApplications = () => {
       const timeoutId = setTimeout(() => {
         controller.abort();
         console.log('[Applications] Request timed out');
-      }, 10000);
+      }, 8000); // Reduced from 10s to 8s
       
       const { data: applications, error } = await supabase
         .from('help_request_matches')
@@ -44,6 +57,7 @@ export const useMyTicketApplications = () => {
         console.error('[Applications] Failed to load applications:', error);
         toast.error('Failed to load your approved applications');
         setMyApplications([]);
+        setHasError(true);
         return;
       }
       
@@ -66,6 +80,7 @@ export const useMyTicketApplications = () => {
       
       console.log('[Applications] Processed approved tickets:', approvedTickets.length);
       setMyApplications(approvedTickets);
+      setHasError(false);
     } catch (error) {
       console.error('[Applications] Error fetching applications:', error);
       if (error instanceof Error && error.name === 'AbortError') {
@@ -74,10 +89,11 @@ export const useMyTicketApplications = () => {
         toast.error('An unexpected error occurred while fetching your applications');
       }
       setMyApplications([]);
+      setHasError(true);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [lastFetchTime]);
 
-  return { myApplications, fetchMyApplications, isLoading };
+  return { myApplications, fetchMyApplications, isLoading, hasError };
 };

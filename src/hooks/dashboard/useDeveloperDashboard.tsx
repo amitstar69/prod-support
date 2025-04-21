@@ -14,10 +14,12 @@ export const useDeveloperDashboard = () => {
   const { userId, userType, isAuthenticated } = useAuth();
   const initialFetchCompleted = useRef(false);
   const isMounted = useRef(true);
+  const isFirstRender = useRef(true);
   
   const {
     tickets,
     isLoading,
+    hasError,
     dataSource,
     fetchTickets,
     handleForceRefresh
@@ -34,6 +36,7 @@ export const useDeveloperDashboard = () => {
     recommendedTickets,
     myApplications,
     isLoadingApplications,
+    hasError: hasApplicationError,
     handleClaimTicket,
     fetchMyApplications,
     checkApplicationStatus
@@ -41,10 +44,12 @@ export const useDeveloperDashboard = () => {
   
   // Memoize the fetchTickets call to prevent unnecessary re-renders
   const fetchTicketsIfNeeded = useCallback(() => {
-    if (!initialFetchCompleted.current || isAuthenticated !== undefined) {
+    // Only fetch on first render or when auth state changes
+    if ((isFirstRender.current || !initialFetchCompleted.current) && isAuthenticated !== undefined) {
       console.log('[Developer Dashboard] Fetching tickets on auth change or initial load');
       fetchTickets();
       initialFetchCompleted.current = true;
+      isFirstRender.current = false;
     }
   }, [fetchTickets, isAuthenticated]);
 
@@ -53,10 +58,19 @@ export const useDeveloperDashboard = () => {
     isMounted.current = true;
     fetchTicketsIfNeeded();
     
+    // Add recovery function in case of errors
+    const recoveryTimeout = setTimeout(() => {
+      if (hasError && isMounted.current) {
+        console.log('[Developer Dashboard] Attempting recovery due to error state');
+        fetchTickets(true);
+      }
+    }, 5000);
+    
     return () => {
       isMounted.current = false;
+      clearTimeout(recoveryTimeout);
     };
-  }, [fetchTicketsIfNeeded]);
+  }, [fetchTicketsIfNeeded, hasError, fetchTickets]);
 
   // Listen for viewMyApplication events dispatched from notifications
   useEffect(() => {
@@ -76,15 +90,20 @@ export const useDeveloperDashboard = () => {
 
   // Debug: Log render info
   useEffect(() => {
-    console.log('[Developer Dashboard] Render state:', {
-      isAuthenticated,
-      userId,
-      userType,
-      ticketsCount: tickets.length,
-      isLoading,
-      isLoadingApplications,
-    });
-  }, [isAuthenticated, userId, userType, tickets, isLoading, isLoadingApplications]);
+    if (isFirstRender.current) {
+      console.log('[Developer Dashboard] Initial render state:', {
+        isAuthenticated,
+        userId,
+        userType,
+        ticketsCount: tickets.length,
+        isLoading,
+        isLoadingApplications,
+        hasError,
+        hasApplicationError
+      });
+      isFirstRender.current = false;
+    }
+  }, [isAuthenticated, userId, userType, tickets, isLoading, isLoadingApplications, hasError, hasApplicationError]);
 
   return {
     tickets,
@@ -93,6 +112,8 @@ export const useDeveloperDashboard = () => {
     myApplications,
     isLoading,
     isLoadingApplications,
+    hasError,
+    hasApplicationError,
     filters,
     showFilters,
     setShowFilters,

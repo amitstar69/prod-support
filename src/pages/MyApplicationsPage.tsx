@@ -11,16 +11,21 @@ import { useDeveloperDashboard } from '../hooks/dashboard/useDeveloperDashboard'
 import { useAuth } from '../contexts/auth';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import ProfileErrorState from '../components/profile/ProfileErrorState';
 
 const MyApplicationsPage = () => {
   const navigate = useNavigate();
   const { userId, userType, isAuthenticated } = useAuth();
   const [isLoadingPage, setIsLoadingPage] = useState(true);
+  const [hasLoadingTimedOut, setHasLoadingTimedOut] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   
   const {
     myApplications,
     isLoading,
     isLoadingApplications,
+    hasError,
+    hasApplicationError,
     dataSource,
     handleClaimTicket,
     fetchMyApplications
@@ -44,14 +49,20 @@ const MyApplicationsPage = () => {
     }
   }, [userId, isAuthenticated, fetchMyApplications]);
 
+  const handleRetry = useCallback(() => {
+    setIsLoadingPage(true);
+    setHasLoadingTimedOut(false);
+    setRetryCount(prev => prev + 1);
+    fetchApplications();
+  }, [fetchApplications]);
+
   useEffect(() => {
     // Check that this page is only accessed by developers
     if (isAuthenticated && userType !== 'developer') {
       navigate('/client-dashboard');
+      return;
     }
-  }, [isAuthenticated, userType, navigate]);
-  
-  useEffect(() => {
+    
     // Fetch applications when component mounts
     fetchApplications();
     
@@ -59,12 +70,13 @@ const MyApplicationsPage = () => {
     const timeoutId = setTimeout(() => {
       if (isLoadingPage) {
         setIsLoadingPage(false);
+        setHasLoadingTimedOut(true);
         console.log('MyApplicationsPage: Forced loading state to finish after timeout');
       }
-    }, 5000);
+    }, 10000); // Increased from 5s to 10s
     
     return () => clearTimeout(timeoutId);
-  }, [fetchApplications]);
+  }, [fetchApplications, isAuthenticated, userType, navigate, retryCount]);
   
   // Update loading page state when child components report loading finished
   useEffect(() => {
@@ -79,9 +91,36 @@ const MyApplicationsPage = () => {
       isLoadingPage, 
       isLoading, 
       isLoadingApplications,
+      hasError,
+      hasApplicationError,
+      hasLoadingTimedOut,
       applicationsCount: myApplications?.length || 0
     });
-  }, [isLoadingPage, isLoading, isLoadingApplications, myApplications]);
+  }, [isLoadingPage, isLoading, isLoadingApplications, hasError, hasApplicationError, hasLoadingTimedOut, myApplications]);
+
+  // Handle forced logout if needed
+  const handleForceLogout = useCallback(() => {
+    // Perform emergency logout via the recovery utility
+    import('../utils/recovery').then(recovery => {
+      recovery.performEmergencyLogout();
+      toast.info('Performing emergency logout to resolve issues...');
+    });
+  }, []);
+
+  // If we have an error or timeout, show the error state
+  if ((hasError || hasApplicationError || hasLoadingTimedOut) && !isLoadingPage) {
+    return (
+      <Layout>
+        <DashboardBanner />
+        <ProfileErrorState 
+          title="Unable to load your applications" 
+          message="We're having trouble loading your applications. Please try again or log out and back in to resolve this issue."
+          onForceLogout={handleForceLogout}
+          onRetry={handleRetry}
+        />
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

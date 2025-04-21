@@ -2,6 +2,12 @@
 import { initKeyboardShortcuts, checkBrowserCompatibility } from './keyboardShortcuts';
 import { initStuckStateDetection, setGlobalLoadingTimeout } from './stuckStateDetection';
 import { attemptRecovery, performEmergencyLogout } from './emergencyLogout';
+import { 
+  checkNetworkStatus, 
+  attemptNetworkRecovery, 
+  clearAppCache, 
+  performFullRecovery 
+} from './networkRecovery';
 
 /**
  * Emergency recovery utility that provides a way to escape from frozen states
@@ -28,5 +34,9 @@ export const initEmergencyRecovery = (): (() => void) => {
 export {
   setGlobalLoadingTimeout,
   performEmergencyLogout,
-  attemptRecovery
+  attemptRecovery,
+  checkNetworkStatus,
+  attemptNetworkRecovery,
+  clearAppCache,
+  performFullRecovery
 };

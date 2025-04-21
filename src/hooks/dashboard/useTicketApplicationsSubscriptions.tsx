@@ -13,6 +13,9 @@ export const useTicketApplicationsSubscriptions = (
   // Store the subscription cleanup function
   const cleanupRef = useRef<(() => void) | null>(null);
   
+  // Track if we've already shown errors
+  const hasShownError = useRef(false);
+  
   // Set up a generic subscription for the developer's applications
   useEffect(() => {
     if (!isAuthenticated || !userId || userType !== 'developer') {
@@ -42,7 +45,7 @@ export const useTicketApplicationsSubscriptions = (
             // Use a timeout to prevent state updates during render
             setTimeout(() => {
               fetchMyApplications(isAuthenticated, userId);
-            }, 100);
+            }, 300); // Increased from 100ms to 300ms for stability
           } else if (payload.new.status === VALID_MATCH_STATUSES.REJECTED) {
             toast('Your application has been rejected', {
               description: `Your application was not accepted.`
@@ -53,6 +56,7 @@ export const useTicketApplicationsSubscriptions = (
       
       // Store the cleanup function
       cleanupRef.current = cleanup;
+      hasShownError.current = false;
       
       return () => {
         if (cleanupRef.current) {
@@ -63,6 +67,13 @@ export const useTicketApplicationsSubscriptions = (
       };
     } catch (error) {
       console.error('[Subscriptions] Error setting up application subscription:', error);
+      
+      // Only show the error toast once per mount to avoid spamming the user
+      if (!hasShownError.current) {
+        toast.error('Unable to set up real-time updates for your applications');
+        hasShownError.current = true;
+      }
+      
       return () => {}; // Return empty cleanup
     }
   }, [isAuthenticated, userId, userType, fetchMyApplications]);
