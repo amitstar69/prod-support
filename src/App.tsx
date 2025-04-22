@@ -30,7 +30,6 @@ import VerificationSuccessPage from './pages/VerificationSuccessPage';
 import VerificationCanceledPage from './pages/VerificationCanceledPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';
 import TicketDetailPage from './pages/TicketDetailPage';
-import LegacyDeveloperTicketDetail from './pages/LegacyDeveloperTicketDetail';
 
 // Import contexts
 import { AuthProvider, useAuth } from './contexts/auth';
@@ -144,49 +143,32 @@ function App() {
 
                 <Route path="/developer/*" element={
                   <ProtectedRoute requiredUserType="developer">
-                    <Route path="welcome" element={<DeveloperWelcomePage />} />
-                
-                    <Route path="dashboard" element={<DeveloperDashboard />} />
-                
-                    <Route path="tickets" element={<DeveloperDashboard />} />
-                
-                    <Route path="profile" element={<Profile />} />
-                
-                    <Route path="applications" element={<MyApplicationsPage />} />
-                
-                    <Route path="onboarding" element={<DeveloperOnboarding />} />
-                
-                    <Route path="sessions" element={<SessionHistory />} />
-                    
-                    <Route 
-                      path="tickets/:ticketId" 
-                      element={<Navigate to={({ pathname }) => `/tickets/${pathname.split('/').pop()}`} replace />} 
-                    />
+                    <Routes>
+                      <Route path="welcome" element={<DeveloperWelcomePage />} />
+                      <Route path="dashboard" element={<DeveloperDashboard />} />
+                      <Route path="tickets" element={<DeveloperDashboard />} />
+                      <Route path="profile" element={<Profile />} />
+                      <Route path="applications" element={<MyApplicationsPage />} />
+                      <Route path="onboarding" element={<DeveloperOnboarding />} />
+                      <Route path="sessions" element={<SessionHistory />} />
+                      <Route path="tickets/:ticketId" element={<Navigate to={(params) => `/tickets/${params.pathname.split('/').pop()}`} replace />} />
+                    </Routes>
                   </ProtectedRoute>
                 } />
 
                 <Route path="/client/*" element={
                   <ProtectedRoute requiredUserType="client">
-                    <Route path="landing" element={<ClientLanding />} />
-                
-                    <Route path="dashboard" element={<ClientDashboard />} />
-                
-                    <Route path="tickets" element={<ClientDashboard />} />
-                
-                    <Route path="applications/:applicationId" element={<ApplicationDetailPage />} />
-                
-                    <Route path="profile" element={<ClientProfile />} />
-                
-                    <Route path="onboarding" element={<ClientOnboarding />} />
-                
-                    <Route path="sessions" element={<SessionHistory />} />
-                
-                    <Route path="help" element={<GetHelpPage />} />
-                    
-                    <Route 
-                      path="tickets/:ticketId" 
-                      element={<Navigate to={({ pathname }) => `/tickets/${pathname.split('/').pop()}`} replace />} 
-                    />
+                    <Routes>
+                      <Route path="landing" element={<ClientLanding />} />
+                      <Route path="dashboard" element={<ClientDashboard />} />
+                      <Route path="tickets" element={<ClientDashboard />} />
+                      <Route path="applications/:applicationId" element={<ApplicationDetailPage />} />
+                      <Route path="profile" element={<ClientProfile />} />
+                      <Route path="onboarding" element={<ClientOnboarding />} />
+                      <Route path="sessions" element={<SessionHistory />} />
+                      <Route path="help" element={<GetHelpPage />} />
+                      <Route path="tickets/:ticketId" element={<Navigate to={(params) => `/tickets/${params.pathname.split('/').pop()}`} replace />} />
+                    </Routes>
                   </ProtectedRoute>
                 } />
 
