@@ -8,111 +8,20 @@ import { Button } from '../components/ui/button';
 import { supabase } from '../integrations/supabase/client';
 import TicketHeader from '../components/developer-ticket-detail/TicketHeader';
 import TicketStatusPanel from '../components/developer-ticket-detail/TicketStatusPanel';
-import TicketSidebar from '../components/developer-ticket-detail/TicketSidebar';
-import DeveloperApplicationPanel from '../components/developer-ticket-detail/DeveloperApplicationPanel';
-import TicketDetails from '../components/tickets/TicketDetails';
-import TicketComments from '../components/tickets/TicketComments';
-import ChatCommentsPanel from '../components/tickets/ChatCommentsPanel';
 import { useAuth } from '../contexts/auth';
 import HelpRequestHistoryDialog from '../components/help/HelpRequestHistoryDialog';
-import ClientActionsPanel from "../components/tickets/ClientActionsPanel";
-import TicketHistoryAccordion from "../components/tickets/TicketHistoryAccordion";
 import DeveloperApplicationModal from '../components/apply/DeveloperApplicationModal';
 import DeveloperQADialog from '../components/help/DeveloperQADialog';
-import TicketInfo from '../components/developer-ticket-detail/TicketInfo';
 
-const TicketActionsPanel = ({
-  role,
-  ticket,
-  ticketId,
-  userId,
-  applicationStatus,
-  hasApplied,
-  onApply,
-  fetchLatestTicketData
-}: any) => {
-  if (role === "developer") {
-    return (
-      <DeveloperApplicationPanel
-        devUpdateVisibility={{
-          show: !!(applicationStatus === "approved" && hasApplied),
-          reason: "",
-        }}
-        ticket={ticket}
-        ticketId={ticketId}
-        userType={role}
-        applicationStatus={applicationStatus}
-        hasApplied={hasApplied}
-        onApply={onApply}
-        fetchLatestTicketData={fetchLatestTicketData}
-      />
-    );
-  }
-  if (role === "client") {
-    return (
-      <ClientActionsPanel
-        ticket={ticket}
-        userId={userId}
-        onStatusUpdated={fetchLatestTicketData}
-      />
-    );
-  }
-  return null;
-};
+// NEW: Import smaller section components
+import TicketActionsPanel from '../components/ticket-detail/TicketActionsPanel';
+import CommentsSection from '../components/ticket-detail/CommentsSection';
+import ClientEditSection from '../components/ticket-detail/ClientEditSection';
+import HistorySection from '../components/ticket-detail/HistorySection';
+import ProjectDetailsCard from '../components/ticket-detail/ProjectDetailsCard';
 
-const CommentsSection = ({
-  visible,
-  ticket,
-  ticketId,
-  userId,
-  role,
-}: any) => {
-  if (!visible) return null;
-  if (role === "developer") {
-    return <ChatCommentsPanel ticketId={ticketId} userId={userId} />;
-  }
-  return (
-    <TicketComments
-      ticketId={ticketId}
-      userRole={role}
-      userId={userId}
-    />
-  );
-};
-
-const ClientEditSection = ({
-  visible,
-  status,
-  ticket,
-  onTicketUpdated,
-  canSubmitQA,
-  onSubmitQA,
-  formatDate
-}: any) => {
-  if (!visible) return null;
-  return (
-    <TicketSidebar
-      ticket={ticket}
-      canSubmitQA={canSubmitQA}
-      onSubmitQA={onSubmitQA}
-      formatDate={formatDate}
-      onTicketUpdated={onTicketUpdated}
-    />
-  );
-};
-
-const HistorySection = ({ ticketId, ticket }: { ticketId: string, ticket: HelpRequest }) => (
-  <TicketHistoryAccordion helpRequestId={ticket.id} />
-);
-
-const ProjectDetailsCard = ({ ticket, formatDate }: { ticket: HelpRequest, formatDate: (d?: string) => string }) => (
-  <TicketSidebar
-    ticket={ticket}
-    canSubmitQA={false}
-    onSubmitQA={() => {}}
-    formatDate={formatDate}
-  />
-);
+// Also import TicketDetails directly as it's a focused component
+import TicketDetails from '../components/tickets/TicketDetails';
 
 const TicketDetailPage = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
