@@ -1,4 +1,5 @@
 
+
 // Define valid status transitions
 export const STATUS_TRANSITIONS = {
   system: {
@@ -59,6 +60,9 @@ export const getNextStatus = (currentStatus: string, userType: UserType): string
 
 // Get human-readable status label
 export const getStatusLabel = (status: string): string => {
+  // Handle hyphenated statuses (for compatibility)
+  const normalizedStatus = status.replace(/-/g, '_');
+  
   const statusLabels: Record<string, string> = {
     'submitted': 'Submitted',
     'pending_match': 'Pending Match',
@@ -77,7 +81,7 @@ export const getStatusLabel = (status: string): string => {
     'cancelled_by_client': 'Cancelled'
   };
 
-  return statusLabels[status] || status;
+  return statusLabels[normalizedStatus] || status;
 };
 
 // Get status descriptions

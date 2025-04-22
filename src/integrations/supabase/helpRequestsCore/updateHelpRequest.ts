@@ -1,3 +1,4 @@
+
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
@@ -151,21 +152,37 @@ export const updateHelpRequest = async (
         return { success: false, error: permissionError };
       }
 
+      // Handle hyphenated statuses for compatibility
+      const normalizedCurrentStatus = currentRequest.status.replace(/-/g, '_');
+      
       // Check status transition validity if status is being updated
-      if (updates.status && currentRequest.status !== updates.status) {
+      if (updates.status) {
+        // Normalize any hyphenated status in updates
+        const normalizedNewStatus = updates.status.replace(/-/g, '_');
+        
+        // If the statuses are the same after normalization, we can skip the update
+        if (normalizedCurrentStatus === normalizedNewStatus) {
+          console.log('[updateHelpRequest] Status unchanged after normalization, skipping update');
+          return { 
+            success: true, 
+            data: { ...currentRequest, ...updates }, 
+            message: 'Status is already set to this value'
+          };
+        }
+        
         // Validate the status transition based on user role
-        if (!isValidStatusTransition(currentRequest.status, updates.status, userType)) {
-          const fromStatus = getStatusLabel(currentRequest.status);
-          const toStatus = getStatusLabel(updates.status);
+        if (!isValidStatusTransition(normalizedCurrentStatus, normalizedNewStatus, userType)) {
+          const fromStatus = getStatusLabel(normalizedCurrentStatus);
+          const toStatus = getStatusLabel(normalizedNewStatus);
           
-          console.error(`[updateHelpRequest] Invalid status transition from ${currentRequest.status} to ${updates.status} by ${userType}`);
+          console.error(`[updateHelpRequest] Invalid status transition from ${normalizedCurrentStatus} to ${normalizedNewStatus} by ${userType}`);
           return { 
             success: false, 
             error: `Invalid status transition from "${fromStatus}" to "${toStatus}". This action is not allowed.` 
           };
         }
         
-        console.log(`[updateHelpRequest] Status transition validated: ${currentRequest.status} -> ${updates.status}`);
+        console.log(`[updateHelpRequest] Status transition validated: ${normalizedCurrentStatus} -> ${updates.status}`);
       }
 
       // Update timestamp fields based on status changes
@@ -195,8 +212,8 @@ export const updateHelpRequest = async (
           updated_at: now
         })
         .eq('id', requestId)
-        .select()
-        .maybeSingle();
+        .select('*')  // Changed from select() to select('*') to ensure data is returned
+        .single();    // Changed from maybeSingle() to single() for error handling
         
       if (error) {
         console.error('[updateHelpRequest] Error updating help request in Supabase:', error);
