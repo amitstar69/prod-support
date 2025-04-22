@@ -17,8 +17,13 @@ export const useHelpRequestData = (ticketId?: string, initialTicket?: HelpReques
   const fetchTicket = async () => {
     try {
       setIsLoading(true);
-      const fetchedTicket = await getHelpRequest(ticketId!);
-      setTicket(fetchedTicket);
+      const response = await getHelpRequest(ticketId!);
+      
+      if (response.success && response.data) {
+        setTicket(response.data as HelpRequest);
+      } else {
+        setError(response.error || 'Failed to load ticket details');
+      }
     } catch (err) {
       setError('Failed to load ticket details');
       console.error(err);
