@@ -1,4 +1,3 @@
-
 import React, { useEffect, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
@@ -26,12 +25,12 @@ import ClientDashboard from './pages/ClientDashboard';
 import ClientLanding from './pages/ClientLanding';
 import DeveloperRegistration from './pages/DeveloperRegistration';
 import SessionHistory from './pages/SessionHistory';
-import DeveloperTicketDetail from './pages/DeveloperTicketDetail';
 import MyApplicationsPage from './pages/MyApplicationsPage';
 import VerificationSuccessPage from './pages/VerificationSuccessPage';
 import VerificationCanceledPage from './pages/VerificationCanceledPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';
 import TicketDetailPage from './pages/TicketDetailPage';
+import LegacyDeveloperTicketDetail from './pages/LegacyDeveloperTicketDetail';
 
 // Import contexts
 import { AuthProvider, useAuth } from './contexts/auth';
@@ -174,7 +173,7 @@ function App() {
                 
                 <Route path="/developer/tickets/:ticketId" element={
                   <ProtectedRoute requiredUserType="developer">
-                    <DeveloperTicketDetail />
+                    <TicketDetailPage />
                   </ProtectedRoute>
                 } />
                 
