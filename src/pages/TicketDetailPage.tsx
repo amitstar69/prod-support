@@ -26,7 +26,7 @@ const TicketDetailPage = () => {
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
 
   // Unified role (fallback to 'client')
-  const userRole: "client" | "developer" | "admin" = (userType as any) || 'client';
+  const userRole: "client" | "developer" = (userType as any) || 'client';
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -158,7 +158,7 @@ const TicketDetailPage = () => {
             <TicketDetails ticket={{
               ...ticket,
               // Normalize for backward/forward compatibility
-              technical_areas: (ticket as any).technical_areas || ticket.technical_area || [],
+              technical_area: ticket.technical_area || [],
             }} userRole={userRole} />
 
             {/* Comments */}
