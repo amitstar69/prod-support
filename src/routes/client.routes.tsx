@@ -1,5 +1,5 @@
 
-import { Route, Navigate } from 'react-router-dom';
+import { Route, Navigate, Routes } from 'react-router-dom';
 import ProtectedRoute from '../components/ProtectedRoute';
 import ClientLanding from '../pages/ClientLanding';
 import ClientDashboard from '../pages/ClientDashboard';
@@ -25,3 +25,4 @@ export const clientRoutes =
       </Routes>
     </ProtectedRoute>
   } />;
+

@@ -1,5 +1,5 @@
 
-import { Route, Navigate } from 'react-router-dom';
+import { Route, Navigate, Routes } from 'react-router-dom';
 import ProtectedRoute from '../components/ProtectedRoute';
 import DeveloperWelcomePage from '../pages/DeveloperWelcomePage';
 import DeveloperDashboard from '../pages/DeveloperDashboard';
@@ -23,3 +23,4 @@ export const developerRoutes =
       </Routes>
     </ProtectedRoute>
   } />;
+
