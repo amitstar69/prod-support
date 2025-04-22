@@ -1,6 +1,7 @@
+
 import React, { useEffect, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from './components/ui/toaster';
+import { Toaster } from './components/ui/sonner';
 import { ErrorBoundary } from 'react-error-boundary';
 
 // Import main components
@@ -280,7 +281,6 @@ function App() {
                 {/* Ticket status test route */}
                 <Route path="/ticket-status-test" element={<TicketStatusTest />} />
               </Routes>
-              <Toaster />
             </Suspense>
           </BrowserRouter>
         </HelpRequestProvider>

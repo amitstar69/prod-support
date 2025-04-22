@@ -1,5 +1,6 @@
 
 import { createRoot } from 'react-dom/client'
+import { ThemeProvider } from 'next-themes'
 import App from './App.tsx'
 import './index.css'
 import { initEmergencyRecovery } from './utils/emergencyRecovery.ts'
@@ -58,10 +59,10 @@ try {
   } else {
     const root = createRoot(rootElement);
     root.render(
-      <>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <App />
         <Toaster position="top-right" />
-      </>
+      </ThemeProvider>
     );
     appLoaded = true;
     clearTimeout(loadingTimeout);
