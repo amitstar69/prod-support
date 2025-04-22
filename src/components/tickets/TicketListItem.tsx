@@ -4,7 +4,7 @@ import { HelpRequest } from '../../types/helpRequest';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
-import { Clock, CheckCircle2, AlertCircle, BarChart3, Calendar, Bell, Star, FileEdit, User, ExternalLink } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle, BarChart3, Calendar, Bell, Star, FileEdit, User } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { STATUSES } from '../../utils/helpRequestStatusUtils';
 
@@ -50,18 +50,6 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
   onChatClick,
   viewMode = 'grid'
 }) => {
-  // Handle view details with logging
-  const handleViewDetails = (ticketId: string) => {
-    console.log('View Details clicked:', {
-      ticketId,
-      isApplication,
-      currentPath: window.location.pathname,
-      userContext: window.location.pathname.includes('/developer') ? 'developer' : 'client'
-    });
-
-    onViewDetails(ticketId);
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending': return <Clock className="h-4 w-4 text-yellow-500" />;
@@ -117,7 +105,7 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleViewDetails(ticket.id!)}
+            onClick={() => onViewDetails(ticket.id!)}
           >
             View Details
           </Button>
@@ -197,9 +185,8 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
           className="w-full"
           variant="outline"
           size="sm"
-          onClick={() => handleViewDetails(ticket.id!)}
+          onClick={() => onViewDetails(ticket.id!)}
         >
-          <ExternalLink className="h-4 w-4 mr-2" />
           View Details
         </Button>
         

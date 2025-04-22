@@ -54,32 +54,9 @@ const TicketList: React.FC<TicketListProps> = ({
   };
 
   const handleViewDetails = (ticketId: string) => {
-    console.log('TicketList handleViewDetails:', {
-      ticketId,
-      isAuthenticated, 
-      isApplication,
-      currentPath: window.location.pathname
-    });
-
     if (isAuthenticated) {
-      // Determine the current user context (page path)
-      const currentPath = window.location.pathname;
-      const isInDeveloperContext = currentPath.includes('/developer');
-      const isInClientContext = currentPath.includes('/client');
-      
-      console.log('Navigation decision factors:', {
-        isApplication,
-        isInDeveloperContext,
-        isInClientContext,
-        ticketId
-      });
-      
-      // Route based on user context rather than application status
-      if (isInDeveloperContext) {
-        navigate(`/developer/tickets/${ticketId}`);
-      } else {
-        navigate(`/client/tickets/${ticketId}`);
-      }
+      // For approved tickets viewed on my applications page, navigate to developer ticket detail
+      navigate(isApplication ? `/developer/tickets/${ticketId}` : `/developer/tickets/${ticketId}`);
     } else {
       setPendingAction({ type: 'view', ticketId });
       setShowAuthDialog(true);

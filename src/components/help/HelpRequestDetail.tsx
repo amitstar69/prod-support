@@ -32,11 +32,6 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
   ticketId,
   onUpdate
 }) => {
-  console.log('HelpRequestDetail rendering with:', {
-    hasInitialTicket: !!initialTicket,
-    ticketId
-  });
-  
   // Get ticket data using custom hook
   const { 
     ticket, 
