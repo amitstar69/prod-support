@@ -105,7 +105,7 @@ const ChatCommentsPanel: React.FC<ChatCommentsPanelProps> = ({ ticketId, userId 
         </div>
         <form onSubmit={handleSend} className="flex flex-col gap-2">
           <Textarea
-            minRows={2}
+            rows={2}
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Add a comment..."
