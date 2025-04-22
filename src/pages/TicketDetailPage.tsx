@@ -11,6 +11,7 @@ import TicketSidebar from '../components/developer-ticket-detail/TicketSidebar';
 import DeveloperApplicationPanel from '../components/developer-ticket-detail/DeveloperApplicationPanel';
 import TicketDetails from '../components/tickets/TicketDetails';
 import TicketComments from '../components/tickets/TicketComments';
+import ChatCommentsPanel from '../components/tickets/ChatCommentsPanel';
 import { useAuth } from '../contexts/auth';
 import HelpRequestHistoryDialog from '../components/help/HelpRequestHistoryDialog';
 import ClientActionsPanel from "../components/tickets/ClientActionsPanel";
@@ -25,7 +26,6 @@ const TicketDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
 
-  // Unified role (fallback to 'client')
   const userRole: "client" | "developer" = (userType as any) || 'client';
 
   useEffect(() => {
@@ -40,7 +40,6 @@ const TicketDetailPage = () => {
     }
   }, [ticketId, isAuthenticated]);
 
-  // Subscribe to real-time updates:
   useEffect(() => {
     if (!ticketId || !isAuthenticated) return;
     const channel = supabase
@@ -134,41 +133,37 @@ const TicketDetailPage = () => {
     );
   }
 
-  // Short ticket ID for display
   const shortTicketId = ticket.id ? `HELP-${ticket.id.substring(0, 8)}` : "Unknown ID";
 
   return (
     <Layout>
       <div className="container max-w-5xl mx-auto py-8 px-4">
-        {/* Unified Header */}
         <TicketHeader
           onBack={() => navigate(-1)}
           shortTicketId={shortTicketId}
           ticket={ticket}
         />
 
-        {/* Ticket Status */}
         <TicketStatusPanel ticket={ticket} />
 
-        {/* Page Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          {/* Main Area */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Details */}
             <TicketDetails ticket={{
               ...ticket,
               technical_area: ticket.technical_area || [],
             }} userRole={userRole} />
 
-            {/* Comments */}
-            <TicketComments
-              ticketId={ticketId || ""}
-              userRole={userRole}
-              userId={userId || ""}
-            />
+            {userRole === "developer" ? (
+              <ChatCommentsPanel ticketId={ticket.id} userId={userId || ""} />
+            ) : (
+              <TicketComments
+                ticketId={ticketId || ""}
+                userRole={userRole}
+                userId={userId || ""}
+              />
+            )}
           </div>
 
-          {/* Sidebar */}
           <div>
             <TicketSidebar
               ticket={ticket}
@@ -176,7 +171,6 @@ const TicketDetailPage = () => {
               onSubmitQA={() => {}} // wire up as needed
               formatDate={(dateStr?: string) => (dateStr ? new Date(dateStr).toLocaleString() : 'N/A')}
             />
-            {/* Client Actions Panel */}
             {userRole === "client" && (
               <ClientActionsPanel
                 ticket={ticket}
@@ -187,7 +181,6 @@ const TicketDetailPage = () => {
           </div>
         </div>
       </div>
-      {/* Ticket history dialog */}
       <HelpRequestHistoryDialog
         isOpen={showHistoryDialog}
         onClose={() => setShowHistoryDialog(false)}
