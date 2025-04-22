@@ -3,105 +3,30 @@ import React, { useEffect, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import { ErrorBoundary } from 'react-error-boundary';
-
-// Import main components
-import Index from './pages/Index';
-import Search from './pages/Search';
-import ProductDetail from './pages/ProductDetail';
-import DeveloperProfilePage from './pages/DeveloperProfilePage';
-import ProtectedRoute from './components/ProtectedRoute';
-import Profile from './pages/Profile';
-import ClientProfile from './pages/ClientProfile';
-import ClientOnboarding from './pages/onboarding/ClientOnboarding';
-import DeveloperOnboarding from './pages/onboarding/DeveloperOnboarding';
-import GetHelpPage from './pages/GetHelpPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import NotFound from './pages/NotFound';
-import DeveloperDashboard from './pages/DeveloperDashboard';
-import DeveloperWelcomePage from './pages/DeveloperWelcomePage';
-import ClientDashboard from './pages/ClientDashboard';
-import ClientLanding from './pages/ClientLanding';
-import DeveloperRegistration from './pages/DeveloperRegistration';
-import SessionHistory from './pages/SessionHistory';
-import MyApplicationsPage from './pages/MyApplicationsPage';
-import VerificationSuccessPage from './pages/VerificationSuccessPage';
-import VerificationCanceledPage from './pages/VerificationCanceledPage';
-import ApplicationDetailPage from './pages/ApplicationDetailPage';
-import TicketDetailPage from './pages/TicketDetailPage';
-
-// Import contexts
-import { AuthProvider, useAuth } from './contexts/auth';
+import { AuthProvider } from './contexts/auth';
 import { HelpRequestProvider } from './contexts/HelpRequestContext';
-import { getUserHomePage } from './utils/navigationUtils';
+import NotFound from './pages/NotFound';
 
-import './App.css';
+// Import route configurations
+import { authRoutes } from './routes/auth.routes';
+import { publicRoutes } from './routes/public.routes';
+import { protectedRoutes } from './routes/protected.routes';
+import { developerRoutes } from './routes/developer.routes';
+import { clientRoutes } from './routes/client.routes';
+import { redirectRoutes } from './routes/redirect.routes';
 
-// Error fallback component
-const ErrorFallback = ({ error, resetErrorBoundary }) => {
-  return (
-    <div className="flex h-screen w-full flex-col items-center justify-center p-4 text-center">
-      <h2 className="mb-4 text-2xl font-bold">Something went wrong</h2>
-      <p className="mb-4 text-red-500">{error.message || 'An unexpected error occurred'}</p>
-      <button
-        onClick={resetErrorBoundary}
-        className="rounded bg-primary px-4 py-2 text-white hover:bg-primary/90"
-      >
-        Try again
-      </button>
-      <button
-        onClick={() => window.location.href = '/'}
-        className="mt-2 rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
-      >
-        Go to homepage
-      </button>
-    </div>
-  );
-};
-
-// Loading fallback
-const LoadingFallback = () => {
-  const [showTimeout, setShowTimeout] = useState(false);
-  
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowTimeout(true);
-    }, 5000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-  
-  return (
-    <div className="flex h-screen w-full flex-col items-center justify-center p-4">
-      <div className="animate-spin h-12 w-12 rounded-full border-t-2 border-b-2 border-primary"></div>
-      <p className="mt-4 text-lg">Loading...</p>
-      {showTimeout && (
-        <p className="mt-2 text-amber-600">
-          This is taking longer than expected. Please wait or try refreshing.
-        </p>
-      )}
-    </div>
-  );
-};
+// Import components for error and loading states
+import { ErrorFallback } from './components/error/ErrorFallback';
+import { LoadingFallback } from './components/loading/LoadingFallback';
 
 function App() {
-  const [darkMode, setDarkMode] = React.useState(() => {
+  const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
     }
     return false;
   });
   
-  useEffect(() => {
-    console.time('app-mount');
-    
-    return () => {
-      console.timeEnd('app-mount');
-    };
-  }, []);
-
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -123,80 +48,25 @@ function App() {
           <BrowserRouter>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
-                <Route path="/" element={<Index />} />
+                {/* Public Routes */}
+                {publicRoutes}
                 
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/verification-success" element={<VerificationSuccessPage />} />
-                <Route path="/verification-canceled" element={<VerificationCanceledPage />} />
+                {/* Auth Routes */}
+                {authRoutes}
                 
-                <Route path="/search" element={<Search />} />
-                <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/developer-profiles/:id" element={<DeveloperProfilePage />} />
+                {/* Protected Routes */}
+                {protectedRoutes}
                 
-                <Route path="/tickets/:ticketId" element={
-                  <ProtectedRoute>
-                    <TicketDetailPage />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/developer/*" element={
-                  <ProtectedRoute requiredUserType="developer">
-                    <Routes>
-                      <Route path="welcome" element={<DeveloperWelcomePage />} />
-                      <Route path="dashboard" element={<DeveloperDashboard />} />
-                      <Route path="tickets" element={<DeveloperDashboard />} />
-                      <Route path="profile" element={<Profile />} />
-                      <Route path="applications" element={<MyApplicationsPage />} />
-                      <Route path="onboarding" element={<DeveloperOnboarding />} />
-                      <Route path="sessions" element={<SessionHistory />} />
-                      <Route path="tickets/:ticketId" element={<Navigate to="/tickets/:ticketId" replace />} />
-                    </Routes>
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/client/*" element={
-                  <ProtectedRoute requiredUserType="client">
-                    <Routes>
-                      <Route path="landing" element={<ClientLanding />} />
-                      <Route path="dashboard" element={<ClientDashboard />} />
-                      <Route path="tickets" element={<ClientDashboard />} />
-                      <Route path="applications/:applicationId" element={<ApplicationDetailPage />} />
-                      <Route path="profile" element={<ClientProfile />} />
-                      <Route path="onboarding" element={<ClientOnboarding />} />
-                      <Route path="sessions" element={<SessionHistory />} />
-                      <Route path="help" element={<GetHelpPage />} />
-                      <Route path="tickets/:ticketId" element={<Navigate to="/tickets/:ticketId" replace />} />
-                    </Routes>
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/get-help/*" element={
-                  <ProtectedRoute>
-                    <GetHelpPage />
-                  </ProtectedRoute>
-                } />
+                {/* Developer Routes */}
+                {developerRoutes}
                 
-                <Route path="/session-history" element={
-                  <ProtectedRoute>
-                    <SessionHistory />
-                  </ProtectedRoute>
-                } />
+                {/* Client Routes */}
+                {clientRoutes}
                 
-                <Route path="/developer-registration" element={<DeveloperRegistration />} />
+                {/* Redirect Routes */}
+                {redirectRoutes}
                 
-                <Route path="/dashboard" element={<UserTypeRedirect />} />
-                <Route path="/home" element={<UserTypeRedirect />} />
-                <Route path="/account" element={<UserAccountRedirect />} />
-                
-                <Route path="/developer-dashboard" element={<Navigate to="/developer/dashboard" replace />} />
-                <Route path="/client-dashboard" element={<Navigate to="/client/dashboard" replace />} />
-                <Route path="/ticket-dashboard" element={<Navigate to="/client/tickets" replace />} />
-                <Route path="/onboarding/developer" element={<Navigate to="/developer/onboarding" replace />} />
-                <Route path="/onboarding/client" element={<Navigate to="/client/onboarding" replace />} />
-                
+                {/* 404 Route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <Toaster />
@@ -207,27 +77,5 @@ function App() {
     </ErrorBoundary>
   );
 }
-
-const UserTypeRedirect = () => {
-  const { userType, isAuthenticated } = useAuth();
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  const homePath = getUserHomePage(userType);
-  return <Navigate to={homePath} replace />;
-};
-
-const UserAccountRedirect = () => {
-  const { userType, isAuthenticated } = useAuth();
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  const profilePath = userType === 'developer' ? '/developer/profile' : '/client/profile';
-  return <Navigate to={profilePath} replace />;
-};
 
 export default App;
