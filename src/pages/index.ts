@@ -1,4 +1,3 @@
-
 export { default as LoginPage } from './LoginPage';
 export { default as RegisterPage } from './RegisterPage';
 export { default as ClientDashboard } from './ClientDashboard';
@@ -10,3 +9,5 @@ export { default as ClientOnboarding } from './onboarding/ClientOnboarding';
 // Add verification pages
 export { default as VerificationSuccessPage } from './VerificationSuccessPage';
 export { default as VerificationCanceledPage } from './VerificationCanceledPage';
+
+export { default as TicketStatusTest } from './TicketStatusTest';

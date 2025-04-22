@@ -1,4 +1,3 @@
-
 import React, { useEffect, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
@@ -32,6 +31,7 @@ import VerificationSuccessPage from './pages/VerificationSuccessPage';
 import VerificationCanceledPage from './pages/VerificationCanceledPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';
 import TicketDetailPage from './pages/TicketDetailPage';
+import TicketStatusTest from './pages/TicketStatusTest';
 
 // Import contexts
 import { AuthProvider, useAuth } from './contexts/auth';
@@ -276,6 +276,9 @@ function App() {
                 
                 {/* 404 route */}
                 <Route path="*" element={<NotFound />} />
+                
+                {/* Ticket status test route */}
+                <Route path="/ticket-status-test" element={<TicketStatusTest />} />
               </Routes>
               <Toaster />
             </Suspense>
