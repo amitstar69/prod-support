@@ -11,7 +11,7 @@ import { Button } from '../components/ui/button';
 import { useAuth } from '../contexts/auth';
 import { checkTicketPermission, PermissionAction } from '../utils/permissions';
 import { supabase } from '../integrations/supabase/client';
-import { Card } from '../components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import TicketHeader from '../components/developer-ticket-detail/TicketHeader';
 import TicketStatusPanel from '../components/developer-ticket-detail/TicketStatusPanel';
 import TicketInfo from '../components/developer-ticket-detail/TicketInfo';
@@ -106,12 +106,16 @@ const TicketDetailPage = () => {
       if (fetchedTicket) {
         setTicket(fetchedTicket);
         
-        // Check permission
+        // Check permission - Fixed by ensuring status is a string
         const permission = checkTicketPermission(
           PermissionAction.VIEW_TICKET,
           userType as 'developer' | 'client' | null,
           userId,
-          fetchedTicket
+          {
+            status: fetchedTicket.status || 'unknown', // Ensure status is a string
+            client_id: fetchedTicket.client_id,
+            id: fetchedTicket.id || ''
+          }
         );
         
         setHasPermission(permission.can);
@@ -276,7 +280,7 @@ const TicketDetailPage = () => {
             </h1>
           </div>
           
-          <Alert variant={error ? "destructive" : "warning"} className="mb-4">
+          <Alert variant={error ? "destructive" : "default"} className="mb-4">
             <AlertTitle>{error ? 'Error' : 'Access Denied'}</AlertTitle>
             <AlertDescription>
               {error || permissionMessage || 'You do not have permission to view this ticket'}
