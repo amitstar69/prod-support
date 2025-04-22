@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { useNavigate } from 'react-router-dom';
@@ -54,9 +53,28 @@ const TicketList: React.FC<TicketListProps> = ({
   };
 
   const handleViewDetails = (ticketId: string) => {
+    console.log('TicketList handleViewDetails:', {
+      ticketId,
+      isAuthenticated, 
+      isApplication,
+      currentPath: window.location.pathname
+    });
+
     if (isAuthenticated) {
-      // For approved tickets viewed on my applications page, navigate to developer ticket detail
-      navigate(isApplication ? `/developer/tickets/${ticketId}` : `/developer/tickets/${ticketId}`);
+      // Log the navigation logic
+      console.log('Navigation conditions:', {
+        isApplication,
+        developerTicketPath: `/developer/tickets/${ticketId}`,
+        clientTicketPath: `/client/tickets/${ticketId}`,
+        clientApplicationPath: `/client/applications/${ticketId}`
+      });
+
+      // Decide navigation based on context
+      if (isApplication) {
+        navigate(`/developer/tickets/${ticketId}`);
+      } else {
+        navigate(`/client/tickets/${ticketId}`);
+      }
     } else {
       setPendingAction({ type: 'view', ticketId });
       setShowAuthDialog(true);
