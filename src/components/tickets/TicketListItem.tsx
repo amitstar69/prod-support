@@ -7,6 +7,7 @@ import { Clock, CheckCircle2, AlertCircle, BarChart3, Calendar, Bell, Star, File
 import { Progress } from '../ui/progress';
 import { STATUSES } from '../../utils/helpRequestStatusUtils';
 import { useNavigate } from 'react-router-dom';  // Add this import
+import TicketStatus from './TicketStatus';
 
 interface TicketListItemProps {
   ticket: HelpRequest;
@@ -95,20 +96,7 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-1">
             <h3 className="font-medium truncate">{ticket.title}</h3>
-            <Badge 
-              variant="outline"
-              className={`
-                ${ticket.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
-                 ticket.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
-                 ticket.status === 'scheduled' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
-                 'bg-yellow-50 text-yellow-800 border-yellow-200'}
-              `}
-            >
-              <span className="flex items-center gap-1">
-                {getStatusIcon(ticket.status || 'pending')}
-                {ticket.status}
-              </span>
-            </Badge>
+            <TicketStatus status={ticket.status || 'pending'} />
           </div>
           
           <p className="text-sm text-muted-foreground mb-2">{ticket.description}</p>
@@ -154,17 +142,7 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
           <CardTitle className="text-base truncate flex items-center">
             {ticket.title}
           </CardTitle>
-          <Badge 
-            variant="outline"
-            className={`
-              ${ticket.status === 'in-progress' ? 'bg-green-50 text-green-800 border-green-200' : 
-               ticket.status === 'matching' ? 'bg-blue-50 text-blue-800 border-blue-200' :
-               ticket.status === 'scheduled' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
-               'bg-yellow-50 text-yellow-800 border-yellow-200'}
-            `}
-          >
-            {ticket.status}
-          </Badge>
+          <TicketStatus status={ticket.status || 'pending'} />
         </div>
         <CardDescription className="line-clamp-2 text-xs">{ticket.description}</CardDescription>
       </CardHeader>
