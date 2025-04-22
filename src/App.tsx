@@ -140,111 +140,66 @@ function App() {
                 <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/developer-profiles/:id" element={<DeveloperProfilePage />} />
                 
-                {/* SEO-friendly developer routes */}
-                <Route path="/developer" element={
-                  <ProtectedRoute requiredUserType="developer">
-                    <DeveloperWelcomePage />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/developer/dashboard" element={
-                  <ProtectedRoute requiredUserType="developer">
-                    <DeveloperDashboard />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/developer/tickets" element={
-                  <ProtectedRoute requiredUserType="developer">
-                    <DeveloperDashboard />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/developer/profile" element={
-                  <ProtectedRoute requiredUserType="developer">
-                    <Profile />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/developer/applications" element={
-                  <ProtectedRoute requiredUserType="developer">
-                    <MyApplicationsPage />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/developer/tickets/:ticketId" element={
-                  <ProtectedRoute requiredUserType="developer">
+                {/* Unified ticket detail route for both roles */}
+                <Route path="/tickets/:ticketId" element={
+                  <ProtectedRoute>
                     <TicketDetailPage />
                   </ProtectedRoute>
                 } />
-                
-                <Route path="/developer/onboarding" element={
+
+                {/* Developer routes */}
+                <Route path="/developer/*" element={
                   <ProtectedRoute requiredUserType="developer">
-                    <DeveloperOnboarding />
+                    <Route path="welcome" element={<DeveloperWelcomePage />} />
+                
+                    <Route path="dashboard" element={<DeveloperDashboard />} />
+                
+                    <Route path="tickets" element={<DeveloperDashboard />} />
+                
+                    <Route path="profile" element={<Profile />} />
+                
+                    <Route path="applications" element={<MyApplicationsPage />} />
+                
+                    <Route path="onboarding" element={<DeveloperOnboarding />} />
+                
+                    <Route path="sessions" element={<SessionHistory />} />
+                    
+                    {/* Redirect legacy developer ticket route to unified route */}
+                    <Route 
+                      path="tickets/:ticketId" 
+                      element={<Navigate to={location => `/tickets/${location.pathname.split('/').pop()}`} replace />} 
+                    />
                   </ProtectedRoute>
                 } />
-                
-                <Route path="/developer/sessions" element={
-                  <ProtectedRoute requiredUserType="developer">
-                    <SessionHistory />
-                  </ProtectedRoute>
-                } />
-                
-                {/* SEO-friendly client routes */}
-                <Route path="/client" element={
+
+                {/* Client routes */}
+                <Route path="/client/*" element={
                   <ProtectedRoute requiredUserType="client">
-                    <ClientLanding />
+                    <Route path="landing" element={<ClientLanding />} />
+                
+                    <Route path="dashboard" element={<ClientDashboard />} />
+                
+                    <Route path="tickets" element={<ClientDashboard />} />
+                
+                    {/* New client routes for application and ticket detail views */}
+                    <Route path="applications/:applicationId" element={<ApplicationDetailPage />} />
+                
+                    <Route path="profile" element={<ClientProfile />} />
+                
+                    <Route path="onboarding" element={<ClientOnboarding />} />
+                
+                    <Route path="sessions" element={<SessionHistory />} />
+                
+                    <Route path="help" element={<GetHelpPage />} />
+                    
+                    {/* Redirect legacy client ticket route to unified route */}
+                    <Route 
+                      path="tickets/:ticketId" 
+                      element={<Navigate to={location => `/tickets/${location.pathname.split('/').pop()}`} replace />} 
+                    />
                   </ProtectedRoute>
                 } />
-                
-                <Route path="/client/dashboard" element={
-                  <ProtectedRoute requiredUserType="client">
-                    <ClientDashboard />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/client/tickets" element={
-                  <ProtectedRoute requiredUserType="client">
-                    <ClientDashboard />
-                  </ProtectedRoute>
-                } />
-                
-                {/* New client routes for application and ticket detail views */}
-                <Route path="/client/applications/:applicationId" element={
-                  <ProtectedRoute requiredUserType="client">
-                    <ApplicationDetailPage />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/client/tickets/:ticketId" element={
-                  <ProtectedRoute requiredUserType="client">
-                    <TicketDetailPage />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/client/profile" element={
-                  <ProtectedRoute requiredUserType="client">
-                    <ClientProfile />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/client/onboarding" element={
-                  <ProtectedRoute requiredUserType="client">
-                    <ClientOnboarding />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/client/sessions" element={
-                  <ProtectedRoute requiredUserType="client">
-                    <SessionHistory />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/client/help" element={
-                  <ProtectedRoute requiredUserType="client">
-                    <GetHelpPage />
-                  </ProtectedRoute>
-                } />
-                
+
                 {/* Routes accessible by both user types */}
                 <Route path="/get-help/*" element={
                   <ProtectedRoute>
