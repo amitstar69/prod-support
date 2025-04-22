@@ -14,7 +14,10 @@ export const useStatusUpdate = (
   const { userType } = useAuth();
 
   const handleUpdateStatus = async (newStatusId: string) => {
-    if (newStatusId === currentStatus) {
+    // Normalize statuses for comparison (handle both hyphen and underscore formats)
+    const normalizeStatus = (status: string) => status.replace(/[-_]/g, '_');
+    
+    if (normalizeStatus(newStatusId) === normalizeStatus(currentStatus)) {
       toast.info(`Status is already set to ${newStatusId}`);
       return;
     }

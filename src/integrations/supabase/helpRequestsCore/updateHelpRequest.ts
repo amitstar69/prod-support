@@ -1,4 +1,3 @@
-
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
@@ -203,6 +202,19 @@ export const updateHelpRequest = async (
         }
       }
 
+      // CRITICAL FIX: Make sure we're using the same status format as what's already in the database
+      // If the database uses hyphenated format "in-progress" we need to maintain that format
+      if (updates.status) {
+        // Check if the current status in DB uses hyphens
+        if (currentRequest.status.includes('-')) {
+          // Convert underscores to hyphens for consistency with DB format
+          updates.status = updates.status.replace(/_/g, '-');
+        } else {
+          // Convert hyphens to underscores if DB uses that format
+          updates.status = updates.status.replace(/-/g, '_');
+        }
+      }
+
       // Perform the update
       console.log('[updateHelpRequest] Sending update to Supabase:', updates);
       const { data, error } = await supabase
@@ -213,7 +225,7 @@ export const updateHelpRequest = async (
         })
         .eq('id', requestId)
         .select('*')  
-        .maybeSingle(); // Changed back from single() to maybeSingle() to handle no results gracefully
+        .maybeSingle();
         
       if (error) {
         console.error('[updateHelpRequest] Error updating help request in Supabase:', error);

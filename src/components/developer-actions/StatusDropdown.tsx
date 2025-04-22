@@ -30,8 +30,12 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
 }) => {
   const { statuses, isLoading, error } = useApplicationStatuses(userType);
   
+  // Normalize the default status ID to handle hyphen/underscore inconsistencies
+  const normalizedDefaultStatusId = defaultStatusId?.replace(/-/g, '_');
+  
   console.log("StatusDropdown rendering with:", { 
     defaultStatusId, 
+    normalizedDefaultStatusId,
     statusesCount: statuses.length,
     userType 
   });
@@ -61,9 +65,14 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
     );
   }
 
+  // Find the normalized status in our list or use the original defaultStatusId
+  const formattedDefaultStatus = statuses.find(
+    status => status.id.replace(/-/g, '_') === normalizedDefaultStatusId
+  )?.id || defaultStatusId;
+
   return (
     <Select
-      defaultValue={defaultStatusId}
+      defaultValue={formattedDefaultStatus}
       onValueChange={onStatusChange}
       disabled={disabled}
     >
