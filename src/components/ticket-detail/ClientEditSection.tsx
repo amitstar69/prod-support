@@ -1,0 +1,37 @@
+
+import React from 'react';
+import { HelpRequest } from '../../types/helpRequest';
+
+const ClientEditSection = ({
+  visible,
+  status,
+  ticket,
+  onTicketUpdated,
+  canSubmitQA,
+  onSubmitQA,
+  formatDate
+}: {
+  visible: boolean;
+  status: string;
+  ticket: HelpRequest;
+  onTicketUpdated?: (ticket: HelpRequest) => void;
+  canSubmitQA?: boolean;
+  onSubmitQA?: () => void;
+  formatDate: (date?: string) => string;
+}) => {
+  if (!visible) return null;
+  
+  const TicketSidebar = require("../../components/developer-ticket-detail/TicketSidebar").default;
+  
+  return (
+    <TicketSidebar
+      ticket={ticket}
+      canSubmitQA={canSubmitQA || false}
+      onSubmitQA={onSubmitQA || (() => {})}
+      formatDate={formatDate}
+      onTicketUpdated={onTicketUpdated}
+    />
+  );
+};
+
+export default ClientEditSection;
