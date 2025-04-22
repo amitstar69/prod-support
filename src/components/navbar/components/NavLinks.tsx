@@ -1,9 +1,14 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useAuth } from '../../contexts/auth';
+import { useAuth } from '../../../contexts/auth';
 
-const NavLinks: React.FC = () => {
+interface NavLinksProps {
+  isMobile?: boolean;
+  onLinkClick?: () => void;
+}
+
+const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
   const { isAuthenticated, userType } = useAuth();
 
   // Developer-specific links
@@ -19,6 +24,7 @@ const NavLinks: React.FC = () => {
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
           }
+          onClick={onLinkClick}
         >
           My Dashboard
         </NavLink>
@@ -29,6 +35,7 @@ const NavLinks: React.FC = () => {
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
           }
+          onClick={onLinkClick}
         >
           Gigs
         </NavLink>
@@ -39,6 +46,7 @@ const NavLinks: React.FC = () => {
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
           }
+          onClick={onLinkClick}
         >
           My Applications
         </NavLink>
@@ -49,6 +57,7 @@ const NavLinks: React.FC = () => {
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
           }
+          onClick={onLinkClick}
         >
           Profile
         </NavLink>
@@ -69,6 +78,7 @@ const NavLinks: React.FC = () => {
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
           }
+          onClick={onLinkClick}
         >
           Dashboard
         </NavLink>
@@ -79,6 +89,7 @@ const NavLinks: React.FC = () => {
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
           }
+          onClick={onLinkClick}
         >
           My Tickets
         </NavLink>
@@ -89,6 +100,7 @@ const NavLinks: React.FC = () => {
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
           }
+          onClick={onLinkClick}
         >
           Profile
         </NavLink>
@@ -99,6 +111,7 @@ const NavLinks: React.FC = () => {
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
           }
+          onClick={onLinkClick}
         >
           Get Help
         </NavLink>
@@ -109,6 +122,7 @@ const NavLinks: React.FC = () => {
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
           }
+          onClick={onLinkClick}
         >
           Session History
         </NavLink>
@@ -126,6 +140,7 @@ const NavLinks: React.FC = () => {
             : 'text-muted-foreground hover:text-foreground'
         }
         end
+        onClick={onLinkClick}
       >
         Home
       </NavLink>
@@ -142,6 +157,7 @@ const NavLinks: React.FC = () => {
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
           }
+          onClick={onLinkClick}
         >
           Find Developers
         </NavLink>

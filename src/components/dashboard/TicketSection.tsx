@@ -12,6 +12,7 @@ interface TicketSectionProps {
   isAuthenticated: boolean;
   viewMode: 'grid' | 'list';
   onOpenChat?: (helpRequestId: string, clientId: string, clientName?: string) => void;
+  onRefresh?: () => void;
 }
 
 const TicketSection: React.FC<TicketSectionProps> = ({
@@ -22,7 +23,8 @@ const TicketSection: React.FC<TicketSectionProps> = ({
   userId,
   isAuthenticated,
   viewMode,
-  onOpenChat
+  onOpenChat,
+  onRefresh
 }) => {
   if (tickets.length === 0) {
     return (
@@ -43,6 +45,7 @@ const TicketSection: React.FC<TicketSectionProps> = ({
         userId={userId}
         isAuthenticated={isAuthenticated}
         onOpenChat={onOpenChat}
+        onRefresh={onRefresh}
       />
     </section>
   );

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ThemeToggle } from '../ThemeToggle';
-import { NavLinks } from './components/NavLinks';
+import NavLinks from './components/NavLinks';
 import { AuthButtons } from './components/AuthButtons';
 
 interface MobileNavProps {
