@@ -32,6 +32,7 @@ import VerificationCanceledPage from './pages/VerificationCanceledPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';
 import TicketDetailPage from './pages/TicketDetailPage';
 import TicketStatusTest from './pages/TicketStatusTest';
+import ClientTicketsPage from './pages/ClientTicketsPage';
 
 // Import contexts
 import { AuthProvider, useAuth } from './contexts/auth';
@@ -202,14 +203,13 @@ function App() {
                     <ClientDashboard />
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/client/tickets" element={
                   <ProtectedRoute requiredUserType="client">
-                    <ClientDashboard />
+                    <ClientTicketsPage />
                   </ProtectedRoute>
                 } />
-                
-                {/* New client routes for application and ticket detail views */}
+
                 <Route path="/client/applications/:applicationId" element={
                   <ProtectedRoute requiredUserType="client">
                     <ApplicationDetailPage />
