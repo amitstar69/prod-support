@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -14,6 +13,7 @@ import TicketDetails from '../components/tickets/TicketDetails';
 import TicketComments from '../components/tickets/TicketComments';
 import { useAuth } from '../contexts/auth';
 import HelpRequestHistoryDialog from '../components/help/HelpRequestHistoryDialog';
+import ClientActionsPanel from "../components/tickets/ClientActionsPanel";
 
 const TicketDetailPage = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -157,7 +157,6 @@ const TicketDetailPage = () => {
             {/* Details */}
             <TicketDetails ticket={{
               ...ticket,
-              // Normalize for backward/forward compatibility
               technical_area: ticket.technical_area || [],
             }} userRole={userRole} />
 
@@ -177,6 +176,14 @@ const TicketDetailPage = () => {
               onSubmitQA={() => {}} // wire up as needed
               formatDate={(dateStr?: string) => (dateStr ? new Date(dateStr).toLocaleString() : 'N/A')}
             />
+            {/* Client Actions Panel */}
+            {userRole === "client" && (
+              <ClientActionsPanel
+                ticket={ticket}
+                userId={userId || ""}
+                onStatusUpdated={() => fetchTicket()}
+              />
+            )}
           </div>
         </div>
       </div>
