@@ -19,6 +19,13 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({ isMobile = false, onAc
     onAction?.();
   };
   
+  const getDashboardPath = () => {
+    if (userType === 'client') {
+      return '/client/dashboard';
+    }
+    return '/developer/dashboard';
+  };
+  
   if (isAuthenticated) {
     return (
       <div className={`flex items-center ${isMobile ? 'flex-col space-y-2' : 'space-x-2'}`}>
@@ -34,8 +41,8 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({ isMobile = false, onAc
           asChild
           onClick={onAction}
         >
-          <Link to={homePath}>
-            {userType === 'developer' ? 'My Dashboard' : 'My Account'}
+          <Link to={getDashboardPath()}>
+            {userType === 'developer' ? 'My Dashboard' : 'My Dashboard'}
           </Link>
         </Button>
       </div>

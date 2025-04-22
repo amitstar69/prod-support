@@ -1,86 +1,115 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../../contexts/auth';
+import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../contexts/auth';
 
-interface NavLinkProps {
-  to: string;
-  onClick?: () => void;
-  children: React.ReactNode;
-  isMobile?: boolean;
-  exact?: boolean;
-}
-
-const NavLink = ({ to, onClick, children, isMobile = false, exact = false }: NavLinkProps) => {
-  const location = useLocation();
-  // If exact is true, we check for exact match, otherwise check if path starts with the link
-  const isActive = exact 
-    ? location.pathname === to
-    : location.pathname === to || (to !== '/' && location.pathname.startsWith(`${to}/`));
-  
-  const baseClasses = isMobile
-    ? 'block px-3 py-2 rounded-md text-base font-medium'
-    : 'px-3 py-2 rounded-md text-sm font-medium';
-    
-  const activeClasses = isMobile
-    ? 'bg-primary/10 text-primary'
-    : 'text-primary';
-    
-  const inactiveClasses = 'hover:text-primary transition-colors';
-  
-  return (
-    <Link
-      to={to}
-      className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
-      onClick={onClick}
-    >
-      {children}
-    </Link>
-  );
-};
-
-export const NavLinks = ({ isMobile = false, onLinkClick }: { isMobile?: boolean, onLinkClick?: () => void }) => {
+const NavLinks: React.FC = () => {
   const { isAuthenticated, userType } = useAuth();
 
+  // Developer-specific links
   const renderDeveloperLinks = () => {
     if (!isAuthenticated || userType !== 'developer') return null;
     
     return (
       <>
-        <NavLink to="/developer" onClick={onLinkClick} isMobile={isMobile} exact>
-          Dashboard
+        <NavLink
+          to="/developer/dashboard"
+          className={({ isActive }) =>
+            isActive
+              ? 'text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          }
+        >
+          My Dashboard
         </NavLink>
-        <NavLink to="/developer/tickets" onClick={onLinkClick} isMobile={isMobile}>
+        <NavLink
+          to="/developer/tickets"
+          className={({ isActive }) =>
+            isActive
+              ? 'text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          }
+        >
           Gigs
         </NavLink>
-        <NavLink to="/developer/applications" onClick={onLinkClick} isMobile={isMobile}>
-          Applications
+        <NavLink
+          to="/developer/applications"
+          className={({ isActive }) =>
+            isActive
+              ? 'text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          }
+        >
+          My Applications
         </NavLink>
-        <NavLink to="/developer/profile" onClick={onLinkClick} isMobile={isMobile}>
+        <NavLink
+          to="/developer/profile"
+          className={({ isActive }) =>
+            isActive
+              ? 'text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          }
+        >
           Profile
         </NavLink>
       </>
     );
   };
-
+  
+  // Client-specific links
   const renderClientLinks = () => {
     if (!isAuthenticated || userType !== 'client') return null;
     
     return (
       <>
-        <NavLink to="/client" onClick={onLinkClick} isMobile={isMobile} exact>
+        <NavLink
+          to="/client/dashboard"
+          className={({ isActive }) =>
+            isActive
+              ? 'text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          }
+        >
           Dashboard
         </NavLink>
-        <NavLink to="/client/tickets" onClick={onLinkClick} isMobile={isMobile}>
-          Tickets
+        <NavLink
+          to="/client/tickets"
+          className={({ isActive }) =>
+            isActive
+              ? 'text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          }
+        >
+          My Tickets
         </NavLink>
-        <NavLink to="/client/profile" onClick={onLinkClick} isMobile={isMobile}>
+        <NavLink
+          to="/client/profile"
+          className={({ isActive }) =>
+            isActive
+              ? 'text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          }
+        >
           Profile
         </NavLink>
-        <NavLink to="/client/help" onClick={onLinkClick} isMobile={isMobile}>
+        <NavLink
+          to="/get-help"
+          className={({ isActive }) =>
+            isActive
+              ? 'text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          }
+        >
           Get Help
         </NavLink>
-        <NavLink to="/client/sessions" onClick={onLinkClick} isMobile={isMobile}>
+        <NavLink
+          to="/client/sessions"
+          className={({ isActive }) =>
+            isActive
+              ? 'text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          }
+        >
           Session History
         </NavLink>
       </>
@@ -88,19 +117,37 @@ export const NavLinks = ({ isMobile = false, onLinkClick }: { isMobile?: boolean
   };
 
   return (
-    <div className={isMobile ? "space-y-1" : "flex items-center space-x-2"}>
-      <NavLink to="/" onClick={onLinkClick} isMobile={isMobile} exact>
+    <div className="flex space-x-6">
+      <NavLink
+        to="/"
+        className={({ isActive }) =>
+          isActive
+            ? 'text-primary font-medium'
+            : 'text-muted-foreground hover:text-foreground'
+        }
+        end
+      >
         Home
       </NavLink>
-      
+
+      {renderDeveloperLinks()}
+      {renderClientLinks()}
+
+      {/* Only show Find Developers for clients or non-authenticated users */}
       {(!isAuthenticated || userType === 'client') && (
-        <NavLink to="/search" onClick={onLinkClick} isMobile={isMobile}>
+        <NavLink
+          to="/search"
+          className={({ isActive }) =>
+            isActive
+              ? 'text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          }
+        >
           Find Developers
         </NavLink>
       )}
-      
-      {renderDeveloperLinks()}
-      {renderClientLinks()}
     </div>
   );
 };
+
+export default NavLinks;
