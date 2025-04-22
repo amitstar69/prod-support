@@ -21,6 +21,7 @@ const TicketSidebar: React.FC<TicketSidebarProps> = ({
 }) => {
   return (
     <>
+      {/* Project Details Card */}
       <Card>
         <CardHeader>
           <CardTitle>Project Details</CardTitle>
@@ -78,6 +79,7 @@ const TicketSidebar: React.FC<TicketSidebarProps> = ({
           </div>
         </CardContent>
       </Card>
+      {/* QA Section, only visible for developer in progress */}
       {canSubmitQA && (
         <Card className="mt-6">
           <CardHeader>
