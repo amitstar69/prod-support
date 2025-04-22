@@ -1,46 +1,39 @@
 
 import React from 'react';
-import { Textarea } from '../../ui/textarea';
 import { Label } from '../../ui/label';
+import { Textarea } from '../../ui/textarea';
 
 interface NotesSectionProps {
   developerQANotes: string;
   clientFeedback: string;
-  onDeveloperNotesChange: (value: string) => void;
-  onClientFeedbackChange: (value: string) => void;
-  readOnly?: boolean;
+  onDeveloperNotesChange: (notes: string) => void;
+  onClientFeedbackChange: (feedback: string) => void;
 }
 
 export const NotesSection: React.FC<NotesSectionProps> = ({
   developerQANotes,
   clientFeedback,
   onDeveloperNotesChange,
-  onClientFeedbackChange,
-  readOnly = false
+  onClientFeedbackChange
 }) => {
   return (
     <div className="space-y-4">
-      <div className="grid gap-2">
-        <Label htmlFor="developerQANotes">Developer QA Notes</Label>
+      <div>
+        <Label>Developer Notes</Label>
         <Textarea
-          id="developerQANotes"
-          placeholder="Add your QA notes here..."
           value={developerQANotes}
           onChange={(e) => onDeveloperNotesChange(e.target.value)}
-          className="resize-none"
-          readOnly={readOnly}
+          placeholder="Add your developer notes here..."
+          className="mt-1"
         />
       </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="clientFeedback">Client Feedback</Label>
+      <div>
+        <Label>Client Feedback</Label>
         <Textarea
-          id="clientFeedback"
-          placeholder="Enter client feedback here..."
           value={clientFeedback}
           onChange={(e) => onClientFeedbackChange(e.target.value)}
-          className="resize-none"
-          readOnly={readOnly}
+          placeholder="Add your feedback here..."
+          className="mt-1"
         />
       </div>
     </div>

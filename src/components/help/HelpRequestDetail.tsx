@@ -3,14 +3,7 @@ import React from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Input } from '../ui/input';
@@ -49,22 +42,13 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
   } = useHelpRequestNotes(ticket);
   
   // Get ticket operations from custom hook
-  const currentTicketId = ticket?.id || ticketId || '';
   const { isSaving, updateStatus, saveNotes } = useHelpRequestActions(
-    currentTicketId, 
+    ticket?.id || ticketId || '', 
     (updatedTicket) => {
       setTicket(updatedTicket);
       onUpdate?.(updatedTicket);
     }
   );
-
-  // Handle saving notes
-  const handleSaveNotes = async () => {
-    await saveNotes({
-      developer_qa_notes: developerQANotes,
-      client_feedback: clientFeedback
-    });
-  };
 
   // Handle error state
   if (error) {
@@ -169,7 +153,10 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
         <Button variant="outline" onClick={() => updateStatus('resolved')}>
           Mark as Resolved
         </Button>
-        <Button onClick={handleSaveNotes} disabled={isSaving}>
+        <Button onClick={() => saveNotes({
+          developer_qa_notes: developerQANotes,
+          client_feedback: clientFeedback
+        })} disabled={isSaving}>
           {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save Notes
         </Button>
