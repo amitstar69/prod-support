@@ -212,8 +212,8 @@ export const updateHelpRequest = async (
           updated_at: now
         })
         .eq('id', requestId)
-        .select('*')  // Changed from select() to select('*') to ensure data is returned
-        .single();    // Changed from maybeSingle() to single() for error handling
+        .select('*')  
+        .maybeSingle(); // Changed back from single() to maybeSingle() to handle no results gracefully
         
       if (error) {
         console.error('[updateHelpRequest] Error updating help request in Supabase:', error);
@@ -222,7 +222,18 @@ export const updateHelpRequest = async (
 
       if (!data) {
         console.error('[updateHelpRequest] No data returned after update');
-        return { success: false, error: 'Help request not found or update failed' };
+        // Additional check if the record still exists
+        const { data: checkExists } = await supabase
+          .from('help_requests')
+          .select('id')
+          .eq('id', requestId)
+          .maybeSingle();
+          
+        if (!checkExists) {
+          return { success: false, error: 'Help request not found' };
+        } else {
+          return { success: false, error: 'Update failed - no changes were made' };
+        }
       }
       
       console.log('[updateHelpRequest] Update successful, data:', data);

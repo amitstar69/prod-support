@@ -36,10 +36,13 @@ export const useStatusUpdate = (
       } else {
         setError(response.error || 'Failed to update status');
         toast.error(response.error || 'Permission denied');
+        console.error('Status update failed:', response.error);
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      setError(errorMessage);
       toast.error('An error occurred while updating the status');
+      console.error('Exception in status update:', error);
     } finally {
       setIsUpdating(false);
     }
