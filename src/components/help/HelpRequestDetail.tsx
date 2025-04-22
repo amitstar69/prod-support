@@ -20,17 +20,20 @@ import { useHelpRequestActions } from '../../hooks/help-request/useHelpRequestAc
 import { useHelpRequestData } from '../../hooks/help-request/useHelpRequestData';
 import { useHelpRequestNotes } from '../../hooks/help-request/useHelpRequestNotes';
 import { Loader2 } from 'lucide-react';
+import { UserType } from '../../contexts/auth/types';
 
 interface HelpRequestDetailProps {
   ticket?: HelpRequest;
   ticketId?: string;
   onUpdate?: (updatedTicket: HelpRequest) => void;
+  userType?: UserType | null;
 }
 
 const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({ 
   ticket: initialTicket,
   ticketId,
-  onUpdate
+  onUpdate,
+  userType
 }) => {
   // Get ticket data using custom hook
   const { 

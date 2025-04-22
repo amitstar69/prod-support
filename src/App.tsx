@@ -94,7 +94,6 @@ function App() {
     return false;
   });
   
-  // App loading timer - detect slow app initialization
   useEffect(() => {
     console.time('app-mount');
     
@@ -124,10 +123,8 @@ function App() {
           <BrowserRouter>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
-                {/* Public marketing page for all users */}
                 <Route path="/" element={<Index />} />
                 
-                {/* Authentication routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -135,19 +132,16 @@ function App() {
                 <Route path="/verification-success" element={<VerificationSuccessPage />} />
                 <Route path="/verification-canceled" element={<VerificationCanceledPage />} />
                 
-                {/* Public search and profile routes */}
                 <Route path="/search" element={<Search />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/developer-profiles/:id" element={<DeveloperProfilePage />} />
                 
-                {/* Unified ticket detail route for both roles */}
                 <Route path="/tickets/:ticketId" element={
                   <ProtectedRoute>
                     <TicketDetailPage />
                   </ProtectedRoute>
                 } />
 
-                {/* Developer routes */}
                 <Route path="/developer/*" element={
                   <ProtectedRoute requiredUserType="developer">
                     <Route path="welcome" element={<DeveloperWelcomePage />} />
@@ -164,15 +158,13 @@ function App() {
                 
                     <Route path="sessions" element={<SessionHistory />} />
                     
-                    {/* Redirect legacy developer ticket route to unified route */}
                     <Route 
                       path="tickets/:ticketId" 
-                      element={<Navigate to={location => `/tickets/${location.pathname.split('/').pop()}`} replace />} 
+                      element={<Navigate to={({ pathname }) => `/tickets/${pathname.split('/').pop()}`} replace />} 
                     />
                   </ProtectedRoute>
                 } />
 
-                {/* Client routes */}
                 <Route path="/client/*" element={
                   <ProtectedRoute requiredUserType="client">
                     <Route path="landing" element={<ClientLanding />} />
@@ -181,7 +173,6 @@ function App() {
                 
                     <Route path="tickets" element={<ClientDashboard />} />
                 
-                    {/* New client routes for application and ticket detail views */}
                     <Route path="applications/:applicationId" element={<ApplicationDetailPage />} />
                 
                     <Route path="profile" element={<ClientProfile />} />
@@ -192,15 +183,13 @@ function App() {
                 
                     <Route path="help" element={<GetHelpPage />} />
                     
-                    {/* Redirect legacy client ticket route to unified route */}
                     <Route 
                       path="tickets/:ticketId" 
-                      element={<Navigate to={location => `/tickets/${location.pathname.split('/').pop()}`} replace />} 
+                      element={<Navigate to={({ pathname }) => `/tickets/${pathname.split('/').pop()}`} replace />} 
                     />
                   </ProtectedRoute>
                 } />
 
-                {/* Routes accessible by both user types */}
                 <Route path="/get-help/*" element={
                   <ProtectedRoute>
                     <GetHelpPage />
@@ -213,22 +202,18 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                {/* Account registration */}
                 <Route path="/developer-registration" element={<DeveloperRegistration />} />
                 
-                {/* Automatic routing based on user type */}
                 <Route path="/dashboard" element={<UserTypeRedirect />} />
                 <Route path="/home" element={<UserTypeRedirect />} />
                 <Route path="/account" element={<UserAccountRedirect />} />
                 
-                {/* Legacy route redirects for backward compatibility */}
                 <Route path="/developer-dashboard" element={<Navigate to="/developer/dashboard" replace />} />
                 <Route path="/client-dashboard" element={<Navigate to="/client/dashboard" replace />} />
                 <Route path="/ticket-dashboard" element={<Navigate to="/client/tickets" replace />} />
                 <Route path="/onboarding/developer" element={<Navigate to="/developer/onboarding" replace />} />
                 <Route path="/onboarding/client" element={<Navigate to="/client/onboarding" replace />} />
                 
-                {/* 404 route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <Toaster />
@@ -240,7 +225,6 @@ function App() {
   );
 }
 
-// Component to handle redirection to the user's home page
 const UserTypeRedirect = () => {
   const { userType, isAuthenticated } = useAuth();
   
@@ -252,7 +236,6 @@ const UserTypeRedirect = () => {
   return <Navigate to={homePath} replace />;
 };
 
-// Component to handle redirection to the user's profile page
 const UserAccountRedirect = () => {
   const { userType, isAuthenticated } = useAuth();
   
