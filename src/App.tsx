@@ -1,3 +1,4 @@
+
 import React, { useEffect, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
@@ -151,7 +152,7 @@ function App() {
                       <Route path="applications" element={<MyApplicationsPage />} />
                       <Route path="onboarding" element={<DeveloperOnboarding />} />
                       <Route path="sessions" element={<SessionHistory />} />
-                      <Route path="tickets/:ticketId" element={<Navigate to={(params) => `/tickets/${params.pathname.split('/').pop()}`} replace />} />
+                      <Route path="tickets/:ticketId" element={<Navigate to="/tickets/:ticketId" replace />} />
                     </Routes>
                   </ProtectedRoute>
                 } />
@@ -167,7 +168,7 @@ function App() {
                       <Route path="onboarding" element={<ClientOnboarding />} />
                       <Route path="sessions" element={<SessionHistory />} />
                       <Route path="help" element={<GetHelpPage />} />
-                      <Route path="tickets/:ticketId" element={<Navigate to={(params) => `/tickets/${params.pathname.split('/').pop()}`} replace />} />
+                      <Route path="tickets/:ticketId" element={<Navigate to="/tickets/:ticketId" replace />} />
                     </Routes>
                   </ProtectedRoute>
                 } />
