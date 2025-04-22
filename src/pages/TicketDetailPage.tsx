@@ -14,6 +14,12 @@ const TicketDetailPage = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
   const { userType } = useAuth();
   
+  console.log('TicketDetailPage rendering with:', {
+    ticketId,
+    userType,
+    path: window.location.pathname
+  });
+  
   const {
     ticket,
     isLoading,

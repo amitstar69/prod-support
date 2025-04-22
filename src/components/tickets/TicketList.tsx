@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { useNavigate } from 'react-router-dom';
@@ -61,16 +62,20 @@ const TicketList: React.FC<TicketListProps> = ({
     });
 
     if (isAuthenticated) {
-      // Log the navigation logic
-      console.log('Navigation conditions:', {
+      // Determine the current user context (page path)
+      const currentPath = window.location.pathname;
+      const isInDeveloperContext = currentPath.includes('/developer');
+      const isInClientContext = currentPath.includes('/client');
+      
+      console.log('Navigation decision factors:', {
         isApplication,
-        developerTicketPath: `/developer/tickets/${ticketId}`,
-        clientTicketPath: `/client/tickets/${ticketId}`,
-        clientApplicationPath: `/client/applications/${ticketId}`
+        isInDeveloperContext,
+        isInClientContext,
+        ticketId
       });
-
-      // Decide navigation based on context
-      if (isApplication) {
+      
+      // Route based on user context rather than application status
+      if (isInDeveloperContext) {
         navigate(`/developer/tickets/${ticketId}`);
       } else {
         navigate(`/client/tickets/${ticketId}`);

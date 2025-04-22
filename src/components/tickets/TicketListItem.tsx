@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Button } from '../ui/button';
@@ -6,7 +7,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Clock, CheckCircle2, AlertCircle, BarChart3, Calendar, Bell, Star, FileEdit, User, ExternalLink } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { STATUSES } from '../../utils/helpRequestStatusUtils';
-import { useNavigate } from 'react-router-dom';  // Add this import
 
 interface TicketListItemProps {
   ticket: HelpRequest;
@@ -50,22 +50,13 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
   onChatClick,
   viewMode = 'grid'
 }) => {
-  const navigate = useNavigate();  // Add this line for direct navigation logging
-
-  // Add logging to view details function
+  // Handle view details with logging
   const handleViewDetails = (ticketId: string) => {
     console.log('View Details clicked:', {
       ticketId,
       isApplication,
-      ticket,
-      currentPath: window.location.pathname
-    });
-
-    // Log potential navigation paths
-    console.log('Potential navigation paths:', {
-      developerTicketPath: `/developer/tickets/${ticketId}`,
-      clientTicketPath: `/client/tickets/${ticketId}`,
-      clientApplicationPath: `/client/applications/${ticket.id}`
+      currentPath: window.location.pathname,
+      userContext: window.location.pathname.includes('/developer') ? 'developer' : 'client'
     });
 
     onViewDetails(ticketId);

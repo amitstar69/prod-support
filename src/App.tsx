@@ -174,7 +174,7 @@ function App() {
                 
                 <Route path="/developer/tickets/:ticketId" element={
                   <ProtectedRoute requiredUserType="developer">
-                    <DeveloperTicketDetail />
+                    <TicketDetailPage />
                   </ProtectedRoute>
                 } />
                 
@@ -209,7 +209,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                {/* New client routes for application and ticket detail views */}
+                {/* Client routes for application and ticket detail views */}
                 <Route path="/client/applications/:applicationId" element={
                   <ProtectedRoute requiredUserType="client">
                     <ApplicationDetailPage />
