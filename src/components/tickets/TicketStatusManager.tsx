@@ -1,6 +1,6 @@
 
 import React, { useCallback, useMemo, useState } from "react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Button } from "../ui/button";
 import {
   Select,
@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { formatStatusLabel, getAllowedStatusTransitions } from "../../utils/ticketStatusUtils";
+import { getAllowedStatusTransitions } from "../../utils/ticketStatusUtils";
 import { getStatusLabel } from "../../utils/helpRequestStatusUtils";
 import type { HelpRequest } from "../../types/helpRequest";
 
@@ -100,11 +100,10 @@ const TicketStatusManager: React.FC<Props> = ({
               disabled={
                 selectedStatus === ticket.status || updatingStatus || !selectedStatus
               }
-              isLoading={updatingStatus}
               className="ml-1"
               type="button"
             >
-              Update
+              {updatingStatus ? "Updating..." : "Update"}
             </Button>
           </div>
         </div>
@@ -114,14 +113,3 @@ const TicketStatusManager: React.FC<Props> = ({
 };
 
 export default TicketStatusManager;
-
-/**
- * Utility for formatting status label for fallback, if you want to display label more readably.
- * Not used if getStatusLabel already imported.
- */
-export function formatStatusLabel(status?: string): string {
-  if (!status) return "";
-  return status
-    .replace(/[_-]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
