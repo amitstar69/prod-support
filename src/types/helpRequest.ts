@@ -32,6 +32,26 @@ export interface HelpRequest {
   developer_id?: string;
 }
 
+export interface TicketComment {
+  id: string;
+  ticket_id: string;
+  user_id: string;
+  content: string;
+  is_internal: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TicketHistoryEntry {
+  id: string;
+  ticket_id: string;
+  user_id: string;
+  action_type: string;
+  previous_value: string | null;
+  new_value: string | null;
+  created_at: string;
+}
+
 export interface HelpRequestMatch {
   id?: string;
   request_id: string;
