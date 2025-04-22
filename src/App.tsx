@@ -1,4 +1,3 @@
-
 import React, { useEffect, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
@@ -26,7 +25,6 @@ import ClientDashboard from './pages/ClientDashboard';
 import ClientLanding from './pages/ClientLanding';
 import DeveloperRegistration from './pages/DeveloperRegistration';
 import SessionHistory from './pages/SessionHistory';
-import DeveloperTicketDetail from './pages/DeveloperTicketDetail';
 import MyApplicationsPage from './pages/MyApplicationsPage';
 import VerificationSuccessPage from './pages/VerificationSuccessPage';
 import VerificationCanceledPage from './pages/VerificationCanceledPage';
@@ -176,7 +174,7 @@ function App() {
                 
                 <Route path="/developer/tickets/:ticketId" element={
                   <ProtectedRoute requiredUserType="developer">
-                    <DeveloperTicketDetail />
+                    <TicketDetailPage />
                   </ProtectedRoute>
                 } />
                 
@@ -267,6 +265,13 @@ function App() {
                 <Route path="/dashboard" element={<UserTypeRedirect />} />
                 <Route path="/home" element={<UserTypeRedirect />} />
                 <Route path="/account" element={<UserAccountRedirect />} />
+                
+                {/* New unified ticket route */}
+                <Route path="/tickets/:ticketId" element={
+                  <ProtectedRoute>
+                    <TicketDetailPage />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Legacy route redirects for backward compatibility */}
                 <Route path="/developer-dashboard" element={<Navigate to="/developer/dashboard" replace />} />
