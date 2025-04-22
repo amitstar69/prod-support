@@ -116,7 +116,7 @@ const TicketSidebar: React.FC<TicketSidebarProps> = ({
       await supabase.from("help_request_history").insert([
         {
           help_request_id: ticket.id,
-          change_type: "field_edit",
+          change_type: 'field_edit',
           changed_by: userId,
           change_details: changedFields,
         },
@@ -125,7 +125,8 @@ const TicketSidebar: React.FC<TicketSidebarProps> = ({
       toast.success("Ticket updated!");
       setEditMode(false);
       if (onTicketUpdated) {
-        onTicketUpdated(result.data);
+        // Fix: Cast the result.data to HelpRequest type to ensure it has all required properties
+        onTicketUpdated(result.data as HelpRequest);
       }
     } catch (err: any) {
       toast.error(`Failed to update: ${err.message || err}`);
@@ -307,4 +308,3 @@ const TicketSidebar: React.FC<TicketSidebarProps> = ({
 };
 
 export default TicketSidebar;
-
