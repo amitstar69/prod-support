@@ -13,6 +13,7 @@ import { useHelpRequestActions } from '../../hooks/help-request/useHelpRequestAc
 import { useHelpRequestData } from '../../hooks/help-request/useHelpRequestData';
 import { useHelpRequestNotes } from '../../hooks/help-request/useHelpRequestNotes';
 import { Loader2 } from 'lucide-react';
+import { TicketStatus } from '../../utils/ticketStatusUtils';
 
 interface HelpRequestDetailProps {
   ticket?: HelpRequest;
@@ -150,7 +151,7 @@ const HelpRequestDetail: React.FC<HelpRequestDetailProps> = ({
       </CardContent>
 
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={() => updateStatus('resolved')}>
+        <Button variant="outline" onClick={() => updateStatus(TicketStatus.CLOSED)}>
           Mark as Resolved
         </Button>
         <Button onClick={() => saveNotes({
