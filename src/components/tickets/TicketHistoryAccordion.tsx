@@ -73,7 +73,10 @@ const TicketHistoryAccordion: React.FC<TicketHistoryAccordionProps> = ({ helpReq
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <UserCircle className="w-4 h-4 text-muted" />
-                      <span className="text-xs text-gray-500">{item.changed_by ? item.changed_by.slice(0, 8) : "unknown"}</span>
+                      <span className="text-xs text-gray-500">
+                        {/* Replace with a way to show who made the change, if possible */}
+                        {item.changed_at ? item.id.slice(0, 8) : "unknown"}
+                      </span>
                       <span className="text-xs text-gray-400 ml-2">
                         {new Date(item.changed_at).toLocaleString()}
                       </span>
