@@ -28,6 +28,11 @@ const ClientDashboard = () => {
   const { getFilteredTickets } = useTicketFilters(tickets);
   const filteredTickets = getFilteredTickets('client');
 
+  const handleOpenChat = (helpRequestId: string, clientId: string, clientName?: string) => {
+    console.log('Opening chat for request:', helpRequestId, 'with client:', clientId);
+    // Implement chat opening logic here
+  };
+
   return (
     <Layout>
       <DashboardBanner />
@@ -50,6 +55,7 @@ const ClientDashboard = () => {
             userId={userId}
             isAuthenticated={isAuthenticated}
             viewMode="grid"
+            onOpenChat={handleOpenChat}
           />
 
           <TicketSection
@@ -60,6 +66,7 @@ const ClientDashboard = () => {
             userId={userId}
             isAuthenticated={isAuthenticated}
             viewMode="grid"
+            onOpenChat={handleOpenChat}
           />
         </div>
 

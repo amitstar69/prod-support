@@ -25,12 +25,14 @@ export const useDeveloperDashboard = () => {
     handleForceRefresh
   } = useTicketFetching(isAuthenticated, userType);
 
+  const ticketFilters = useTicketFilters(tickets);
   const {
     filters,
     filteredTickets,
+    getFilteredTickets,
     handleFilterChange,
     resetFilters
-  } = useTicketFilters(tickets);
+  } = ticketFilters;
 
   const {
     recommendedTickets,
@@ -128,7 +130,8 @@ export const useDeveloperDashboard = () => {
     fetchTickets,
     resetFilters,
     fetchMyApplications,
-    checkApplicationStatus
+    checkApplicationStatus,
+    getFilteredTickets
   };
 };
 

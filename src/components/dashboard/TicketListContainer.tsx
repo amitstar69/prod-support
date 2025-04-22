@@ -15,6 +15,7 @@ interface TicketListContainerProps {
   isAuthenticated: boolean;
   onRefresh?: () => void;
   isApplication?: boolean;
+  onOpenChat?: (helpRequestId: string, clientId: string, clientName?: string) => void;
 }
 
 const TicketListContainer: React.FC<TicketListContainerProps> = ({ 
