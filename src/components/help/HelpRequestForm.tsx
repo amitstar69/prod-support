@@ -3,6 +3,7 @@ import React from 'react';
 import { useAuth } from '../../contexts/auth';
 import { HelpRequestProvider } from '../../contexts/HelpRequestContext';
 import { Navigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 // Import form components
 import FormContainer from './form/FormContainer';
@@ -23,8 +24,14 @@ const HelpRequestFormContent: React.FC = () => {
 const HelpRequestForm: React.FC = () => {
   const { isAuthenticated, userType } = useAuth();
 
+  // Debug log to track user type
+  console.log('[HelpRequestForm] Current user type:', userType, 'isAuthenticated:', isAuthenticated);
+
   // If user is authenticated as a developer, show permission error or redirect
-  if (isAuthenticated && userType === 'developer') {
+  if (isAuthenticated && userType && userType !== 'client') {
+    console.log('[HelpRequestForm] Non-client user detected, showing permission error');
+    toast.error('Only clients can create help requests');
+    
     return (
       <div className="max-w-3xl mx-auto">
         <Alert variant="destructive" className="mb-8">

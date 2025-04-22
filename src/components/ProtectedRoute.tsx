@@ -25,7 +25,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // If userType is provided but requiredUserType is not, use userType for backwards compatibility
   const actualRequiredUserType = requiredUserType || userType;
   
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, userType: authUserType } = useAuth();
+  
+  // Debug log to help identify user type issues
+  console.log('[ProtectedRoute] Route protection check:', { 
+    isAuthenticated, 
+    authUserType, 
+    requiredUserType: actualRequiredUserType 
+  });
 
   // Start with the auth check
   return (

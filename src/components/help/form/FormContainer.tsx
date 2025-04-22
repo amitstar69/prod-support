@@ -13,7 +13,7 @@ interface FormContainerProps {
 }
 
 const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
-  const { isAuthenticated, userId } = useAuth();
+  const { isAuthenticated, userId, userType } = useAuth();
   const navigate = useNavigate();
   const { formData, isSubmitting, currentStep, setIsSubmitting, resetForm, validateForm } = useHelpRequest();
   const [submissionProgress, setSubmissionProgress] = useState(0);
@@ -36,8 +36,8 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
     // Generate a client ID based on authentication status
     const clientId = isAuthenticated && userId ? userId : `client-guest-${Date.now()}`;
     
-    console.log('Submitting help request with clientId:', clientId, 'isAuthenticated:', isAuthenticated);
-    console.log('Form data being submitted:', formData);
+    console.log('[FormContainer] Submitting help request with userType:', userType, 'clientId:', clientId);
+    console.log('[FormContainer] Form data being submitted:', formData);
     
     setIsSubmitting(true);
     setSubmissionProgress(10); // Start progress
@@ -91,16 +91,16 @@ const FormContainer: React.FC<FormContainerProps> = ({ children }) => {
         preferred_developer_location: formData.preferred_developer_location || 'Global'
       };
       
-      console.log('Prepared help request object:', helpRequestBase);
+      console.log('[FormContainer] Prepared help request object:', helpRequestBase);
       
       // Add debounce to avoid race conditions or rapid state changes
       await new Promise(resolve => setTimeout(resolve, 100));
       
       setSubmissionProgress(60); // Update progress
       
-      // Use the createHelpRequest utility function with a timeout
+      // Pass the userType to createHelpRequest
       const result = await Promise.race([
-        createHelpRequest(helpRequestBase),
+        createHelpRequest(helpRequestBase, userType),
         new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
         )

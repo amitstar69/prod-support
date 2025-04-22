@@ -11,9 +11,11 @@ export const createHelpRequest = async (
   userType: UserType | null = null
 ) => {
   try {
+    console.log('[createHelpRequest] Starting with userType:', userType);
+    
     // Verify that only clients can create help requests
     if (userType !== 'client') {
-      console.error('Only clients can create help requests');
+      console.error(`[createHelpRequest] Permission denied - userType: ${userType}`);
       return { 
         success: false, 
         error: 'Permission denied: Only clients can create help requests' 

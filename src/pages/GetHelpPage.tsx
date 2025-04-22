@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { useNavigate, Route, Routes, useParams } from 'react-router-dom';
+import { useNavigate, Route, Routes, useParams, Navigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import HelpRequestForm from '../components/help/HelpRequestForm';
 import HelpRequestSuccess from '../components/help/HelpRequestSuccess';
@@ -8,6 +8,8 @@ import HelpRequestsTracking from '../components/help/HelpRequestsTracking';
 import HelpRequestDetail from '../components/help/HelpRequestDetail';
 import { ArrowLeft } from 'lucide-react';
 import { initEmergencyRecovery } from '../utils/emergencyRecovery';
+import { useAuth } from '../contexts/auth';
+import UserTypeCheck from '../components/auth/UserTypeCheck';
 
 // Create a wrapper component for the request detail route
 const HelpRequestDetailWrapper = () => {
@@ -18,8 +20,24 @@ const HelpRequestDetailWrapper = () => {
   );
 };
 
+// Client-only wrapper component
+const ClientOnlyRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, userType } = useAuth();
+  
+  console.log('[ClientOnlyRoute] Auth state:', { isAuthenticated, userType });
+  
+  // For the form route, check if user is a client
+  if (isAuthenticated && userType !== 'client') {
+    console.log('[ClientOnlyRoute] Redirecting non-client user');
+    return <Navigate to="/developer-dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 const GetHelpPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, userType } = useAuth();
   
   // Initialize emergency recovery mechanism
   useEffect(() => {
@@ -79,7 +97,11 @@ const GetHelpPage: React.FC = () => {
       
       <div className="container mx-auto px-4 py-12">
         <Routes>
-          <Route index element={<HelpRequestForm />} />
+          <Route index element={
+            <ClientOnlyRoute>
+              <HelpRequestForm />
+            </ClientOnlyRoute>
+          } />
           <Route path="success" element={<HelpRequestSuccess />} />
           <Route path="tracking" element={<HelpRequestsTracking />} />
           <Route path="request/:requestId" element={<HelpRequestDetailWrapper />} />
