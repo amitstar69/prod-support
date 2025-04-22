@@ -15,6 +15,7 @@ import ChatCommentsPanel from '../components/tickets/ChatCommentsPanel';
 import { useAuth } from '../contexts/auth';
 import HelpRequestHistoryDialog from '../components/help/HelpRequestHistoryDialog';
 import ClientActionsPanel from "../components/tickets/ClientActionsPanel";
+import TicketHistoryAccordion from "../components/tickets/TicketHistoryAccordion";
 
 const TicketDetailPage = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -162,6 +163,7 @@ const TicketDetailPage = () => {
                 userId={userId || ""}
               />
             )}
+            <TicketHistoryAccordion helpRequestId={ticket.id} />
           </div>
 
           <div>
