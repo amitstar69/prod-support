@@ -19,18 +19,6 @@ const StatusActionCard: React.FC<StatusActionCardProps> = ({
 }) => {
   if (!ticket || !ticket.id) return null;
   
-  // Only show for specific statuses where client action is needed
-  const clientActionableStatuses = [
-    'awaiting_client_approval', 
-    'ready_for_client_qa', 
-    'qa_pass', 
-    'ready_for_final_action'
-  ];
-  
-  if (!clientActionableStatuses.includes(ticket.status || '')) {
-    return null;
-  }
-
   return (
     <Card className="mb-4">
       <CardHeader className="pb-2">
@@ -39,7 +27,7 @@ const StatusActionCard: React.FC<StatusActionCardProps> = ({
       <CardContent>
         <ClientActionStatus 
           ticketId={ticket.id} 
-          currentStatus={ticket.status}
+          currentStatus={ticket.status || ''}
           onStatusUpdate={onStatusUpdated}
         />
       </CardContent>

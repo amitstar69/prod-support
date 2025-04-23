@@ -16,7 +16,7 @@ interface ClientActionStatusProps {
 
 const ClientActionStatus: React.FC<ClientActionStatusProps> = ({
   ticketId,
-  currentStatus,
+  currentStatus = '',
   onStatusUpdate
 }) => {
   const [error, setError] = useState<string | null>(null);
@@ -60,16 +60,7 @@ const ClientActionStatus: React.FC<ClientActionStatusProps> = ({
     }
   };
 
-  if (allowedTransitions.length === 0) {
-    return (
-      <Alert>
-        <AlertDescription>
-          No status actions are available at this time.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
+  // Always show the component now, to match developer view
   return (
     <div className="space-y-4">
       {error && (
@@ -79,6 +70,15 @@ const ClientActionStatus: React.FC<ClientActionStatusProps> = ({
       )}
       
       <div className="flex flex-col space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-medium">Update Status</span>
+          {currentStatus && (
+            <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+              {getStatusLabel(currentStatus)}
+            </span>
+          )}
+        </div>
+        
         <StatusDropdown
           defaultStatusId={selectedStatus}
           onStatusChange={setSelectedStatus}
@@ -89,17 +89,11 @@ const ClientActionStatus: React.FC<ClientActionStatusProps> = ({
         
         <Button
           onClick={() => handleStatusChange(selectedStatus)}
-          disabled={selectedStatus === currentStatus || isUpdating || !selectedStatus}
+          disabled={selectedStatus === currentStatus || isUpdating || !selectedStatus || allowedTransitions.length === 0}
           className="w-full"
         >
           {isUpdating ? "Updating..." : "Update Status"}
         </Button>
-        
-        {currentStatus && (
-          <p className="text-xs text-muted-foreground mt-1">
-            Current status: {getStatusLabel(currentStatus)}
-          </p>
-        )}
       </div>
     </div>
   );
