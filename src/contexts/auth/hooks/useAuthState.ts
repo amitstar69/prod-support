@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthState, AuthContextType } from '../types';
 import { initializeAuthState } from './useAuthInitialization';
 import { setupAuthStateChangeListener } from './useAuthStateChange';
