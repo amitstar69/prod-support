@@ -1,7 +1,7 @@
 
 import React from 'react';
 import DeveloperApplicationPanel from '../../components/developer-ticket-detail/DeveloperApplicationPanel';
-import ClientActionsPanel from "../tickets/ClientActionsPanel";
+import StatusActionCard from './StatusActionCard';
 
 const TicketActionsPanel = ({
   role,
@@ -32,9 +32,8 @@ const TicketActionsPanel = ({
   }
   if (role === "client") {
     return (
-      <ClientActionsPanel
+      <StatusActionCard
         ticket={ticket}
-        userId={userId}
         onStatusUpdated={fetchLatestTicketData}
       />
     );

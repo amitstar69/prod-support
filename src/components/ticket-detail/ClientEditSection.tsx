@@ -2,7 +2,6 @@
 import React from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import TicketSidebar from "../../components/developer-ticket-detail/TicketSidebar";
-import StatusActionCard from './StatusActionCard';
 
 const ClientEditSection = ({
   visible,
@@ -25,13 +24,7 @@ const ClientEditSection = ({
   
   return (
     <>
-      {/* Status Action Card - For client to update ticket status */}
-      <StatusActionCard 
-        ticket={ticket} 
-        onStatusUpdated={() => onTicketUpdated && onTicketUpdated(ticket)}
-      />
-      
-      {/* Project details sidebar */}
+      {/* Project details sidebar - no longer includes the StatusActionCard */}
       <TicketSidebar
         ticket={ticket}
         canSubmitQA={canSubmitQA || false}

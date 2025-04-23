@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
@@ -9,6 +10,8 @@ import { Check, X, ArrowRight } from "lucide-react";
 import StatusDropdown from "../developer-actions/StatusDropdown";
 import { getAllowedStatusTransitions } from "../../utils/helpRequestStatusUtils";
 
+// This component is not directly used in the ticket detail view anymore
+// It's kept for backwards compatibility with other parts of the application
 type ClientActionsPanelProps = {
   ticket: HelpRequest;
   userId: string;
