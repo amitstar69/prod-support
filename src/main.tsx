@@ -1,10 +1,11 @@
 
-import { createRoot } from 'react-dom/client'
-import { ThemeProvider } from 'next-themes'
-import App from './App.tsx'
-import './index.css'
-import { initEmergencyRecovery } from './utils/emergencyRecovery.ts'
-import { Toaster } from './components/ui/sonner'
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { ThemeProvider } from 'next-themes';
+import App from './App.tsx';
+import './index.css';
+import { initEmergencyRecovery } from './utils/emergencyRecovery.ts';
+import { Toaster } from './components/ui/sonner';
 
 // Initialize emergency recovery mechanism
 initEmergencyRecovery();
@@ -59,10 +60,12 @@ try {
   } else {
     const root = createRoot(rootElement);
     root.render(
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <App />
-        <Toaster position="top-right" />
-      </ThemeProvider>
+      <React.StrictMode>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <App />
+          <Toaster position="top-right" />
+        </ThemeProvider>
+      </React.StrictMode>
     );
     appLoaded = true;
     clearTimeout(loadingTimeout);
