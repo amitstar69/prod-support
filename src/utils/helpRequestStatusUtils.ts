@@ -1,5 +1,3 @@
-
-
 // Define valid status transitions
 export const STATUS_TRANSITIONS = {
   system: {
@@ -22,6 +20,7 @@ export const STATUS_TRANSITIONS = {
     'awaiting_client_approval': ['approved', 'pending_match'], // Can reject back to pending
     'ready_for_client_qa': ['qa_fail', 'qa_pass'],
     'qa_pass': ['ready_for_final_action'],
+    'ready_for_final_action': ['resolved'],
     'any': ['cancelled_by_client'] // Client can cancel anytime
   }
 };

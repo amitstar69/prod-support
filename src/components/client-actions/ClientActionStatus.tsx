@@ -5,7 +5,8 @@ import StatusDropdown from '../developer-actions/StatusDropdown';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { supabase } from '../../integrations/supabase/client';
 import { Alert, AlertDescription } from '../ui/alert';
-import { getStatusLabel } from '../../utils/helpRequestStatusUtils';
+import { getStatusLabel, getAllowedStatusTransitions } from '../../utils/helpRequestStatusUtils';
+import { Button } from '../ui/button';
 
 interface ClientActionStatusProps {
   ticketId: string;
@@ -18,27 +19,30 @@ const ClientActionStatus: React.FC<ClientActionStatusProps> = ({
   currentStatus,
   onStatusUpdate
 }) => {
-  console.log("ClientActionStatus render with:", { ticketId, currentStatus });
   const [error, setError] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string>(currentStatus || '');
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Get allowed transitions for client user
+  const allowedTransitions = currentStatus 
+    ? getAllowedStatusTransitions(currentStatus, 'client')
+    : [];
 
   const handleStatusChange = async (newStatusId: string) => {
     try {
-      console.log(`Client updating ticket ${ticketId} status from ${currentStatus} to ${newStatusId}`);
-      
       if (newStatusId === currentStatus) {
-        console.log("No status change detected");
         return;
       }
       
+      setIsUpdating(true);
       setError(null);
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('help_requests')
         .update({ status: newStatusId })
         .eq('id', ticketId);
 
       if (error) {
-        console.error('Error updating status:', error);
         setError(error.message || 'Failed to update status');
         toast.error(`Status update failed: ${error.message || 'Unknown error'}`);
         return;
@@ -49,37 +53,55 @@ const ClientActionStatus: React.FC<ClientActionStatusProps> = ({
         onStatusUpdate();
       }
     } catch (error: any) {
-      console.error('Error updating status:', error);
       setError(error.message || 'Failed to update status');
       toast.error('Failed to update status');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
+  if (allowedTransitions.length === 0) {
+    return (
+      <Alert>
+        <AlertDescription>
+          No status actions are available at this time.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Update Request Status</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+    <div className="space-y-4">
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="flex flex-col space-y-3">
         <StatusDropdown
-          defaultStatusId={currentStatus}
-          onStatusChange={handleStatusChange}
+          defaultStatusId={selectedStatus}
+          onStatusChange={setSelectedStatus}
           placeholder="Select new status"
           required={true}
           userType="client"
         />
+        
+        <Button
+          onClick={() => handleStatusChange(selectedStatus)}
+          disabled={selectedStatus === currentStatus || isUpdating || !selectedStatus}
+          className="w-full"
+        >
+          {isUpdating ? "Updating..." : "Update Status"}
+        </Button>
+        
         {currentStatus && (
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-1">
             Current status: {getStatusLabel(currentStatus)}
           </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

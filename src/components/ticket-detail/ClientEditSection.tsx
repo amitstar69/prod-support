@@ -2,6 +2,7 @@
 import React from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import TicketSidebar from "../../components/developer-ticket-detail/TicketSidebar";
+import StatusActionCard from './StatusActionCard';
 
 const ClientEditSection = ({
   visible,
@@ -23,13 +24,22 @@ const ClientEditSection = ({
   if (!visible) return null;
   
   return (
-    <TicketSidebar
-      ticket={ticket}
-      canSubmitQA={canSubmitQA || false}
-      onSubmitQA={onSubmitQA || (() => {})}
-      formatDate={formatDate}
-      onTicketUpdated={onTicketUpdated}
-    />
+    <>
+      {/* Status Action Card - For client to update ticket status */}
+      <StatusActionCard 
+        ticket={ticket} 
+        onStatusUpdated={() => onTicketUpdated && onTicketUpdated(ticket)}
+      />
+      
+      {/* Project details sidebar */}
+      <TicketSidebar
+        ticket={ticket}
+        canSubmitQA={canSubmitQA || false}
+        onSubmitQA={onSubmitQA || (() => {})}
+        formatDate={formatDate}
+        onTicketUpdated={onTicketUpdated}
+      />
+    </>
   );
 };
 
