@@ -1,5 +1,7 @@
 
 import React from 'react';
+import DeveloperApplicationPanel from '../../components/developer-ticket-detail/DeveloperApplicationPanel';
+import ClientActionsPanel from "../tickets/ClientActionsPanel";
 
 const TicketActionsPanel = ({
   role,
@@ -11,10 +13,7 @@ const TicketActionsPanel = ({
   onApply,
   fetchLatestTicketData
 }: any) => {
-  // Use prop drilling, don't import external dependencies beyond what's required here
-  // The imported components are handled by the parent
   if (role === "developer") {
-    const DeveloperApplicationPanel = require('../../developer-ticket-detail/DeveloperApplicationPanel').default;
     return (
       <DeveloperApplicationPanel
         devUpdateVisibility={{
@@ -32,7 +31,6 @@ const TicketActionsPanel = ({
     );
   }
   if (role === "client") {
-    const ClientActionsPanel = require("../tickets/ClientActionsPanel").default;
     return (
       <ClientActionsPanel
         ticket={ticket}
@@ -45,4 +43,3 @@ const TicketActionsPanel = ({
 };
 
 export default TicketActionsPanel;
-

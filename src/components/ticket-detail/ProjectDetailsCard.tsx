@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { HelpRequest } from '../../types/helpRequest';
-
-const TicketSidebar = require("../../components/developer-ticket-detail/TicketSidebar").default;
+import TicketSidebar from "../../components/developer-ticket-detail/TicketSidebar";
 
 const ProjectDetailsCard = ({ ticket, formatDate }: { ticket: HelpRequest, formatDate: (d?: string) => string }) => (
   <TicketSidebar

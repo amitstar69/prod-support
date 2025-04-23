@@ -1,5 +1,7 @@
 
 import React from 'react';
+import ChatCommentsPanel from "../tickets/ChatCommentsPanel";
+import TicketComments from "../tickets/TicketComments";
 
 const CommentsSection = ({
   visible,
@@ -10,10 +12,8 @@ const CommentsSection = ({
 }: any) => {
   if (!visible) return null;
   if (role === "developer") {
-    const ChatCommentsPanel = require("../tickets/ChatCommentsPanel").default;
     return <ChatCommentsPanel ticketId={ticketId} userId={userId} />;
   }
-  const TicketComments = require("../tickets/TicketComments").default;
   return (
     <TicketComments
       ticketId={ticketId}

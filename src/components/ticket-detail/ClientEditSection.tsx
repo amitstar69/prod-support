@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { HelpRequest } from '../../types/helpRequest';
+import TicketSidebar from "../../components/developer-ticket-detail/TicketSidebar";
 
 const ClientEditSection = ({
   visible,
@@ -20,8 +21,6 @@ const ClientEditSection = ({
   formatDate: (date?: string) => string;
 }) => {
   if (!visible) return null;
-  
-  const TicketSidebar = require("../../components/developer-ticket-detail/TicketSidebar").default;
   
   return (
     <TicketSidebar

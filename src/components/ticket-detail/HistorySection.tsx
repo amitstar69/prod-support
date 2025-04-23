@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { HelpRequest } from '../../types/helpRequest';
-
-const TicketHistoryAccordion = require("../tickets/TicketHistoryAccordion").default;
+import TicketHistoryAccordion from "../tickets/TicketHistoryAccordion";
 
 const HistorySection = ({ ticketId, ticket }: { ticketId: string, ticket: HelpRequest }) => (
   <TicketHistoryAccordion helpRequestId={ticket.id} />
