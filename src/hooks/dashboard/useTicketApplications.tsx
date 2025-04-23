@@ -1,3 +1,4 @@
+
 // Refactored: Root hook delegates to focused hooks for logic
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
@@ -16,6 +17,7 @@ export interface UseTicketApplicationsResult {
   handleClaimTicket: (ticketId: string) => void;
   fetchMyApplications: (isAuthenticated: boolean, userId: string | null) => Promise<void>;
   checkApplicationStatus: (ticketId: string, userId: string) => Promise<string | null>;
+  dataSource: string;
 }
 
 export const useTicketApplications = (
@@ -26,7 +28,14 @@ export const useTicketApplications = (
   refreshTickets: () => void
 ): UseTicketApplicationsResult => {
   const recommendedTickets = useRecommendedTickets(tickets, isAuthenticated, userId);
-  const { myApplications, fetchMyApplications, isLoading: isLoadingApplications, hasError } = useMyTicketApplications();
+  const { 
+    myApplications, 
+    fetchMyApplications, 
+    isLoading: isLoadingApplications, 
+    hasError,
+    dataSource: applicationsDataSource 
+  } = useMyTicketApplications();
+  
   const { handleClaimTicket, checkApplicationStatus } = useTicketApplicationActions(
     isAuthenticated, userId, userType, refreshTickets, fetchMyApplications
   );
@@ -71,6 +80,8 @@ export const useTicketApplications = (
     hasError,
     handleClaimTicket,
     fetchMyApplications,
-    checkApplicationStatus
+    checkApplicationStatus,
+    // Use the dataSource from applications hook for consistency
+    dataSource: applicationsDataSource
   };
 };

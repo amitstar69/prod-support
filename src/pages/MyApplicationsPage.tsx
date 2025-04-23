@@ -1,4 +1,3 @@
-
 import React, { useEffect, useCallback, useState } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
@@ -31,7 +30,6 @@ const MyApplicationsPage = () => {
     fetchMyApplications
   } = useDeveloperDashboard();
   
-  // Memoize fetchApplications to prevent recreation on render
   const fetchApplications = useCallback(() => {
     if (userId && isAuthenticated) {
       console.log('MyApplicationsPage: Fetching applications');
@@ -41,7 +39,6 @@ const MyApplicationsPage = () => {
           toast.error('Failed to load your applications');
         })
         .finally(() => {
-          // Set loading to false only after the fetch completes
           setIsLoadingPage(false);
         });
     } else {
@@ -57,35 +54,30 @@ const MyApplicationsPage = () => {
   }, [fetchApplications]);
 
   useEffect(() => {
-    // Check that this page is only accessed by developers
     if (isAuthenticated && userType !== 'developer') {
       navigate('/client-dashboard');
       return;
     }
     
-    // Fetch applications when component mounts
     fetchApplications();
     
-    // Set a timeout to ensure we don't get stuck in loading state
     const timeoutId = setTimeout(() => {
       if (isLoadingPage) {
         setIsLoadingPage(false);
         setHasLoadingTimedOut(true);
         console.log('MyApplicationsPage: Forced loading state to finish after timeout');
       }
-    }, 10000); // Increased from 5s to 10s
+    }, 10000);
     
     return () => clearTimeout(timeoutId);
   }, [fetchApplications, isAuthenticated, userType, navigate, retryCount]);
   
-  // Update loading page state when child components report loading finished
   useEffect(() => {
     if (!isLoading && !isLoadingApplications && isLoadingPage) {
       setIsLoadingPage(false);
     }
   }, [isLoading, isLoadingApplications, isLoadingPage]);
   
-  // Debug loading state
   useEffect(() => {
     console.log('MyApplicationsPage loading state:', { 
       isLoadingPage, 
@@ -98,16 +90,13 @@ const MyApplicationsPage = () => {
     });
   }, [isLoadingPage, isLoading, isLoadingApplications, hasError, hasApplicationError, hasLoadingTimedOut, myApplications]);
 
-  // Handle forced logout if needed
   const handleForceLogout = useCallback(() => {
-    // Perform emergency logout via the recovery utility
     import('../utils/recovery').then(recovery => {
       recovery.performEmergencyLogout();
       toast.info('Performing emergency logout to resolve issues...');
     });
   }, []);
 
-  // If we have an error or timeout, show the error state
   if ((hasError || hasApplicationError || hasLoadingTimedOut) && !isLoadingPage) {
     return (
       <Layout>
@@ -146,8 +135,9 @@ const MyApplicationsPage = () => {
             <TicketSummary 
               filteredCount={myApplications?.length || 0} 
               totalCount={myApplications?.length || 0} 
-              dataSource={dataSource}
+              dataSource="database"
               categoryTitle="My Approved Tickets"
+              isApplication={true}
             />
             
             {myApplications && myApplications.length > 0 ? (

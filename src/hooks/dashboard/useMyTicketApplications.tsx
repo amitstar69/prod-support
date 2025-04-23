@@ -103,5 +103,12 @@ export const useMyTicketApplications = () => {
     }
   }, [lastFetchTime]);
 
-  return { myApplications, fetchMyApplications, isLoading, hasError };
+  return { 
+    myApplications, 
+    fetchMyApplications, 
+    isLoading, 
+    hasError,
+    // Always return 'database' as the source for applications
+    dataSource: 'database' 
+  };
 };
