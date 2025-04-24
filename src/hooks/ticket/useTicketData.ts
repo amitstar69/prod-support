@@ -65,7 +65,7 @@ export const useTicketData = (ticketId: string) => {
     };
   }, [ticketId]);
 
-  const updateTicket = async (updates: Partial<HelpRequest>) => {
+  const updateTicket = async (updates: Record<string, any>) => {
     try {
       const { data, error } = await supabase
         .from('help_requests')

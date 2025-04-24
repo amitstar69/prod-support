@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   createBrowserRouter,
@@ -60,7 +61,14 @@ const router = createBrowserRouter([
   },
   {
     path: "/help-request-history",
-    element: <AuthenticationGuard><HelpRequestHistoryDialog /></AuthenticationGuard>,
+    element: <AuthenticationGuard>
+      <HelpRequestHistoryDialog 
+        isOpen={true}
+        onClose={() => {}}
+        requestId=""
+        requestTitle=""
+      />
+    </AuthenticationGuard>,
   },
   {
     path: "/tickets/:ticketId",
