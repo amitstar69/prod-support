@@ -15,21 +15,42 @@ export const useTicketData = (ticketId: string) => {
         setIsLoading(true);
         setError(null);
         
-        const { data, error: ticketError } = await supabase
+        // First query for the help request
+        const { data: requestData, error: ticketError } = await supabase
           .from('help_requests')
           .select(`
             *,
-            client:client_id(id, name, email),
-            developer:developer_id(id, name, email)
+            client:client_id(id, name, email)
           `)
           .eq('id', ticketId)
           .single();
 
         if (ticketError) throw ticketError;
         
-        setTicket(data as HelpRequest);
+        // Now get the developer info from help_request_matches if available
+        const { data: matchData } = await supabase
+          .from('help_request_matches')
+          .select(`
+            developer_id,
+            status,
+            developer:developer_id(id, name, email)
+          `)
+          .eq('request_id', ticketId)
+          .eq('status', 'approved')
+          .maybeSingle();
+        
+        // Combine the data
+        const fullTicket: HelpRequest = {
+          ...requestData,
+          developer_id: matchData?.developer_id || null,
+          developer: matchData?.developer || null,
+          application_status: matchData?.status || null
+        };
+        
+        setTicket(fullTicket as HelpRequest);
       } catch (err: any) {
         const errorMessage = err?.message || 'Failed to load ticket details';
+        console.error('Error fetching ticket:', err);
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -76,7 +97,11 @@ export const useTicketData = (ticketId: string) => {
 
       if (error) throw error;
       
-      setTicket(data as HelpRequest);
+      setTicket(prevTicket => {
+        if (!prevTicket) return data as HelpRequest;
+        return { ...prevTicket, ...data } as HelpRequest;
+      });
+      
       return { success: true, data };
     } catch (err: any) {
       const errorMessage = err?.message || 'Failed to update ticket';
