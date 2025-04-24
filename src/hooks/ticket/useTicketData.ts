@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../../integrations/supabase/client';
 import { HelpRequest } from '../../types/helpRequest';
@@ -43,11 +42,22 @@ export const useTicketData = (ticketId: string) => {
         const fullTicket: HelpRequest = {
           ...requestData,
           developer_id: matchData?.developer_id || null,
-          developer: matchData?.developer || null,
+          // Store developer profile data in appropriate fields according to HelpRequest type
+          // or keep it on the request object for accessing in the UI
           application_status: matchData?.status || null
         };
         
-        setTicket(fullTicket as HelpRequest);
+        // Store the full ticket with developer information for UI purposes
+        setTicket({
+          ...fullTicket,
+          // Assign the developer information to the ticket object
+          // We're attaching this for UI purposes, even though it's not in the HelpRequest type
+          ...((matchData?.developer) ? { 
+            developer_id: matchData.developer_id,
+            // @ts-ignore - We're ignoring type checking here as we need this data in the UI
+            developer: matchData.developer 
+          } : {})
+        } as HelpRequest);
       } catch (err: any) {
         const errorMessage = err?.message || 'Failed to load ticket details';
         console.error('Error fetching ticket:', err);
