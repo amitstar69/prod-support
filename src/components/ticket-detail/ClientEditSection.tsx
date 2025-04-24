@@ -24,7 +24,7 @@ const ClientEditSection = ({
   
   return (
     <>
-      {/* Project details sidebar - no longer includes the StatusActionCard */}
+      {/* Project details sidebar only - StatusActionCard is now handled by TicketActionsPanel */}
       <TicketSidebar
         ticket={ticket}
         canSubmitQA={canSubmitQA || false}

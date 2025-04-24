@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -13,14 +12,10 @@ import HelpRequestHistoryDialog from '../components/help/HelpRequestHistoryDialo
 import DeveloperApplicationModal from '../components/apply/DeveloperApplicationModal';
 import DeveloperQADialog from '../components/help/DeveloperQADialog';
 
-// NEW: Import smaller section components
 import TicketActionsPanel from '../components/ticket-detail/TicketActionsPanel';
 import CommentsSection from '../components/ticket-detail/CommentsSection';
 import ClientEditSection from '../components/ticket-detail/ClientEditSection';
 import HistorySection from '../components/ticket-detail/HistorySection';
-import ProjectDetailsCard from '../components/ticket-detail/ProjectDetailsCard';
-
-// Also import TicketDetails directly as it's a focused component
 import TicketDetails from '../components/tickets/TicketDetails';
 
 const TicketDetailPage = () => {
@@ -32,16 +27,13 @@ const TicketDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
 
-  // For developer features
   const [hasApplied, setHasApplied] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showQADialog, setShowQADialog] = useState(false);
 
-  // Unified role: use currentUser.role or userType field
   const role = userType as "client" | "developer";
 
-  // Backward-compatible ticket fetching
   useEffect(() => {
     if (!isAuthenticated) {
       toast.error('You must be logged in to view this page');
@@ -56,6 +48,9 @@ const TicketDetailPage = () => {
 
   useEffect(() => {
     if (!ticketId || !isAuthenticated) return;
+    
+    console.log('[TicketDetailPage] Setting up realtime subscription for ticket:', ticketId);
+    
     const channel = supabase
       .channel(`ticket-updates-${ticketId}`)
       .on(
@@ -67,17 +62,18 @@ const TicketDetailPage = () => {
           filter: `id=eq.${ticketId}`,
         },
         (payload) => {
+          console.log('[TicketDetailPage] Received ticket update:', payload);
           fetchTicket();
         }
       )
       .subscribe();
 
     return () => {
+      console.log('[TicketDetailPage] Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
   }, [ticketId, isAuthenticated]);
 
-  // Developer-specific: check application status, etc.
   useEffect(() => {
     if (role !== "developer" || !isAuthenticated || !userId || !ticketId) return;
 
@@ -105,6 +101,7 @@ const TicketDetailPage = () => {
       return;
     }
     try {
+      console.log('[TicketDetailPage] Fetching ticket data for:', ticketId);
       setIsLoading(true);
       const { data, error } = await supabase
         .from('help_requests')
@@ -113,12 +110,16 @@ const TicketDetailPage = () => {
         .maybeSingle();
 
       if (error || !data) {
+        console.error('[TicketDetailPage] Error fetching ticket:', error);
         setError(error?.message || 'Ticket not found');
         setIsLoading(false);
         return;
       }
+      
+      console.log('[TicketDetailPage] Successfully fetched ticket data');
       setTicket(data as HelpRequest);
     } catch (err) {
+      console.error('[TicketDetailPage] Exception fetching ticket:', err);
       setError('Failed to load ticket');
     } finally {
       setIsLoading(false);
@@ -158,7 +159,6 @@ const TicketDetailPage = () => {
     }
   };
 
-  // QA dialog handler for developers
   const handleSubmitQA = () => { setShowQADialog(true); };
   const handleQASubmitted = async () => {
     setShowQADialog(false);
@@ -208,6 +208,8 @@ const TicketDetailPage = () => {
     );
   }
 
+  console.log('[TicketDetailPage] Rendering with role:', role, 'ticket:', ticket?.id);
+
   return (
     <Layout>
       <div className="container max-w-5xl mx-auto py-8 px-4">
@@ -223,7 +225,7 @@ const TicketDetailPage = () => {
               ...ticket,
               technical_area: ticket.technical_area || [],
             }} userRole={role} />
-            {/* Comments/Chat */}
+            
             <CommentsSection
               visible={true}
               ticket={ticket}
@@ -231,11 +233,11 @@ const TicketDetailPage = () => {
               userId={userId || ""}
               role={role}
             />
-            {/* History Accordion */}
+            
             <HistorySection ticketId={ticket.id} ticket={ticket} />
           </div>
-          <div>
-            {/* Unified Project Details + Client Edit/QA functionality */}
+          
+          <div className="space-y-6">
             <ClientEditSection
               visible={role === "client"}
               status={ticket.status}
@@ -246,7 +248,6 @@ const TicketDetailPage = () => {
               formatDate={formatDate}
             />
 
-            {/* Ticket Actions Panel, e.g. client or developer actions */}
             <TicketActionsPanel
               role={role}
               ticket={ticket}
@@ -260,7 +261,7 @@ const TicketDetailPage = () => {
           </div>
         </div>
       </div>
-      {/* Popups/dialogs */}
+
       <HelpRequestHistoryDialog
         isOpen={showHistoryDialog}
         onClose={() => setShowHistoryDialog(false)}

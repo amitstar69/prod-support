@@ -11,6 +11,7 @@ import { HelpRequest } from '../types/helpRequest';
 import { getHelpRequestsForClient } from '../integrations/supabase/helpRequests';
 import { Skeleton } from '../components/ui/skeleton';
 import { toast } from 'sonner';
+import { supabase } from '../integrations/supabase/client';
 
 const ClientTicketsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,14 +24,39 @@ const ClientTicketsPage: React.FC = () => {
   const { getFilteredTickets } = useTicketFilters(tickets);
   const filteredTickets = getFilteredTickets('client');
 
+  // Initial fetch on mount
   useEffect(() => {
     if (userId) {
       fetchClientTickets();
+      
+      // Set up realtime subscription for ticket updates
+      const channel = supabase
+        .channel('client-tickets-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'help_requests',
+            filter: `client_id=eq.${userId}`
+          },
+          () => {
+            console.log('[ClientTicketsPage] Ticket changed, refreshing data');
+            fetchClientTickets(false); // Don't show loading state for realtime updates
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [userId]);
 
-  const fetchClientTickets = async () => {
-    setIsLoading(true);
+  const fetchClientTickets = async (showLoadingState = true) => {
+    if (showLoadingState) {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -50,10 +76,17 @@ const ClientTicketsPage: React.FC = () => {
       
       if (response.success && response.data) {
         setTickets(response.data);
-        console.log('[ClientTicketsPage] Tickets loaded:', response.data.length);
+        console.log('[ClientTicketsPage] Tickets loaded:', response.data.length, 
+                    'Source:', response.storageMethod);
         
         if (response.data.length === 0) {
           console.log('[ClientTicketsPage] No tickets found for user');
+        }
+        
+        // Show a warning if data came from localStorage
+        if (response.storageMethod === 'localStorage') {
+          console.warn('[ClientTicketsPage] Data loaded from localStorage instead of database');
+          toast.warning('Using local data instead of database. Please check your connection.');
         }
       } else {
         console.error('[ClientTicketsPage] Error fetching tickets:', response.error);

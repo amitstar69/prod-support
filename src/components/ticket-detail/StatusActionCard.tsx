@@ -17,7 +17,12 @@ const StatusActionCard: React.FC<StatusActionCardProps> = ({
   ticket,
   onStatusUpdated
 }) => {
-  if (!ticket || !ticket.id) return null;
+  console.log('[StatusActionCard] Rendering for ticket:', ticket?.id);
+  
+  if (!ticket || !ticket.id) {
+    console.warn('[StatusActionCard] Missing ticket data');
+    return null;
+  }
   
   return (
     <Card className="mb-4">

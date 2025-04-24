@@ -7,23 +7,12 @@ import { toast } from 'sonner';
 // Function to fetch help requests for a client
 export const getHelpRequestsForClient = async (clientId: string) => {
   try {
-    // Get local help requests
-    const localHelpRequests = getLocalHelpRequests();
-    const filteredLocalHelpRequests = localHelpRequests.filter(
-      (request: HelpRequest) => request.client_id === clientId
-    );
+    console.log('[getHelpRequestsForClient] Fetching tickets for client:', clientId);
     
-    // If it's a local client ID, return only local requests
-    if (isLocalId(clientId)) {
-      return { 
-        success: true, 
-        data: filteredLocalHelpRequests, 
-        storageMethod: 'localStorage' 
-      };
-    }
-    
-    // For Supabase client ID, fetch from database
+    // Skip local storage check and always use Supabase for authenticated users
     if (isValidUUID(clientId)) {
+      console.log('[getHelpRequestsForClient] Using Supabase to fetch tickets');
+      
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')
@@ -31,23 +20,37 @@ export const getHelpRequestsForClient = async (clientId: string) => {
         .order('created_at', { ascending: false });
         
       if (error) {
-        console.error('Error fetching help requests from Supabase:', error);
-        // If there's an error with Supabase, still return local requests
+        console.error('[getHelpRequestsForClient] Error fetching from Supabase:', error);
+        // Return error but don't fall back to localStorage
         return { 
           success: false, 
           error: error.message,
-          data: filteredLocalHelpRequests, 
-          storageMethod: 'fallbackToLocalStorage' 
+          data: [],
+          storageMethod: 'database_error' 
         };
       }
       
-      // Combine Supabase results with any local requests
-      const combinedResults = [...data, ...filteredLocalHelpRequests];
+      console.log('[getHelpRequestsForClient] Successfully fetched', data?.length, 'tickets from Supabase');
       
       return { 
         success: true, 
-        data: combinedResults, 
-        storageMethod: 'combined' 
+        data: data || [], 
+        storageMethod: 'database' 
+      };
+    }
+    
+    // Only use localStorage for invalid/local IDs (likely during development/testing)
+    if (isLocalId(clientId)) {
+      console.log('[getHelpRequestsForClient] Using localStorage for local client ID');
+      const localHelpRequests = getLocalHelpRequests();
+      const filteredLocalHelpRequests = localHelpRequests.filter(
+        (request: HelpRequest) => request.client_id === clientId
+      );
+      
+      return { 
+        success: true, 
+        data: filteredLocalHelpRequests, 
+        storageMethod: 'localStorage' 
       };
     }
     
@@ -79,32 +82,7 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
         };
       }
       
-      // Log the user ID to confirm we have valid authentication
-      console.log('[getAllPublicHelpRequests] Authenticated user ID:', session.session.user.id);
-      
-      // Check if the RLS policy should apply by getting the user type
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('user_type')
-        .eq('id', session.session.user.id)
-        .single();
-      
-      console.log('[getAllPublicHelpRequests] User profile:', profileData, 'Error:', profileError);
-      
-      if (profileError) {
-        console.error('[getAllPublicHelpRequests] Error fetching user profile:', profileError);
-        toast.error('Error determining user type. Please try again.');
-      }
-      
-      // Debug query directly to check table access
-      const { count, error: countError } = await supabase
-        .from('help_requests')
-        .select('*', { count: 'exact', head: true });
-      
-      console.log('[getAllPublicHelpRequests] Table access check - Count:', count, 'Error:', countError);
-      
-      // Fetch all help requests (now using the RLS policy we added)
-      // The policy will automatically filter based on user type
+      // Fetch all help requests (using the RLS policy we added)
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')
@@ -112,6 +90,7 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
         
       if (error) {
         console.error('[getAllPublicHelpRequests] Error fetching from Supabase:', error);
+        // Don't fall back to localStorage, return error instead
         return { 
           success: false, 
           error: 'Failed to fetch help requests: ' + error.message,
@@ -119,18 +98,8 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
         };
       }
       
-      // If we got data from the database, use it and log all tickets for debugging
+      // Log fetched tickets for debugging
       console.log('[getAllPublicHelpRequests] Fetched tickets from database:', data?.length);
-      if (data) {
-        data.forEach((ticket, index) => {
-          console.log(`[getAllPublicHelpRequests] DB Ticket ${index+1}:`, {
-            id: ticket.id,
-            status: ticket.status,
-            title: ticket.title,
-            client_id: ticket.client_id
-          });
-        });
-      }
       
       return {
         success: true,
@@ -140,9 +109,9 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
     } 
     // For non-authenticated users, return sample data
     else {
-      // Get local storage requests for sample data
+      // Still using sample data for unauthenticated users, this is expected behavior
       const localHelpRequests = getLocalHelpRequests();
-      console.log('[getAllPublicHelpRequests] Local tickets for unauthenticated user:', localHelpRequests.length);
+      console.log('[getAllPublicHelpRequests] Using sample tickets for unauthenticated user:', localHelpRequests.length);
       
       return {
         success: true,
@@ -163,8 +132,34 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
 // Function to get a specific help request
 export const getHelpRequest = async (requestId: string) => {
   try {
-    // For local help request ID
+    console.log('[getHelpRequest] Fetching ticket by ID:', requestId);
+    
+    // Skip localStorage check for valid UUIDs to ensure we always get from Supabase
+    if (isValidUUID(requestId)) {
+      console.log('[getHelpRequest] Using Supabase to fetch ticket details');
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*')
+        .eq('id', requestId)
+        .maybeSingle();
+        
+      if (error) {
+        console.error('[getHelpRequest] Error fetching from Supabase:', error);
+        // Don't fall back to localStorage, return error
+        return { success: false, error: error.message };
+      }
+      
+      if (!data) {
+        return { success: false, error: 'Help request not found in database' };
+      }
+      
+      console.log('[getHelpRequest] Successfully fetched ticket from Supabase');
+      return { success: true, data, storageMethod: 'database' };
+    }
+    
+    // Only use local storage for explicitly local IDs
     if (requestId.startsWith('help-')) {
+      console.log('[getHelpRequest] Using localStorage for local request ID');
       const localHelpRequests = getLocalHelpRequests();
       const helpRequest = localHelpRequests.find(
         (request: HelpRequest) => request.id === requestId
@@ -175,22 +170,6 @@ export const getHelpRequest = async (requestId: string) => {
       }
       
       return { success: true, data: helpRequest, storageMethod: 'localStorage' };
-    }
-    
-    // For Supabase help request ID
-    if (isValidUUID(requestId)) {
-      const { data, error } = await supabase
-        .from('help_requests')
-        .select('*')
-        .eq('id', requestId)
-        .single();
-        
-      if (error) {
-        console.error('Error fetching help request from Supabase:', error);
-        return { success: false, error: error.message };
-      }
-      
-      return { success: true, data, storageMethod: 'Supabase' };
     }
     
     // Invalid request ID format
