@@ -1,13 +1,13 @@
+
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
-import { getUserHomeRoute } from '../../../contexts/auth/authUtils';
-import { isValidStatusTransition, getStatusLabel } from '../../../utils/helpRequestStatusUtils';
+import { isValidTransition } from '../../../utils/statusTransitions';
 
 export const updateHelpRequest = async (
   requestId: string,
   updates: Partial<Omit<HelpRequest, 'ticket_number'>>,
-  userType: 'client' | 'developer'
+  userType: 'client' | 'developer' | 'system'
 ) => {
   try {
     console.log(`[updateHelpRequest] Starting update for requestId: ${requestId}, userType: ${userType}`);
@@ -169,15 +169,12 @@ export const updateHelpRequest = async (
           };
         }
         
-        // Validate the status transition based on user role
-        if (!isValidStatusTransition(normalizedCurrentStatus, normalizedNewStatus, userType)) {
-          const fromStatus = getStatusLabel(normalizedCurrentStatus);
-          const toStatus = getStatusLabel(normalizedNewStatus);
-          
+        // Use our new validation system for status transitions
+        if (!isValidTransition(normalizedCurrentStatus, normalizedNewStatus, userType)) {
           console.error(`[updateHelpRequest] Invalid status transition from ${normalizedCurrentStatus} to ${normalizedNewStatus} by ${userType}`);
           return { 
             success: false, 
-            error: `Invalid status transition from "${fromStatus}" to "${toStatus}". This action is not allowed.` 
+            error: `Invalid status transition from "${normalizedCurrentStatus}" to "${normalizedNewStatus}". This action is not allowed.` 
           };
         }
         
