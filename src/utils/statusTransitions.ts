@@ -162,6 +162,35 @@ export const STATUS_TRANSITIONS: StatusTransition[] = [
     buttonLabel: 'Mark Resolved',
     buttonVariant: 'default'
   },
+  // Client can also mark a request as resolved at this stage
+  {
+    from: 'ready_for_final_action',
+    to: 'resolved',
+    allowedRoles: ['client'],
+    label: 'Confirm Resolution',
+    description: 'Client confirms the request is resolved',
+    buttonLabel: 'Confirm Resolution',
+    buttonVariant: 'default'
+  },
+  // Add status transitions for open tickets
+  {
+    from: 'open',
+    to: 'cancelled_by_client',
+    allowedRoles: ['client'],
+    label: 'Cancel Request',
+    description: 'Cancel this help request',
+    buttonLabel: 'Cancel Request',
+    buttonVariant: 'destructive'
+  },
+  {
+    from: 'pending_match',
+    to: 'cancelled_by_client',
+    allowedRoles: ['client'],
+    label: 'Cancel Request',
+    description: 'Cancel this help request',
+    buttonLabel: 'Cancel Request',
+    buttonVariant: 'destructive'
+  },
 ];
 
 // Add cancellation options for all statuses
@@ -171,17 +200,20 @@ const CANCELLABLE_STATUSES = [
   'ready_for_qa', 'qa_fail', 'qa_pass', 'ready_for_final_action'
 ];
 
-// Add cancellation transitions
+// Add cancellation transitions for the client role
 CANCELLABLE_STATUSES.forEach(status => {
-  STATUS_TRANSITIONS.push({
-    from: status,
-    to: 'cancelled_by_client',
-    allowedRoles: ['client'],
-    label: 'Cancel Request',
-    description: 'Client cancels the request',
-    buttonLabel: 'Cancel Request',
-    buttonVariant: 'destructive'
-  });
+  // Don't add duplicate cancellation transitions
+  if (status !== 'open' && status !== 'pending_match') {
+    STATUS_TRANSITIONS.push({
+      from: status,
+      to: 'cancelled_by_client',
+      allowedRoles: ['client'],
+      label: 'Cancel Request',
+      description: 'Client cancels the request',
+      buttonLabel: 'Cancel Request',
+      buttonVariant: 'destructive'
+    });
+  }
 });
 
 /**
@@ -191,8 +223,11 @@ export const getAllowedTransitions = (
   currentStatus: string, 
   userType: UserType | 'system'
 ): StatusTransition[] => {
+  // Normalize the status by replacing hyphens with underscores
+  const normalizedStatus = currentStatus.replace(/-/g, '_');
+  
   return STATUS_TRANSITIONS.filter(
-    transition => transition.from === currentStatus && 
+    transition => transition.from === normalizedStatus && 
                  transition.allowedRoles.includes(userType)
   );
 };
@@ -224,10 +259,14 @@ export const isValidTransition = (
   toStatus: string,
   userType: UserType | 'system'
 ): boolean => {
+  // Normalize statuses by replacing hyphens with underscores
+  const normalizedFromStatus = fromStatus.replace(/-/g, '_');
+  const normalizedToStatus = toStatus.replace(/-/g, '_');
+  
   return STATUS_TRANSITIONS.some(
     transition => 
-      transition.from === fromStatus &&
-      transition.to === toStatus &&
+      transition.from === normalizedFromStatus &&
+      transition.to === normalizedToStatus &&
       transition.allowedRoles.includes(userType)
   );
 };
@@ -239,7 +278,11 @@ export const getTransitionMetadata = (
   fromStatus: string,
   toStatus: string
 ): StatusTransition | undefined => {
+  // Normalize statuses by replacing hyphens with underscores
+  const normalizedFromStatus = fromStatus.replace(/-/g, '_');
+  const normalizedToStatus = toStatus.replace(/-/g, '_');
+  
   return STATUS_TRANSITIONS.find(
-    transition => transition.from === fromStatus && transition.to === toStatus
+    transition => transition.from === normalizedFromStatus && transition.to === normalizedToStatus
   );
 };

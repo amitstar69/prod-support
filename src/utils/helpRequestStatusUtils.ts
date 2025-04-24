@@ -34,6 +34,7 @@ export const STATUS_TRANSITIONS = {
     'qa_fail': ['cancelled_by_client'],
     'qa_pass': ['cancelled_by_client'],
     'ready_for_final_action': ['resolved', 'cancelled_by_client'],
+    'open': ['cancelled_by_client'], // Added for open tickets
     'any': ['cancelled_by_client'] // Client can cancel anytime
   }
 };
@@ -88,7 +89,8 @@ export const getStatusLabel = (status: string): string => {
     'qa_pass': 'QA Passed',
     'ready_for_final_action': 'Ready for Final Action',
     'resolved': 'Resolved',
-    'cancelled_by_client': 'Cancelled'
+    'cancelled_by_client': 'Cancelled',
+    'open': 'Open' // Add mapping for open status
   };
 
   return statusLabels[normalizedStatus] || status.replace(/_/g, ' ');
@@ -113,7 +115,8 @@ export const getStatusDescription = (status: string): string => {
     'qa_pass': 'Client has confirmed the work meets requirements',
     'ready_for_final_action': 'Ready for developer to take final actions',
     'resolved': 'Request has been completed and resolved successfully',
-    'cancelled_by_client': 'Request was cancelled by the client'
+    'cancelled_by_client': 'Request was cancelled by the client',
+    'open': 'Request is open and waiting for developer applications'
   };
 
   return statusDescriptions[normalizedStatus] || 'Status information unavailable';
@@ -134,7 +137,8 @@ export const STATUSES = {
   QA_PASS: 'qa_pass',
   READY_FOR_FINAL_ACTION: 'ready_for_final_action',
   RESOLVED: 'resolved',
-  CANCELLED_BY_CLIENT: 'cancelled_by_client'
+  CANCELLED_BY_CLIENT: 'cancelled_by_client',
+  OPEN: 'open' // Add open status
 };
 
 // Helper function to check if the current user can update to a given status

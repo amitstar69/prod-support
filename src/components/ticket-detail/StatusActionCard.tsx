@@ -37,6 +37,7 @@ const StatusActionCard: React.FC<StatusActionCardProps> = ({
     if (ticket && ticket.status) {
       // Get allowed transitions based on current status and user role
       const transitions = getAllowedTransitions(ticket.status, userType);
+      console.log(`[StatusActionCard] Found ${transitions.length} transitions for ${userType} in status ${ticket.status}`);
       setAvailableTransitions(transitions);
     }
   }, [ticket, userType]);
@@ -45,6 +46,8 @@ const StatusActionCard: React.FC<StatusActionCardProps> = ({
     try {
       setIsUpdating(newStatus);
       setError(null);
+      
+      console.log(`[StatusActionCard] Updating status from ${ticket.status} to ${newStatus}`);
       
       const response = await updateHelpRequest(
         ticket.id!,
