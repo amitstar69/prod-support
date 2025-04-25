@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, useState } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
@@ -31,7 +32,7 @@ const MyApplicationsPage = () => {
   } = useDeveloperDashboard();
   
   const fetchApplications = useCallback(() => {
-    if (userId && isAuthenticated) {
+    if (userId && isAuthenticated && fetchMyApplications) {
       console.log('MyApplicationsPage: Fetching applications');
       fetchMyApplications(isAuthenticated, userId)
         .catch(error => {
@@ -86,7 +87,7 @@ const MyApplicationsPage = () => {
       hasError,
       hasApplicationError,
       hasLoadingTimedOut,
-      applicationsCount: myApplications?.length || 0
+      applicationsCount: (myApplications || [])?.length || 0
     });
   }, [isLoadingPage, isLoading, isLoadingApplications, hasError, hasApplicationError, hasLoadingTimedOut, myApplications]);
 
@@ -133,8 +134,8 @@ const MyApplicationsPage = () => {
         ) : (
           <div>
             <TicketSummary 
-              filteredCount={myApplications?.length || 0} 
-              totalCount={myApplications?.length || 0} 
+              filteredCount={(myApplications || [])?.length || 0} 
+              totalCount={(myApplications || [])?.length || 0} 
               dataSource="database"
               categoryTitle="My Approved Tickets"
               isApplication={true}

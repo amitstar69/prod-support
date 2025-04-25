@@ -4,12 +4,14 @@ import { useAuth } from '../../contexts/auth';
 import { HelpRequest } from '../../types/helpRequest';
 import { useTicketFetching } from './useTicketFetching';
 import { useTicketFilters } from './useTicketFilters';
+import { useTicketApplications } from './useTicketApplications';
 import { useTicketApplicationActions } from './useTicketApplicationActions';
 import { supabase } from '../../integrations/supabase/client';
 
 export const useDeveloperDashboard = () => {
   const { userId, isAuthenticated, userType } = useAuth();
   const [showFilters, setShowFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
   
   const { 
     tickets, 
@@ -22,22 +24,32 @@ export const useDeveloperDashboard = () => {
   
   const { 
     filters, 
+    filteredTickets,
     categorizedTickets,
     handleFilterChange, 
     resetFilters 
   } = useTicketFilters(tickets);
-  
+
   // Create a dummy function to satisfy the type if needed
-  const dummyFetchMyApplications = async () => {
+  const dummyFetchMyApplications = async (isAuth: boolean, uid: string | null) => {
     return Promise.resolve();
   };
   
-  const { handleClaimTicket } = useTicketApplicationActions(
+  // Use hook for applications
+  const {
+    recommendedTickets,
+    myApplications,
+    isLoadingApplications,
+    hasError: hasApplicationError,
+    handleClaimTicket,
+    fetchMyApplications,
+    checkApplicationStatus,
+  } = useTicketApplications(
+    tickets,
     isAuthenticated,
     userId,
     userType,
-    handleForceRefresh,
-    dummyFetchMyApplications
+    handleForceRefresh
   );
 
   // Set up real-time listener for ticket updates
@@ -92,18 +104,28 @@ export const useDeveloperDashboard = () => {
 
   return {
     tickets,
+    filteredTickets,
     categorizedTickets,
-    filters,
+    recommendedTickets,
+    myApplications,
     isLoading,
+    isLoadingApplications,
     hasError,
+    hasApplicationError,
     dataSource,
     showFilters,
     setShowFilters,
+    userId,
+    isAuthenticated,
+    activeTab,
+    setActiveTab,
     handleFilterChange,
     resetFilters,
     handleClaimTicket,
     handleForceRefresh,
-    fetchTickets
+    fetchTickets,
+    fetchMyApplications,
+    checkApplicationStatus
   };
 };
 

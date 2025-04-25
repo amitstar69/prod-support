@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -13,6 +12,15 @@ import { Skeleton } from '../ui/skeleton';
 interface DeveloperApplicationsPanelProps {
   ticketId: string;
   onApplicationAccepted: () => void;
+}
+
+interface ApplicationWithProfile extends Omit<HelpRequestMatch, 'profiles'> {
+  profiles?: {
+    id?: string;
+    name?: string;
+    image?: string;
+    experience?: string;
+  } | null;
 }
 
 const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
@@ -68,7 +76,27 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
         return;
       }
       
-      setApplications(data || []);
+      // Ensure the data conforms to our expected type
+      const typedApplications: HelpRequestMatch[] = (data || []).map(app => {
+        // Handle potentially malformed profiles data
+        let safeProfiles = app.profiles;
+        
+        if (!safeProfiles || typeof safeProfiles !== 'object' || (safeProfiles as any).error) {
+          safeProfiles = { 
+            id: app.developer_id, 
+            name: 'Unknown Developer',
+            image: null,
+            experience: null
+          };
+        }
+
+        return {
+          ...app,
+          profiles: safeProfiles
+        } as HelpRequestMatch;
+      });
+      
+      setApplications(typedApplications);
     } catch (err) {
       console.error('Exception fetching applications:', err);
       setError('An unexpected error occurred');

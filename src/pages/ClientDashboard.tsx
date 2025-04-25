@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
@@ -81,7 +80,27 @@ const ClientDashboard = () => {
           }
           
           if (data && data.length > 0) {
-            applicationsByTicket[ticketId] = data;
+            // Process the data to ensure it matches our type
+            const typedApplications: HelpRequestMatch[] = data.map(app => {
+              // Handle potentially malformed profiles data
+              let safeProfiles = app.profiles;
+              
+              if (!safeProfiles || typeof safeProfiles !== 'object' || (safeProfiles as any).error) {
+                safeProfiles = { 
+                  id: app.developer_id, 
+                  name: 'Unknown Developer',
+                  image: null,
+                  experience: null
+                };
+              }
+              
+              return {
+                ...app,
+                profiles: safeProfiles
+              } as HelpRequestMatch;
+            });
+            
+            applicationsByTicket[ticketId] = typedApplications;
           }
         }
         
@@ -296,15 +315,15 @@ const ClientDashboard = () => {
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-medium">Developer Applications</h4>
                             <Badge variant="outline" className="text-xs">
-                              {developerApplications[ticket.id!]?.length || 0} Applications
+                              {developerApplications[ticket.id || '']?.length || 0} Applications
                             </Badge>
                           </div>
                           
-                          {!developerApplications[ticket.id!] ? (
+                          {!developerApplications[ticket.id || ''] || developerApplications[ticket.id || ''].length === 0 ? (
                             <p className="text-sm text-muted-foreground">No applications yet</p>
                           ) : (
                             <div className="space-y-3">
-                              {developerApplications[ticket.id!].map(application => (
+                              {developerApplications[ticket.id || ''].map(application => (
                                 <div key={application.id} className="flex items-center justify-between bg-muted/20 p-3 rounded-lg">
                                   <div className="flex items-center space-x-3">
                                     <div className="h-10 w-10 rounded-full bg-muted overflow-hidden">

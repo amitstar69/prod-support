@@ -27,7 +27,7 @@ export const useTicketApplications = (
   userType: string | null,
   refreshTickets: () => void
 ): UseTicketApplicationsResult => {
-  const recommendedTickets = useRecommendedTickets(tickets, isAuthenticated, userId);
+  const recommendedTicketsResult = useRecommendedTickets(tickets, isAuthenticated, userId);
   const { 
     myApplications, 
     fetchMyApplications, 
@@ -74,8 +74,8 @@ export const useTicketApplications = (
   );
 
   return {
-    recommendedTickets,
-    myApplications,
+    recommendedTickets: recommendedTicketsResult || [],
+    myApplications: myApplications || [],
     isLoadingApplications,
     hasError,
     handleClaimTicket,

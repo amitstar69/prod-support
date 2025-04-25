@@ -64,11 +64,11 @@ export interface HelpRequestMatch {
   status: string;
   proposed_message?: string;
   profiles?: {
-    id: string;
+    id?: string;
     name?: string;
     image?: string;
     experience?: string;
-  };
+  } | null;
 }
 
 export interface HelpSession {

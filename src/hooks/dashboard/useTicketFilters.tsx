@@ -57,7 +57,7 @@ const PENDING_APPROVAL_STATUSES = [
   'awaiting_client_approval'
 ];
 
-export const useTicketFilters = (tickets: HelpRequest[]): UseTicketFiltersResult => {
+export const useTicketFilters = (tickets: HelpRequest[]) => {
   const [filteredTickets, setFilteredTickets] = useState<HelpRequest[]>([]);
   const [filters, setFilters] = useState<FilterState>({
     status: 'all',

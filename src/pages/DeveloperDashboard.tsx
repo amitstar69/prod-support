@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
@@ -11,12 +11,16 @@ import EmptyTicketState from '../components/dashboard/EmptyTicketState';
 import TicketControls from '../components/dashboard/TicketControls';
 import TicketSummary from '../components/dashboard/TicketSummary';
 import { useDeveloperDashboard } from '../hooks/dashboard/useDeveloperDashboard';
+import { useAuth } from '../contexts/auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
 // Check if we're in development mode - explicitly using import.meta.env
 const isDevelopment = process.env.NODE_ENV === 'development' || import.meta.env.DEV === true;
 
 const DeveloperDashboard = () => {
+  const { userId, isAuthenticated } = useAuth();
+  const [activeTab, setActiveTab] = useState('all');
+  
   const {
     tickets,
     filteredTickets,
@@ -25,10 +29,6 @@ const DeveloperDashboard = () => {
     filters,
     showFilters,
     setShowFilters,
-    isAuthenticated,
-    userId,
-    activeTab,
-    setActiveTab,
     dataSource,
     handleFilterChange,
     handleClaimTicket,
@@ -57,7 +57,7 @@ const DeveloperDashboard = () => {
         
         <TicketControls 
           onForceRefresh={handleForceRefresh}
-          showLoadMore={filteredTickets.length >= 5}
+          showLoadMore={(filteredTickets || []).length >= 5}
         />
         
         {showFilters && (
@@ -92,15 +92,15 @@ const DeveloperDashboard = () => {
             {isAuthenticated && (
               <TabsContent value="recommended" className="mt-0">
                 <TicketSummary 
-                  filteredCount={recommendedTickets.length} 
+                  filteredCount={(recommendedTickets || []).length} 
                   totalCount={tickets.length} 
                   dataSource={dataSource}
                   categoryTitle="Recommended Gigs"
                 />
                 
-                {recommendedTickets.length > 0 ? (
+                {(recommendedTickets || []).length > 0 ? (
                   <TicketList 
-                    tickets={recommendedTickets} 
+                    tickets={recommendedTickets || []} 
                     onClaimTicket={handleClaimTicket}
                     currentUserId={userId}
                     isAuthenticated={isAuthenticated}
@@ -120,15 +120,15 @@ const DeveloperDashboard = () => {
             
             <TabsContent value="all" className="mt-0">
               <TicketSummary 
-                filteredCount={filteredTickets.length} 
+                filteredCount={(filteredTickets || []).length} 
                 totalCount={tickets.length} 
                 dataSource={dataSource}
                 categoryTitle="All Available Gigs"
               />
               
-              {filteredTickets.length > 0 ? (
+              {(filteredTickets || []).length > 0 ? (
                 <TicketList 
-                  tickets={filteredTickets} 
+                  tickets={filteredTickets || []} 
                   onClaimTicket={handleClaimTicket}
                   currentUserId={userId}
                   isAuthenticated={isAuthenticated}
