@@ -14,6 +14,7 @@ import { Textarea } from '../ui/textarea';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
 import { useAuth } from '../../contexts/auth';
+import { HELP_REQUEST_STATUSES } from '../../utils/constants/statusConstants';
 
 interface CancelHelpRequestDialogProps {
   isOpen: boolean;
@@ -45,9 +46,9 @@ const CancelHelpRequestDialog: React.FC<CancelHelpRequestDialogProps> = ({
     try {
       setIsSubmitting(true);
       
-      // Explicitly use cancelled_by_client as the status value to match the database constraint
+      // Use the constant to ensure consistent status value
       const response = await updateHelpRequest(requestId, {
-        status: 'cancelled_by_client',
+        status: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT,
         cancellation_reason: cancellationReason
       }, userType || 'client');
       

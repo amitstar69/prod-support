@@ -1,40 +1,43 @@
+
 // Define user types for status transitions
+import { HELP_REQUEST_STATUSES, normalizeStatus } from './constants/statusConstants';
+
 export type UserType = 'client' | 'developer' | 'system';
 
 // Define valid status transitions (legacy - consider using the new statusTransitions.ts instead)
 export const STATUS_TRANSITIONS = {
   system: {
-    'submitted': ['pending_match'],
-    'dev_requested': ['awaiting_client_approval'],
-    'qa_pass': ['ready_for_final_action'],
-    'any': ['cancelled_by_client'] // Special case handled in validation
+    [HELP_REQUEST_STATUSES.SUBMITTED]: [HELP_REQUEST_STATUSES.PENDING_MATCH],
+    [HELP_REQUEST_STATUSES.DEV_REQUESTED]: [HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL],
+    [HELP_REQUEST_STATUSES.QA_PASS]: [HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION],
+    'any': [HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT] // Special case handled in validation
   },
   developer: {
-    'pending_match': ['dev_requested'],
-    'approved': ['requirements_review', 'need_more_info'],
-    'requirements_review': ['in_progress', 'need_more_info'],
-    'need_more_info': ['requirements_review', 'in_progress'],
-    'in_progress': ['ready_for_qa', 'requirements_review', 'need_more_info'],
-    'in-progress': ['ready_for_qa', 'requirements_review', 'need_more_info'], // Added for hyphenated version too
-    'qa_fail': ['in_progress', 'ready_for_qa'],
-    'qa_pass': ['ready_for_final_action'],
-    'ready_for_final_action': ['resolved']
+    [HELP_REQUEST_STATUSES.PENDING_MATCH]: [HELP_REQUEST_STATUSES.DEV_REQUESTED],
+    [HELP_REQUEST_STATUSES.APPROVED]: [HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, HELP_REQUEST_STATUSES.NEED_MORE_INFO],
+    [HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW]: [HELP_REQUEST_STATUSES.IN_PROGRESS, HELP_REQUEST_STATUSES.NEED_MORE_INFO],
+    [HELP_REQUEST_STATUSES.NEED_MORE_INFO]: [HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, HELP_REQUEST_STATUSES.IN_PROGRESS],
+    [HELP_REQUEST_STATUSES.IN_PROGRESS]: [HELP_REQUEST_STATUSES.READY_FOR_QA, HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, HELP_REQUEST_STATUSES.NEED_MORE_INFO],
+    'in-progress': [HELP_REQUEST_STATUSES.READY_FOR_QA, HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, HELP_REQUEST_STATUSES.NEED_MORE_INFO], // Added for hyphenated version too
+    [HELP_REQUEST_STATUSES.QA_FAIL]: [HELP_REQUEST_STATUSES.IN_PROGRESS, HELP_REQUEST_STATUSES.READY_FOR_QA],
+    [HELP_REQUEST_STATUSES.QA_PASS]: [HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION],
+    [HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION]: [HELP_REQUEST_STATUSES.RESOLVED]
   },
   client: {
-    'submitted': ['cancelled_by_client'],
-    'pending_match': ['cancelled_by_client'],
-    'dev_requested': ['cancelled_by_client'],
-    'awaiting_client_approval': ['approved', 'pending_match', 'cancelled_by_client'],
-    'approved': ['cancelled_by_client'],
-    'requirements_review': ['cancelled_by_client'],
-    'need_more_info': ['cancelled_by_client', 'requirements_review'],
-    'in_progress': ['cancelled_by_client'],
-    'ready_for_qa': ['qa_fail', 'qa_pass', 'cancelled_by_client'],
-    'qa_fail': ['cancelled_by_client'],
-    'qa_pass': ['cancelled_by_client'],
-    'ready_for_final_action': ['resolved', 'cancelled_by_client'],
-    'open': ['cancelled_by_client'], // Added for open tickets
-    'any': ['cancelled_by_client'] // Client can cancel anytime
+    [HELP_REQUEST_STATUSES.SUBMITTED]: [HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT],
+    [HELP_REQUEST_STATUSES.PENDING_MATCH]: [HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT],
+    [HELP_REQUEST_STATUSES.DEV_REQUESTED]: [HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT],
+    [HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL]: [HELP_REQUEST_STATUSES.APPROVED, HELP_REQUEST_STATUSES.PENDING_MATCH, HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT],
+    [HELP_REQUEST_STATUSES.APPROVED]: [HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT],
+    [HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW]: [HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT],
+    [HELP_REQUEST_STATUSES.NEED_MORE_INFO]: [HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW],
+    [HELP_REQUEST_STATUSES.IN_PROGRESS]: [HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT],
+    [HELP_REQUEST_STATUSES.READY_FOR_QA]: [HELP_REQUEST_STATUSES.QA_FAIL, HELP_REQUEST_STATUSES.QA_PASS, HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT],
+    [HELP_REQUEST_STATUSES.QA_FAIL]: [HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT],
+    [HELP_REQUEST_STATUSES.QA_PASS]: [HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT],
+    [HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION]: [HELP_REQUEST_STATUSES.RESOLVED, HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT],
+    [HELP_REQUEST_STATUSES.OPEN]: [HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT], // Added for open tickets
+    'any': [HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT] // Client can cancel anytime
   }
 };
 
@@ -47,49 +50,67 @@ export const isValidStatusTransition = (
   const transitions = STATUS_TRANSITIONS[userType];
   
   // Special case for cancellation by client
-  if (newStatus === 'cancelled_by_client' && userType === 'client') {
+  if (newStatus === HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT && userType === 'client') {
     return true;
   }
   
-  // Handle hyphenated statuses (for compatibility)
-  const normalizedCurrentStatus = currentStatus.replace(/-/g, '_');
+  // Handle normalized status formats (for compatibility)
+  const normalizedCurrentStatus = normalizeStatus(currentStatus);
   
-  // Regular transition check
-  const allowedTransitions = transitions[normalizedCurrentStatus] || transitions[currentStatus];
+  // Regular transition check - try direct match first
+  let allowedTransitions = transitions[currentStatus];
+  
+  // If no direct match, try normalized status
+  if (!allowedTransitions) {
+    allowedTransitions = transitions[normalizedCurrentStatus];
+  }
+  
+  // If still no match, check any special cases
+  if (!allowedTransitions && transitions['any']) {
+    return transitions['any'].includes(newStatus);
+  }
+  
   return Array.isArray(allowedTransitions) && allowedTransitions.includes(newStatus);
 };
 
 // Get next logical status in the workflow
 export const getNextStatus = (currentStatus: string, userType: UserType): string | null => {
   const transitions = STATUS_TRANSITIONS[userType];
-  // Handle hyphenated statuses (for compatibility)
-  const normalizedCurrentStatus = currentStatus.replace(/-/g, '_');
-  const nextStatuses = transitions[normalizedCurrentStatus] || transitions[currentStatus];
+  // Handle normalized status formats (for compatibility)
+  const normalizedCurrentStatus = normalizeStatus(currentStatus);
+  
+  // Try direct match first
+  let nextStatuses = transitions[currentStatus];
+  
+  // If no direct match, try normalized status
+  if (!nextStatuses) {
+    nextStatuses = transitions[normalizedCurrentStatus];
+  }
+  
   return Array.isArray(nextStatuses) && nextStatuses.length > 0 ? nextStatuses[0] : null;
 };
 
 // Get human-readable status label
 export const getStatusLabel = (status: string): string => {
-  // Handle hyphenated statuses (for compatibility)
-  const normalizedStatus = status.replace(/-/g, '_');
+  // Normalize status for consistent lookup
+  const normalizedStatus = normalizeStatus(status);
   
   const statusLabels: Record<string, string> = {
-    'submitted': 'Submitted',
-    'pending_match': 'Pending Match',
-    'dev_requested': 'Developer Requested',
-    'awaiting_client_approval': 'Awaiting Client Approval',
-    'approved': 'Approved',
-    'requirements_review': 'Requirements Review',
-    'need_more_info': 'Need More Info',
-    'in_progress': 'In Progress',
-    'in-progress': 'In Progress', // Add the hyphenated version
-    'ready_for_qa': 'Ready for Client QA',
-    'qa_fail': 'QA Failed',
-    'qa_pass': 'QA Passed',
-    'ready_for_final_action': 'Ready for Final Action',
-    'resolved': 'Resolved',
-    'cancelled_by_client': 'Cancelled',
-    'open': 'Open' // Add mapping for open status
+    [normalizeStatus(HELP_REQUEST_STATUSES.SUBMITTED)]: 'Submitted',
+    [normalizeStatus(HELP_REQUEST_STATUSES.PENDING_MATCH)]: 'Pending Match',
+    [normalizeStatus(HELP_REQUEST_STATUSES.DEV_REQUESTED)]: 'Developer Requested',
+    [normalizeStatus(HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL)]: 'Awaiting Client Approval',
+    [normalizeStatus(HELP_REQUEST_STATUSES.APPROVED)]: 'Approved',
+    [normalizeStatus(HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW)]: 'Requirements Review',
+    [normalizeStatus(HELP_REQUEST_STATUSES.NEED_MORE_INFO)]: 'Need More Info',
+    [normalizeStatus(HELP_REQUEST_STATUSES.IN_PROGRESS)]: 'In Progress',
+    [normalizeStatus(HELP_REQUEST_STATUSES.READY_FOR_QA)]: 'Ready for Client QA',
+    [normalizeStatus(HELP_REQUEST_STATUSES.QA_FAIL)]: 'QA Failed',
+    [normalizeStatus(HELP_REQUEST_STATUSES.QA_PASS)]: 'QA Passed',
+    [normalizeStatus(HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION)]: 'Ready for Final Action',
+    [normalizeStatus(HELP_REQUEST_STATUSES.RESOLVED)]: 'Resolved',
+    [normalizeStatus(HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT)]: 'Cancelled',
+    [normalizeStatus(HELP_REQUEST_STATUSES.OPEN)]: 'Open'
   };
 
   return statusLabels[normalizedStatus] || status.replace(/_/g, ' ');
@@ -98,47 +119,31 @@ export const getStatusLabel = (status: string): string => {
 // Get status descriptions
 export const getStatusDescription = (status: string): string => {
   // Normalize status for consistent lookups
-  const normalizedStatus = status.replace(/-/g, '_');
+  const normalizedStatus = normalizeStatus(status);
   
   const statusDescriptions: Record<string, string> = {
-    'submitted': 'Request has been submitted but not yet processed',
-    'pending_match': 'Request is awaiting a developer match',
-    'dev_requested': 'A developer has requested to be assigned',
-    'awaiting_client_approval': 'Awaiting client approval for developer assignment',
-    'approved': 'Developer has been approved and can start work',
-    'requirements_review': 'Developer is reviewing requirements before starting work',
-    'need_more_info': 'Developer needs more information to proceed',
-    'in_progress': 'Developer is actively working on this request',
-    'ready_for_qa': 'Developer has completed work and it is ready for client review',
-    'qa_fail': 'Client has reviewed the work and found issues that need fixing',
-    'qa_pass': 'Client has confirmed the work meets requirements',
-    'ready_for_final_action': 'Ready for developer to take final actions',
-    'resolved': 'Request has been completed and resolved successfully',
-    'cancelled_by_client': 'Request was cancelled by the client',
-    'open': 'Request is open and waiting for developer applications'
+    [normalizeStatus(HELP_REQUEST_STATUSES.SUBMITTED)]: 'Request has been submitted but not yet processed',
+    [normalizeStatus(HELP_REQUEST_STATUSES.PENDING_MATCH)]: 'Request is awaiting a developer match',
+    [normalizeStatus(HELP_REQUEST_STATUSES.DEV_REQUESTED)]: 'A developer has requested to be assigned',
+    [normalizeStatus(HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL)]: 'Awaiting client approval for developer assignment',
+    [normalizeStatus(HELP_REQUEST_STATUSES.APPROVED)]: 'Developer has been approved and can start work',
+    [normalizeStatus(HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW)]: 'Developer is reviewing requirements before starting work',
+    [normalizeStatus(HELP_REQUEST_STATUSES.NEED_MORE_INFO)]: 'Developer needs more information to proceed',
+    [normalizeStatus(HELP_REQUEST_STATUSES.IN_PROGRESS)]: 'Developer is actively working on this request',
+    [normalizeStatus(HELP_REQUEST_STATUSES.READY_FOR_QA)]: 'Developer has completed work and it is ready for client review',
+    [normalizeStatus(HELP_REQUEST_STATUSES.QA_FAIL)]: 'Client has reviewed the work and found issues that need fixing',
+    [normalizeStatus(HELP_REQUEST_STATUSES.QA_PASS)]: 'Client has confirmed the work meets requirements',
+    [normalizeStatus(HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION)]: 'Ready for developer to take final actions',
+    [normalizeStatus(HELP_REQUEST_STATUSES.RESOLVED)]: 'Request has been completed and resolved successfully',
+    [normalizeStatus(HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT)]: 'Request was cancelled by the client',
+    [normalizeStatus(HELP_REQUEST_STATUSES.OPEN)]: 'Request is open and waiting for developer applications'
   };
 
   return statusDescriptions[normalizedStatus] || 'Status information unavailable';
 };
 
-// Global status constants
-export const STATUSES = {
-  SUBMITTED: 'submitted',
-  PENDING_MATCH: 'pending_match',
-  DEV_REQUESTED: 'dev_requested',
-  AWAITING_CLIENT_APPROVAL: 'awaiting_client_approval',
-  APPROVED: 'approved',
-  REQUIREMENTS_REVIEW: 'requirements_review',
-  NEED_MORE_INFO: 'need_more_info',
-  IN_PROGRESS: 'in_progress',
-  READY_FOR_CLIENT_QA: 'ready_for_qa',
-  QA_FAIL: 'qa_fail',
-  QA_PASS: 'qa_pass',
-  READY_FOR_FINAL_ACTION: 'ready_for_final_action',
-  RESOLVED: 'resolved',
-  CANCELLED_BY_CLIENT: 'cancelled_by_client',
-  OPEN: 'open'
-};
+// Global status constants - now using the centralized ones from constants file
+export const STATUSES = HELP_REQUEST_STATUSES;
 
 // Helper function to check if the current user can update to a given status
 export const canUpdateToStatus = (
@@ -158,10 +163,16 @@ export const getAllowedStatusTransitions = (
   
   const transitions = STATUS_TRANSITIONS[userType];
   
-  // Handle hyphenated statuses (for compatibility)
-  const normalizedCurrentStatus = currentStatus.replace(/-/g, '_');
+  // Handle normalized status formats (for compatibility)
+  const normalizedCurrentStatus = normalizeStatus(currentStatus);
   
-  let allowedTransitions = transitions[normalizedCurrentStatus] || transitions[currentStatus] || [];
+  // Try direct match first
+  let allowedTransitions = transitions[currentStatus] || [];
+  
+  // If no direct match, try normalized status
+  if (allowedTransitions.length === 0) {
+    allowedTransitions = transitions[normalizedCurrentStatus] || [];
+  }
   
   // Add special 'any' transitions if applicable
   if (transitions['any']) {

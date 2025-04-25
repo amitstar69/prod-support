@@ -13,6 +13,7 @@ import {
 } from '../../utils/statusTransitions';
 import { updateHelpRequest } from '../../integrations/supabase/helpRequestsCore/updateHelpRequest';
 import { UserType } from '../../utils/helpRequestStatusUtils';
+import { normalizeStatus } from '../../utils/constants/statusConstants';
 
 interface StatusActionCardProps {
   ticket: HelpRequest;
@@ -21,7 +22,7 @@ interface StatusActionCardProps {
 }
 
 /**
- * StatusActionCard - A revamped component that displays status update actions
+ * StatusActionCard - A component that displays status update actions
  * with clear transition paths based on current status and user role
  */
 const StatusActionCard: React.FC<StatusActionCardProps> = ({
@@ -47,9 +48,9 @@ const StatusActionCard: React.FC<StatusActionCardProps> = ({
       setIsUpdating(newStatus);
       setError(null);
       
-      // Normalize status formats for consistent comparison (handles both hyphen and underscore formats)
-      const normalizedCurrentStatus = ticket.status?.replace(/[-_]/g, '_');
-      const normalizedNewStatus = newStatus.replace(/[-_]/g, '_');
+      // Normalize status formats for consistent comparison
+      const normalizedCurrentStatus = normalizeStatus(ticket.status || '');
+      const normalizedNewStatus = normalizeStatus(newStatus);
       
       // Prevent unnecessary updates
       if (normalizedCurrentStatus === normalizedNewStatus) {

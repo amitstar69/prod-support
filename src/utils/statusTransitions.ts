@@ -1,5 +1,6 @@
 
 import { UserType } from "./helpRequestStatusUtils";
+import { HELP_REQUEST_STATUSES, normalizeStatus, HelpRequestStatus } from "./constants/statusConstants";
 
 /**
  * Represents a valid status transition
@@ -21,12 +22,12 @@ export const isValidTransition = (
   newStatus: string, 
   userType: UserType
 ): boolean => {
-  // Normalize status values
-  const normalizedCurrentStatus = currentStatus.replace(/[-_]/g, '_');
-  const normalizedNewStatus = newStatus.replace(/[-_]/g, '_');
+  // Normalize status values for consistent comparison
+  const normalizedCurrentStatus = normalizeStatus(currentStatus);
+  const normalizedNewStatus = normalizeStatus(newStatus);
   
   // Special case: client can cancel anytime
-  if (userType === 'client' && normalizedNewStatus === 'cancelled_by_client') {
+  if (userType === 'client' && normalizedNewStatus === normalizeStatus(HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT)) {
     return true;
   }
 
@@ -34,24 +35,24 @@ export const isValidTransition = (
   const transitions = getTransitionsForStatus(normalizedCurrentStatus, userType);
   
   // Check if the new status is in the allowed transitions
-  return transitions.some(t => t.to === normalizedNewStatus);
+  return transitions.some(t => normalizeStatus(t.to) === normalizedNewStatus);
 };
 
 /**
  * Get all possible transitions from a current status for a specific user type
  */
 export const getAllowedTransitions = (currentStatus: string, userType: UserType): StatusTransition[] => {
-  // Normalize status value
-  const normalizedStatus = currentStatus.replace(/[-_]/g, '_');
+  // Normalize status value for consistent comparison
+  const normalizedStatus = normalizeStatus(currentStatus);
   
   // Special handling for the cancel action which is always available for clients
   const transitions = getTransitionsForStatus(normalizedStatus, userType);
   
-  if (userType === 'client' && !transitions.some(t => t.to === 'cancelled_by_client')) {
+  if (userType === 'client' && !transitions.some(t => normalizeStatus(t.to) === normalizeStatus(HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT))) {
     // Add cancellation as an option for clients if not already included
     transitions.push({
       from: normalizedStatus,
-      to: 'cancelled_by_client',
+      to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT,
       roles: ['client'],
       buttonLabel: 'Cancel Request',
       buttonVariant: 'destructive',
@@ -78,41 +79,41 @@ export const getNextRecommendedStatus = (
  * Get base transitions for a specific status and user type
  */
 const getTransitionsForStatus = (status: string, userType: UserType): StatusTransition[] => {
-  // Define all possible transitions
+  // Define all possible transitions using the constants for consistency
   const allTransitions: StatusTransition[] = [
     // Client transitions
-    { from: 'submitted', to: 'pending_match', roles: ['system'], buttonLabel: 'Send to Matching', buttonVariant: 'default' },
-    { from: 'pending_match', to: 'dev_requested', roles: ['developer'], buttonLabel: 'Request Assignment', buttonVariant: 'default' },
-    { from: 'dev_requested', to: 'awaiting_client_approval', roles: ['system'], buttonLabel: 'Notify Client', buttonVariant: 'default' },
-    { from: 'awaiting_client_approval', to: 'approved', roles: ['client'], buttonLabel: 'Approve Developer', buttonVariant: 'default' },
-    { from: 'awaiting_client_approval', to: 'pending_match', roles: ['client'], buttonLabel: 'Reject & Find Another', buttonVariant: 'outline' },
-    { from: 'approved', to: 'requirements_review', roles: ['developer'], buttonLabel: 'Start Requirements Review', buttonVariant: 'default' },
-    { from: 'approved', to: 'need_more_info', roles: ['developer'], buttonLabel: 'Request More Information', buttonVariant: 'outline' },
-    { from: 'requirements_review', to: 'in_progress', roles: ['developer'], buttonLabel: 'Start Work', buttonVariant: 'default' },
-    { from: 'requirements_review', to: 'need_more_info', roles: ['developer'], buttonLabel: 'Request More Information', buttonVariant: 'outline' },
-    { from: 'need_more_info', to: 'requirements_review', roles: ['client', 'developer'], buttonLabel: 'Back to Requirements', buttonVariant: 'outline' },
-    { from: 'in_progress', to: 'ready_for_qa', roles: ['developer'], buttonLabel: 'Ready for QA', buttonVariant: 'default' },
-    { from: 'ready_for_qa', to: 'qa_fail', roles: ['client'], buttonLabel: 'Request Changes', buttonVariant: 'destructive' },
-    { from: 'ready_for_qa', to: 'qa_pass', roles: ['client'], buttonLabel: 'Approve Work', buttonVariant: 'default' },
-    { from: 'qa_fail', to: 'in_progress', roles: ['developer'], buttonLabel: 'Resume Work', buttonVariant: 'default' },
-    { from: 'qa_fail', to: 'ready_for_qa', roles: ['developer'], buttonLabel: 'Ready for QA Again', buttonVariant: 'outline' },
-    { from: 'qa_pass', to: 'ready_for_final_action', roles: ['system'], buttonLabel: 'Finalize', buttonVariant: 'default' },
-    { from: 'ready_for_final_action', to: 'resolved', roles: ['client', 'developer'], buttonLabel: 'Mark as Resolved', buttonVariant: 'default' },
+    { from: HELP_REQUEST_STATUSES.SUBMITTED, to: HELP_REQUEST_STATUSES.PENDING_MATCH, roles: ['system'], buttonLabel: 'Send to Matching', buttonVariant: 'default' },
+    { from: HELP_REQUEST_STATUSES.PENDING_MATCH, to: HELP_REQUEST_STATUSES.DEV_REQUESTED, roles: ['developer'], buttonLabel: 'Request Assignment', buttonVariant: 'default' },
+    { from: HELP_REQUEST_STATUSES.DEV_REQUESTED, to: HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL, roles: ['system'], buttonLabel: 'Notify Client', buttonVariant: 'default' },
+    { from: HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL, to: HELP_REQUEST_STATUSES.APPROVED, roles: ['client'], buttonLabel: 'Approve Developer', buttonVariant: 'default' },
+    { from: HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL, to: HELP_REQUEST_STATUSES.PENDING_MATCH, roles: ['client'], buttonLabel: 'Reject & Find Another', buttonVariant: 'outline' },
+    { from: HELP_REQUEST_STATUSES.APPROVED, to: HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, roles: ['developer'], buttonLabel: 'Start Requirements Review', buttonVariant: 'default' },
+    { from: HELP_REQUEST_STATUSES.APPROVED, to: HELP_REQUEST_STATUSES.NEED_MORE_INFO, roles: ['developer'], buttonLabel: 'Request More Information', buttonVariant: 'outline' },
+    { from: HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, to: HELP_REQUEST_STATUSES.IN_PROGRESS, roles: ['developer'], buttonLabel: 'Start Work', buttonVariant: 'default' },
+    { from: HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, to: HELP_REQUEST_STATUSES.NEED_MORE_INFO, roles: ['developer'], buttonLabel: 'Request More Information', buttonVariant: 'outline' },
+    { from: HELP_REQUEST_STATUSES.NEED_MORE_INFO, to: HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, roles: ['client', 'developer'], buttonLabel: 'Back to Requirements', buttonVariant: 'outline' },
+    { from: HELP_REQUEST_STATUSES.IN_PROGRESS, to: HELP_REQUEST_STATUSES.READY_FOR_QA, roles: ['developer'], buttonLabel: 'Ready for QA', buttonVariant: 'default' },
+    { from: HELP_REQUEST_STATUSES.READY_FOR_QA, to: HELP_REQUEST_STATUSES.QA_FAIL, roles: ['client'], buttonLabel: 'Request Changes', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.READY_FOR_QA, to: HELP_REQUEST_STATUSES.QA_PASS, roles: ['client'], buttonLabel: 'Approve Work', buttonVariant: 'default' },
+    { from: HELP_REQUEST_STATUSES.QA_FAIL, to: HELP_REQUEST_STATUSES.IN_PROGRESS, roles: ['developer'], buttonLabel: 'Resume Work', buttonVariant: 'default' },
+    { from: HELP_REQUEST_STATUSES.QA_FAIL, to: HELP_REQUEST_STATUSES.READY_FOR_QA, roles: ['developer'], buttonLabel: 'Ready for QA Again', buttonVariant: 'outline' },
+    { from: HELP_REQUEST_STATUSES.QA_PASS, to: HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION, roles: ['system'], buttonLabel: 'Finalize', buttonVariant: 'default' },
+    { from: HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION, to: HELP_REQUEST_STATUSES.RESOLVED, roles: ['client', 'developer'], buttonLabel: 'Mark as Resolved', buttonVariant: 'default' },
     
     // Cancel option (available to clients at various stages)
-    { from: 'submitted', to: 'cancelled_by_client', roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: 'pending_match', to: 'cancelled_by_client', roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: 'dev_requested', to: 'cancelled_by_client', roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: 'awaiting_client_approval', to: 'cancelled_by_client', roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: 'approved', to: 'cancelled_by_client', roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: 'requirements_review', to: 'cancelled_by_client', roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: 'need_more_info', to: 'cancelled_by_client', roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: 'in_progress', to: 'cancelled_by_client', roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: 'open', to: 'cancelled_by_client', roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' }
+    { from: HELP_REQUEST_STATUSES.SUBMITTED, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.PENDING_MATCH, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.DEV_REQUESTED, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.APPROVED, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.NEED_MORE_INFO, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.IN_PROGRESS, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.OPEN, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' }
   ];
   
   // Filter transitions based on current status and user role
   return allTransitions.filter(t => 
-    t.from === status && t.roles.includes(userType)
+    normalizeStatus(t.from) === normalizeStatus(status) && t.roles.includes(userType)
   );
 };
