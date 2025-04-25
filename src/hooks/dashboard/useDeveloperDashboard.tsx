@@ -5,7 +5,6 @@ import { HelpRequest } from '../../types/helpRequest';
 import { useTicketFetching } from './useTicketFetching';
 import { useTicketFilters } from './useTicketFilters';
 import { useTicketApplications } from './useTicketApplications';
-import { useTicketApplicationActions } from './useTicketApplicationActions';
 import { supabase } from '../../integrations/supabase/client';
 
 export const useDeveloperDashboard = () => {
@@ -115,6 +114,7 @@ export const useDeveloperDashboard = () => {
     dataSource,
     showFilters,
     setShowFilters,
+    filters,
     userId,
     isAuthenticated,
     activeTab,

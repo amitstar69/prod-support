@@ -85,7 +85,15 @@ const ClientDashboard = () => {
               // Handle potentially malformed profiles data
               let safeProfiles = app.profiles;
               
-              if (!safeProfiles || typeof safeProfiles !== 'object' || (safeProfiles as any).error) {
+              if (!safeProfiles || typeof safeProfiles !== 'object') {
+                safeProfiles = { 
+                  id: app.developer_id, 
+                  name: 'Unknown Developer',
+                  image: null,
+                  experience: null
+                };
+              } else if ('error' in safeProfiles) {
+                // If it's an error object, replace with safe default data
                 safeProfiles = { 
                   id: app.developer_id, 
                   name: 'Unknown Developer',

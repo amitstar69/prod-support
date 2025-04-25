@@ -66,8 +66,8 @@ export interface HelpRequestMatch {
   profiles?: {
     id?: string;
     name?: string;
-    image?: string;
-    experience?: string;
+    image?: string | null;
+    experience?: string | null;
   } | null;
 }
 

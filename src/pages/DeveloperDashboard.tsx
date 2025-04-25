@@ -18,8 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 const isDevelopment = process.env.NODE_ENV === 'development' || import.meta.env.DEV === true;
 
 const DeveloperDashboard = () => {
-  const { userId, isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState('all');
+  const { userId: authUserId, isAuthenticated: authIsAuthenticated } = useAuth();
+  const [localActiveTab, setLocalActiveTab] = useState('all');
   
   const {
     tickets,
@@ -49,7 +49,7 @@ const DeveloperDashboard = () => {
           description="Find and apply for client help requests that match your skills"
         />
         
-        {!isAuthenticated && (
+        {!authIsAuthenticated && (
           <div className="mb-8">
             <LoginPrompt />
           </div>
@@ -74,12 +74,12 @@ const DeveloperDashboard = () => {
           <LoadingState />
         ) : (
           <Tabs 
-            defaultValue={activeTab} 
-            onValueChange={setActiveTab}
+            defaultValue={localActiveTab} 
+            onValueChange={setLocalActiveTab}
             className="w-full"
           >
             <TabsList className="mb-6">
-              {isAuthenticated && (
+              {authIsAuthenticated && (
                 <TabsTrigger value="recommended" className="flex-1">
                   Recommended for You
                 </TabsTrigger>
@@ -89,7 +89,7 @@ const DeveloperDashboard = () => {
               </TabsTrigger>
             </TabsList>
             
-            {isAuthenticated && (
+            {authIsAuthenticated && (
               <TabsContent value="recommended" className="mt-0">
                 <TicketSummary 
                   filteredCount={(recommendedTickets || []).length} 
@@ -102,14 +102,14 @@ const DeveloperDashboard = () => {
                   <TicketList 
                     tickets={recommendedTickets || []} 
                     onClaimTicket={handleClaimTicket}
-                    currentUserId={userId}
-                    isAuthenticated={isAuthenticated}
+                    currentUserId={authUserId}
+                    isAuthenticated={authIsAuthenticated}
                     isRecommended={true}
                   />
                 ) : (
                   <EmptyTicketState 
                     tickets={tickets}
-                    isAuthenticated={isAuthenticated}
+                    isAuthenticated={authIsAuthenticated}
                     onRefresh={fetchTickets}
                     dataSource={dataSource}
                     customMessage="No recommended gigs found. We'll suggest gigs that match your skills as they become available."
@@ -130,13 +130,13 @@ const DeveloperDashboard = () => {
                 <TicketList 
                   tickets={filteredTickets || []} 
                   onClaimTicket={handleClaimTicket}
-                  currentUserId={userId}
-                  isAuthenticated={isAuthenticated}
+                  currentUserId={authUserId}
+                  isAuthenticated={authIsAuthenticated}
                 />
               ) : (
                 <EmptyTicketState 
                   tickets={tickets}
-                  isAuthenticated={isAuthenticated}
+                  isAuthenticated={authIsAuthenticated}
                   onRefresh={fetchTickets}
                   dataSource={dataSource}
                 />
