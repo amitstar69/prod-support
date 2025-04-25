@@ -1,27 +1,28 @@
 
 import React from 'react';
-import { cn } from '../../lib/utils';
-import { getTicketStatusStyles, formatTicketStatus } from '../../utils/ticketStatusUtils';
+import { getTicketStatusStyles } from '../../utils/ticketStatusUtils';
+import { Badge } from '../ui/badge';
+import { Star } from 'lucide-react';
 
 interface TicketStatusProps {
   status: string;
-  className?: string;
+  matchScore?: number;
 }
 
-const TicketStatus: React.FC<TicketStatusProps> = ({ status, className }) => {
-  // Normalize the status by replacing hyphens with underscores
-  const normalizedStatus = status.replace(/-/g, '_').toLowerCase();
-  
-  // Get style classes from our utility function
-  const statusStyles = getTicketStatusStyles(normalizedStatus);
-  
-  // Format the status for display
-  const formattedStatus = formatTicketStatus(normalizedStatus);
-  
+const TicketStatus: React.FC<TicketStatusProps> = ({ status, matchScore }) => {
   return (
-    <span className={cn(statusStyles, className)}>
-      {formattedStatus}
-    </span>
+    <div className="flex items-center gap-2">
+      <Badge className={getTicketStatusStyles(status)}>
+        {status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+      </Badge>
+      
+      {matchScore && matchScore >= 70 && (
+        <Badge variant="secondary" className="bg-amber-100 text-amber-800 flex items-center gap-1">
+          <Star className="h-3 w-3" />
+          {matchScore}% Match
+        </Badge>
+      )}
+    </div>
   );
 };
 
