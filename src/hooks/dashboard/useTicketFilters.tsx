@@ -147,7 +147,7 @@ export const useTicketFilters = (tickets: HelpRequest[]): UseTicketFiltersResult
   };
 
   const getFilteredTickets = (userType: string): CategorizedTickets => {
-    // We can do additional filtering based on user type if needed
+    // Return the categorized tickets regardless of user type
     return categorizedTickets;
   };
 

@@ -6,7 +6,6 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import TicketSection from '../components/dashboard/TicketSection';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../contexts/auth';
-import { useTicketFilters } from '../hooks/dashboard/useTicketFilters';
 import { useDeveloperDashboard } from '../hooks/dashboard/useDeveloperDashboard';
 import { Plus, ExternalLink, Maximize2, Minimize2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -29,7 +28,7 @@ const ClientDashboard = () => {
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);
   
   const {
-    tickets,
+    categorizedTickets,
     isLoading,
     showFilters,
     setShowFilters,
@@ -38,9 +37,11 @@ const ClientDashboard = () => {
     fetchTickets
   } = useDeveloperDashboard();
 
-  const { getFilteredTickets } = useTicketFilters(tickets);
-  const filteredTickets = getFilteredTickets('client');
-  const { activeTickets, inProgressTickets, completedTickets, pendingApprovalTickets } = filteredTickets;
+  // Safely get categories
+  const activeTickets = categorizedTickets?.activeTickets || [];
+  const inProgressTickets = categorizedTickets?.inProgressTickets || [];
+  const completedTickets = categorizedTickets?.completedTickets || [];
+  const pendingApprovalTickets = categorizedTickets?.pendingApprovalTickets || [];
 
   // Toggle section expansion
   const toggleSection = (section: 'active' | 'pendingApproval' | 'inProgress' | 'completed') => {
@@ -53,7 +54,7 @@ const ClientDashboard = () => {
   // Fetch developer applications for pending approval tickets
   useEffect(() => {
     const fetchApplications = async () => {
-      if (!pendingApprovalTickets.length || !isAuthenticated) return;
+      if (!pendingApprovalTickets?.length || !isAuthenticated) return;
       
       try {
         setIsLoadingApplications(true);
@@ -180,6 +181,8 @@ const ClientDashboard = () => {
 
   // Function to create preview of tickets (first 3)
   const createTicketPreview = (ticketList: any[], type: string) => {
+    if (!ticketList) return null;
+    
     const preview = ticketList.slice(0, 3);
     return (
       <>
@@ -235,7 +238,7 @@ const ClientDashboard = () => {
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-medium">Active Help Requests</h2>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  {activeTickets.length}
+                  {activeTickets?.length || 0}
                 </Badge>
               </div>
               <CollapsibleTrigger asChild>
@@ -259,7 +262,7 @@ const ClientDashboard = () => {
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-medium">Pending Developer Approval</h2>
                 <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                  {pendingApprovalTickets.length}
+                  {pendingApprovalTickets?.length || 0}
                 </Badge>
               </div>
               <CollapsibleTrigger asChild>
@@ -269,7 +272,7 @@ const ClientDashboard = () => {
               </CollapsibleTrigger>
             </div>
             <CollapsibleContent className="p-4">
-              {pendingApprovalTickets.length > 0 ? (
+              {pendingApprovalTickets && pendingApprovalTickets.length > 0 ? (
                 <div className="space-y-6">
                   {pendingApprovalTickets.map(ticket => (
                     <div key={ticket.id} className="border rounded-lg overflow-hidden">
@@ -365,7 +368,7 @@ const ClientDashboard = () => {
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-medium">In Progress Help Requests</h2>
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                  {inProgressTickets.length}
+                  {inProgressTickets?.length || 0}
                 </Badge>
               </div>
               <CollapsibleTrigger asChild>
@@ -389,7 +392,7 @@ const ClientDashboard = () => {
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-medium">Completed Help Requests</h2>
                 <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200">
-                  {completedTickets.length}
+                  {completedTickets?.length || 0}
                 </Badge>
               </div>
               <CollapsibleTrigger asChild>

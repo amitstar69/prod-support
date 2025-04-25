@@ -57,19 +57,17 @@ export interface HelpRequestMatch {
   request_id: string;
   developer_id: string;
   match_score?: number;
-  status: string;
   created_at?: string;
   updated_at?: string;
-  proposed_message?: string;
   proposed_duration?: number;
   proposed_rate?: number;
-  developers?: {
+  status: string;
+  proposed_message?: string;
+  profiles?: {
     id: string;
-    profiles: {
-      name: string;
-      image: string;
-      description: string;
-    }
+    name?: string;
+    image?: string;
+    experience?: string;
   };
 }
 

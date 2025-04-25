@@ -106,3 +106,6 @@ export const useDeveloperDashboard = () => {
     fetchTickets
   };
 };
+
+// Export default for backward compatibility
+export default useDeveloperDashboard;
