@@ -136,12 +136,26 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
     );
   };
 
+  // Get home link destination based on user type
+  const getHomeLink = () => {
+    if (isAuthenticated) {
+      return userType === 'developer' ? '/developer' : '/client';
+    }
+    return '/';
+  };
+
+  // Check if home link should be active
+  const isHomeActive = () => {
+    const homePath = getHomeLink();
+    return isRouteActive(homePath, currentPath);
+  };
+
   return (
     <div className={`flex ${isMobile ? 'flex-col' : 'space-x-6'}`}>
       <NavLink
-        to="/"
+        to={getHomeLink()}
         className={
-          currentPath === '/'
+          isHomeActive()
             ? 'text-primary font-medium'
             : 'text-muted-foreground hover:text-foreground'
         }

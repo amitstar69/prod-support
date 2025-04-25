@@ -88,15 +88,19 @@ export const isRouteActive = (routePath: string, currentPath: string): boolean =
   if (routePath === currentPath) {
     return true;
   }
+  
+  // Special case for user home pages
+  if ((routePath === '/client' && currentPath === '/client') || 
+      (routePath === '/developer' && currentPath === '/developer')) {
+    return true;
+  }
 
   // Special case for developer dashboard
   if (routePath === '/developer/dashboard' && currentPath === '/developer') {
     return true;
   }
   
-  // FIX: For client routes, we want more specific matching
-  // We only want Dashboard to be active when on exact /client/dashboard
-  // When on /client, no specific nav items should be highlighted except Home
+  // For client routes, we want more specific matching for dashboard
   if (routePath === '/client/dashboard') {
     // Do not highlight Dashboard when just on /client
     return currentPath === '/client/dashboard';
