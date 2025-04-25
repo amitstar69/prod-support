@@ -1,3 +1,4 @@
+
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
@@ -196,31 +197,26 @@ export const updateHelpRequest = async (
           ...updates,
           updated_at: now
         })
-        .eq('id', requestId)
-        .select('*')  
-        .maybeSingle();
+        .eq('id', requestId);
         
       if (error) {
         console.error('[updateHelpRequest] Error updating help request in Supabase:', error);
         return { success: false, error: `Database update failed: ${error.message}` };
       }
 
-      if (!data) {
-        console.error('[updateHelpRequest] No data returned after update');
-        const { data: checkExists } = await supabase
-          .from('help_requests')
-          .select('id')
-          .eq('id', requestId)
-          .maybeSingle();
+      // Check if the update was successful even if no data was returned
+      const { data: checkData } = await supabase
+        .from('help_requests')
+        .select('*')
+        .eq('id', requestId)
+        .maybeSingle();
           
-        if (!checkExists) {
-          return { success: false, error: 'Help request not found' };
-        } else {
-          return { success: false, error: 'Update failed - no changes were made' };
-        }
+      if (!checkData) {
+        console.error('[updateHelpRequest] No data returned after check query');
+        return { success: false, error: 'Help request not found' };
       }
       
-      console.log('[updateHelpRequest] Update successful, data:', data);
+      console.log('[updateHelpRequest] Update successful, data:', checkData);
       
       if (updates.status && updates.status !== currentRequest.status) {
         try {
@@ -249,7 +245,7 @@ export const updateHelpRequest = async (
         }
       }
       
-      return { success: true, data, storageMethod: 'Supabase' };
+      return { success: true, data: checkData, storageMethod: 'Supabase' };
     }
     
     console.error(`[updateHelpRequest] Invalid help request ID format: ${requestId}`);
