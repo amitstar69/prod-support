@@ -82,6 +82,30 @@ export const isCorrectUserPath = (
     : path.startsWith('/client');
 };
 
+// Check if a route should be marked active based on current path
+export const isRouteActive = (currentPath: string, routePath: string): boolean => {
+  // Handle exact matches
+  if (routePath === currentPath) {
+    return true;
+  }
+  
+  // Handle user type home page special cases
+  if ((routePath === '/developer/dashboard' && currentPath === '/developer') ||
+      (routePath === '/client/dashboard' && currentPath === '/client')) {
+    return true;
+  }
+  
+  // Handle section matches (e.g. /developer/tickets/123 should highlight /developer/tickets)
+  if (routePath !== '/' && currentPath.startsWith(routePath)) {
+    // Make sure it's a section match (e.g. /developer/tickets should match /developer/tickets/123)
+    // but /developer should not match /developer/tickets
+    const nextChar = currentPath.substring(routePath.length, routePath.length + 1);
+    return nextChar === '' || nextChar === '/';
+  }
+  
+  return false;
+};
+
 // Force navigation if needed (for critical redirects)
 export const performNavigation = (url: string): void => {
   try {
