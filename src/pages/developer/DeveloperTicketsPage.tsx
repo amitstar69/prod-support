@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTicketRecommendations } from '../../hooks/developerSearch/useTicketRecommendations';
 import { useTicketFetching } from '../../hooks/dashboard/useTicketFetching';
 import { useDeveloperProfile } from '../../hooks/useDeveloperProfile';
@@ -16,6 +16,7 @@ const DeveloperTicketsPage: React.FC = () => {
     tickets, 
     isLoading, 
     hasError, 
+    dataSource,
     handleForceRefresh 
   } = useTicketFetching(isAuthenticated, userType);
   
@@ -37,6 +38,20 @@ const DeveloperTicketsPage: React.FC = () => {
     handleForceRefresh,
     dummyFetchMyApplications // Use the async function that returns Promise<void>
   );
+
+  // Force refresh on mount to ensure we have the latest data
+  useEffect(() => {
+    handleForceRefresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  console.log('[DeveloperTicketsPage] Render with data:', {
+    isAuthenticated,
+    ticketsCount: tickets.length,
+    recommendedCount: recommendedTickets.length,
+    availableCount: availableTickets.length,
+    dataSource
+  });
 
   if (hasError) {
     return (

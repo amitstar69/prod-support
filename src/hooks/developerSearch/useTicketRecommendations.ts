@@ -1,86 +1,95 @@
 
-import { useState, useEffect, useCallback } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Developer } from '../../types/product';
-import { HELP_REQUEST_STATUSES } from '../../utils/constants/statusConstants';
-
-const calculateMatchScore = (ticket: HelpRequest, developerProfile: Developer): number => {
-  let score = 0;
-  const maxScore = 100;
-
-  // Match technical areas with developer skills
-  if (ticket.technical_area && developerProfile.skills) {
-    const matchingSkills = ticket.technical_area.filter(area => 
-      developerProfile.skills?.includes(area)
-    );
-    score += (matchingSkills.length / ticket.technical_area.length) * 40; // Skills worth 40%
-  }
-
-  // Match experience level preferences
-  if (ticket.preferred_developer_experience === developerProfile.experience ||
-      ticket.preferred_developer_experience === 'any') {
-    score += 30; // Experience match worth 30%
-  }
-
-  // Location preference match
-  if (ticket.preferred_developer_location === 'Global' || 
-      ticket.preferred_developer_location === developerProfile.location) {
-    score += 20; // Location match worth 20%
-  }
-
-  // Availability match
-  if (developerProfile.availability) {
-    score += 10; // Availability worth 10%
-  }
-
-  return Math.min(Math.round(score), maxScore);
-};
+import { TicketWithScore, UseTicketRecommendationsResult } from './types';
 
 export const useTicketRecommendations = (
   tickets: HelpRequest[],
-  developerProfile: Developer | null
-) => {
-  const [recommendedTickets, setRecommendedTickets] = useState<(HelpRequest & { matchScore: number })[]>([]);
-  const [availableTickets, setAvailableTickets] = useState<HelpRequest[]>([]);
+  developer?: Developer | null
+): UseTicketRecommendationsResult => {
+  if (!tickets?.length) {
+    return { 
+      recommendedTickets: [], 
+      availableTickets: [] 
+    };
+  }
 
-  const processTickets = useCallback(() => {
-    if (!developerProfile || !tickets.length) {
-      setRecommendedTickets([]);
-      setAvailableTickets([]);
-      return;
+  // Make a copy of the tickets to avoid mutating the original
+  const availableTickets = [...tickets];
+
+  // If no developer profile, just return all tickets as available
+  if (!developer) {
+    console.log('[useTicketRecommendations] No developer profile, returning all tickets as available');
+    return {
+      recommendedTickets: [],
+      availableTickets
+    };
+  }
+
+  console.log('[useTicketRecommendations] Processing tickets for recommendations');
+
+  // Calculate match scores for each ticket based on developer profile
+  const ticketsWithScores: TicketWithScore[] = availableTickets.map(ticket => {
+    let matchScore = 0;
+    const maxScore = 100;
+
+    // Check if the developer has the skills required for this ticket
+    if (developer.skills && ticket.technical_area) {
+      // Convert developer skills to lowercase for case-insensitive matching
+      const devSkills = developer.skills.map(skill => skill.toLowerCase());
+      
+      // Count matching skills
+      const matchingSkills = ticket.technical_area.filter(area => 
+        devSkills.some(skill => skill.includes(area.toLowerCase()) || 
+                              area.toLowerCase().includes(skill))
+      );
+      
+      // Calculate score based on matching skills percentage
+      if (ticket.technical_area.length > 0) {
+        matchScore += (matchingSkills.length / ticket.technical_area.length) * 70; // Skills are 70% of the score
+      }
     }
 
-    // Filter for only submitted/open tickets
-    const openTickets = tickets.filter(ticket => 
-      ticket.status === HELP_REQUEST_STATUSES.SUBMITTED ||
-      ticket.status === HELP_REQUEST_STATUSES.OPEN
-    );
+    // Add additional factors to the match score
+    
+    // Complexity match (if developer is experienced, favor complex tickets)
+    if (developer.experience_years && developer.experience_years > 5 && 
+        ticket.complexity_level === 'high') {
+      matchScore += 15;
+    } else if (developer.experience_years && developer.experience_years < 2 && 
+              ticket.complexity_level === 'low') {
+      matchScore += 10;
+    }
 
-    // Calculate match scores for all open tickets
-    const scoredTickets = openTickets.map(ticket => ({
+    // Location preference match
+    if (ticket.preferred_developer_location && 
+        developer.location && 
+        (ticket.preferred_developer_location === 'Global' || 
+         ticket.preferred_developer_location === developer.location)) {
+      matchScore += 15;
+    }
+
+    // Ensure score doesn't exceed maximum
+    matchScore = Math.min(matchScore, maxScore);
+    
+    return {
       ...ticket,
-      matchScore: calculateMatchScore(ticket, developerProfile)
-    }));
+      matchScore
+    };
+  });
 
-    // Sort by match score and split into recommended (>=70%) and available
-    const recommended = scoredTickets
-      .filter(ticket => ticket.matchScore >= 70)
-      .sort((a, b) => b.matchScore - a.matchScore);
+  // Sort by match score (highest first)
+  ticketsWithScores.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+  
+  // Split into recommended (score > 40) and other available tickets
+  const recommendedTickets = ticketsWithScores
+    .filter(ticket => (ticket.matchScore || 0) >= 40);
+    
+  console.log(`[useTicketRecommendations] Found ${recommendedTickets.length} recommended tickets`);
 
-    const available = openTickets.filter(ticket =>
-      !recommended.some(rec => rec.id === ticket.id)
-    );
-
-    setRecommendedTickets(recommended);
-    setAvailableTickets(available);
-  }, [tickets, developerProfile]);
-
-  useEffect(() => {
-    processTickets();
-  }, [processTickets]);
-
+  // Return both recommended and all available tickets
   return {
     recommendedTickets,
-    availableTickets,
+    availableTickets
   };
 };

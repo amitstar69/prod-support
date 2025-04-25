@@ -71,7 +71,8 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
     if (isAuthenticated) {
       // Let's explicitly check what session we have
       const { data: session } = await supabase.auth.getSession();
-      console.log('[getAllPublicHelpRequests] Current session:', session?.session ? 'Active' : 'None');
+      console.log('[getAllPublicHelpRequests] Current session:', 
+        session?.session ? 'Active (user: ' + session.session.user.id + ')' : 'None');
       
       if (!session?.session) {
         console.log('[getAllPublicHelpRequests] No active session, returning empty list');
@@ -82,11 +83,19 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
         };
       }
       
-      // Fetch all help requests (using the RLS policy we added)
+      // Fetch all help requests with more detailed logging
+      console.log('[getAllPublicHelpRequests] Fetching tickets from database...');
       const { data, error } = await supabase
         .from('help_requests')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      // Debug: Log what statuses are in the database
+      if (data && data.length > 0) {
+        const statuses = data.map(ticket => ticket.status);
+        const uniqueStatuses = [...new Set(statuses)];
+        console.log('[getAllPublicHelpRequests] Found ticket statuses:', uniqueStatuses);
+      }
         
       if (error) {
         console.error('[getAllPublicHelpRequests] Error fetching from Supabase:', error);

@@ -51,27 +51,23 @@ export const useTicketFetching = (
         return;
       }
 
-      // Add a controller to handle timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-        console.log('[Ticket Fetching] Request timed out');
-      }, 8000); // Reduced from 10s to 8s
+      // Add more detailed logging to diagnose the issue
+      console.log('[Ticket Fetching] Authenticated user, fetching from database');
 
-      const response = await getAllPublicHelpRequests();
-      
-      // Clear timeout if the request completes successfully
-      clearTimeout(timeoutId);
+      const response = await getAllPublicHelpRequests(isAuthenticated);
+      console.log('[Ticket Fetching] Response received:', response);
       
       if (isApiSuccess(response)) {
         console.log('[Ticket Fetching] All fetched tickets:', response.data.length);
         
-        // Filter active tickets
+        // Filter active tickets - UPDATED to include 'open' and related statuses
+        // The key issue: we need to update the filter to catch more relevant ticket statuses
         const filteredTickets = response.data.filter(ticket => 
-          ['open', 'in-progress', 'claimed', 'pending', 'matching', 'developer-qa', 'client-review', 'client-approved', 'scheduled'].includes(ticket.status || '')
+          ['open', 'submitted', 'pending', 'matching', 'pending_match', 'dev_requested', 'awaiting_client_approval'].includes(ticket.status || '')
         );
         
-        console.log('[Ticket Fetching] Filtered tickets:', filteredTickets.length);
+        console.log('[Ticket Fetching] Filtered tickets:', filteredTickets.length, 'with statuses:', 
+          filteredTickets.map(t => t.status));
         
         setTickets(filteredTickets);
         setDataSource(response.storageMethod || 'database');

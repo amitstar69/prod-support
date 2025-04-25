@@ -50,7 +50,12 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
     setChatDialogOpen(true);
   };
 
-  console.log('TicketListContainer rendering with isApplication:', isApplication);
+  console.log('TicketListContainer rendering with:', { 
+    isApplication,
+    isRecommended, 
+    ticketCount: actualTicketCount,
+    totalCount: actualTotalCount
+  });
 
   if (actualTicketCount === 0) {
     return (
@@ -117,6 +122,7 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
           onOpenChat={handleOpenChat}
           viewMode={viewMode}
           isApplication={isApplication}
+          isRecommended={isRecommended}
         />
       </div>
 
