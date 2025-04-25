@@ -48,7 +48,7 @@ const CancelHelpRequestDialog: React.FC<CancelHelpRequestDialogProps> = ({
       
       // Use the constant to ensure consistent status value
       const response = await updateHelpRequest(requestId, {
-        status: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT,
+        status: HELP_REQUEST_STATUSES.CANCELLED, // Updated to use the CANCELLED constant
         cancellation_reason: cancellationReason
       }, userType || 'client');
       

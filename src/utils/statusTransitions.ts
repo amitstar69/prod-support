@@ -27,7 +27,7 @@ export const isValidTransition = (
   const normalizedNewStatus = normalizeStatus(newStatus);
   
   // Special case: client can cancel anytime
-  if (userType === 'client' && normalizedNewStatus === normalizeStatus(HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT)) {
+  if (userType === 'client' && normalizedNewStatus === normalizeStatus(HELP_REQUEST_STATUSES.CANCELLED)) {
     return true;
   }
 
@@ -45,14 +45,15 @@ export const getAllowedTransitions = (currentStatus: string, userType: UserType)
   // Normalize status value for consistent comparison
   const normalizedStatus = normalizeStatus(currentStatus);
   
-  // Special handling for the cancel action which is always available for clients
+  // Get transitions for the current status and user type
   const transitions = getTransitionsForStatus(normalizedStatus, userType);
   
-  if (userType === 'client' && !transitions.some(t => normalizeStatus(t.to) === normalizeStatus(HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT))) {
+  // Special handling for the cancel action which is always available for clients
+  if (userType === 'client' && !transitions.some(t => normalizeStatus(t.to) === normalizeStatus(HELP_REQUEST_STATUSES.CANCELLED))) {
     // Add cancellation as an option for clients if not already included
     transitions.push({
       from: normalizedStatus,
-      to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT,
+      to: HELP_REQUEST_STATUSES.CANCELLED,
       roles: ['client'],
       buttonLabel: 'Cancel Request',
       buttonVariant: 'destructive',
@@ -101,15 +102,15 @@ const getTransitionsForStatus = (status: string, userType: UserType): StatusTran
     { from: HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION, to: HELP_REQUEST_STATUSES.RESOLVED, roles: ['client', 'developer'], buttonLabel: 'Mark as Resolved', buttonVariant: 'default' },
     
     // Cancel option (available to clients at various stages)
-    { from: HELP_REQUEST_STATUSES.SUBMITTED, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: HELP_REQUEST_STATUSES.PENDING_MATCH, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: HELP_REQUEST_STATUSES.DEV_REQUESTED, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: HELP_REQUEST_STATUSES.APPROVED, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: HELP_REQUEST_STATUSES.NEED_MORE_INFO, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: HELP_REQUEST_STATUSES.IN_PROGRESS, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
-    { from: HELP_REQUEST_STATUSES.OPEN, to: HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' }
+    { from: HELP_REQUEST_STATUSES.SUBMITTED, to: HELP_REQUEST_STATUSES.CANCELLED, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.PENDING_MATCH, to: HELP_REQUEST_STATUSES.CANCELLED, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.DEV_REQUESTED, to: HELP_REQUEST_STATUSES.CANCELLED, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL, to: HELP_REQUEST_STATUSES.CANCELLED, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.APPROVED, to: HELP_REQUEST_STATUSES.CANCELLED, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, to: HELP_REQUEST_STATUSES.CANCELLED, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.NEED_MORE_INFO, to: HELP_REQUEST_STATUSES.CANCELLED, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.IN_PROGRESS, to: HELP_REQUEST_STATUSES.CANCELLED, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' },
+    { from: HELP_REQUEST_STATUSES.OPEN, to: HELP_REQUEST_STATUSES.CANCELLED, roles: ['client'], buttonLabel: 'Cancel Request', buttonVariant: 'destructive' }
   ];
   
   // Filter transitions based on current status and user role

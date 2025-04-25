@@ -1,3 +1,4 @@
+
 export enum TicketStatus {
   OPEN = 'open',
   ACCEPTED = 'accepted',
@@ -13,7 +14,7 @@ export enum TicketStatus {
   QA_PASS = 'qa_pass',
   RESOLVED = 'resolved',
   READY_FOR_FINAL_ACTION = 'ready_for_final_action',
-  CANCELLED_BY_CLIENT = 'cancelled_by_client'
+  CANCELLED = 'cancelled'  // Updated from CANCELLED_BY_CLIENT
 }
 
 export const getTicketStatusStyles = (status: string) => {
@@ -35,7 +36,7 @@ export const getTicketStatusStyles = (status: string) => {
     'qa_pass': `${baseClasses} bg-green-300 text-green-800`,
     'resolved': `${baseClasses} bg-green-500 text-white`,
     'ready_for_final_action': `${baseClasses} bg-blue-300 text-blue-800`,
-    'cancelled_by_client': `${baseClasses} bg-red-200 text-red-800`
+    'cancelled': `${baseClasses} bg-red-200 text-red-800`  // Updated from cancelled_by_client
   };
 
   return statusStyles[status] || `${baseClasses} bg-gray-100 text-gray-800`;

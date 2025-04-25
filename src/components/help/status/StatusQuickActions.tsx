@@ -1,7 +1,8 @@
 
 import { Button } from '../../ui/button';
 import { Loader2 } from 'lucide-react';
-import { STATUSES, getStatusLabel } from '../../../utils/helpRequestStatusUtils';
+import { HELP_REQUEST_STATUSES, STATUSES } from '../../../utils/constants/statusConstants';
+import { getStatusLabel } from '../../../utils/helpRequestStatusUtils';
 
 interface StatusQuickActionsProps {
   nextStatus: string | null;
@@ -11,20 +12,20 @@ interface StatusQuickActionsProps {
 
 const StatusQuickActions = ({ nextStatus, isUpdating, onQuickUpdate }: StatusQuickActionsProps) => {
   const getButtonVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    if (status === STATUSES.QA_FAIL) return "secondary";
-    if (status === STATUSES.CANCELLED_BY_CLIENT) return "destructive";
-    if (status === STATUSES.QA_PASS || status === STATUSES.RESOLVED) return "default";
+    if (status === HELP_REQUEST_STATUSES.QA_FAIL) return "secondary";
+    if (status === HELP_REQUEST_STATUSES.CANCELLED) return "destructive"; // Updated from CANCELLED_BY_CLIENT
+    if (status === HELP_REQUEST_STATUSES.QA_PASS || status === HELP_REQUEST_STATUSES.RESOLVED) return "default";
     return "default";
   };
 
   const getNextStatusButtonText = (nextStatus: string | null): string => {
     if (!nextStatus) return 'Update Status';
-    if (nextStatus === STATUSES.APPROVED) return 'Approve Developer';
-    if (nextStatus === STATUSES.RESOLVED) return 'Mark as Complete';
-    if (nextStatus === STATUSES.QA_FAIL) return 'Request Changes';
-    if (nextStatus === STATUSES.QA_PASS) return 'Approve Work';
-    if (nextStatus === STATUSES.READY_FOR_FINAL_ACTION) return 'Ready for Final Action';
-    if (nextStatus === STATUSES.CANCELLED_BY_CLIENT) return 'Cancel Request';
+    if (nextStatus === HELP_REQUEST_STATUSES.APPROVED) return 'Approve Developer';
+    if (nextStatus === HELP_REQUEST_STATUSES.RESOLVED) return 'Mark as Complete';
+    if (nextStatus === HELP_REQUEST_STATUSES.QA_FAIL) return 'Request Changes';
+    if (nextStatus === HELP_REQUEST_STATUSES.QA_PASS) return 'Approve Work';
+    if (nextStatus === HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION) return 'Ready for Final Action';
+    if (nextStatus === HELP_REQUEST_STATUSES.CANCELLED) return 'Cancel Request'; // Updated from CANCELLED_BY_CLIENT
     return getStatusLabel(nextStatus);
   };
 
