@@ -48,7 +48,7 @@ export const useApplicationStatuses = (userType: 'client' | 'developer' = 'devel
         HELP_REQUEST_STATUSES.QA_PASS,
         HELP_REQUEST_STATUSES.QA_FAIL,
         HELP_REQUEST_STATUSES.RESOLVED,
-        HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT,
+        HELP_REQUEST_STATUSES.CANCELLED,
       ];
 
       // Choose appropriate statuses based on user type
