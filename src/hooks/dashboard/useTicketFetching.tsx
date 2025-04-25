@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { HelpRequest } from '../../types/helpRequest';
@@ -7,6 +7,7 @@ import { getAllPublicHelpRequests } from '../../integrations/supabase/helpReques
 import { sampleTickets } from './sampleData';
 import { isApiSuccess } from '../../types/api';
 import { setGlobalLoadingTimeout } from '../../utils/recovery';
+import { HELP_REQUEST_STATUSES } from '../../utils/constants/statusConstants';
 
 export const useTicketFetching = (
   isAuthenticated: boolean, 
@@ -18,6 +19,16 @@ export const useTicketFetching = (
   const [hasError, setHasError] = useState(false);
   const [lastFetchAttempt, setLastFetchAttempt] = useState(0);
   const navigate = useNavigate();
+
+  // Define a comprehensive list of statuses to include in filter
+  const activeStatuses = [
+    HELP_REQUEST_STATUSES.OPEN,
+    HELP_REQUEST_STATUSES.SUBMITTED,
+    HELP_REQUEST_STATUSES.PENDING_MATCH,
+    'matching',
+    HELP_REQUEST_STATUSES.DEV_REQUESTED,
+    HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL
+  ];
 
   const fetchTickets = useCallback(async (showLoading = true) => {
     // Prevent multiple rapid fetch attempts (throttle to max once per 3 seconds)
@@ -60,11 +71,26 @@ export const useTicketFetching = (
       if (isApiSuccess(response)) {
         console.log('[Ticket Fetching] All fetched tickets:', response.data.length);
         
-        // Filter active tickets - UPDATED to include 'open' and related statuses
-        // The key issue: we need to update the filter to catch more relevant ticket statuses
-        const filteredTickets = response.data.filter(ticket => 
-          ['open', 'submitted', 'pending', 'matching', 'pending_match', 'dev_requested', 'awaiting_client_approval'].includes(ticket.status || '')
-        );
+        // Include a comprehensive list of relevant statuses
+        // This is intentionally broad to catch all active, pending, or in-progress tickets
+        const filteredTickets = response.data.filter(ticket => {
+          const status = (ticket.status || '').toLowerCase();
+          
+          // For client users, include all their tickets
+          if (userType === 'client' && ticket.client_id) {
+            return true;
+          }
+          
+          // For developer users, only show tickets that are open or related to the developer
+          return activeStatuses.includes(status) ||
+                 status.includes('open') ||
+                 status.includes('pending') ||
+                 status.includes('progress') ||
+                 status.includes('review') ||
+                 status.includes('qa') ||
+                 status.includes('need') ||
+                 status.includes('ready');
+        });
         
         console.log('[Ticket Fetching] Filtered tickets:', filteredTickets.length, 'with statuses:', 
           filteredTickets.map(t => t.status));
@@ -103,7 +129,12 @@ export const useTicketFetching = (
         setIsLoading(false);
       }
     }
-  }, [isAuthenticated, lastFetchAttempt]);
+  }, [isAuthenticated, lastFetchAttempt, userType, activeStatuses]);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
 
   const handleForceRefresh = useCallback(() => {
     toast.info('Refreshing tickets...');

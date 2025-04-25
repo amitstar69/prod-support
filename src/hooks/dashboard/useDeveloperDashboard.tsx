@@ -1,138 +1,108 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../contexts/auth';
+import { HelpRequest } from '../../types/helpRequest';
 import { useTicketFetching } from './useTicketFetching';
 import { useTicketFilters } from './useTicketFilters';
-import { useTicketApplications } from './useTicketApplications';
-import { toast } from 'sonner';
+import { useTicketApplicationActions } from './useTicketApplicationActions';
+import { supabase } from '../../integrations/supabase/client';
 
 export const useDeveloperDashboard = () => {
+  const { userId, isAuthenticated, userType } = useAuth();
   const [showFilters, setShowFilters] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
-  const navigate = useNavigate();
-  const { userId, userType, isAuthenticated } = useAuth();
-  const initialFetchCompleted = useRef(false);
-  const isMounted = useRef(true);
-  const isFirstRender = useRef(true);
   
-  const {
-    tickets,
-    isLoading,
-    hasError,
+  const { 
+    tickets, 
+    isLoading, 
+    hasError, 
     dataSource,
     fetchTickets,
-    handleForceRefresh
+    handleForceRefresh 
   } = useTicketFetching(isAuthenticated, userType);
-
-  const ticketFilters = useTicketFilters(tickets);
-  const {
-    filters,
-    filteredTickets,
-    getFilteredTickets,
-    handleFilterChange,
-    resetFilters
-  } = ticketFilters;
-
-  const {
-    recommendedTickets,
-    myApplications,
-    isLoadingApplications,
-    hasError: hasApplicationError,
-    handleClaimTicket,
-    fetchMyApplications,
-    checkApplicationStatus
-  } = useTicketApplications(tickets, isAuthenticated, userId, userType, fetchTickets);
   
-  // Memoize the fetchTickets call to prevent unnecessary re-renders
-  const fetchTicketsIfNeeded = useCallback(() => {
-    // Only fetch on first render or when auth state changes
-    if ((isFirstRender.current || !initialFetchCompleted.current) && isAuthenticated !== undefined) {
-      console.log('[Developer Dashboard] Fetching tickets on auth change or initial load');
-      fetchTickets();
-      initialFetchCompleted.current = true;
-      isFirstRender.current = false;
-    }
-  }, [fetchTickets, isAuthenticated]);
+  const { 
+    filters, 
+    categorizedTickets,
+    handleFilterChange, 
+    resetFilters 
+  } = useTicketFilters(tickets);
+  
+  // Create a dummy function to satisfy the type if needed
+  const dummyFetchMyApplications = async () => {
+    return Promise.resolve();
+  };
+  
+  const { handleClaimTicket } = useTicketApplicationActions(
+    isAuthenticated,
+    userId,
+    userType,
+    handleForceRefresh,
+    dummyFetchMyApplications
+  );
 
-  // Initial fetch when component mounts
+  // Set up real-time listener for ticket updates
   useEffect(() => {
-    isMounted.current = true;
-    fetchTicketsIfNeeded();
+    if (!isAuthenticated || !userId) return;
     
-    // Add recovery function in case of errors
-    const recoveryTimeout = setTimeout(() => {
-      if (hasError && isMounted.current) {
-        console.log('[Developer Dashboard] Attempting recovery due to error state');
-        fetchTickets(true);
-      }
-    }, 5000);
-    
+    const channel = supabase
+      .channel('dashboard-tickets-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'help_requests'
+        },
+        () => {
+          console.log('[DeveloperDashboard] Ticket data changed, refreshing');
+          fetchTickets(false); // Refresh without showing loading state
+        }
+      )
+      .subscribe();
+      
     return () => {
-      isMounted.current = false;
-      clearTimeout(recoveryTimeout);
+      supabase.removeChannel(channel);
     };
-  }, [fetchTicketsIfNeeded, hasError, fetchTickets]);
+  }, [isAuthenticated, userId, fetchTickets]);
 
-  // Listen for viewMyApplication events dispatched from notifications
+  // Set up real-time listener for application updates if user is a client
   useEffect(() => {
-    const handleViewApplication = (event: Event) => {
-      const customEvent = event as CustomEvent<{ticketId: string}>;
-      if (customEvent.detail?.ticketId) {
-        navigate(`/developer/tickets/${customEvent.detail.ticketId}`);
-      }
-    };
+    if (!isAuthenticated || !userId || userType !== 'client') return;
     
-    window.addEventListener('viewMyApplication', handleViewApplication);
-    
+    const channel = supabase
+      .channel('dashboard-applications-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'help_request_matches'
+        },
+        () => {
+          console.log('[DeveloperDashboard] Application data changed, refreshing tickets');
+          fetchTickets(false); // Refresh without showing loading state
+        }
+      )
+      .subscribe();
+      
     return () => {
-      window.removeEventListener('viewMyApplication', handleViewApplication);
+      supabase.removeChannel(channel);
     };
-  }, [navigate]);
-
-  // Debug: Log render info
-  useEffect(() => {
-    if (isFirstRender.current) {
-      console.log('[Developer Dashboard] Initial render state:', {
-        isAuthenticated,
-        userId,
-        userType,
-        ticketsCount: tickets.length,
-        isLoading,
-        isLoadingApplications,
-        hasError,
-        hasApplicationError
-      });
-      isFirstRender.current = false;
-    }
-  }, [isAuthenticated, userId, userType, tickets, isLoading, isLoadingApplications, hasError, hasApplicationError]);
+  }, [isAuthenticated, userId, userType, fetchTickets]);
 
   return {
     tickets,
-    filteredTickets,
-    recommendedTickets,
-    myApplications,
-    isLoading,
-    isLoadingApplications,
-    hasError,
-    hasApplicationError,
+    categorizedTickets,
     filters,
+    isLoading,
+    hasError,
+    dataSource,
     showFilters,
     setShowFilters,
-    isAuthenticated,
-    userId,
-    activeTab,
-    setActiveTab,
-    dataSource,
     handleFilterChange,
+    resetFilters,
     handleClaimTicket,
     handleForceRefresh,
-    fetchTickets,
-    resetFilters,
-    fetchMyApplications,
-    checkApplicationStatus,
-    getFilteredTickets
+    fetchTickets
   };
 };
-
-export default useDeveloperDashboard;

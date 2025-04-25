@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -17,6 +18,7 @@ import CommentsSection from '../components/ticket-detail/CommentsSection';
 import ClientEditSection from '../components/ticket-detail/ClientEditSection';
 import HistorySection from '../components/ticket-detail/HistorySection';
 import TicketDetails from '../components/tickets/TicketDetails';
+import DeveloperApplicationsPanel from '../components/ticket-detail/DeveloperApplicationsPanel';
 
 const TicketDetailPage = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -33,6 +35,10 @@ const TicketDetailPage = () => {
   const [showQADialog, setShowQADialog] = useState(false);
 
   const role = userType as "client" | "developer";
+
+  // Check if the ticket is awaiting client approval for developer applications
+  const isAwaitingDeveloperApproval = ticket?.status === 'awaiting_client_approval' || 
+                                      ticket?.status === 'dev_requested';
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -160,10 +166,16 @@ const TicketDetailPage = () => {
   };
 
   const handleSubmitQA = () => { setShowQADialog(true); };
+  
   const handleQASubmitted = async () => {
     setShowQADialog(false);
     toast.success('QA submitted successfully');
     fetchLatestTicketData();
+  };
+
+  const handleApplicationAccepted = () => {
+    fetchLatestTicketData();
+    toast.success('Developer application accepted. The ticket is now in progress.');
   };
 
   if (isLoading) {
@@ -238,6 +250,14 @@ const TicketDetailPage = () => {
           </div>
           
           <div className="space-y-6">
+            {/* Show Developer Applications Panel for Client users when ticket is awaiting approval */}
+            {role === "client" && isAwaitingDeveloperApproval && ticketId && (
+              <DeveloperApplicationsPanel 
+                ticketId={ticketId}
+                onApplicationAccepted={handleApplicationAccepted}
+              />
+            )}
+
             <ClientEditSection
               visible={role === "client"}
               status={ticket.status}
