@@ -14,6 +14,9 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
   const location = useLocation();
   const currentPath = location.pathname;
 
+  // For debugging
+  console.log("Current path:", currentPath);
+  
   // Developer-specific links
   const renderDeveloperLinks = () => {
     if (!isAuthenticated || userType !== 'developer') return null;
@@ -23,8 +26,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
         <NavLink
           to="/developer/dashboard"
           className={
-            isRouteActive('/developer/dashboard', currentPath) || 
-            isRouteActive('/developer', currentPath)
+            isRouteActive('/developer/dashboard', currentPath)
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
           }
@@ -34,7 +36,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
         </NavLink>
         <NavLink
           to="/developer/tickets"
-          className={({ isActive }) =>
+          className={
             isRouteActive('/developer/tickets', currentPath)
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
@@ -45,7 +47,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
         </NavLink>
         <NavLink
           to="/developer/applications"
-          className={({ isActive }) =>
+          className={
             isRouteActive('/developer/applications', currentPath)
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
@@ -56,7 +58,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
         </NavLink>
         <NavLink
           to="/developer/profile"
-          className={({ isActive }) =>
+          className={
             isRouteActive('/developer/profile', currentPath)
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
@@ -78,8 +80,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
         <NavLink
           to="/client/dashboard"
           className={
-            isRouteActive('/client/dashboard', currentPath) || 
-            isRouteActive('/client', currentPath)
+            isRouteActive('/client/dashboard', currentPath)
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
           }
@@ -89,7 +90,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
         </NavLink>
         <NavLink
           to="/client/tickets"
-          className={({ isActive }) =>
+          className={
             isRouteActive('/client/tickets', currentPath)
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
@@ -100,7 +101,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
         </NavLink>
         <NavLink
           to="/client/profile"
-          className={({ isActive }) =>
+          className={
             isRouteActive('/client/profile', currentPath)
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
@@ -111,7 +112,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
         </NavLink>
         <NavLink
           to="/get-help"
-          className={({ isActive }) =>
+          className={
             isRouteActive('/get-help', currentPath)
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
@@ -122,7 +123,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
         </NavLink>
         <NavLink
           to="/client/sessions"
-          className={({ isActive }) =>
+          className={
             isRouteActive('/client/sessions', currentPath)
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'
@@ -139,8 +140,8 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
     <div className={`flex ${isMobile ? 'flex-col' : 'space-x-6'}`}>
       <NavLink
         to="/"
-        className={({ isActive }) =>
-          (isRouteActive('/', currentPath) && currentPath === '/')
+        className={
+          currentPath === '/'
             ? 'text-primary font-medium'
             : 'text-muted-foreground hover:text-foreground'
         }
@@ -157,7 +158,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ isMobile, onLinkClick }) => {
       {(!isAuthenticated || userType === 'client') && (
         <NavLink
           to="/search"
-          className={({ isActive }) =>
+          className={
             isRouteActive('/search', currentPath)
               ? 'text-primary font-medium'
               : 'text-muted-foreground hover:text-foreground'

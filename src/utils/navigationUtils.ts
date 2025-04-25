@@ -89,16 +89,21 @@ export const isRouteActive = (routePath: string, currentPath: string): boolean =
     return true;
   }
   
-  // Handle user type home page special cases
-  if ((routePath === '/developer/dashboard' && currentPath === '/developer') ||
-      (routePath === '/client/dashboard' && currentPath === '/client')) {
+  // Special cases for user type home pages
+  if (routePath === '/developer/dashboard' && currentPath === '/developer') {
     return true;
   }
   
-  // Handle section matches (e.g. /developer/tickets/123 should highlight /developer/tickets)
-  if (routePath !== '/' && currentPath.startsWith(routePath)) {
-    // Make sure it's a section match (e.g. /developer/tickets should match /developer/tickets/123)
-    // but /developer should not match /developer/tickets
+  // Important: For client, only show dashboard as active when truly on /client/dashboard or just /client
+  // Don't show dashboard as active when on other client routes
+  if (routePath === '/client/dashboard') {
+    return currentPath === '/client/dashboard' || currentPath === '/client';
+  }
+  
+  // Handle section matches for other routes (e.g. /client/tickets/123 should highlight /client/tickets)
+  if (routePath !== '/' && currentPath.startsWith(routePath) && routePath !== '/client' && routePath !== '/developer') {
+    // Make sure it's a section match (e.g. /client/tickets should match /client/tickets/123)
+    // but /client should not match /client/tickets
     const nextChar = currentPath.substring(routePath.length, routePath.length + 1);
     return nextChar === '' || nextChar === '/';
   }
