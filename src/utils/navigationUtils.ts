@@ -95,9 +95,10 @@ export const isRouteActive = (routePath: string, currentPath: string): boolean =
     return true;
   }
 
-  // Special case for developer dashboard
-  if (routePath === '/developer/dashboard' && currentPath === '/developer') {
-    return true;
+  // Special case for developer dashboard - make sure it's ONLY active when on dashboard
+  // NOT when just on the /developer home page
+  if (routePath === '/developer/dashboard') {
+    return currentPath === '/developer/dashboard';
   }
   
   // For client routes, we want more specific matching for dashboard
