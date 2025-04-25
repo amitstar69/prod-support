@@ -45,8 +45,9 @@ const CancelHelpRequestDialog: React.FC<CancelHelpRequestDialogProps> = ({
     try {
       setIsSubmitting(true);
       
+      // Use the correct status value that matches the database constraint
       const response = await updateHelpRequest(requestId, {
-        status: 'cancelled',
+        status: 'cancelled_by_client',
         cancellation_reason: cancellationReason
       }, userType || 'client');
       
@@ -55,6 +56,7 @@ const CancelHelpRequestDialog: React.FC<CancelHelpRequestDialogProps> = ({
         onRequestCancelled();
         onClose();
       } else {
+        console.error('Failed to cancel help request:', response.error);
         toast.error(`Failed to cancel help request: ${response.error}`);
       }
     } catch (error) {

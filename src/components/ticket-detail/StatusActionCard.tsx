@@ -79,6 +79,7 @@ const StatusActionCard: React.FC<StatusActionCardProps> = ({
     } catch (error: any) {
       setError(error.message || `Failed to update status to ${newStatus}`);
       toast.error('Failed to update status');
+      console.error('[StatusActionCard] Error updating status:', error);
     } finally {
       setIsUpdating(null);
     }

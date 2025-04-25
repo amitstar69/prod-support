@@ -1,4 +1,3 @@
-
 // Define user types for status transitions
 export type UserType = 'client' | 'developer' | 'system';
 
@@ -138,7 +137,7 @@ export const STATUSES = {
   READY_FOR_FINAL_ACTION: 'ready_for_final_action',
   RESOLVED: 'resolved',
   CANCELLED_BY_CLIENT: 'cancelled_by_client',
-  OPEN: 'open' // Add open status
+  OPEN: 'open'
 };
 
 // Helper function to check if the current user can update to a given status

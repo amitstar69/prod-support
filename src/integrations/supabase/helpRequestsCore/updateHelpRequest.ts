@@ -141,6 +141,8 @@ export const updateHelpRequest = async (
       if (updates.status) {
         const normalizedNewStatus = updates.status.replace(/[-_]/g, '_');
         
+        updates.status = normalizedNewStatus;
+        
         if (normalizedCurrentStatus === normalizedNewStatus) {
           console.log('[updateHelpRequest] Status unchanged after normalization, skipping update');
           return { 
