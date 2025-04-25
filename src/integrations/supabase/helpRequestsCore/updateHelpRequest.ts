@@ -1,4 +1,3 @@
-
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
@@ -40,7 +39,6 @@ export const updateHelpRequest = async (
     if (isValidUUID(requestId)) {
       console.log(`[updateHelpRequest] Valid UUID detected: ${requestId}`);
 
-      // Get current user ID
       const { data: userData } = await supabase.auth.getUser();
       const currentUserId = userData?.user?.id;
       
@@ -49,7 +47,6 @@ export const updateHelpRequest = async (
         return { success: false, error: 'You must be authenticated to update a help request' };
       }
       
-      // First, get the current state of the help request
       const { data: currentRequest, error: fetchError } = await supabase
         .from('help_requests')
         .select('status, client_id')
@@ -64,7 +61,6 @@ export const updateHelpRequest = async (
       if (!currentRequest) {
         console.error(`[updateHelpRequest] Help request not found: ${requestId}`);
         
-        // Check if request exists at all to provide better error messages
         const { data: requestExists } = await supabase
           .from('help_requests')
           .select('id')
@@ -86,21 +82,15 @@ export const updateHelpRequest = async (
 
       console.log('[updateHelpRequest] Found current request:', currentRequest);
 
-      // === Permission checks based on user type ===
       let permissionError: string | null = null;
       
-      // Check client permissions
       if (userType === 'client') {
-        // Client can only update their own requests
         if (currentRequest.client_id !== currentUserId) {
           permissionError = 'You can only update help requests that you created';
           console.error(`[updateHelpRequest] Client ${currentUserId} does not own request ${requestId}`);
         }
       }
-      
-      // Check developer permissions
       else if (userType === 'developer') {
-        // Developer must be matched with this request to update it
         const { data: matchData, error: matchError } = await supabase
           .from('help_request_matches')
           .select('status')
@@ -116,18 +106,14 @@ export const updateHelpRequest = async (
           };
         }
         
-        // Developer must be assigned to this request
         if (!matchData) {
           console.error('[updateHelpRequest] Developer not matched with this request');
-          
           return { 
             success: false, 
             error: `You are not assigned to this help request. Please request assignment first.` 
           };
         }
         
-        // If the match is not approved (still pending), developer can't update
-        // except for specific allowed cases
         if (matchData.status === 'pending' && updates.status &&
             updates.status !== 'dev_requested' && updates.status !== 'abandoned_by_dev') {
           console.error('[updateHelpRequest] Developer match not approved:', matchData.status);
@@ -146,20 +132,15 @@ export const updateHelpRequest = async (
         }
       }
 
-      // Return early if there's a permission error
       if (permissionError) {
         return { success: false, error: permissionError };
       }
 
-      // Handle hyphenated statuses for compatibility
-      const normalizedCurrentStatus = currentRequest.status.replace(/-/g, '_');
+      const normalizedCurrentStatus = currentRequest.status.replace(/[-_]/g, '_');
       
-      // Check status transition validity if status is being updated
       if (updates.status) {
-        // Normalize any hyphenated status in updates
-        const normalizedNewStatus = updates.status.replace(/-/g, '_');
+        const normalizedNewStatus = updates.status.replace(/[-_]/g, '_');
         
-        // If the statuses are the same after normalization, we can skip the update
         if (normalizedCurrentStatus === normalizedNewStatus) {
           console.log('[updateHelpRequest] Status unchanged after normalization, skipping update');
           return { 
@@ -169,7 +150,6 @@ export const updateHelpRequest = async (
           };
         }
         
-        // Use our new validation system for status transitions
         if (!isValidTransition(normalizedCurrentStatus, normalizedNewStatus, userType)) {
           console.error(`[updateHelpRequest] Invalid status transition from ${normalizedCurrentStatus} to ${normalizedNewStatus} by ${userType}`);
           return { 
@@ -181,12 +161,10 @@ export const updateHelpRequest = async (
         console.log(`[updateHelpRequest] Status transition validated: ${normalizedCurrentStatus} -> ${updates.status}`);
       }
 
-      // Update timestamp fields based on status changes
       const now = new Date().toISOString();
       
       if (updates.status) {
-        // Add appropriate timestamps based on status transitions
-        switch(updates.status) {
+        switch(updates.status.replace(/[-_]/g, '_')) {
           case 'ready_for_qa':
             updates.qa_start_time = now;
             break;
@@ -199,20 +177,16 @@ export const updateHelpRequest = async (
         }
       }
 
-      // CRITICAL FIX: Make sure we're using the same status format as what's already in the database
-      // If the database uses hyphenated format "in-progress" we need to maintain that format
-      if (updates.status) {
-        // Check if the current status in DB uses hyphens
-        if (currentRequest.status.includes('-')) {
-          // Convert underscores to hyphens for consistency with DB format
-          updates.status = updates.status.replace(/_/g, '-');
-        } else {
-          // Convert hyphens to underscores if DB uses that format
-          updates.status = updates.status.replace(/-/g, '_');
-        }
+      const dbUsesHyphens = currentRequest.status.includes('-');
+      
+      if (dbUsesHyphens) {
+        updates.status = updates.status.replace(/_/g, '-');
+        console.log(`[updateHelpRequest] Converted status format to hyphen: ${updates.status}`);
+      } else {
+        updates.status = updates.status.replace(/-/g, '_');
+        console.log(`[updateHelpRequest] Converted status format to underscore: ${updates.status}`);
       }
 
-      // Perform the update
       console.log('[updateHelpRequest] Sending update to Supabase:', updates);
       const { data, error } = await supabase
         .from('help_requests')
@@ -231,7 +205,6 @@ export const updateHelpRequest = async (
 
       if (!data) {
         console.error('[updateHelpRequest] No data returned after update');
-        // Additional check if the record still exists
         const { data: checkExists } = await supabase
           .from('help_requests')
           .select('id')
@@ -247,7 +220,6 @@ export const updateHelpRequest = async (
       
       console.log('[updateHelpRequest] Update successful, data:', data);
       
-      // Log history entry for status changes
       if (updates.status && updates.status !== currentRequest.status) {
         try {
           const historyEntry = {

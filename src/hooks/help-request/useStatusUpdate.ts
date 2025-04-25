@@ -14,7 +14,7 @@ export const useStatusUpdate = (
   const { userType } = useAuth();
 
   const handleUpdateStatus = async (newStatusId: string) => {
-    // Normalize statuses for comparison (handle both hyphen and underscore formats)
+    // Normalize statuses for consistent comparison (handles both hyphen and underscore formats)
     const normalizeStatus = (status: string) => status.replace(/[-_]/g, '_');
     
     if (normalizeStatus(newStatusId) === normalizeStatus(currentStatus)) {

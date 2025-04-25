@@ -29,13 +29,16 @@ const DeveloperStatusUpdate: React.FC<DeveloperStatusUpdateProps> = ({
     return <div className="text-sm text-muted-foreground">Invalid ticket information</div>;
   }
 
+  // Ensure consistent status format for dropdown
+  const normalizedStatus = currentStatus.replace(/[-_]/g, '_');
+
   return (
     <div className="space-y-4">
       <StatusUpdateError error={error || ''} />
 
       <div className="space-y-4">
         <StatusDropdown
-          defaultStatusId={currentStatus}
+          defaultStatusId={normalizedStatus}
           onStatusChange={handleUpdateStatus}
           placeholder="Select new status"
           required={true}

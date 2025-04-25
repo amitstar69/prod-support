@@ -23,6 +23,9 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
   const [nextStatus, setNextStatus] = useState<string | null>(null);
   const [availableStatuses, setAvailableStatuses] = useState<Array<{ value: string; label: string }>>([]);
   
+  // Ensure consistent status format
+  const normalizedCurrentStatus = currentStatus.replace(/[-_]/g, '_');
+  
   const {
     isUpdating,
     error,
@@ -30,25 +33,26 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
     setSelectedStatus,
     handleQuickUpdate,
     handleUpdateStatus
-  } = useClientStatusUpdate(ticketId, currentStatus, onStatusUpdated);
+  } = useClientStatusUpdate(ticketId, normalizedCurrentStatus, onStatusUpdated);
 
   useEffect(() => {
-    const transitions = getAllowedStatusTransitions(currentStatus, 'client');
+    // Use the normalized status for consistency
+    const transitions = getAllowedStatusTransitions(normalizedCurrentStatus, 'client');
     setAvailableStatuses(transitions.map(status => ({
       value: status,
-      label: status
+      label: status.replace(/_/g, ' ')
     })));
     setNextStatus(transitions.length ? transitions[0] : null);
-  }, [currentStatus]);
+  }, [normalizedCurrentStatus]);
 
   if (!availableStatuses.length) {
     return (
       <Alert>
         <AlertTitle>No Available Status Updates</AlertTitle>
         <AlertDescription>
-          {currentStatus === 'ready_for_final_action'
+          {normalizedCurrentStatus === 'ready_for_final_action'
             ? "Developer is performing final actions on your request."
-            : currentStatus === 'resolved'
+            : normalizedCurrentStatus === 'resolved'
             ? "This ticket has been successfully resolved."
             : "No status transitions available at this time."}
         </AlertDescription>
@@ -83,7 +87,7 @@ const ClientStatusUpdate: React.FC<ClientStatusUpdateProps> = ({
           <Button
             variant="outline"
             onClick={() => handleUpdateStatus(selectedStatus)}
-            disabled={isUpdating || selectedStatus === currentStatus}
+            disabled={isUpdating || selectedStatus === normalizedCurrentStatus}
             className="w-full sm:w-1/3"
           >
             Update

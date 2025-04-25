@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { updateHelpRequest } from '../../integrations/supabase/helpRequests';
 import { toast } from 'sonner';
@@ -14,6 +13,10 @@ export const useClientStatusUpdate = (
   const [error, setError] = useState<string | null>(null);
   const { userType } = useAuth();
 
+  useEffect(() => {
+    setSelectedStatus(currentStatus);
+  }, [currentStatus]);
+
   const handleQuickUpdate = async (nextStatus: string) => {
     if (!nextStatus) {
       toast.error('No valid next status available');
@@ -24,7 +27,9 @@ export const useClientStatusUpdate = (
   };
 
   const handleUpdateStatus = async (newStatusId: string) => {
-    if (newStatusId === currentStatus) {
+    const normalizeStatus = (status: string) => status.replace(/[-_]/g, '_');
+    
+    if (normalizeStatus(newStatusId) === normalizeStatus(currentStatus)) {
       toast.info(`Status is already set to ${newStatusId}`);
       return;
     }
@@ -33,6 +38,8 @@ export const useClientStatusUpdate = (
     setError(null);
 
     try {
+      console.log(`[ClientStatusUpdate] Updating from ${currentStatus} to ${newStatusId}`);
+      
       const response = await updateHelpRequest(
         requestId,
         { status: newStatusId },
@@ -45,10 +52,13 @@ export const useClientStatusUpdate = (
       } else {
         setError(response.error || 'Failed to update status');
         toast.error(response.error || 'Permission denied');
+        console.error('[ClientStatusUpdate] Status update failed:', response.error);
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      setError(errorMessage);
       toast.error('An error occurred while updating the status');
+      console.error('[ClientStatusUpdate] Exception:', error);
     } finally {
       setIsUpdating(false);
     }

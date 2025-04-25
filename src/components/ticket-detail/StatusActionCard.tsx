@@ -47,6 +47,17 @@ const StatusActionCard: React.FC<StatusActionCardProps> = ({
       setIsUpdating(newStatus);
       setError(null);
       
+      // Normalize status formats for consistent comparison (handles both hyphen and underscore formats)
+      const normalizedCurrentStatus = ticket.status?.replace(/[-_]/g, '_');
+      const normalizedNewStatus = newStatus.replace(/[-_]/g, '_');
+      
+      // Prevent unnecessary updates
+      if (normalizedCurrentStatus === normalizedNewStatus) {
+        toast.info(`Status is already set to ${newStatus}`);
+        setIsUpdating(null);
+        return;
+      }
+      
       console.log(`[StatusActionCard] Updating status from ${ticket.status} to ${newStatus}`);
       
       const response = await updateHelpRequest(
