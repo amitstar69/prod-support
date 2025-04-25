@@ -1,6 +1,6 @@
-
 import { useState, useCallback, useMemo } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
+import { ClientTicketCategories, DeveloperTicketCategories } from '../../types/ticketCategories';
 
 export interface FilterState {
   technical_area: string[];
@@ -21,12 +21,10 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
     location: [],
   });
 
-  // Apply filters to tickets
   const filteredTickets = useMemo(() => {
     if (!tickets) return [];
 
     return tickets.filter((ticket) => {
-      // Apply technical area filter
       if (
         filters.technical_area.length > 0 &&
         !filters.technical_area.some((area) =>
@@ -36,7 +34,6 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
         return false;
       }
 
-      // Apply urgency filter
       if (
         filters.urgency.length > 0 &&
         !filters.urgency.includes(ticket.urgency)
@@ -44,7 +41,6 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
         return false;
       }
 
-      // Apply budget filter
       if (
         filters.budget_range.length > 0 &&
         !filters.budget_range.includes(ticket.budget_range)
@@ -52,7 +48,6 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
         return false;
       }
 
-      // Apply search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
         const titleMatch = ticket.title?.toLowerCase().includes(searchLower);
@@ -64,7 +59,6 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
         }
       }
 
-      // Apply status filter
       if (
         filters.status.length > 0 &&
         !filters.status.includes(ticket.status || '')
@@ -72,7 +66,6 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
         return false;
       }
 
-      // Apply location filter
       if (
         filters.location.length > 0 &&
         !filters.location.includes(ticket.preferred_developer_location || 'Global')
@@ -84,60 +77,58 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
     });
   }, [tickets, filters]);
 
-  // Organize tickets by category based on user type
   const getFilteredTickets = useCallback(
     (userType: 'developer' | 'client') => {
       if (userType === 'developer') {
-        return {
+        const categories: DeveloperTicketCategories = {
           openTickets: filteredTickets.filter(
-            (ticket) => ticket.status === 'open' || ticket.status === 'pending'
+            (ticket) => ticket.status === 'ready_for_pickup' || ticket.status === 'submitted'
           ),
           myTickets: filteredTickets.filter(
-            (ticket) => ticket.developer_id === 'current_user_id'
-          ), // Replace with actual logic
+            (ticket) => 
+              ['requirements_review', 'need_more_info', 'in_progress', 'ready_for_qa', 'qa_fail']
+                .includes(ticket.status || '')
+          ),
           completedTickets: filteredTickets.filter(
-            (ticket) => ticket.status === 'resolved' || ticket.status === 'closed'
+            (ticket) => 
+              ['qa_pass', 'resolved', 'closed', 'cancelled']
+                .includes(ticket.status || '')
           ),
           activeTickets: filteredTickets.filter(
             (ticket) =>
-              ticket.status !== 'resolved' &&
-              ticket.status !== 'closed' &&
-              ticket.status !== 'cancelled_by_client'
+              !['qa_pass', 'resolved', 'closed', 'cancelled']
+                .includes(ticket.status || '')
           ),
         };
+        return categories;
       } else {
-        // Client categorization
-        return {
+        const categories: ClientTicketCategories = {
           activeTickets: filteredTickets.filter(
             (ticket) =>
-              ticket.status === 'open' ||
-              ticket.status === 'pending' ||
-              ticket.status === 'matching'
+              ['submitted', 'ready_for_pickup']
+                .includes(ticket.status || '')
           ),
           pendingApprovalTickets: filteredTickets.filter(
             (ticket) =>
-              ticket.status === 'awaiting_client_approval' ||
-              ticket.status === 'dev_requested'
+              ticket.status === 'pending_developer_approval'
           ),
           inProgressTickets: filteredTickets.filter(
             (ticket) =>
-              ticket.status === 'approved' ||
-              ticket.status === 'in_progress' ||
-              ticket.status === 'ready_for_client_qa'
+              ['requirements_review', 'need_more_info', 'in_progress', 'ready_for_qa', 'qa_fail']
+                .includes(ticket.status || '')
           ),
           completedTickets: filteredTickets.filter(
             (ticket) =>
-              ticket.status === 'resolved' ||
-              ticket.status === 'closed' ||
-              ticket.status === 'cancelled_by_client'
+              ['qa_pass', 'resolved', 'closed', 'cancelled']
+                .includes(ticket.status || '')
           ),
         };
+        return categories;
       }
     },
     [filteredTickets]
   );
 
-  // Helper function to handle filter changes
   const handleFilterChange = useCallback(
     (filterType: string, value: string) => {
       setFilters((prev) => {
@@ -162,7 +153,6 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
     []
   );
 
-  // Reset all filters
   const resetFilters = useCallback(() => {
     setFilters({
       technical_area: [],
@@ -174,7 +164,6 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
     });
   }, []);
 
-  // Calculate categorized tickets
   const categorizedTickets = useMemo(() => {
     if (!tickets) return {
       activeTickets: [],
