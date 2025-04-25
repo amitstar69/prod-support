@@ -53,11 +53,13 @@ export const useTicketRecommendations = (
     // Add additional factors to the match score
     
     // Complexity match (if developer is experienced, favor complex tickets)
-    if (developer.experience_years && developer.experience_years > 5 && 
-        ticket.complexity_level === 'high') {
+    // Parse experience string to determine experience level
+    const experienceString = developer.experience || '';
+    const experienceYears = parseInt(experienceString.match(/\d+/)?.[0] || '0');
+    
+    if (experienceYears > 5 && ticket.complexity_level === 'high') {
       matchScore += 15;
-    } else if (developer.experience_years && developer.experience_years < 2 && 
-              ticket.complexity_level === 'low') {
+    } else if (experienceYears < 2 && ticket.complexity_level === 'low') {
       matchScore += 10;
     }
 
