@@ -24,12 +24,18 @@ const DeveloperTicketsPage: React.FC = () => {
     developer
   );
 
+  // Create a dummy function to satisfy the type
+  const dummyFetchMyApplications = async (_isAuthenticated: boolean, _userId: string | null): Promise<void> => {
+    // This empty implementation satisfies the Promise<void> return type
+    return Promise.resolve();
+  };
+
   const { handleClaimTicket } = useTicketApplicationActions(
     isAuthenticated,
     userId,
     userType,
     handleForceRefresh,
-    () => {}
+    dummyFetchMyApplications // Use the async function that returns Promise<void>
   );
 
   if (hasError) {

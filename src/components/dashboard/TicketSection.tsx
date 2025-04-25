@@ -13,6 +13,7 @@ interface TicketSectionProps {
   viewMode: 'grid' | 'list';
   onOpenChat?: (helpRequestId: string, clientId: string, clientName?: string) => void;
   onRefresh?: () => void;
+  isRecommended?: boolean; // Add the missing prop
 }
 
 const TicketSection: React.FC<TicketSectionProps> = ({
@@ -24,7 +25,8 @@ const TicketSection: React.FC<TicketSectionProps> = ({
   isAuthenticated,
   viewMode,
   onOpenChat,
-  onRefresh
+  onRefresh,
+  isRecommended // Add the missing prop
 }) => {
   if (tickets.length === 0) {
     return (
@@ -46,6 +48,7 @@ const TicketSection: React.FC<TicketSectionProps> = ({
         isAuthenticated={isAuthenticated}
         onOpenChat={onOpenChat}
         onRefresh={onRefresh}
+        isRecommended={isRecommended} // Pass the prop to TicketListContainer
       />
     </section>
   );
