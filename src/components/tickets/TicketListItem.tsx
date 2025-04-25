@@ -5,8 +5,8 @@ import { Badge } from '../ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
 import { Clock, CheckCircle2, AlertCircle, BarChart3, Calendar, Bell, Star, FileEdit, User, ExternalLink } from 'lucide-react';
 import { Progress } from '../ui/progress';
-import { STATUSES } from '../../utils/helpRequestStatusUtils';
-import { useNavigate } from 'react-router-dom';  // Add this import
+import { HELP_REQUEST_STATUSES } from '../../utils/constants/statusConstants';
+import { useNavigate } from 'react-router-dom';
 import TicketStatus from './TicketStatus';
 
 interface TicketListItemProps {
@@ -25,18 +25,18 @@ interface TicketListItemProps {
 // Helper function to check if a ticket is in a claimable state
 const isTicketClaimable = (status: string): boolean => {
   const claimableStatuses = [
-    STATUSES.SUBMITTED,
-    STATUSES.PENDING_MATCH,
-    STATUSES.DEV_REQUESTED,
-    STATUSES.AWAITING_CLIENT_APPROVAL
+    HELP_REQUEST_STATUSES.SUBMITTED,
+    HELP_REQUEST_STATUSES.PENDING_MATCH,
+    HELP_REQUEST_STATUSES.DEV_REQUESTED,
+    HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL
   ];
   
   // Normalize status (replace hyphens with underscores)
   const normalizedStatus = status?.replace(/-/g, '_');
   
   // Check if status is in the claimable list
-  return claimableStatuses.includes(normalizedStatus) || 
-         claimableStatuses.includes(status);
+  return claimableStatuses.includes(normalizedStatus as any) || 
+         claimableStatuses.includes(status as any);
 };
 
 const TicketListItem: React.FC<TicketListItemProps> = ({
@@ -51,7 +51,7 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
   onChatClick,
   viewMode = 'grid'
 }) => {
-  const navigate = useNavigate();  // Add this line for direct navigation logging
+  const navigate = useNavigate();
 
   // Add logging to view details function
   const handleViewDetails = (ticketId: string) => {

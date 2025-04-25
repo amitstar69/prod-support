@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { STATUSES, getStatusLabel, getAllowedStatusTransitions } from '../utils/helpRequestStatusUtils';
+import { HELP_REQUEST_STATUSES } from '../utils/constants/statusConstants';
+import { getStatusLabel, getAllowedStatusTransitions } from '../utils/helpRequestStatusUtils';
 
 export interface ApplicationStatus {
   id: string;
@@ -25,7 +26,7 @@ export const useApplicationStatuses = (userType: 'client' | 'developer' = 'devel
       setError(null);
 
       // Create status list from the predefined statuses in helpRequestStatusUtils.ts
-      const statusList = Object.entries(STATUSES).map(([key, value]) => ({
+      const statusList = Object.entries(HELP_REQUEST_STATUSES).map(([key, value]) => ({
         id: value,
         label: getStatusLabel(value),
         value: value
@@ -34,20 +35,20 @@ export const useApplicationStatuses = (userType: 'client' | 'developer' = 'devel
       // Sort the statuses in a logical order for workflow progression
       // These are default values - will be filtered by current status in actual implementation
       const developerStatuses = [
-        STATUSES.REQUIREMENTS_REVIEW,
-        STATUSES.NEED_MORE_INFO,
-        STATUSES.IN_PROGRESS,
-        STATUSES.READY_FOR_CLIENT_QA,
-        STATUSES.READY_FOR_FINAL_ACTION,
-        STATUSES.RESOLVED,
+        HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW,
+        HELP_REQUEST_STATUSES.NEED_MORE_INFO,
+        HELP_REQUEST_STATUSES.IN_PROGRESS,
+        HELP_REQUEST_STATUSES.READY_FOR_QA,
+        HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION,
+        HELP_REQUEST_STATUSES.RESOLVED,
       ];
       
       const clientStatuses = [
-        STATUSES.APPROVED,
-        STATUSES.QA_PASS,
-        STATUSES.QA_FAIL,
-        STATUSES.RESOLVED,
-        STATUSES.CANCELLED_BY_CLIENT,
+        HELP_REQUEST_STATUSES.APPROVED,
+        HELP_REQUEST_STATUSES.QA_PASS,
+        HELP_REQUEST_STATUSES.QA_FAIL,
+        HELP_REQUEST_STATUSES.RESOLVED,
+        HELP_REQUEST_STATUSES.CANCELLED_BY_CLIENT,
       ];
 
       // Choose appropriate statuses based on user type
@@ -55,9 +56,9 @@ export const useApplicationStatuses = (userType: 'client' | 'developer' = 'devel
 
       // Filter and sort the status list
       const formattedStatuses = statusList
-        .filter(status => orderedStatuses.includes(status.value))
+        .filter(status => orderedStatuses.includes(status.value as any))
         .sort((a, b) => {
-          return orderedStatuses.indexOf(a.value) - orderedStatuses.indexOf(b.value);
+          return orderedStatuses.indexOf(a.value as any) - orderedStatuses.indexOf(b.value as any);
         });
 
       console.log(`Prepared ${formattedStatuses.length} statuses for ${userType}`, formattedStatuses);
