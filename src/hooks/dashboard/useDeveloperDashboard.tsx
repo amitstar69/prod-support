@@ -5,7 +5,7 @@ import { useTicketFetching } from './useTicketFetching';
 import { useTicketFilters } from './useTicketFilters';
 import { useTicketApplications } from './useTicketApplications';
 import { supabase } from '../../integrations/supabase/client';
-import { ClientTicketCategories, TicketCategories } from '../../types/ticketCategories';
+import { ClientTicketCategories, DeveloperTicketCategories, TicketCategories, isClientCategories } from '../../types/ticketCategories';
 
 export const useDeveloperDashboard = () => {
   const { userId, isAuthenticated, userType } = useAuth();
@@ -29,13 +29,10 @@ export const useDeveloperDashboard = () => {
     getFilteredTickets
   } = useTicketFilters(tickets);
 
-  // Create categorized tickets from the filtered tickets
-  const categorizedTickets: TicketCategories = userType ? getFilteredTickets(userType) : {
-    activeTickets: [],
-    pendingApprovalTickets: [],
-    inProgressTickets: [],
-    completedTickets: []
-  } as ClientTicketCategories;
+  // Create categorized tickets from the filtered tickets with proper typing
+  const categorizedTickets: TicketCategories = userType === 'client' 
+    ? getFilteredTickets(userType) as ClientTicketCategories
+    : getFilteredTickets(userType) as DeveloperTicketCategories;
   
   // Use hook for applications
   const {

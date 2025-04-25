@@ -17,14 +17,16 @@ export type DeveloperTicketCategories = {
 
 export type TicketCategories = ClientTicketCategories | DeveloperTicketCategories;
 
+// Type guard to check if the categories are client categories
 export const isClientCategories = (
   categories: TicketCategories
 ): categories is ClientTicketCategories => {
-  return 'pendingApprovalTickets' in categories;
+  return 'pendingApprovalTickets' in categories && 'inProgressTickets' in categories;
 };
 
+// Type guard to check if the categories are developer categories
 export const isDeveloperCategories = (
   categories: TicketCategories
 ): categories is DeveloperTicketCategories => {
-  return 'openTickets' in categories;
+  return 'openTickets' in categories && 'myTickets' in categories;
 };

@@ -13,6 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../componen
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
 import { HelpRequestMatch } from '../types/helpRequest';
+import { isClientCategories, ClientTicketCategories } from '../types/ticketCategories';
 
 const ClientDashboard = () => {
   const navigate = useNavigate();
@@ -36,11 +37,21 @@ const ClientDashboard = () => {
     fetchTickets
   } = useDeveloperDashboard();
 
+  // Check if we have client categories and cast appropriately
+  const clientTickets = isClientCategories(categorizedTickets) 
+    ? categorizedTickets 
+    : { 
+        activeTickets: [], 
+        pendingApprovalTickets: [], 
+        inProgressTickets: [], 
+        completedTickets: [] 
+      } as ClientTicketCategories;
+
   // Safely get categories
-  const activeTickets = categorizedTickets?.activeTickets || [];
-  const inProgressTickets = categorizedTickets?.inProgressTickets || [];
-  const completedTickets = categorizedTickets?.completedTickets || [];
-  const pendingApprovalTickets = categorizedTickets?.pendingApprovalTickets || [];
+  const activeTickets = clientTickets.activeTickets;
+  const inProgressTickets = clientTickets.inProgressTickets;
+  const completedTickets = clientTickets.completedTickets;
+  const pendingApprovalTickets = clientTickets.pendingApprovalTickets;
 
   // Toggle section expansion
   const toggleSection = (section: 'active' | 'pendingApproval' | 'inProgress' | 'completed') => {
