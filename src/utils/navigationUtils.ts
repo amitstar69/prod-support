@@ -83,7 +83,7 @@ export const isCorrectUserPath = (
 };
 
 // Check if a route should be marked active based on current path
-export const isRouteActive = (currentPath: string, routePath: string): boolean => {
+export const isRouteActive = (routePath: string, currentPath: string): boolean => {
   // Handle exact matches
   if (routePath === currentPath) {
     return true;
