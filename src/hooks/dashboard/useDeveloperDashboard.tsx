@@ -24,14 +24,17 @@ export const useDeveloperDashboard = () => {
   const { 
     filters, 
     filteredTickets,
-    categorizedTickets,
     handleFilterChange, 
-    resetFilters 
+    resetFilters,
+    getFilteredTickets
   } = useTicketFilters(tickets);
 
-  // Create a dummy function to satisfy the type if needed
-  const dummyFetchMyApplications = async (isAuth: boolean, uid: string | null) => {
-    return Promise.resolve();
+  // Create categorized tickets from the filtered tickets
+  const categorizedTickets = userType ? getFilteredTickets(userType) : {
+    activeTickets: [],
+    inProgressTickets: [],
+    completedTickets: [],
+    pendingApprovalTickets: []
   };
   
   // Use hook for applications

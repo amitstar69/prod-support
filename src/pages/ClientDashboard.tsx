@@ -70,7 +70,7 @@ const ClientDashboard = () => {
             .from('help_request_matches')
             .select(`
               *,
-              profiles:developer_id (id, name, image, experience)
+              profiles:developer_id (id, name, image)
             `)
             .eq('request_id', ticketId);
             
@@ -89,16 +89,14 @@ const ClientDashboard = () => {
                 safeProfiles = { 
                   id: app.developer_id, 
                   name: 'Unknown Developer',
-                  image: null,
-                  experience: null
+                  image: null
                 };
               } else if ('error' in safeProfiles) {
                 // If it's an error object, replace with safe default data
                 safeProfiles = { 
                   id: app.developer_id, 
                   name: 'Unknown Developer',
-                  image: null,
-                  experience: null
+                  image: null
                 };
               }
               

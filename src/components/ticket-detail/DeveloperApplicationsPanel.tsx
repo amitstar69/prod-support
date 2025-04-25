@@ -56,7 +56,7 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
         .from('help_request_matches')
         .select(`
           *,
-          profiles:developer_id (id, name, image, experience)
+          profiles:developer_id (id, name, image)
         `)
         .eq('request_id', ticketId)
         .order('created_at', { ascending: false });
@@ -76,16 +76,14 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
           safeProfiles = { 
             id: app.developer_id, 
             name: 'Unknown Developer',
-            image: null,
-            experience: null
+            image: null
           };
         } else if ('error' in safeProfiles) {
           // If it's an error object, replace with safe default data
           safeProfiles = { 
             id: app.developer_id, 
             name: 'Unknown Developer',
-            image: null,
-            experience: null
+            image: null
           };
         }
 
@@ -248,7 +246,7 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
                           src={application.profiles?.image || ''} 
                           alt={application.profiles?.name || 'Developer'} 
                         />
-                        <AvatarFallback>{(application.profiles?.name || 'Dev').substring(0, 2)}</AvatarFallback>
+                        <AvatarFallback>{application.profiles ? (application.profiles.name || 'Dev').substring(0, 2) : 'Dev'}</AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-medium">{application.profiles?.name || 'Anonymous Developer'}</p>
@@ -311,7 +309,7 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
                           src={application.profiles?.image || ''} 
                           alt={application.profiles?.name || 'Developer'} 
                         />
-                        <AvatarFallback>{(application.profiles?.name || 'Dev').substring(0, 2)}</AvatarFallback>
+                        <AvatarFallback>{application.profiles ? (application.profiles.name || 'Dev').substring(0, 2) : 'Dev'}</AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-medium">{application.profiles?.name || 'Anonymous Developer'}</p>
@@ -354,7 +352,7 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
                           src={application.profiles?.image || ''} 
                           alt={application.profiles?.name || 'Developer'} 
                         />
-                        <AvatarFallback>{(application.profiles?.name || 'Dev').substring(0, 2)}</AvatarFallback>
+                        <AvatarFallback>{application.profiles ? (application.profiles.name || 'Dev').substring(0, 2) : 'Dev'}</AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-medium">{application.profiles?.name || 'Anonymous Developer'}</p>
