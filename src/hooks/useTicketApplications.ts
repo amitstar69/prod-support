@@ -1,24 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
-
-export interface HelpRequestMatch {
-  id: string;
-  developer_id: string;
-  match_score: number;
-  proposed_duration: number;
-  proposed_message: string;
-  proposed_rate: number;
-  request_id: string;
-  status: string;
-  updated_at: string;
-  profiles?: {
-    id?: string;
-    name?: string;
-    image?: string;
-    experience?: string;
-  };
-}
+import { HelpRequestMatch } from '../types/helpRequest';
 
 export const useTicketApplications = (ticketId: string) => {
   const [applications, setApplications] = useState<HelpRequestMatch[]>([]);
@@ -51,7 +34,6 @@ export const useTicketApplications = (ticketId: string) => {
         throw new Error(fetchError.message);
       }
 
-      // Type assertion to ensure the data matches our expected structure
       const typedData = data as unknown as HelpRequestMatch[];
       setApplications(typedData || []);
     } catch (err) {
@@ -69,7 +51,6 @@ export const useTicketApplications = (ticketId: string) => {
     }
   }, [ticketId, sortBy, statusFilter]);
 
-  // Subscribe to real-time updates
   useEffect(() => {
     if (!ticketId) return;
 
