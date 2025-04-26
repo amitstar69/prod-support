@@ -1,24 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
-import { messageTypeIconMap } from '../../utils/messageTypeIcons';
-import { HelpRequest, HelpRequestMatch } from '../../types/helpRequest';
+import { HelpRequest } from '../../types/helpRequest';
 import { formatTicketStatus, getTicketStatusStyles } from '../../utils/ticketStatusUtils';
 import { formatDistanceToNow } from 'date-fns';
-import DeveloperApplicationPanel from '../developer-ticket-detail/DeveloperApplicationPanel';
-import DeveloperApplicationsPanel from '../dashboard/DeveloperApplicationsPanel';
 import { useAuth } from '../../contexts/auth';
-import { supabase } from '../../integrations/supabase/client';
-import StatusActionCard from './StatusActionCard';
-import TicketHistoryPanel from './TicketHistoryPanel';
-import TicketDetailsPanel from './TicketDetailsPanel';
-import TicketCommentsPanel from './TicketCommentsPanel';
-import AttachmentsPanel from './AttachmentsPanel';
+import { useNavigate } from 'react-router-dom';
+import { messageTypeIconMap } from '../../utils/messageTypeIcons';
+import { useTicketApplications } from '../../hooks/ticket-detail/useTicketApplications';
+import MainContent from './MainContent';
+import SidebarContent from './SidebarContent';
 
 interface TicketDetailContentProps {
   ticket: HelpRequest | null;
@@ -48,95 +42,18 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
   const navigate = useNavigate();
   const { userId, userType } = useAuth();
   const [activeTab, setActiveTab] = useState('details');
-  const [applications, setApplications] = useState<HelpRequestMatch[]>([]);
-  const [isLoadingApplications, setIsLoadingApplications] = useState(false);
 
   const isClient = userType === 'client';
   const isDeveloper = userType === 'developer';
 
-  useEffect(() => {
-    if (!isClient || !ticketId || !userId) return;
-    
-    const fetchApplications = async () => {
-      setIsLoadingApplications(true);
-      try {
-        const { data, error } = await supabase
-          .from('help_request_matches')
-          .select(`
-            *,
-            profiles:developer_id (id, name, image)
-          `)
-          .eq('request_id', ticketId);
-          
-        if (error) {
-          console.error('Error fetching applications:', error);
-          return;
-        }
-        
-        const typedApplications: HelpRequestMatch[] = (data || []).map(app => {
-          let safeProfiles = app.profiles;
-          
-          if (!safeProfiles || typeof safeProfiles !== 'object') {
-            safeProfiles = { 
-              id: app.developer_id, 
-              name: 'Unknown Developer',
-              image: null
-            };
-          }
-          
-          return {
-            ...app,
-            profiles: safeProfiles
-          } as HelpRequestMatch;
-        });
-        
-        setApplications(typedApplications);
-      } catch (err) {
-        console.error('Error fetching applications:', err);
-      } finally {
-        setIsLoadingApplications(false);
-      }
-    };
-    
-    fetchApplications();
-    
-    const channel = supabase
-      .channel(`applications-${ticketId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'help_request_matches',
-          filter: `request_id=eq.${ticketId}`
-        },
-        () => {
-          console.log('[TicketDetail] Applications updated, refreshing');
-          fetchApplications();
-          onRefresh();
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [ticketId, userId, isClient, onRefresh]);
+  const { applications, isLoadingApplications } = useTicketApplications(
+    ticketId,
+    userId,
+    isClient
+  );
 
-  const handleOpenChat = (developerId: string, developerName?: string) => {
-    if (!ticketId || !developerId) return;
-    navigate(`/chat/${ticketId}?with=${developerId}&name=${developerName || 'Developer'}`);
-  };
-
-  // Fix: Make sure to properly implement the async function with a Promise return
   const handleStatusUpdated = async (): Promise<void> => {
-    // We need to properly await the onStatusUpdated function
-    // and make sure a Promise is returned
     return onStatusUpdated();
-  };
-
-  const handleTicketAccepted = (): void => {
-    onTicketAccepted();
   };
 
   if (isLoading) {
@@ -237,85 +154,29 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="col-span-1 lg:col-span-2 space-y-6">
-          <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="comments">Comments</TabsTrigger>
-              <TabsTrigger value="history">History</TabsTrigger>
-              <TabsTrigger value="attachments">Attachments</TabsTrigger>
-              {isClient && applications.length > 0 && (
-                <TabsTrigger value="applications">
-                  Applications
-                  {applications.filter(a => a.status === 'pending').length > 0 && (
-                    <Badge className="ml-2 bg-amber-100 text-amber-800 border-amber-200" variant="outline">
-                      {applications.filter(a => a.status === 'pending').length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              )}
-            </TabsList>
-            
-            <TabsContent value="details">
-              {ticket && <TicketDetailsPanel ticket={ticket} />}
-            </TabsContent>
-            
-            <TabsContent value="comments">
-              <TicketCommentsPanel ticketId={ticketId} />
-            </TabsContent>
-            
-            <TabsContent value="history">
-              <TicketHistoryPanel ticketId={ticketId} />
-            </TabsContent>
-            
-            <TabsContent value="attachments">
-              {ticket && <AttachmentsPanel ticket={ticket} />}
-            </TabsContent>
-            
-            {isClient && (
-              <TabsContent value="applications">
-                <DeveloperApplicationsPanel
-                  applications={applications}
-                  ticketId={ticketId}
-                  clientId={userId!}
-                  isLoading={isLoadingApplications}
-                  onApplicationUpdate={onRefresh}
-                  onOpenChat={handleOpenChat}
-                />
-              </TabsContent>
-            )}
-          </Tabs>
+        <div className="col-span-1 lg:col-span-2">
+          <MainContent
+            ticket={ticket}
+            ticketId={ticketId}
+            userId={userId!}
+            isClient={isClient}
+            applications={applications}
+            isLoadingApplications={isLoadingApplications}
+            onRefresh={onRefresh}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
         </div>
         
-        <div className="col-span-1 space-y-6">
-          {isDeveloper && ticket && (
-            <DeveloperApplicationPanel
-              devUpdateVisibility={{
-                show: !!(applicationStatus === "approved" && hasApplied),
-                reason: "",
-              }}
-              ticket={ticket}
-              ticketId={ticketId}
-              userType={userType}
-              applicationStatus={applicationStatus}
-              hasApplied={hasApplied}
-              onApply={() => onApply(ticketId)}
-              fetchLatestTicketData={onRefresh}
-            />
-          )}
-          
-          {ticket && (
-            <StatusActionCard
-              ticket={ticket}
-              userType={userType as any}
-              onStatusUpdated={handleStatusUpdated}
-            />
-          )}
-          
-          <TicketHistoryPanel 
-            ticketId={ticketId} 
-            compact={true} 
-            limit={5} 
+        <div className="col-span-1">
+          <SidebarContent
+            isDeveloper={isDeveloper}
+            ticket={ticket}
+            ticketId={ticketId}
+            applicationStatus={applicationStatus}
+            hasApplied={hasApplied}
+            onApply={() => onApply(ticketId)}
+            onRefresh={handleStatusUpdated}
           />
         </div>
       </div>
