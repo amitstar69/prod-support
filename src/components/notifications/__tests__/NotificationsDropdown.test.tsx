@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect'; // Import jest-dom for additional matchers
+import '@testing-library/jest-dom'; // Import jest-dom for additional matchers
 import NotificationsDropdown from '../NotificationsDropdown';
 import { AuthProvider } from '../../../contexts/auth';
 import { supabase } from '../../../integrations/supabase/client';
@@ -45,7 +45,8 @@ describe('NotificationsDropdown', () => {
     // Simulate notifications fetch
     jest.spyOn(require('../useNotifications'), 'useNotifications').mockReturnValue({
       notifications: mockNotifications,
-      isLoading: false
+      isLoading: false,
+      refresh: jest.fn()
     });
 
     render(

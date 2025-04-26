@@ -1,27 +1,16 @@
 
 import { supabase } from './client';
 import { toast } from 'sonner';
-
-export interface Notification {
-  id: string;
-  user_id: string;
-  related_entity_id: string;
-  entity_type: string;
-  title: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-  updated_at: string;
-  notification_type?: string;
-  action_data?: any;
-}
+import { Notification } from '../../components/notifications/types';
 
 export const fetchUserNotifications = async (userId: string | null) => {
   try {
     if (!userId) {
+      console.log('No user ID provided for fetching notifications');
       return { success: false, error: 'User ID is required', data: [] };
     }
 
+    console.log('Fetching notifications for user:', userId);
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
@@ -33,6 +22,7 @@ export const fetchUserNotifications = async (userId: string | null) => {
       return { success: false, error: error.message, data: [] };
     }
 
+    console.log('Fetched notifications:', data ? data.length : 0);
     return { success: true, data: data as Notification[] };
   } catch (error) {
     console.error('Exception fetching notifications:', error);
@@ -46,6 +36,7 @@ export const fetchUserNotifications = async (userId: string | null) => {
 
 export const markNotificationAsRead = async (notificationId: string) => {
   try {
+    console.log('Marking notification as read:', notificationId);
     const { data, error } = await supabase
       .from('notifications')
       .update({ is_read: true })
@@ -57,6 +48,7 @@ export const markNotificationAsRead = async (notificationId: string) => {
       return { success: false, error: error.message };
     }
 
+    console.log('Notification marked as read:', notificationId);
     return { success: true, data };
   } catch (error) {
     console.error('Exception marking notification as read:', error);
@@ -69,6 +61,7 @@ export const markNotificationAsRead = async (notificationId: string) => {
 
 export const markAllNotificationsAsRead = async (userId: string) => {
   try {
+    console.log('Marking all notifications as read for user:', userId);
     const { data, error } = await supabase
       .from('notifications')
       .update({ is_read: true })
@@ -81,6 +74,7 @@ export const markAllNotificationsAsRead = async (userId: string) => {
       return { success: false, error: error.message };
     }
 
+    console.log('All notifications marked as read for user:', userId, 'Count:', data.length);
     return { success: true, data };
   } catch (error) {
     console.error('Exception marking all notifications as read:', error);
@@ -101,8 +95,11 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
   }
   
   try {
+    // First, let's make sure realtime is enabled for the notifications table
+    enableRealtimeForNotifications();
+    
     const channel = supabase
-      .channel('notifications_changes')
+      .channel(`notifications_changes_${userId}`)
       .on(
         'postgres_changes',
         {
@@ -139,6 +136,29 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
   }
 };
 
+// Helper function to ensure realtime is enabled for notifications table
+const enableRealtimeForNotifications = async () => {
+  try {
+    const { error } = await supabase
+      .rpc('realtime.enable_notifications', {
+        table_name: 'notifications'
+      })
+      .then((res) => {
+        console.log('Result of enabling realtime for notifications:', res);
+        return res;
+      });
+      
+    if (error) {
+      console.error('Error enabling realtime for notifications:', error);
+    } else {
+      console.log('Realtime enabled for notifications table');
+    }
+  } catch (err) {
+    console.error('Exception enabling realtime for notifications:', err);
+    // Continue anyway - the RPC might not exist and that's okay
+  }
+};
+
 // Create a notification manually (backup method if trigger doesn't work)
 export const createNotification = async (notification: {
   user_id: string;
@@ -146,8 +166,11 @@ export const createNotification = async (notification: {
   entity_type: string;
   title: string;
   message: string;
+  notification_type?: string;
+  action_data?: any;
 }) => {
   try {
+    console.log('Creating notification:', notification);
     const { data, error } = await supabase
       .from('notifications')
       .insert([notification])
@@ -158,6 +181,7 @@ export const createNotification = async (notification: {
       return { success: false, error: error.message };
     }
 
+    console.log('Notification created successfully:', data);
     return { success: true, data };
   } catch (error) {
     console.error('Exception creating notification:', error);

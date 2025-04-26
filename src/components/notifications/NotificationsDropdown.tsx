@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BellIcon, BellRingIcon, CheckIcon } from 'lucide-react';
+import { BellIcon, BellRingIcon, CheckIcon, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import { Button } from '../ui/button';
 import { markAllNotificationsAsRead } from '../../integrations/supabase/notifications';
@@ -28,17 +28,23 @@ const NotificationsDropdown: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleNotificationClick = async (notification: Notification) => {
+    console.log('Handling notification click:', notification);
     await markNotificationAsRead(notification.id);
     
     if (notification.notification_type === 'new_application') {
-      return;
+      // If it's a new application notification, navigate to the ticket details
+      if (notification.action_data && notification.action_data.request_id) {
+        navigate(`/tickets/${notification.action_data.request_id}`);
+        setIsOpen(false);
+        return;
+      }
     }
     
     setIsOpen(false);
     
     switch (notification.entity_type) {
       case 'application':
-        if (notification.related_entity_id.includes('-')) {
+        if (notification.related_entity_id && notification.related_entity_id.includes('-')) {
           try {
             const { data, error } = await supabase
               .from('help_request_matches')
@@ -92,7 +98,12 @@ const NotificationsDropdown: React.FC = () => {
     }
   };
 
-  const { notifications, isLoading, setNotifications } = useNotifications(userId, handleNotificationClick);
+  const { notifications, isLoading, setNotifications, refresh } = useNotifications(userId, handleNotificationClick);
+
+  const handleRefresh = () => {
+    console.log('Manually refreshing notifications');
+    refresh();
+  };
 
   const handleMarkAllAsRead = async () => {
     if (!userId) return;
@@ -141,24 +152,35 @@ const NotificationsDropdown: React.FC = () => {
         <DropdownMenuContent align="end" className="w-80">
           <DropdownMenuLabel className="flex justify-between items-center">
             <span>Notifications</span>
-            {unreadCount > 0 && (
+            <div className="flex items-center gap-2">
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={handleMarkAllAsRead}
+                onClick={handleRefresh}
                 className="h-8 text-xs"
               >
-                <CheckIcon className="h-3.5 w-3.5 mr-1" />
-                Mark all as read
+                <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                Refresh
               </Button>
-            )}
+              {unreadCount > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleMarkAllAsRead}
+                  className="h-8 text-xs"
+                >
+                  <CheckIcon className="h-3.5 w-3.5 mr-1" />
+                  Mark all as read
+                </Button>
+              )}
+            </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           
           <ScrollArea className="h-[300px]">
             {isLoading ? (
-              <div className="py-6 text-center text-muted-foreground">
-                Loading notifications...
+              <div className="py-6 text-center text-muted-foreground flex justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground"></div>
               </div>
             ) : notifications.length === 0 ? (
               <div className="py-6 text-center text-muted-foreground">

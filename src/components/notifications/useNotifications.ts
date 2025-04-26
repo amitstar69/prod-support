@@ -36,9 +36,12 @@ export const useNotifications = (userId: string | null, handleNotificationClick:
 
   useEffect(() => {
     if (userId) {
+      // Load notifications immediately when component mounts
       loadNotifications();
       
+      // Set up subscription for real-time notifications
       const cleanup = setupNotificationsSubscription(userId, (newNotification) => {
+        console.log('New notification received:', newNotification);
         const componentNotification: Notification = {
           ...newNotification,
           notification_type: newNotification.notification_type || 'general',
@@ -58,5 +61,10 @@ export const useNotifications = (userId: string | null, handleNotificationClick:
     }
   }, [userId, handleNotificationClick]);
 
-  return { notifications, isLoading, setNotifications };
+  return { 
+    notifications, 
+    isLoading, 
+    setNotifications,
+    refresh: loadNotifications // Export refresh function to allow manual refresh
+  };
 };
