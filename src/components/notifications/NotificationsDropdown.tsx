@@ -1,139 +1,45 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import { useAuth } from '../../contexts/auth';
-import { 
-  fetchUserNotifications, 
-  markNotificationAsRead, 
-  markAllNotificationsAsRead,
-  setupNotificationsSubscription 
-} from '../../integrations/supabase/notifications';
-import { supabase } from '../../integrations/supabase/client';
 import { BellIcon, BellRingIcon, CheckIcon } from 'lucide-react';
+import { useAuth } from '../../contexts/auth';
 import { Button } from '../ui/button';
+import { markAllNotificationsAsRead } from '../../integrations/supabase/notifications';
+import { markNotificationAsRead } from '../../integrations/supabase/notifications';
+import { supabase } from '../../integrations/supabase/client';
+import { toast } from 'sonner';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
-  DropdownMenuItem, 
   DropdownMenuLabel, 
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '../ui/dropdown-menu';
 import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
-import { toast } from 'sonner';
-import NotificationActions from './NotificationActions';
-
-// Update Notification interface to match our database structure
-export interface Notification {
-  id: string;
-  user_id: string;
-  related_entity_id: string;
-  entity_type: string;
-  notification_type: string;
-  title: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-  updated_at: string;
-  action_data?: {
-    application_id?: string;
-    developer_id?: string;
-    developer_name?: string;
-    request_id?: string;
-    request_title?: string;
-    status?: string;
-    client_name?: string;
-  };
-}
+import { useNotifications } from './useNotifications';
+import NotificationItem from './NotificationItem';
+import { Notification } from './types';
 
 const NotificationsDropdown: React.FC = () => {
   const { userId, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (isAuthenticated && userId) {
-      loadNotifications();
-      
-      // Setup realtime subscription
-      const cleanup = setupNotificationsSubscription(userId, (newNotification) => {
-        // Convert the API notification to our component's Notification type
-        const componentNotification: Notification = {
-          ...newNotification,
-          notification_type: newNotification.notification_type || 'general',
-        };
-        setNotifications(prev => [componentNotification, ...prev]);
-        
-        // Show toast for new notification
-        toast.info(componentNotification.title, {
-          description: componentNotification.message,
-          action: {
-            label: 'View',
-            onClick: () => handleNotificationClick(componentNotification)
-          }
-        });
-      });
-      
-      return cleanup;
-    }
-  }, [userId, isAuthenticated]);
-
-  const loadNotifications = async () => {
-    if (!userId) return;
-    
-    setIsLoading(true);
-    
-    try {
-      console.log('Fetching notifications for user:', userId);
-      const result = await fetchUserNotifications(userId);
-      
-      if (result.success) {
-        console.log('Loaded notifications:', result.data.length);
-        // Convert API notifications to our component's Notification type
-        const componentNotifications: Notification[] = result.data.map(notification => ({
-          ...notification,
-          notification_type: notification.notification_type || 'general',
-        }));
-        setNotifications(componentNotifications);
-      } else {
-        console.error('Error loading notifications:', result.error);
-      }
-    } catch (error) {
-      console.error('Exception loading notifications:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleNotificationClick = async (notification: Notification) => {
-    // Mark notification as read
     await markNotificationAsRead(notification.id);
     
-    // Update local state
-    setNotifications(prev => 
-      prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)
-    );
-    
-    // For new application notifications, don't close dropdown to allow actions
     if (notification.notification_type === 'new_application') {
       return;
     }
     
     setIsOpen(false);
     
-    // Navigate based on notification type
     switch (notification.entity_type) {
       case 'application':
-        // Get the request ID directly from the related_entity_id if it's a request ID
-        // or fetch it from the application if it's an application ID
         if (notification.related_entity_id.includes('-')) {
           try {
-            // If it's an application ID, get the request ID from the application
             const { data, error } = await supabase
               .from('help_request_matches')
               .select('request_id')
@@ -148,7 +54,6 @@ const NotificationsDropdown: React.FC = () => {
             
             if (data && data.request_id) {
               navigate(`/client-dashboard`);
-              // Give the dashboard a chance to load before viewing the request
               setTimeout(() => {
                 const viewRequestEvent = new CustomEvent('viewRequest', { 
                   detail: { requestId: data.request_id } 
@@ -161,7 +66,6 @@ const NotificationsDropdown: React.FC = () => {
             toast.error('Failed to process notification');
           }
         } else {
-          // If the related_entity_id is the request ID itself
           navigate(`/client-dashboard`);
           setTimeout(() => {
             const viewRequestEvent = new CustomEvent('viewRequest', { 
@@ -175,10 +79,8 @@ const NotificationsDropdown: React.FC = () => {
         navigate(`/developer-dashboard?tab=myApplications`);
         break;
       case 'message':
-        // For messages, go to profile messages tab
         navigate(`/profile`);
         setTimeout(() => {
-          // Use CustomEvent to switch to the messages tab
           const switchToMessagesEvent = new CustomEvent('switchToMessages', { 
             detail: { helpRequestId: notification.related_entity_id } 
           });
@@ -189,6 +91,8 @@ const NotificationsDropdown: React.FC = () => {
         navigate('/client-dashboard');
     }
   };
+
+  const { notifications, isLoading, setNotifications } = useNotifications(userId, handleNotificationClick);
 
   const handleMarkAllAsRead = async () => {
     if (!userId) return;
@@ -211,36 +115,6 @@ const NotificationsDropdown: React.FC = () => {
   };
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
-
-  const formatTime = (dateString: string) => {
-    try {
-      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
-    } catch (e) {
-      return 'just now';
-    }
-  };
-
-  const renderNotificationContent = (notification: Notification) => {
-    return (
-      <>
-        <div className="flex flex-col gap-1 w-full">
-          <div className="flex justify-between items-start">
-            <span className="font-medium text-sm">{notification.title}</span>
-            <span className="text-xs text-muted-foreground">
-              {formatTime(notification.created_at)}
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground">{notification.message}</p>
-        </div>
-        {notification.notification_type === 'new_application' && notification.action_data && (
-          <NotificationActions 
-            notification={notification} 
-            onActionComplete={() => loadNotifications()} 
-          />
-        )}
-      </>
-    );
-  };
 
   if (!isAuthenticated) {
     return null;
@@ -293,15 +167,11 @@ const NotificationsDropdown: React.FC = () => {
             ) : (
               <div>
                 {notifications.map((notification) => (
-                  <DropdownMenuItem
+                  <NotificationItem 
                     key={notification.id}
-                    className={`px-4 py-3 cursor-pointer ${
-                      notification.is_read ? 'opacity-70' : 'bg-primary/5'
-                    }`}
-                    onClick={() => handleNotificationClick(notification)}
-                  >
-                    {renderNotificationContent(notification)}
-                  </DropdownMenuItem>
+                    notification={notification}
+                    onClick={handleNotificationClick}
+                  />
                 ))}
               </div>
             )}
