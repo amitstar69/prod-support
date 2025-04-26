@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { UserType } from '@/contexts/auth/types';
@@ -64,6 +65,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
           <TabsContent value="client">
             <form onSubmit={onSubmit}>
               <LoginInputField
+                id="client-email"
                 label="Email"
                 type="email"
                 placeholder="Enter your email"
@@ -73,6 +75,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                 onBlur={onEmailBlur}
               />
               <LoginInputField
+                id="client-password"
                 label="Password"
                 type="password"
                 placeholder="Enter your password"
@@ -94,6 +97,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
           <TabsContent value="developer">
             <form onSubmit={onSubmit}>
               <LoginInputField
+                id="dev-email"
                 label="Email"
                 type="email"
                 placeholder="Enter your email"
@@ -103,6 +107,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                 onBlur={onEmailBlur}
               />
               <LoginInputField
+                id="dev-password"
                 label="Password"
                 type="password"
                 placeholder="Enter your password"
@@ -124,7 +129,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
         </Tabs>
       </CardContent>
       <CardFooter className="flex flex-col gap-2 items-center text-sm">
-        <SocialLoginButtons onGoogleLogin={onGoogleLogin} onGithubLogin={onGithubLogin} />
+        <SocialLoginButtons 
+          onGoogleLogin={onGoogleLogin} 
+          onGithubLogin={onGithubLogin} 
+          isLoading={isLoading} 
+        />
         <Link to="/register" className="text-blue-500 hover:underline">
           Don't have an account? Register
         </Link>

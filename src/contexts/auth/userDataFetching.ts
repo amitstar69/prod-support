@@ -128,11 +128,24 @@ export const updateUserData = async (
       return false;
     }
 
+    // Create a properly typed update object
+    const updateData: Record<string, any> = { ...data };
+
+    // Handle availability specifically for developer profiles
+    if ('availability' in updateData && profileData.user_type === 'developer') {
+      if (typeof updateData.availability === 'object') {
+        // Convert complex availability object to boolean for developer profiles
+        // as the database schema expects a boolean
+        updateData.availability = true;
+      }
+      // If it's already a boolean, no conversion needed
+    }
+
     // Update appropriate profile table based on user type
     if (profileData.user_type === 'developer') {
       const { error } = await supabase
         .from('developer_profiles')
-        .update(data)
+        .update(updateData)
         .eq('id', userId);
         
       if (error) {
@@ -142,7 +155,7 @@ export const updateUserData = async (
     } else if (profileData.user_type === 'client') {
       const { error } = await supabase
         .from('client_profiles')
-        .update(data)
+        .update(updateData)
         .eq('id', userId);
         
       if (error) {

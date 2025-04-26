@@ -1,3 +1,4 @@
+
 import { supabase } from '../../integrations/supabase/client';
 import { AuthState } from './types';
 
@@ -128,11 +129,30 @@ export const debugCheckProfile = async (userId: string) => {
       };
     }
     
-    const { data: detailsData, error: detailsError } = await supabase
-      .from(profileTable)
-      .select('*')
-      .eq('id', userId)
-      .single();
+    // Fixed: We need to use a type-safe approach here
+    // Using proper table names as literals instead of string variables
+    let detailsData;
+    let detailsError;
+    
+    if (profileTable === 'developer_profiles') {
+      const result = await supabase
+        .from('developer_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      detailsData = result.data;
+      detailsError = result.error;
+    } else if (profileTable === 'client_profiles') {
+      const result = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      detailsData = result.data;
+      detailsError = result.error;
+    }
     
     if (detailsError) {
       console.error('Error fetching profile details:', detailsError);
@@ -182,28 +202,30 @@ export const debugCreateMissingProfiles = async (
       };
     }
     
-    // Determine the table name based on user type
-    let profileTable = '';
-    if (userType === 'developer') {
-      profileTable = 'developer_profiles';
-    } else if (userType === 'client') {
-      profileTable = 'client_profiles';
-    } else {
-      console.error('Invalid user type');
-      return {
-        success: false,
-        message: 'Invalid user type'
-      };
-    }
+    // Fixed: Since we're creating a new profile, we'll use the proper table directly
+    let error;
     
-    // Insert the new profile
-    const { error } = await supabase
-      .from(profileTable)
-      .insert([{
-        id: userId,
-        email: email,
-        name: name
-      }]);
+    if (userType === 'developer') {
+      const result = await supabase
+        .from('developer_profiles')
+        .insert([{
+          id: userId,
+          email: email,
+          name: name
+        }]);
+      
+      error = result.error;
+    } else if (userType === 'client') {
+      const result = await supabase
+        .from('client_profiles')
+        .insert([{
+          id: userId,
+          email: email,
+          name: name
+        }]);
+      
+      error = result.error;
+    }
     
     if (error) {
       console.error('Error creating profile:', error);
