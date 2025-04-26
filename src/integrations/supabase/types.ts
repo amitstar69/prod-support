@@ -490,33 +490,39 @@ export type Database = {
       }
       notifications: {
         Row: {
+          action_data: Json | null
           created_at: string
           entity_type: string
           id: string
           is_read: boolean
           message: string
+          notification_type: string | null
           related_entity_id: string
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          action_data?: Json | null
           created_at?: string
           entity_type: string
           id?: string
           is_read?: boolean
           message: string
+          notification_type?: string | null
           related_entity_id: string
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          action_data?: Json | null
           created_at?: string
           entity_type?: string
           id?: string
           is_read?: boolean
           message?: string
+          notification_type?: string | null
           related_entity_id?: string
           title?: string
           updated_at?: string

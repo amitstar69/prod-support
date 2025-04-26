@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth';
-import { supabase } from '../../integrations/supabase/client';
 import { 
   Notification, 
   fetchUserNotifications, 
@@ -9,7 +7,7 @@ import {
   markAllNotificationsAsRead,
   setupNotificationsSubscription 
 } from '../../integrations/supabase/notifications';
-import { BellIcon, BellRingIcon, CheckIcon, XIcon } from 'lucide-react';
+import { BellIcon, BellRingIcon, CheckIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { 
   DropdownMenu, 
@@ -21,8 +19,8 @@ import {
 } from '../ui/dropdown-menu';
 import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
-import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import NotificationActions from './NotificationActions';
 
 const NotificationsDropdown: React.FC = () => {
   const { userId, isAuthenticated } = useAuth();
@@ -84,6 +82,11 @@ const NotificationsDropdown: React.FC = () => {
     setNotifications(prev => 
       prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)
     );
+    
+    // For new application notifications, don't close dropdown to allow actions
+    if (notification.notification_type === 'new_application') {
+      return;
+    }
     
     setIsOpen(false);
     
@@ -181,6 +184,26 @@ const NotificationsDropdown: React.FC = () => {
     }
   };
 
+  const renderNotificationContent = (notification: Notification) => {
+    return (
+      <>
+        <div className="flex flex-col gap-1 w-full">
+          <div className="flex justify-between items-start">
+            <span className="font-medium text-sm">{notification.title}</span>
+            <span className="text-xs text-muted-foreground">
+              {formatTime(notification.created_at)}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">{notification.message}</p>
+        </div>
+        <NotificationActions 
+          notification={notification} 
+          onActionComplete={() => loadNotifications()} 
+        />
+      </>
+    );
+  };
+
   if (!isAuthenticated) {
     return null;
   }
@@ -234,18 +257,12 @@ const NotificationsDropdown: React.FC = () => {
                 {notifications.map((notification) => (
                   <DropdownMenuItem
                     key={notification.id}
-                    className={`px-4 py-3 cursor-pointer ${notification.is_read ? 'opacity-70' : 'bg-primary/5'}`}
+                    className={`px-4 py-3 cursor-pointer ${
+                      notification.is_read ? 'opacity-70' : 'bg-primary/5'
+                    }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
-                    <div className="flex flex-col gap-1 w-full">
-                      <div className="flex justify-between items-start">
-                        <span className="font-medium text-sm">{notification.title}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatTime(notification.created_at)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{notification.message}</p>
-                    </div>
+                    {renderNotificationContent(notification)}
                   </DropdownMenuItem>
                 ))}
               </div>
