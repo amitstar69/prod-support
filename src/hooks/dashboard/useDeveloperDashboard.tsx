@@ -6,7 +6,12 @@ import { useTicketFetching } from './useTicketFetching';
 import { useTicketFilters } from './useTicketFilters';
 import { useTicketApplications } from './useTicketApplications';
 import { supabase } from '../../integrations/supabase/client';
-import { ClientTicketCategories, DeveloperTicketCategories, TicketCategories, isClientCategories, isDeveloperCategories } from '../../types/ticketCategories';
+import { 
+  ClientTicketCategories, 
+  DeveloperTicketCategories, 
+  isClientCategories, 
+  isDeveloperCategories 
+} from '../../types/ticketCategories';
 
 export const useDeveloperDashboard = () => {
   const { userId, isAuthenticated, userType } = useAuth();
@@ -30,10 +35,27 @@ export const useDeveloperDashboard = () => {
     getFilteredTickets
   } = useTicketFilters(tickets);
 
-  // Create categorized tickets with correct typing based on user type
-  const categorizedTickets: TicketCategories = userType === 'client'
-    ? getFilteredTickets('client') as ClientTicketCategories
-    : getFilteredTickets('developer') as DeveloperTicketCategories;
+  // Create categorized tickets and ensure type safety
+  const rawCategorizedTickets = getFilteredTickets(userType);
+  
+  // Create type-safe categorized tickets object
+  let categorizedTickets;
+  
+  if (userType === 'client') {
+    categorizedTickets = {
+      activeTickets: rawCategorizedTickets.activeTickets || [],
+      pendingApprovalTickets: rawCategorizedTickets.pendingApprovalTickets || [],
+      inProgressTickets: rawCategorizedTickets.inProgressTickets || [],
+      completedTickets: rawCategorizedTickets.completedTickets || []
+    } as ClientTicketCategories;
+  } else {
+    categorizedTickets = {
+      openTickets: rawCategorizedTickets.openTickets || [],
+      myTickets: rawCategorizedTickets.myTickets || [],
+      activeTickets: rawCategorizedTickets.activeTickets || [],
+      completedTickets: rawCategorizedTickets.completedTickets || []
+    } as DeveloperTicketCategories;
+  }
   
   // Use hook for applications
   const {

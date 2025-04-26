@@ -116,3 +116,37 @@ export const getNextRecommendedStatus = (
   const transitions = getAllowedTransitions(currentStatus, userType);
   return transitions.length > 0 ? transitions[0].to : null;
 };
+
+/**
+ * Check if a status transition is valid based on user type and current status
+ * @param currentStatus Current status of the help request
+ * @param newStatus Proposed new status
+ * @param userType Type of user attempting the transition ('client', 'developer', or 'system')
+ * @returns Boolean indicating if the transition is allowed
+ */
+export const isValidTransition = (
+  currentStatus: string,
+  newStatus: string,
+  userType: UserType
+): boolean => {
+  // If current and new status are the same, it's always valid
+  if (currentStatus === newStatus) {
+    return true;
+  }
+  
+  // Special case for client cancellation - clients can cancel anytime
+  if (newStatus === HELP_REQUEST_STATUSES.CANCELLED && userType === 'client') {
+    return true;
+  }
+  
+  // System users can transition to any status
+  if (userType === 'system') {
+    return true;
+  }
+  
+  // Get the allowed transitions for the current status and user type
+  const transitions = getAllowedTransitions(currentStatus, userType);
+  
+  // Check if the requested transition is in the allowed transitions
+  return transitions.some(transition => transition.to === newStatus);
+};
