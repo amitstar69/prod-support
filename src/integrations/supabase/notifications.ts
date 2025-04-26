@@ -12,6 +12,8 @@ export interface Notification {
   is_read: boolean;
   created_at: string;
   updated_at: string;
+  notification_type?: string;
+  action_data?: any;
 }
 
 export const fetchUserNotifications = async (userId: string | null) => {

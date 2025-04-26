@@ -62,14 +62,19 @@ const NotificationsDropdown: React.FC = () => {
       
       // Setup realtime subscription
       const cleanup = setupNotificationsSubscription(userId, (newNotification) => {
-        setNotifications(prev => [newNotification, ...prev]);
+        // Convert the API notification to our component's Notification type
+        const componentNotification: Notification = {
+          ...newNotification,
+          notification_type: newNotification.notification_type || 'general',
+        };
+        setNotifications(prev => [componentNotification, ...prev]);
         
         // Show toast for new notification
-        toast.info(newNotification.title, {
-          description: newNotification.message,
+        toast.info(componentNotification.title, {
+          description: componentNotification.message,
           action: {
             label: 'View',
-            onClick: () => handleNotificationClick(newNotification)
+            onClick: () => handleNotificationClick(componentNotification)
           }
         });
       });
@@ -89,7 +94,12 @@ const NotificationsDropdown: React.FC = () => {
       
       if (result.success) {
         console.log('Loaded notifications:', result.data.length);
-        setNotifications(result.data);
+        // Convert API notifications to our component's Notification type
+        const componentNotifications: Notification[] = result.data.map(notification => ({
+          ...notification,
+          notification_type: notification.notification_type || 'general',
+        }));
+        setNotifications(componentNotifications);
       } else {
         console.error('Error loading notifications:', result.error);
       }
