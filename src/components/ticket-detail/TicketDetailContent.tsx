@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -127,8 +128,11 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
     navigate(`/chat/${ticketId}?with=${developerId}&name=${developerName || 'Developer'}`);
   };
 
+  // Fix: Make sure to properly implement the async function with a Promise return
   const handleStatusUpdated = async (): Promise<void> => {
-    await onStatusUpdated();
+    // We need to properly await the onStatusUpdated function
+    // and make sure a Promise is returned
+    return onStatusUpdated();
   };
 
   const handleTicketAccepted = (): void => {
