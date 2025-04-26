@@ -18,5 +18,4 @@ export interface AuthContextType extends AuthState {
   logoutUser: () => Promise<boolean>;
   isLoading: boolean;
   initializationFailed: boolean;
-  initializeAuth?: () => Promise<void>;
 }

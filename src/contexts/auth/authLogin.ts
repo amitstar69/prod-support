@@ -2,14 +2,12 @@
 import { supabase } from '../../integrations/supabase/client';
 import { AuthError } from '@supabase/supabase-js';
 import { toast } from 'sonner';
-import { UserType } from './types';
 
 // Define the return type for the login function
 export interface LoginResult {
   success: boolean;
   error?: string;
   requiresVerification?: boolean;
-  userId?: string;
 }
 
 // Cache for user profiles to reduce database queries
@@ -126,7 +124,7 @@ const recordLoginAttempt = (email: string, success: boolean): void => {
 export const loginWithEmailAndPassword = async (
   email: string,
   password: string,
-  userType: UserType,
+  userType: 'client' | 'developer',
   rememberMe: boolean = false
 ): Promise<LoginResult> => {
   try {
@@ -145,10 +143,18 @@ export const loginWithEmailAndPassword = async (
     // Step 1: Sign in with credentials
     console.time('auth-signin');
     
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    // Fixed: Remove expiresIn from options (not supported by Supabase signInWithPassword)
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
+    
+    // Clear timeout
+    clearTimeout(timeoutId);
     
     console.timeEnd('auth-signin');
 
@@ -228,20 +234,24 @@ export const loginWithEmailAndPassword = async (
       
       console.log('Login successful for', userType, '(cached validation)');
       console.timeEnd('login-process');
-      return { 
-        success: true,
-        userId: userId
-      };
+      return { success: true };
     }
 
     // If no cache hit, fetch user profile to check their user type
     console.time('profile-fetch');
+    
+    // Add another timeout for profile fetch
+    const profileController = new AbortController();
+    const profileTimeoutId = setTimeout(() => profileController.abort(), 8000);
     
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('user_type')
       .eq('id', userId)
       .single();
+    
+    // Clear timeout
+    clearTimeout(profileTimeoutId);
     
     console.timeEnd('profile-fetch');
 
@@ -251,42 +261,11 @@ export const loginWithEmailAndPassword = async (
       
       // If the profile doesn't exist, we might need to create it
       if (profileError.code === 'PGRST116') { // Not found error
+        // This would be a good place to create a profile if needed
+        // For now, we'll just sign out the user
+        toast.error('Your user profile is missing. Please contact support.');
         console.error('Profile not found for user', userId);
-        
-        // Create a basic profile for the user based on their chosen user type
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({ 
-            id: userId, 
-            user_type: userType,
-            name: email.split('@')[0], // Use part of email as temporary name
-            email: email
-          });
-          
-        if (insertError) {
-          console.error('Error creating profile:', insertError);
-          await supabase.auth.signOut();
-          return {
-            success: false,
-            error: 'Failed to create your user profile. Please contact support.',
-          };
-        }
-        
-        // Cache the profile data
-        profileCache.set(userId, {
-          user_type: userType,
-          timestamp: now
-        });
-        
-        // Record successful login
-        recordLoginAttempt(email, true);
-        
-        console.log('Created new profile and logged in successfully');
-        console.timeEnd('login-process');
-        return { 
-          success: true,
-          userId: userId
-        };
+        await supabase.auth.signOut();
       }
       
       return {
@@ -318,10 +297,7 @@ export const loginWithEmailAndPassword = async (
     
     console.log('Login successful for', userType);
     console.timeEnd('login-process');
-    return { 
-      success: true,
-      userId: userId
-    };
+    return { success: true };
   } catch (error) {
     recordLoginAttempt(email, false);
     const authError = error as AuthError;
@@ -348,7 +324,7 @@ export const loginWithEmailAndPassword = async (
 export const login = async (
   email: string, 
   password: string, 
-  userType: UserType,
+  userType: 'developer' | 'client',
   rememberMe: boolean = false
 ): Promise<LoginResult> => {
   return await loginWithEmailAndPassword(email, password, userType, rememberMe);
