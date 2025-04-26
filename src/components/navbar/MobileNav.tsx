@@ -3,6 +3,8 @@ import React from 'react';
 import { ThemeToggle } from '../ThemeToggle';
 import NavLinks from './components/NavLinks';
 import { AuthButtons } from './components/AuthButtons';
+import NotificationsDropdown from '../notifications/NotificationsDropdown';
+import { useAuth } from '../../contexts/auth';
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -10,6 +12,8 @@ interface MobileNavProps {
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
+  const { isAuthenticated } = useAuth();
+  
   if (!isOpen) return null;
 
   const handleAction = () => {
@@ -26,7 +30,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, setIsOpen }) => {
         <div className="pt-4 pb-3 border-t border-border/40">
           <div className="flex items-center px-5 justify-between">
             <span className="text-sm font-medium">Theme</span>
-            <ThemeToggle />
+            <div className="flex items-center space-x-2">
+              {isAuthenticated && <NotificationsDropdown />}
+              <ThemeToggle />
+            </div>
           </div>
           
           <div className="mt-3 px-2 space-y-1">
