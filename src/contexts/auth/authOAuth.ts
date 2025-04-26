@@ -1,7 +1,6 @@
 
 import { supabase } from '../../integrations/supabase/client';
 import { OAuthProvider, UserType } from './types';
-import { toast } from 'sonner';
 import { LoginResult } from './authLogin';
 
 export const loginWithOAuth = async (
@@ -9,168 +8,137 @@ export const loginWithOAuth = async (
   userType: UserType
 ): Promise<LoginResult> => {
   try {
-    console.log(`Attempting OAuth login with ${provider} as ${userType}`);
+    console.log(`Starting OAuth login with ${provider} as ${userType}`);
     
-    // Store the userType in localStorage so we can retrieve it after redirect
-    localStorage.setItem('pendingOAuthUserType', userType);
+    // Store the user type in session storage to retrieve it after redirect
+    sessionStorage.setItem('oauthUserType', userType);
     
-    // Construct options with the user type in the metadata
-    const options = {
-      redirectTo: `${window.location.origin}/login`,
-      queryParams: {
-        userType: userType // Pass userType as a query param
-      },
-      // Store user type in provider's metadata
-      data: {
-        user_type: userType,
-        registration_source: `oauth_${provider}`
+    // Configure OAuth providers
+    const providerOptions = {
+      provider: provider,
+      options: {
+        redirectTo: window.location.origin + '/login?from=oauth',
+        // We store user type as a query parameter to retrieve it after redirect
+        queryParams: {
+          user_type: userType
+        }
       }
     };
-
-    // Execute the OAuth sign in
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options
-    });
-
+    
+    // Initiate the OAuth flow
+    const { data, error } = await supabase.auth.signInWithOAuth(providerOptions);
+    
+    // If there's an error initiating the OAuth flow
     if (error) {
-      console.error('OAuth login error:', error);
+      console.error('OAuth error:', error);
       return {
         success: false,
-        error: error.message
+        error: error.message || `Failed to sign in with ${provider}`
       };
     }
-
-    // Check if redirection was initiated successfully
-    if (!data) {
-      console.error('No data returned from OAuth attempt');
-      return {
-        success: false,
-        error: 'Failed to initiate login with provider'
-      };
-    }
-
-    // On success, Supabase will redirect the user to the callback URL
-    // We'll handle the redirect and check auth state in the callback
-    return { 
-      success: true,
-      // Note: actual success will be determined after the redirect
-    };
-  } catch (error: any) {
-    console.error('Exception during OAuth login:', error);
+    
+    // If we got here, the OAuth flow was initiated successfully
+    // The browser will redirect to the provider's login page
+    console.log('OAuth flow initiated successfully, awaiting redirect');
     
     return {
+      success: true
+    };
+  } catch (error: any) {
+    console.error('OAuth exception:', error);
+    return {
       success: false,
-      error: error.message || `An unexpected error occurred during ${provider} login`
+      error: error.message || `An unexpected error occurred during ${provider} authentication`
     };
   }
 };
 
-// Function to get and clear the pending OAuth user type
-export const getPendingOAuthUserType = (): UserType | null => {
-  const userType = localStorage.getItem('pendingOAuthUserType') as UserType | null;
-  if (userType) {
-    localStorage.removeItem('pendingOAuthUserType');
-  }
-  return userType;
-};
-
-// Function to handle the OAuth callback 
-export const handleOAuthCallback = async (): Promise<{
-  success: boolean;
-  userType?: UserType | null;
-  error?: string;
-}> => {
+// Handle the OAuth callback - this will be called after the user is redirected back
+export const handleOAuthCallback = async (): Promise<LoginResult> => {
   try {
-    // Check if we have a session
+    // Get the current session
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
-    if (sessionError) {
-      console.error('Error checking session after OAuth:', sessionError);
+    if (sessionError || !sessionData.session) {
+      console.error('OAuth callback error - No session:', sessionError);
       return {
         success: false,
-        error: sessionError.message
+        error: sessionError?.message || 'Authentication failed. No session found after OAuth login.'
       };
     }
     
-    if (!sessionData.session) {
-      console.log('No session found after OAuth callback');
-      return {
-        success: false,
-        error: 'Authentication failed. Please try again.'
-      };
-    }
+    // Get user type from session storage (set before the OAuth redirect)
+    const userType = sessionStorage.getItem('oauthUserType') as UserType || 'client';
     
-    // Get user details
-    const user = sessionData.session.user;
+    // Get the user ID from the session
+    const userId = sessionData.session.user.id;
     
-    // Check if the user has a profile, if not, we need to create one
+    // Check if profile exists
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('user_type, id')
-      .eq('id', user.id)
+      .select('user_type')
+      .eq('id', userId)
       .single();
     
-    // Get the pending user type from localStorage (set before redirect)
-    const pendingUserType = getPendingOAuthUserType();
-    
-    if (profileError) {
-      // Profile doesn't exist - create one with the pending user type
-      if (pendingUserType) {
-        const { error: createError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            user_type: pendingUserType,
-            email: user.email,
-            name: user.user_metadata.name || user.user_metadata.full_name || user.email?.split('@')[0] || 'User',
-          });
-          
-        if (createError) {
-          console.error('Failed to create user profile after OAuth:', createError);
-          return {
-            success: false,
-            error: 'Failed to complete account setup'
-          };
-        }
-        
-        return {
-          success: true,
-          userType: pendingUserType
-        };
-      } else {
-        console.error('No user type specified for OAuth signup');
+    // If profile doesn't exist, create it
+    if (profileError && profileError.code === 'PGRST116') {
+      // Create a new profile with the user type
+      const { error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          user_type: userType,
+          name: sessionData.session.user.user_metadata.full_name || 
+                sessionData.session.user.user_metadata.name || 
+                sessionData.session.user.email?.split('@')[0] || 
+                'User',
+          email: sessionData.session.user.email
+        });
+      
+      if (createError) {
+        console.error('Error creating profile after OAuth:', createError);
+        await supabase.auth.signOut();
         return {
           success: false,
-          error: 'Failed to determine account type'
+          error: 'Failed to create your user profile after OAuth login.'
         };
       }
+      
+      console.log('Created new profile after OAuth login');
+      return {
+        success: true,
+        userId: userId
+      };
+    } 
+    
+    // If there was an error fetching the profile that's not a "not found" error
+    if (profileError) {
+      console.error('Error fetching profile after OAuth login:', profileError);
+      return {
+        success: false,
+        error: 'Error retrieving your profile after authentication.'
+      };
     }
     
-    // Profile exists - check if user type matches
-    if (pendingUserType && profileData.user_type !== pendingUserType) {
-      console.warn('User attempting to login with different user type', {
-        existing: profileData.user_type,
-        attempted: pendingUserType
-      });
-      
-      // Sign out - wrong user type
+    // Check if user type matches
+    if (profileData && profileData.user_type !== userType) {
+      console.error('User type mismatch after OAuth login:', profileData.user_type, 'vs', userType);
       await supabase.auth.signOut();
       return {
         success: false,
-        error: `This account is already registered as a ${profileData.user_type}. Please use the correct login option.`
+        error: `You are registered as a ${profileData.user_type}, not a ${userType}. Please use the correct login option.`
       };
     }
     
     return {
       success: true,
-      userType: profileData.user_type as UserType
+      userId: userId
     };
   } catch (error: any) {
-    console.error('Error in OAuth callback handler:', error);
+    console.error('OAuth callback exception:', error);
     return {
       success: false,
-      error: error.message || 'An unexpected error occurred while completing authentication'
+      error: error.message || 'An unexpected error occurred while completing authentication.'
     };
   }
 };

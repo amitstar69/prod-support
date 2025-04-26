@@ -39,7 +39,7 @@ export const useAuthActions = (
     userType: UserType,
     rememberMe: boolean = false
   ): Promise<LoginResult> => {
-    console.log('handleLogin called');
+    console.log('handleLogin called with:', { email, userType, rememberMe });
     setIsLoading(true);
     try {
       const result = await authLogin(
@@ -54,8 +54,9 @@ export const useAuthActions = (
           ...prev,
           isAuthenticated: true,
           userType: userType,
+          userId: result.userId || prev.userId,
         }));
-        console.log(`Login successful as ${userType}, setting auth state`);
+        console.log(`Login successful as ${userType}, setting auth state:`, result);
       } else {
         console.error('Login failed:', result.error);
       }
@@ -88,6 +89,7 @@ export const useAuthActions = (
           ...prev,
           isAuthenticated: true,
           userType: userType,
+          userId: result.userId || prev.userId,
         }));
         console.log(`OAuth login successful as ${userType}, setting auth state`);
       } else {
