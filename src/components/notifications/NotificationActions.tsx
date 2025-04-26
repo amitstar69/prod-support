@@ -10,7 +10,7 @@ interface NotificationActionsProps {
   notification: {
     id: string;
     notification_type: string;
-    action_data: {
+    action_data?: {
       application_id?: string;
       developer_name?: string;
       request_title?: string;
@@ -27,6 +27,11 @@ const NotificationActions: React.FC<NotificationActionsProps> = ({
 }) => {
   const { userId } = useAuth();
   const navigate = useNavigate();
+
+  // If notification_type is not specified or action_data is undefined, don't render anything
+  if (!notification.notification_type || !notification.action_data) {
+    return null;
+  }
 
   const handleAccept = async () => {
     if (!userId || !notification.action_data?.application_id) return;
