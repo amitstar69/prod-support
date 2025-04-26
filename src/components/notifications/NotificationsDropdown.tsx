@@ -1,12 +1,15 @@
+
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../../contexts/auth';
 import { 
-  Notification, 
   fetchUserNotifications, 
   markNotificationAsRead, 
   markAllNotificationsAsRead,
   setupNotificationsSubscription 
 } from '../../integrations/supabase/notifications';
+import { supabase } from '../../integrations/supabase/client';
 import { BellIcon, BellRingIcon, CheckIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { 
@@ -21,6 +24,29 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
 import NotificationActions from './NotificationActions';
+
+// Update Notification interface to match our database structure
+export interface Notification {
+  id: string;
+  user_id: string;
+  related_entity_id: string;
+  entity_type: string;
+  notification_type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+  action_data?: {
+    application_id?: string;
+    developer_id?: string;
+    developer_name?: string;
+    request_id?: string;
+    request_title?: string;
+    status?: string;
+    client_name?: string;
+  };
+}
 
 const NotificationsDropdown: React.FC = () => {
   const { userId, isAuthenticated } = useAuth();
@@ -196,10 +222,12 @@ const NotificationsDropdown: React.FC = () => {
           </div>
           <p className="text-xs text-muted-foreground">{notification.message}</p>
         </div>
-        <NotificationActions 
-          notification={notification} 
-          onActionComplete={() => loadNotifications()} 
-        />
+        {notification.notification_type === 'new_application' && notification.action_data && (
+          <NotificationActions 
+            notification={notification} 
+            onActionComplete={() => loadNotifications()} 
+          />
+        )}
       </>
     );
   };
