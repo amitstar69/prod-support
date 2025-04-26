@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BellIcon, BellRingIcon, CheckIcon, RefreshCw, AlertCircle } from 'lucide-react';
@@ -32,9 +31,9 @@ const NotificationsDropdown: React.FC = () => {
     await markNotificationAsRead(notification.id);
     
     if (notification.notification_type === 'new_application') {
-      // If it's a new application notification, navigate to the ticket details
-      if (notification.action_data && notification.action_data.request_id) {
-        navigate(`/tickets/${notification.action_data.request_id}`);
+      // If it's a new application notification, navigate to the application detail page
+      if (notification.action_data && notification.action_data.application_id) {
+        navigate(`/client/applications/${notification.action_data.application_id}`);
         setIsOpen(false);
         return;
       }

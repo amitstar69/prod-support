@@ -159,6 +159,10 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
     // Implementation will depend on your chat component
   };
 
+  const handleViewApplicationDetails = (applicationId: string) => {
+    navigate(`/client/applications/${applicationId}`);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -266,12 +270,9 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => handleChatWithDeveloper(
-                          application.developer_id, 
-                          application.profiles?.name || 'Developer'
-                        )}
+                        onClick={() => handleViewApplicationDetails(application.id!)}
                       >
-                        Chat
+                        View Details
                       </Button>
                       <Button 
                         size="sm" 
