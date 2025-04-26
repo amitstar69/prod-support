@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { ClientTicketCategories, DeveloperTicketCategories } from '../../types/ticketCategories';
+import { HELP_REQUEST_STATUSES } from '../../utils/constants/statusConstants';
 
 export interface FilterState {
   technical_area: string[];
@@ -78,25 +79,52 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
   }, [tickets, filters]);
 
   const getFilteredTickets = useCallback(
-    (userType: 'developer' | 'client') => {
+    (userType: 'developer' | 'client' | null) => {
+      if (!userType || !tickets.length) {
+        return userType === 'client' 
+          ? {
+              activeTickets: [],
+              pendingApprovalTickets: [],
+              inProgressTickets: [],
+              completedTickets: []
+            } as ClientTicketCategories
+          : {
+              openTickets: [],
+              myTickets: [],
+              completedTickets: [],
+              activeTickets: []
+            } as DeveloperTicketCategories;
+      }
+
       if (userType === 'developer') {
         const categories: DeveloperTicketCategories = {
           openTickets: filteredTickets.filter(
-            (ticket) => ticket.status === 'ready_for_pickup' || ticket.status === 'submitted'
+            (ticket) => ticket.status === HELP_REQUEST_STATUSES.OPEN || 
+                        ticket.status === HELP_REQUEST_STATUSES.SUBMITTED
           ),
           myTickets: filteredTickets.filter(
             (ticket) => 
-              ['requirements_review', 'need_more_info', 'in_progress', 'ready_for_qa', 'qa_fail']
+              [HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, 
+               HELP_REQUEST_STATUSES.NEED_MORE_INFO, 
+               HELP_REQUEST_STATUSES.IN_PROGRESS, 
+               HELP_REQUEST_STATUSES.READY_FOR_QA, 
+               HELP_REQUEST_STATUSES.QA_FAIL]
                 .includes(ticket.status || '')
           ),
           completedTickets: filteredTickets.filter(
             (ticket) => 
-              ['qa_pass', 'resolved', 'closed', 'cancelled']
+              [HELP_REQUEST_STATUSES.QA_PASS, 
+               HELP_REQUEST_STATUSES.RESOLVED, 
+               HELP_REQUEST_STATUSES.CLOSED, 
+               HELP_REQUEST_STATUSES.CANCELLED]
                 .includes(ticket.status || '')
           ),
           activeTickets: filteredTickets.filter(
             (ticket) =>
-              !['qa_pass', 'resolved', 'closed', 'cancelled']
+              ![HELP_REQUEST_STATUSES.QA_PASS, 
+                HELP_REQUEST_STATUSES.RESOLVED, 
+                HELP_REQUEST_STATUSES.CLOSED, 
+                HELP_REQUEST_STATUSES.CANCELLED]
                 .includes(ticket.status || '')
           ),
         };
@@ -105,21 +133,31 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
         const categories: ClientTicketCategories = {
           activeTickets: filteredTickets.filter(
             (ticket) =>
-              ['submitted', 'ready_for_pickup']
+              [HELP_REQUEST_STATUSES.SUBMITTED, 
+               HELP_REQUEST_STATUSES.OPEN]
                 .includes(ticket.status || '')
           ),
           pendingApprovalTickets: filteredTickets.filter(
             (ticket) =>
-              ticket.status === 'pending_developer_approval'
+              ticket.status === HELP_REQUEST_STATUSES.PENDING_DEVELOPER_APPROVAL ||
+              ticket.status === HELP_REQUEST_STATUSES.DEV_REQUESTED ||
+              ticket.status === HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL
           ),
           inProgressTickets: filteredTickets.filter(
             (ticket) =>
-              ['requirements_review', 'need_more_info', 'in_progress', 'ready_for_qa', 'qa_fail']
+              [HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, 
+               HELP_REQUEST_STATUSES.NEED_MORE_INFO, 
+               HELP_REQUEST_STATUSES.IN_PROGRESS, 
+               HELP_REQUEST_STATUSES.READY_FOR_QA, 
+               HELP_REQUEST_STATUSES.QA_FAIL]
                 .includes(ticket.status || '')
           ),
           completedTickets: filteredTickets.filter(
             (ticket) =>
-              ['qa_pass', 'resolved', 'closed', 'cancelled']
+              [HELP_REQUEST_STATUSES.QA_PASS, 
+               HELP_REQUEST_STATUSES.RESOLVED, 
+               HELP_REQUEST_STATUSES.CLOSED, 
+               HELP_REQUEST_STATUSES.CANCELLED]
                 .includes(ticket.status || '')
           ),
         };

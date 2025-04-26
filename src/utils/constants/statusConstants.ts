@@ -9,6 +9,7 @@ export const HELP_REQUEST_STATUSES = {
   PENDING_MATCH: 'pending_match',
   DEV_REQUESTED: 'dev_requested',
   AWAITING_CLIENT_APPROVAL: 'awaiting_client_approval',
+  PENDING_DEVELOPER_APPROVAL: 'pending_developer_approval',
   APPROVED: 'approved',
   REQUIREMENTS_REVIEW: 'requirements_review',
   NEED_MORE_INFO: 'need_more_info',

@@ -1,19 +1,22 @@
 
 import { HelpRequest } from './helpRequest';
 
-export type ClientTicketCategories = {
+// Base interface for shared ticket category properties
+interface BaseTicketCategories {
+  completedTickets: HelpRequest[];
+}
+
+export interface ClientTicketCategories extends BaseTicketCategories {
   activeTickets: HelpRequest[];
   pendingApprovalTickets: HelpRequest[];
   inProgressTickets: HelpRequest[];
-  completedTickets: HelpRequest[];
-};
+}
 
-export type DeveloperTicketCategories = {
+export interface DeveloperTicketCategories extends BaseTicketCategories {
   openTickets: HelpRequest[];
   myTickets: HelpRequest[];
-  completedTickets: HelpRequest[];
   activeTickets: HelpRequest[];
-};
+}
 
 export type TicketCategories = ClientTicketCategories | DeveloperTicketCategories;
 
