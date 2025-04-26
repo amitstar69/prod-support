@@ -1,4 +1,7 @@
+
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../../contexts/auth';
 import { 
   Notification, 
@@ -7,6 +10,7 @@ import {
   markAllNotificationsAsRead,
   setupNotificationsSubscription 
 } from '../../integrations/supabase/notifications';
+import { supabase } from '../../integrations/supabase/client';
 import { BellIcon, BellRingIcon, CheckIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { 
@@ -22,10 +26,21 @@ import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
 import NotificationActions from './NotificationActions';
 
+interface ExtendedNotification extends Notification {
+  notification_type: string;
+  action_data?: {
+    application_id?: string;
+    developer_name?: string;
+    request_title?: string;
+    request_id?: string;
+    status?: string;
+  };
+}
+
 const NotificationsDropdown: React.FC = () => {
   const { userId, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<ExtendedNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -36,14 +51,14 @@ const NotificationsDropdown: React.FC = () => {
       
       // Setup realtime subscription
       const cleanup = setupNotificationsSubscription(userId, (newNotification) => {
-        setNotifications(prev => [newNotification, ...prev]);
+        setNotifications(prev => [newNotification as ExtendedNotification, ...prev]);
         
         // Show toast for new notification
         toast.info(newNotification.title, {
           description: newNotification.message,
           action: {
             label: 'View',
-            onClick: () => handleNotificationClick(newNotification)
+            onClick: () => handleNotificationClick(newNotification as ExtendedNotification)
           }
         });
       });
@@ -63,7 +78,7 @@ const NotificationsDropdown: React.FC = () => {
       
       if (result.success) {
         console.log('Loaded notifications:', result.data.length);
-        setNotifications(result.data);
+        setNotifications(result.data as ExtendedNotification[]);
       } else {
         console.error('Error loading notifications:', result.error);
       }
@@ -74,7 +89,7 @@ const NotificationsDropdown: React.FC = () => {
     }
   };
 
-  const handleNotificationClick = async (notification: Notification) => {
+  const handleNotificationClick = async (notification: ExtendedNotification) => {
     // Mark notification as read
     await markNotificationAsRead(notification.id);
     
@@ -184,7 +199,7 @@ const NotificationsDropdown: React.FC = () => {
     }
   };
 
-  const renderNotificationContent = (notification: Notification) => {
+  const renderNotificationContent = (notification: ExtendedNotification) => {
     return (
       <>
         <div className="flex flex-col gap-1 w-full">
