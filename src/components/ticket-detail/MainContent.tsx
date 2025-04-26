@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Badge } from '../ui/badge';
+import { useNavigate } from 'react-router-dom';
 import TicketDetailsPanel from './TicketDetailsPanel';
 import TicketCommentsPanel from './TicketCommentsPanel';
 import TicketHistoryPanel from './TicketHistoryPanel';
@@ -31,6 +33,8 @@ const MainContent: React.FC<MainContentProps> = ({
   activeTab,
   onTabChange,
 }) => {
+  const navigate = useNavigate();
+  
   return (
     <Tabs value={activeTab} onValueChange={onTabChange}>
       <TabsList className="mb-4">

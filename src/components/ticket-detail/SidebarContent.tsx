@@ -12,7 +12,7 @@ interface SidebarContentProps {
   applicationStatus: string | null;
   hasApplied: boolean;
   onApply: () => void;
-  onRefresh: () => void;
+  onRefresh: () => Promise<void>;
 }
 
 const SidebarContent: React.FC<SidebarContentProps> = ({
@@ -24,6 +24,11 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   onApply,
   onRefresh
 }) => {
+  // Handle refresh as an async function to match the expected Promise<void> type
+  const handleRefresh = async (): Promise<void> => {
+    await onRefresh();
+  };
+
   return (
     <div className="space-y-6">
       {isDeveloper && ticket && (
@@ -38,7 +43,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
           applicationStatus={applicationStatus}
           hasApplied={hasApplied}
           onApply={onApply}
-          fetchLatestTicketData={onRefresh}
+          fetchLatestTicketData={handleRefresh}
         />
       )}
       
@@ -46,7 +51,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
         <StatusActionCard
           ticket={ticket}
           userType={isDeveloper ? "developer" : "client"}
-          onStatusUpdated={onRefresh}
+          onStatusUpdated={handleRefresh}
         />
       )}
       
