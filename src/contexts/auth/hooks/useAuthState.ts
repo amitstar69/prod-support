@@ -75,7 +75,7 @@ export const useAuthState = (): AuthContextType => {
     }
   }, [authState]);
   
-  // Get auth action handlers
+  // Get auth action handlers - This is where the actual login/logout functions are implemented
   const { handleLogin, handleOAuthLogin, handleRegister, handleLogout } = useAuthActions(setAuthState, setIsLoading);
 
   return {

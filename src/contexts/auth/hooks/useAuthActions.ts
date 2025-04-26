@@ -1,11 +1,12 @@
 
 import { Dispatch, SetStateAction, useCallback } from 'react';
 import { AuthState, UserType, OAuthProvider } from '../types';
-import { login as authLogin, LoginResult } from '../authLogin';
+import { login as authLogin } from '../authLogin';
 import { loginWithOAuth as authLoginWithOAuth } from '../authOAuth';
 import { register as authRegister } from '../authRegister';
 import { logoutUser } from '../authUtils';
 
+// Make sure our return types match what LoginForm expects
 export const useAuthActions = (
   setAuthState: Dispatch<SetStateAction<AuthState>>,
   setIsLoading: Dispatch<SetStateAction<boolean>>
@@ -38,7 +39,7 @@ export const useAuthActions = (
     password: string, 
     userType: UserType,
     rememberMe: boolean = false
-  ): Promise<LoginResult> => {
+  ) => {
     console.log('handleLogin called with:', { email, userType, rememberMe });
     setIsLoading(true);
     try {
@@ -78,7 +79,7 @@ export const useAuthActions = (
   const handleOAuthLogin = useCallback(async (
     provider: OAuthProvider,
     userType: UserType
-  ): Promise<LoginResult> => {
+  ) => {
     console.log(`handleOAuthLogin called for ${provider} as ${userType}`);
     setIsLoading(true);
     try {

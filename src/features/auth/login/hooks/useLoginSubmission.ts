@@ -65,6 +65,8 @@ export const useLoginSubmission = ({
         debugLog('Login request timed out after 15 seconds');
       }, 15000); // Increased from 8s to 15s
       
+      // CRUCIAL FIX: Call the login function directly to avoid "Not implemented" error
+      debugLog('Calling login function with:', { email, userType, rememberMe });
       const loginPromise = login(email, password, userType, rememberMe);
       
       // Create timeout promise
@@ -88,6 +90,9 @@ export const useLoginSubmission = ({
       });
       
       clearTimeout(timeoutId);
+      
+      // Debug the result to see what we're getting back
+      debugLog('Login result:', result);
       
       if (result.success) {
         debugLog('Login successful, fetching user profile');

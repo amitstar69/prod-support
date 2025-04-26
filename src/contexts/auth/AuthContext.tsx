@@ -2,6 +2,7 @@
 import React, { createContext } from 'react';
 import { AuthContextType } from './types';
 
+// Create a context with proper default values
 export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   userType: null,
