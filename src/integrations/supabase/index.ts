@@ -2,11 +2,10 @@
 // Export client
 export * from './client';
 
-// Export from realtime.ts but not the renamed function
+// Export from realtime.ts - fixing the checkTableInfo export issue
 export { 
   setupHelpRequestsSubscription,
-  setupApplicationsSubscription,
-  checkTableInfo
+  setupApplicationsSubscription
 } from './realtime';
 
 // Export from setupRealtime.ts with the enableRealtimeForTable function

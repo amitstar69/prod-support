@@ -132,6 +132,17 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
     navigate(`/chat/${ticketId}?with=${developerId}&name=${developerName || 'Developer'}`);
   };
 
+  // Fix for function signature error: wrapping in a parameter-less function
+  const handleTicketAccepted = () => {
+    onTicketAccepted();
+  };
+
+  // Fix for Promise<void> error: returning a Promise
+  const handleStatusUpdated = async () => {
+    onStatusUpdated();
+    return Promise.resolve();
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-8">
@@ -303,7 +314,7 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
           <StatusActionCard
             ticket={ticket}
             userType={userType as any}
-            onStatusUpdated={onStatusUpdated}
+            onStatusUpdated={handleStatusUpdated}
           />
           
           <TicketHistoryPanel 
