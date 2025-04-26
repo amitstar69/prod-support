@@ -1,13 +1,13 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from './contexts/auth';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import Dashboard from './pages/Dashboard';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Profile from './pages/Profile';
-import HelpRequestDetail from './pages/HelpRequestDetail';
-import { ManageApplications } from './pages/applications/ManageApplications';
+import ProtectedRoute from './components/ProtectedRoute';
+import { Dashboard } from './pages';
+import { Login } from './pages';
+import { Register } from './pages';
+import { Profile } from './pages';
+import { HelpRequestDetail } from './pages';
+import { ManageApplications } from './pages/applications';
 
 function App() {
   return (
