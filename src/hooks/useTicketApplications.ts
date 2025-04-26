@@ -1,8 +1,24 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
-import { HelpRequestMatch } from '../types/helpRequest';
 import { toast } from 'sonner';
+
+export interface HelpRequestMatch {
+  id: string;
+  developer_id: string;
+  match_score: number;
+  proposed_duration: number;
+  proposed_message: string;
+  proposed_rate: number;
+  request_id: string;
+  status: string;
+  updated_at: string;
+  profiles?: {
+    id?: string;
+    name?: string;
+    image?: string;
+    experience?: string;
+  };
+}
 
 export const useTicketApplications = (ticketId: string) => {
   const [applications, setApplications] = useState<HelpRequestMatch[]>([]);
