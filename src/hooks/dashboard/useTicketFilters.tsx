@@ -79,7 +79,7 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
   }, [tickets, filters]);
 
   const getFilteredTickets = useCallback(
-    (userType: 'developer' | 'client' | null) => {
+    (userType: 'developer' | 'client' | null): ClientTicketCategories | DeveloperTicketCategories => {
       if (!userType || !tickets.length) {
         return userType === 'client' 
           ? {

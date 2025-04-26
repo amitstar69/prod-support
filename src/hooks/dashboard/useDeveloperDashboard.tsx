@@ -44,8 +44,8 @@ export const useDeveloperDashboard = () => {
   if (userType === 'client') {
     categorizedTickets = {
       activeTickets: rawCategorizedTickets.activeTickets || [],
-      pendingApprovalTickets: rawCategorizedTickets.pendingApprovalTickets || [],
-      inProgressTickets: rawCategorizedTickets.inProgressTickets || [],
+      pendingApprovalTickets: (rawCategorizedTickets as any).pendingApprovalTickets || [],
+      inProgressTickets: (rawCategorizedTickets as any).inProgressTickets || [],
       completedTickets: rawCategorizedTickets.completedTickets || []
     } as ClientTicketCategories;
   } else {

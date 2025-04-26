@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
-import { TicketStatus } from '../../utils/ticketStatusUtils';
+import { HELP_REQUEST_STATUSES } from '../../utils/constants/statusConstants';
+import { ClientTicketCategories, DeveloperTicketCategories } from '../../types/ticketCategories';
 
 export interface FilterState {
   status: string;
@@ -22,42 +23,72 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
     setFilteredTickets(tickets);
   }, [tickets, filters]);
 
-  const getFilteredTickets = (userType: 'developer' | 'client' | null) => {
+  const getFilteredTickets = (userType: 'developer' | 'client' | null): ClientTicketCategories | DeveloperTicketCategories => {
     if (!userType || !tickets.length) {
-      return {
-        openTickets: [],
-        activeTickets: [],
-        myTickets: [],
-        completedTickets: []
-      };
+      return userType === 'client' 
+        ? {
+            activeTickets: [],
+            pendingApprovalTickets: [],
+            inProgressTickets: [],
+            completedTickets: []
+          } as ClientTicketCategories
+        : {
+            openTickets: [],
+            myTickets: [],
+            activeTickets: [],
+            completedTickets: []
+          } as DeveloperTicketCategories;
     }
 
     if (userType === 'developer') {
       return {
-        openTickets: tickets.filter(t => t.status === TicketStatus.OPEN),
+        openTickets: tickets.filter(t => t.status === HELP_REQUEST_STATUSES.OPEN),
         myTickets: tickets.filter(t => 
-          [TicketStatus.ACCEPTED, TicketStatus.IN_PROGRESS, TicketStatus.NEEDS_INFO]
-            .includes(t.status as TicketStatus)
+          [HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, 
+           HELP_REQUEST_STATUSES.NEED_MORE_INFO, 
+           HELP_REQUEST_STATUSES.IN_PROGRESS]
+            .includes(t.status || '')
         ),
         completedTickets: tickets.filter(t => 
-          [TicketStatus.COMPLETED, TicketStatus.CLOSED]
-            .includes(t.status as TicketStatus)
+          [HELP_REQUEST_STATUSES.RESOLVED, 
+           HELP_REQUEST_STATUSES.CLOSED,
+           HELP_REQUEST_STATUSES.CANCELLED]
+            .includes(t.status || '')
         ),
-        activeTickets: [] // For type consistency
-      };
+        activeTickets: tickets.filter(t =>
+          ![HELP_REQUEST_STATUSES.RESOLVED,
+            HELP_REQUEST_STATUSES.CLOSED,
+            HELP_REQUEST_STATUSES.CANCELLED]
+            .includes(t.status || '')
+        ),
+      } as DeveloperTicketCategories;
     } else {
       return {
         activeTickets: tickets.filter(t => 
-          [TicketStatus.OPEN, TicketStatus.ACCEPTED, TicketStatus.IN_PROGRESS, TicketStatus.NEEDS_INFO]
-            .includes(t.status as TicketStatus)
+          [HELP_REQUEST_STATUSES.OPEN, 
+           HELP_REQUEST_STATUSES.SUBMITTED]
+            .includes(t.status || '')
+        ),
+        pendingApprovalTickets: tickets.filter(t =>
+          [HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL,
+           HELP_REQUEST_STATUSES.DEV_REQUESTED,
+           HELP_REQUEST_STATUSES.PENDING_DEVELOPER_APPROVAL]
+            .includes(t.status || '')
+        ),
+        inProgressTickets: tickets.filter(t =>
+          [HELP_REQUEST_STATUSES.APPROVED,
+           HELP_REQUEST_STATUSES.IN_PROGRESS,
+           HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW,
+           HELP_REQUEST_STATUSES.NEED_MORE_INFO]
+            .includes(t.status || '')
         ),
         completedTickets: tickets.filter(t => 
-          [TicketStatus.COMPLETED, TicketStatus.CLOSED]
-            .includes(t.status as TicketStatus)
+          [HELP_REQUEST_STATUSES.RESOLVED, 
+           HELP_REQUEST_STATUSES.CLOSED, 
+           HELP_REQUEST_STATUSES.CANCELLED]
+            .includes(t.status || '')
         ),
-        openTickets: [], // For type consistency
-        myTickets: [] // For type consistency
-      };
+      } as ClientTicketCategories;
     }
   };
 
