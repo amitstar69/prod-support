@@ -12,6 +12,8 @@ interface ProtectedRouteProps {
   allowPublicAccess?: boolean;
   requireProfileCompletion?: boolean;
   requiredCompletionPercentage?: number;
+  allowMultipleTypes?: boolean;
+  allowedUserTypes?: ('developer' | 'client')[];
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
@@ -20,7 +22,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredUserType,
   allowPublicAccess = false,
   requireProfileCompletion = false,
-  requiredCompletionPercentage = 50
+  requiredCompletionPercentage = 50,
+  allowMultipleTypes = false,
+  allowedUserTypes = []
 }) => {
   // If userType is provided but requiredUserType is not, use userType for backwards compatibility
   const actualRequiredUserType = requiredUserType || userType;
@@ -31,17 +35,23 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   console.log('[ProtectedRoute] Route protection check:', { 
     isAuthenticated, 
     authUserType, 
-    requiredUserType: actualRequiredUserType 
+    requiredUserType: actualRequiredUserType,
+    allowMultipleTypes,
+    allowedUserTypes
   });
 
   // Start with the auth check
   return (
     <AuthCheck 
       allowPublicAccess={allowPublicAccess}
-      requiredUserType={actualRequiredUserType}
+      requiredUserType={allowMultipleTypes ? undefined : actualRequiredUserType}
     >
       {/* Then check for correct user type */}
-      <UserTypeCheck requiredUserType={actualRequiredUserType}>
+      <UserTypeCheck 
+        requiredUserType={allowMultipleTypes ? undefined : actualRequiredUserType}
+        allowMultipleTypes={allowMultipleTypes}
+        allowedUserTypes={allowedUserTypes}
+      >
         {/* Finally, check for profile completion if needed */}
         {requireProfileCompletion ? (
           <ProtectedProfileRoute requiredCompletionPercentage={requiredCompletionPercentage}>

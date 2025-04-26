@@ -2,9 +2,21 @@
 import React from 'react';
 import DeveloperApplicationPanel from '../../components/developer-ticket-detail/DeveloperApplicationPanel';
 import StatusActionCard from './StatusActionCard';
+import DeveloperStatusCard from './DeveloperStatusCard';
 import { UserType } from '../../utils/helpRequestStatusUtils';
 
-const TicketActionsPanel = ({
+interface TicketActionsPanelProps {
+  role: "developer" | "client";
+  ticket: any;
+  ticketId: string;
+  userId: string;
+  applicationStatus: string | null;
+  hasApplied: boolean;
+  onApply: () => void;
+  fetchLatestTicketData: () => Promise<void>;
+}
+
+const TicketActionsPanel: React.FC<TicketActionsPanelProps> = ({
   role,
   ticket,
   ticketId,
@@ -18,12 +30,12 @@ const TicketActionsPanel = ({
   console.log('[TicketActionsPanel] Rendering with role:', role, 'ticket status:', ticket?.status);
   
   if (role === "developer") {
-    // Show developer application panel if they haven't been approved yet
-    if (applicationStatus !== "approved" || !hasApplied) {
+    // Show developer application panel if they haven't applied yet
+    if (!hasApplied) {
       return (
         <DeveloperApplicationPanel
           devUpdateVisibility={{
-            show: !!(applicationStatus === "approved" && hasApplied),
+            show: false,
             reason: "",
           }}
           ticket={ticket}
@@ -37,11 +49,12 @@ const TicketActionsPanel = ({
       );
     }
     
-    // Show status actions if the developer is approved
+    // Show developer status card for updating status if they've applied
     return (
-      <StatusActionCard
-        ticket={ticket}
-        userType={role as UserType}
+      <DeveloperStatusCard
+        ticketId={ticketId}
+        currentStatus={ticket.status}
+        matchStatus={applicationStatus}
         onStatusUpdated={fetchLatestTicketData}
       />
     );

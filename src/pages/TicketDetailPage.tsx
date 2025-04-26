@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -36,7 +35,6 @@ const TicketDetailPage = () => {
 
   const role = userType as "client" | "developer";
 
-  // Check if the ticket is awaiting client approval for developer applications
   const isAwaitingDeveloperApproval = ticket?.status === 'awaiting_client_approval' || 
                                       ticket?.status === 'dev_requested';
 
