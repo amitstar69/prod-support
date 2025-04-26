@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import { UserType } from '@/contexts/auth/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import LoginErrorDisplay from './LoginErrorDisplay';
+import { LoginErrorDisplay } from './LoginErrorDisplay';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import SocialLoginButtons from './SocialLoginButtons';
-import LoginInputField from './LoginInputField';
+import { SocialLoginButtons } from './SocialLoginButtons';
+import { LoginInputField } from './LoginInputField';
 
 interface LoginFormProps {
   email: string;
@@ -62,7 +62,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
             <TabsTrigger value="developer" onClick={() => onUserTypeChange('developer')}>Developer</TabsTrigger>
           </TabsList>
           <TabsContent value="client">
-            {/* Client-specific login form */}
             <form onSubmit={onSubmit}>
               <LoginInputField
                 label="Email"
@@ -93,7 +92,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
             </form>
           </TabsContent>
           <TabsContent value="developer">
-            {/* Developer-specific login form */}
             <form onSubmit={onSubmit}>
               <LoginInputField
                 label="Email"
