@@ -9,12 +9,5 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   
-  // Add logging to help debug user type issues
-  console.log('[useAuth] Current auth context:', {
-    isAuthenticated: context.isAuthenticated,
-    userType: context.userType,
-    userId: context.userId
-  });
-  
   return context;
 };

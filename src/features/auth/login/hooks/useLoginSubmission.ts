@@ -48,22 +48,13 @@ export const useLoginSubmission = ({
     setIsLoading(true);
     debugLog(`Login request started for ${email} as ${userType}`);
     
-    // Force loading to stop after a maximum time - increased to 25 seconds
-    const maxLoadingTimeout = setTimeout(() => {
-      if (isLoading) {
-        setIsLoading(false);
-        toast.error("Login is taking too long. Please check your connection and try again.");
-        debugLog('Login max loading time reached');
-      }
-    }, 25000); // Increased from 15s to 25s for slower connections
-    
     try {
-      // Create abort controller for login timeout - increased to 15 seconds
+      // Create abort controller for login timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         controller.abort();
         debugLog('Login request timed out after 15 seconds');
-      }, 15000); // Increased from 8s to 15s
+      }, 15000);
       
       const loginPromise = login(email, password, userType, rememberMe);
       
@@ -93,12 +84,12 @@ export const useLoginSubmission = ({
         debugLog('Login successful, fetching user profile');
         setConsecutiveErrors(0);
         
-        // Create a timeout for profile fetch - increased to 8 seconds
+        // Create a timeout for profile fetch
         const profileController = new AbortController();
         const profileTimeoutId = setTimeout(() => {
           profileController.abort();
           debugLog('Profile fetch timed out after 8 seconds');
-        }, 8000); // Increased from 4s to 8s
+        }, 8000);
         
         try {
           // Fetch user profile after successful login
@@ -116,7 +107,6 @@ export const useLoginSubmission = ({
           
           if (userData) {
             debugLog('User profile fetched successfully');
-            // Fix: Type assertion for userData and safe access to name property
             const userName = userData && typeof userData === 'object' ? 
               (userData as { name?: string }).name || 'User' : 
               'User';
@@ -192,9 +182,8 @@ export const useLoginSubmission = ({
       return false;
     } finally {
       setIsLoading(false);
-      clearTimeout(maxLoadingTimeout);
     }
-  }, [login, navigate, location.search, consecutiveErrors, onSuccess, onError, onVerificationRequired, isLoading]);
+  }, [login, navigate, location.search, consecutiveErrors, onSuccess, onError, onVerificationRequired]);
 
   return {
     isLoading,
