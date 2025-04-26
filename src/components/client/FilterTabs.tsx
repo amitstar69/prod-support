@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 
 interface FilterTabsProps {
@@ -6,9 +7,16 @@ interface FilterTabsProps {
 }
 
 const FilterTabs = ({ onFilterChange }: FilterTabsProps) => {
+  const [activeTab, setActiveTab] = useState('all');
+
+  const handleValueChange = (value: string) => {
+    setActiveTab(value);
+    onFilterChange(value);
+  };
+
   return (
-    <Tabs onValueChange={onFilterChange}>
-      <TabsList>
+    <Tabs value={activeTab} onValueChange={handleValueChange} className="w-full sm:w-auto">
+      <TabsList className="grid w-full sm:w-auto sm:inline-flex grid-cols-2 sm:grid-cols-none gap-1">
         <TabsTrigger value="all">All</TabsTrigger>
         <TabsTrigger value="pending">Pending</TabsTrigger>
         <TabsTrigger value="approved">Approved</TabsTrigger>
@@ -19,4 +27,3 @@ const FilterTabs = ({ onFilterChange }: FilterTabsProps) => {
 };
 
 export default FilterTabs;
-
