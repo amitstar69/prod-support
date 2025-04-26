@@ -8,14 +8,13 @@ import ApplicationsList from '../../../../components/client/ApplicationsList';
 import { useTicketApplications } from '../../../../hooks/useTicketApplications';
 import { useState } from 'react';
 import { HelpRequestMatch } from '../../../../types/helpRequest';
-
-type SortByType = 'match_score' | 'proposed_rate' | 'proposed_duration' | 'created_at';
-type FilterByType = 'all' | 'pending' | 'approved' | 'rejected';
+import { Loader2 } from 'lucide-react';
 
 const ManageApplicationsPage = () => {
   const { helpRequestId } = useParams();
-  const [sortBy, setSortBy] = useState<SortByType>('match_score');
-  const [filterBy, setFilterBy] = useState<FilterByType>('all');
+  const [sortBy, setSortBy] = useState<'match_score' | 'proposed_rate' | 'proposed_duration' | 'created_at'>('match_score');
+  const [filterBy, setFilterBy] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   
   const { applications, isLoading, error } = useTicketApplications(helpRequestId as string);
 
@@ -35,17 +34,21 @@ const ManageApplicationsPage = () => {
       return (a.proposed_duration || 0) - (b.proposed_duration || 0);
     }
     if (sortBy === 'created_at') {
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
     }
     return 0;
   });
 
   const handleSortChange = (value: string) => {
-    setSortBy(value as SortByType);
+    setSortBy(value as typeof sortBy);
   };
 
   const handleFilterChange = (value: string) => {
-    setFilterBy(value as FilterByType);
+    setFilterBy(value as typeof filterBy);
+  };
+
+  const isProcessing = (applicationId: string) => {
+    return processingIds.has(applicationId);
   };
 
   return (
@@ -67,8 +70,18 @@ const ManageApplicationsPage = () => {
               <SortDropdown onSortChange={handleSortChange} />
             </div>
 
-            {error ? (
+            {isLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : error ? (
               <div className="text-red-500">{error}</div>
+            ) : sortedApplications.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                {applications.length === 0 
+                  ? 'No applications yet. Please check back soon.'
+                  : 'No applications match the current filter criteria.'}
+              </div>
             ) : (
               <ApplicationsList 
                 applications={sortedApplications}

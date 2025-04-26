@@ -6,7 +6,7 @@ import { updateApplicationStatus } from '../../integrations/supabase/helpRequest
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ApplicationCardProps {
@@ -20,8 +20,7 @@ const ApplicationCard = ({ application }: ApplicationCardProps) => {
   const handleApprove = async () => {
     try {
       setIsUpdating(true);
-      // Added third argument: application.request_id
-      await updateApplicationStatus(application.id, 'approved', application.request_id);
+      await updateApplicationStatus(application.id!, 'approved', application.request_id);
       toast.success('Application approved successfully');
     } catch (error) {
       toast.error('Failed to approve application');
@@ -34,8 +33,7 @@ const ApplicationCard = ({ application }: ApplicationCardProps) => {
   const handleReject = async () => {
     try {
       setIsUpdating(true);
-      // Added third argument: application.request_id
-      await updateApplicationStatus(application.id, 'rejected', application.request_id);
+      await updateApplicationStatus(application.id!, 'rejected', application.request_id);
       toast.success('Application rejected successfully');
     } catch (error) {
       toast.error('Failed to reject application');
@@ -96,7 +94,14 @@ const ApplicationCard = ({ application }: ApplicationCardProps) => {
             variant="default"
             disabled={isUpdating}
           >
-            {isUpdating ? 'Updating...' : 'Approve'}
+            {isUpdating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              'Approve'
+            )}
           </Button>
           <Button 
             onClick={handleChat}
@@ -112,7 +117,14 @@ const ApplicationCard = ({ application }: ApplicationCardProps) => {
             variant="destructive"
             disabled={isUpdating}
           >
-            {isUpdating ? 'Updating...' : 'Reject'}
+            {isUpdating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              'Reject'
+            )}
           </Button>
         </CardFooter>
       )}
