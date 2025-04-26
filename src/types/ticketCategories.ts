@@ -1,35 +1,40 @@
 
-import { HelpRequest } from './helpRequest';
-
-// Base interface for shared ticket category properties
-interface BaseTicketCategories {
-  completedTickets: HelpRequest[];
+export interface ClientTicketCategories {
+  activeTickets: any[];
+  pendingApprovalTickets: any[];
+  inProgressTickets: any[];
+  completedTickets: any[];
 }
 
-export interface ClientTicketCategories extends BaseTicketCategories {
-  activeTickets: HelpRequest[];
-  pendingApprovalTickets: HelpRequest[];
-  inProgressTickets: HelpRequest[];
+export interface DeveloperTicketCategories {
+  openTickets: any[];
+  myTickets: any[];
+  activeTickets: any[];
+  completedTickets: any[];
 }
 
-export interface DeveloperTicketCategories extends BaseTicketCategories {
-  openTickets: HelpRequest[];
-  myTickets: HelpRequest[];
-  activeTickets: HelpRequest[];
+// Type guard to check if the categorized tickets are client ticket categories
+export function isClientCategories(
+  categories: any
+): categories is ClientTicketCategories {
+  return (
+    categories &&
+    'activeTickets' in categories &&
+    'pendingApprovalTickets' in categories &&
+    'inProgressTickets' in categories &&
+    'completedTickets' in categories
+  );
 }
 
-export type TicketCategories = ClientTicketCategories | DeveloperTicketCategories;
-
-// Type guard to check if the categories are client categories
-export const isClientCategories = (
-  categories: TicketCategories
-): categories is ClientTicketCategories => {
-  return 'pendingApprovalTickets' in categories && 'inProgressTickets' in categories;
-};
-
-// Type guard to check if the categories are developer categories
-export const isDeveloperCategories = (
-  categories: TicketCategories
-): categories is DeveloperTicketCategories => {
-  return 'openTickets' in categories && 'myTickets' in categories;
-};
+// Type guard to check if the categorized tickets are developer ticket categories
+export function isDeveloperCategories(
+  categories: any
+): categories is DeveloperTicketCategories {
+  return (
+    categories &&
+    'openTickets' in categories &&
+    'myTickets' in categories &&
+    'activeTickets' in categories &&
+    'completedTickets' in categories
+  );
+}

@@ -86,34 +86,3 @@ export const setupApplicationsSubscription = (developerId: string, callback: (pa
     return () => {}; // Return empty cleanup function
   }
 };
-
-// Check table info and enable realtime (renamed to avoid conflict)
-export const checkTableInfo = async (tableName: "help_requests" | "help_request_matches" | "notifications" | "chat_messages" | "help_sessions") => {
-  try {
-    // First, check if the table is already in the realtime publication
-    const { data, error } = await supabase.rpc('get_table_info', { table_name: tableName });
-    
-    if (error) {
-      console.error(`Error getting table info for ${tableName}:`, error);
-      return { success: false, error: error.message };
-    }
-    
-    console.log(`Table info for ${tableName}:`, data);
-    
-    // Enable realtime for the specific table - now using a properly typed table name
-    const enableRealtimeResult = await supabase.from(tableName).select('*').limit(1);
-    
-    if (enableRealtimeResult.error) {
-      console.error(`Error enabling realtime for ${tableName}:`, enableRealtimeResult.error);
-      return { success: false, error: enableRealtimeResult.error.message };
-    }
-    
-    return { success: true };
-  } catch (error) {
-    console.error(`Exception enabling realtime for ${tableName}:`, error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    };
-  }
-};

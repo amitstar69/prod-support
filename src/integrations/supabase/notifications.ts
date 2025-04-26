@@ -1,7 +1,6 @@
 
 import { supabase } from './client';
 import { toast } from 'sonner';
-import { enableRealtimeForTable } from './setupRealtime';
 
 export interface Notification {
   id: string;
@@ -100,15 +99,6 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
   }
   
   try {
-    // First ensure realtime is enabled for the notifications table
-    enableRealtimeForTable('notifications')
-      .then(result => {
-        console.log('Realtime setup for notifications:', result);
-      })
-      .catch(err => {
-        console.error('Error setting up realtime for notifications:', err);
-      });
-      
     const channel = supabase
       .channel('notifications_changes')
       .on(
@@ -147,7 +137,7 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
   }
 };
 
-// Manually create a notification (backup method if trigger doesn't work)
+// Create a notification manually (backup method if trigger doesn't work)
 export const createNotification = async (notification: {
   user_id: string;
   related_entity_id: string;
@@ -156,9 +146,6 @@ export const createNotification = async (notification: {
   message: string;
 }) => {
   try {
-    // Enable realtime for the notifications table
-    await enableRealtimeForTable('notifications');
-    
     const { data, error } = await supabase
       .from('notifications')
       .insert([notification])

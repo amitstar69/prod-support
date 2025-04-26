@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import TicketSection from '../components/dashboard/TicketSection';
+import DeveloperApplicationsPanel from '../components/dashboard/DeveloperApplicationsPanel';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../contexts/auth';
 import { useDeveloperDashboard } from '../hooks/dashboard/useDeveloperDashboard';
@@ -163,57 +165,6 @@ const ClientDashboard = () => {
     // Navigate to chat page or open chat dialog
     navigate(`/chat/${helpRequestId}?with=${developerId}&name=${developerName || 'Developer'}`);
   };
-  
-  const handleApproveApplication = async (applicationId: string, ticketId: string) => {
-    try {
-      const { error } = await supabase
-        .from('help_request_matches')
-        .update({ status: 'approved' })
-        .eq('id', applicationId);
-      
-      if (error) {
-        toast.error('Failed to approve application: ' + error.message);
-        return;
-      }
-      
-      // Update help request status to 'approved'
-      const { error: ticketError } = await supabase
-        .from('help_requests')
-        .update({ status: 'approved' })
-        .eq('id', ticketId);
-      
-      if (ticketError) {
-        toast.error('Failed to update ticket status: ' + ticketError.message);
-        return;
-      }
-      
-      toast.success('Developer application approved!');
-      fetchTickets();
-    } catch (err) {
-      console.error('Error approving application:', err);
-      toast.error('An unexpected error occurred');
-    }
-  };
-  
-  const handleRejectApplication = async (applicationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('help_request_matches')
-        .update({ status: 'rejected' })
-        .eq('id', applicationId);
-      
-      if (error) {
-        toast.error('Failed to reject application: ' + error.message);
-        return;
-      }
-      
-      toast.success('Developer application rejected');
-      fetchTickets();
-    } catch (err) {
-      console.error('Error rejecting application:', err);
-      toast.error('An unexpected error occurred');
-    }
-  };
 
   // Function to create preview of tickets (first 3)
   const createTicketPreview = (ticketList: any[], type: string) => {
@@ -329,60 +280,19 @@ const ClientDashboard = () => {
                         
                         {/* Developer Applications */}
                         <div className="mt-4 pt-4 border-t">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-sm font-medium">Developer Applications</h4>
-                            <Badge variant="outline" className="text-xs">
-                              {developerApplications[ticket.id || '']?.length || 0} Applications
-                            </Badge>
-                          </div>
-                          
-                          {!developerApplications[ticket.id || ''] || developerApplications[ticket.id || ''].length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No applications yet</p>
-                          ) : (
-                            <div className="space-y-3">
-                              {developerApplications[ticket.id || ''].map(application => (
-                                <div key={application.id} className="flex items-center justify-between bg-muted/20 p-3 rounded-lg">
-                                  <div className="flex items-center space-x-3">
-                                    <div className="h-10 w-10 rounded-full bg-muted overflow-hidden">
-                                      <img 
-                                        src={application.profiles?.image || '/placeholder.svg'} 
-                                        alt={application.profiles?.name || 'Developer'}
-                                        className="h-full w-full object-cover"
-                                      />
-                                    </div>
-                                    <div>
-                                      <p className="font-medium">{application.profiles?.name || 'Anonymous Developer'}</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        Experience: {application.profiles?.experience || 'Not specified'}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      onClick={() => handleOpenChat(ticket.id!, application.developer_id, application.profiles?.name)}
-                                    >
-                                      Chat
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
-                                      variant="destructive"
-                                      onClick={() => handleRejectApplication(application.id!)}
-                                    >
-                                      Reject
-                                    </Button>
-                                    <Button 
-                                      size="sm"
-                                      onClick={() => handleApproveApplication(application.id!, ticket.id!)}
-                                    >
-                                      Accept
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                          <DeveloperApplicationsPanel
+                            applications={developerApplications[ticket.id || ''] || []}
+                            ticketId={ticket.id!}
+                            clientId={userId!}
+                            isLoading={isLoadingApplications && !developerApplications[ticket.id || '']}
+                            onApplicationUpdate={() => {
+                              // Re-fetch applications and tickets when an application is updated
+                              fetchTickets();
+                            }}
+                            onOpenChat={(developerId, developerName) => 
+                              handleOpenChat(ticket.id!, developerId, developerName)
+                            }
+                          />
                         </div>
                       </div>
                     </div>
