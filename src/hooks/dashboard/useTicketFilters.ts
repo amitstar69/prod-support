@@ -47,19 +47,17 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
           [HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, 
            HELP_REQUEST_STATUSES.NEED_MORE_INFO, 
            HELP_REQUEST_STATUSES.IN_PROGRESS]
-            .includes(t.status || '')
+            .includes(t.status as any)
         ),
         completedTickets: tickets.filter(t => 
           [HELP_REQUEST_STATUSES.RESOLVED, 
-           HELP_REQUEST_STATUSES.CLOSED,
            HELP_REQUEST_STATUSES.CANCELLED]
-            .includes(t.status || '')
+            .includes(t.status as any)
         ),
         activeTickets: tickets.filter(t =>
           ![HELP_REQUEST_STATUSES.RESOLVED,
-            HELP_REQUEST_STATUSES.CLOSED,
             HELP_REQUEST_STATUSES.CANCELLED]
-            .includes(t.status || '')
+            .includes(t.status as any)
         ),
       } as DeveloperTicketCategories;
     } else {
@@ -67,26 +65,25 @@ export const useTicketFilters = (tickets: HelpRequest[]) => {
         activeTickets: tickets.filter(t => 
           [HELP_REQUEST_STATUSES.OPEN, 
            HELP_REQUEST_STATUSES.SUBMITTED]
-            .includes(t.status || '')
+            .includes(t.status as any)
         ),
         pendingApprovalTickets: tickets.filter(t =>
           [HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL,
            HELP_REQUEST_STATUSES.DEV_REQUESTED,
            HELP_REQUEST_STATUSES.PENDING_DEVELOPER_APPROVAL]
-            .includes(t.status || '')
+            .includes(t.status as any)
         ),
         inProgressTickets: tickets.filter(t =>
           [HELP_REQUEST_STATUSES.APPROVED,
            HELP_REQUEST_STATUSES.IN_PROGRESS,
            HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW,
            HELP_REQUEST_STATUSES.NEED_MORE_INFO]
-            .includes(t.status || '')
+            .includes(t.status as any)
         ),
         completedTickets: tickets.filter(t => 
           [HELP_REQUEST_STATUSES.RESOLVED, 
-           HELP_REQUEST_STATUSES.CLOSED, 
            HELP_REQUEST_STATUSES.CANCELLED]
-            .includes(t.status || '')
+            .includes(t.status as any)
         ),
       } as ClientTicketCategories;
     }

@@ -42,17 +42,19 @@ export const useDeveloperDashboard = () => {
   let categorizedTickets;
   
   if (userType === 'client') {
+    // Type assertion with safety check
     categorizedTickets = {
-      activeTickets: rawCategorizedTickets.activeTickets || [],
-      pendingApprovalTickets: (rawCategorizedTickets as any).pendingApprovalTickets || [],
-      inProgressTickets: (rawCategorizedTickets as any).inProgressTickets || [],
+      activeTickets: 'activeTickets' in rawCategorizedTickets ? rawCategorizedTickets.activeTickets : [],
+      pendingApprovalTickets: 'pendingApprovalTickets' in rawCategorizedTickets ? (rawCategorizedTickets as ClientTicketCategories).pendingApprovalTickets : [],
+      inProgressTickets: 'inProgressTickets' in rawCategorizedTickets ? (rawCategorizedTickets as ClientTicketCategories).inProgressTickets : [],
       completedTickets: rawCategorizedTickets.completedTickets || []
     } as ClientTicketCategories;
   } else {
+    // Type assertion with safety check
     categorizedTickets = {
-      openTickets: rawCategorizedTickets.openTickets || [],
-      myTickets: rawCategorizedTickets.myTickets || [],
-      activeTickets: rawCategorizedTickets.activeTickets || [],
+      openTickets: 'openTickets' in rawCategorizedTickets ? (rawCategorizedTickets as DeveloperTicketCategories).openTickets : [],
+      myTickets: 'myTickets' in rawCategorizedTickets ? (rawCategorizedTickets as DeveloperTicketCategories).myTickets : [],
+      activeTickets: 'activeTickets' in rawCategorizedTickets ? rawCategorizedTickets.activeTickets : [],
       completedTickets: rawCategorizedTickets.completedTickets || []
     } as DeveloperTicketCategories;
   }
