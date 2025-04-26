@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -54,7 +53,6 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
   const isClient = userType === 'client';
   const isDeveloper = userType === 'developer';
 
-  // Fetch developer applications if user is a client
   useEffect(() => {
     if (!isClient || !ticketId || !userId) return;
     
@@ -74,9 +72,7 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
           return;
         }
         
-        // Process applications to ensure they match our type
         const typedApplications: HelpRequestMatch[] = (data || []).map(app => {
-          // Handle potentially malformed profiles data
           let safeProfiles = app.profiles;
           
           if (!safeProfiles || typeof safeProfiles !== 'object') {
@@ -103,7 +99,6 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
     
     fetchApplications();
     
-    // Set up real-time subscription for applications
     const channel = supabase
       .channel(`applications-${ticketId}`)
       .on(
@@ -117,7 +112,7 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
         () => {
           console.log('[TicketDetail] Applications updated, refreshing');
           fetchApplications();
-          onRefresh(); // Also refresh the main ticket data
+          onRefresh();
         }
       )
       .subscribe();
@@ -132,15 +127,12 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
     navigate(`/chat/${ticketId}?with=${developerId}&name=${developerName || 'Developer'}`);
   };
 
-  // Fix for the first function signature error: use the original function without parameters
-  const handleTicketAccepted = () => {
-    onTicketAccepted();
-  };
-
-  // Fix for the second function signature error: ensure it returns a Promise
   const handleStatusUpdated = async (): Promise<void> => {
     await onStatusUpdated();
-    return Promise.resolve();
+  };
+
+  const handleTicketAccepted = (): void => {
+    onTicketAccepted();
   };
 
   if (isLoading) {
@@ -186,7 +178,6 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Ticket Header */}
       <div className="bg-white rounded-lg shadow-sm border p-6 space-y-4">
         <div className="flex flex-col md:flex-row justify-between gap-4">
           <div>
@@ -243,7 +234,6 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="col-span-1 lg:col-span-2 space-y-6">
-          {/* Tabs for Ticket Details, Comments, etc. */}
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="details">Details</TabsTrigger>
@@ -294,7 +284,6 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
         </div>
         
         <div className="col-span-1 space-y-6">
-          {/* Action Panels */}
           {isDeveloper && ticket && (
             <DeveloperApplicationPanel
               devUpdateVisibility={{
@@ -306,7 +295,7 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
               userType={userType}
               applicationStatus={applicationStatus}
               hasApplied={hasApplied}
-              onApply={() => onApply(ticketId)} // Fix: Call onApply with ticketId parameter
+              onApply={() => onApply(ticketId)}
               fetchLatestTicketData={onRefresh}
             />
           )}
