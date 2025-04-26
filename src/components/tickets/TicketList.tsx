@@ -61,20 +61,7 @@ const TicketList: React.FC<TicketListProps> = ({
     });
 
     if (isAuthenticated) {
-      // Log the navigation logic
-      console.log('Navigation conditions:', {
-        isApplication,
-        developerTicketPath: `/developer/tickets/${ticketId}`,
-        clientTicketPath: `/client/tickets/${ticketId}`,
-        clientApplicationPath: `/client/applications/${ticketId}`
-      });
-
-      // Decide navigation based on context
-      if (isApplication) {
-        navigate(`/developer/tickets/${ticketId}`);
-      } else {
-        navigate(`/client/tickets/${ticketId}`);
-      }
+      navigate(`/tickets/${ticketId}`);
     } else {
       setPendingAction({ type: 'view', ticketId });
       setShowAuthDialog(true);

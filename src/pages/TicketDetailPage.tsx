@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -36,7 +35,6 @@ const TicketDetailPage = () => {
 
   const role = userType as "client" | "developer";
 
-  // Debug log to help track user type and access permissions
   console.log('[TicketDetailPage] Initializing with:', { 
     userType, 
     role,
@@ -44,7 +42,6 @@ const TicketDetailPage = () => {
     isAuthenticated
   });
 
-  // Check if the ticket is awaiting client approval for developer applications
   const isAwaitingDeveloperApproval = ticket?.status === 'awaiting_client_approval' || 
                                       ticket?.status === 'dev_requested';
 
@@ -55,10 +52,16 @@ const TicketDetailPage = () => {
       return;
     }
 
+    if (!userType || !['developer', 'client'].includes(userType)) {
+      toast.error('Invalid user type');
+      navigate('/');
+      return;
+    }
+
     if (ticketId) {
       fetchTicket();
     }
-  }, [ticketId, isAuthenticated]);
+  }, [ticketId, isAuthenticated, userType]);
 
   useEffect(() => {
     if (!ticketId || !isAuthenticated) return;
@@ -276,7 +279,6 @@ const TicketDetailPage = () => {
           </div>
           
           <div className="space-y-6">
-            {/* Show Developer Applications Panel for Client users when ticket is awaiting approval */}
             {role === "client" && isAwaitingDeveloperApproval && ticketId && (
               <DeveloperApplicationsPanel 
                 ticketId={ticketId}

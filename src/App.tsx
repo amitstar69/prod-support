@@ -1,4 +1,3 @@
-
 import React, { useEffect, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
@@ -267,13 +266,13 @@ function App() {
                 <Route path="/home" element={<UserTypeRedirect />} />
                 <Route path="/account" element={<UserAccountRedirect />} />
                 
-                {/* Unified ticket route - accessible by both developers and clients */}
+                {/* Unified ticket route - allow both user types */}
                 <Route path="/tickets/:ticketId" element={
                   <ProtectedRoute allowedUserTypes={['developer', 'client']}>
                     <TicketDetailPage />
                   </ProtectedRoute>
                 } />
-                
+
                 {/* Unified applications route */}
                 <Route path="/applications/:applicationId" element={
                   <ProtectedRoute allowedUserTypes={['developer', 'client']}>
