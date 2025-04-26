@@ -2,6 +2,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider } from 'next-themes';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 import { initEmergencyRecovery } from './utils/emergencyRecovery.ts';
@@ -62,8 +63,10 @@ try {
     root.render(
       <React.StrictMode>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <App />
-          <Toaster position="top-right" />
+          <BrowserRouter>
+            <App />
+            <Toaster position="top-right" />
+          </BrowserRouter>
         </ThemeProvider>
       </React.StrictMode>
     );
