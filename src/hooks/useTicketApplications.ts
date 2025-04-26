@@ -35,7 +35,9 @@ export const useTicketApplications = (ticketId: string) => {
         throw new Error(fetchError.message);
       }
 
-      setApplications(data || []);
+      // Type assertion to ensure the data matches our expected structure
+      const typedData = data as unknown as HelpRequestMatch[];
+      setApplications(typedData || []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load applications';
       setError(message);

@@ -1,5 +1,5 @@
 
-import { useRouter } from 'next/router';
+import { useParams } from 'react-router-dom';
 import Layout from '../../../../components/Layout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../../components/ui/card';
 import FilterTabs from '../../../../components/applications/FilterTabs';
@@ -8,8 +8,7 @@ import ApplicationsList from '../../../../components/applications/ApplicationsLi
 import { useTicketApplications } from '../../../../hooks/useTicketApplications';
 
 const ManageApplicationsPage = () => {
-  const router = useRouter();
-  const { helpRequestId } = router.query;
+  const { helpRequestId } = useParams();
   
   const {
     applications,
@@ -42,7 +41,7 @@ const ManageApplicationsPage = () => {
               />
               <SortDropdown 
                 value={sortBy} 
-                onValueChange={setSortBy} 
+                onValueChange={(value) => setSortBy(value as 'created_at' | 'match_score')} 
               />
             </div>
 

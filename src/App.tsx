@@ -41,6 +41,7 @@ import { HelpRequestProvider } from './contexts/HelpRequestContext';
 import { getUserHomePage } from './utils/navigationUtils';
 
 import './App.css';
+import ManageApplicationsPage from './pages/client/help-request/[helpRequestId]/applications';
 
 // Error fallback component
 const ErrorFallback = ({ error, resetErrorBoundary }) => {
@@ -279,6 +280,12 @@ function App() {
                 <Route path="/applications/:applicationId" element={
                   <ProtectedRoute allowedUserTypes={['developer', 'client']}>
                     <ApplicationDetailPage />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/client/help-request/:helpRequestId/applications" element={
+                  <ProtectedRoute requiredUserType="client">
+                    <ManageApplicationsPage />
                   </ProtectedRoute>
                 } />
                 
