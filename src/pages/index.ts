@@ -14,5 +14,3 @@ export { default as TicketStatusTest } from './TicketStatusTest';
 export { default as TicketDetailPage } from './TicketDetailPage';
 
 export { default as Dashboard } from './Dashboard';
-export { default as Profile } from './Profile';
-export { default as HelpRequestDetail } from './HelpRequestDetail';
