@@ -26,7 +26,7 @@ interface TicketDetailContentProps {
   hasError: boolean | string;
   ticketId: string;
   onTicketAccepted: () => void;
-  onStatusUpdated: () => void;
+  onStatusUpdated: () => Promise<void>;
   onApply: (ticketId: string) => void;
   applicationStatus: string | null;
   hasApplied: boolean;
@@ -132,14 +132,14 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
     navigate(`/chat/${ticketId}?with=${developerId}&name=${developerName || 'Developer'}`);
   };
 
-  // Fix for function signature error: wrapping in a parameter-less function
+  // Fix for the first function signature error: use the original function without parameters
   const handleTicketAccepted = () => {
     onTicketAccepted();
   };
 
-  // Fix for Promise<void> error: returning a Promise
-  const handleStatusUpdated = async () => {
-    onStatusUpdated();
+  // Fix for the second function signature error: ensure it returns a Promise
+  const handleStatusUpdated = async (): Promise<void> => {
+    await onStatusUpdated();
     return Promise.resolve();
   };
 
@@ -190,22 +190,22 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
       <div className="bg-white rounded-lg shadow-sm border p-6 space-y-4">
         <div className="flex flex-col md:flex-row justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">{ticket.title}</h1>
+            <h1 className="text-2xl font-semibold">{ticket?.title}</h1>
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              <Badge className={getTicketStatusStyles(ticket.status || 'open')}>
-                {formatTicketStatus(ticket.status || 'Open')}
+              <Badge className={getTicketStatusStyles(ticket?.status || 'open')}>
+                {formatTicketStatus(ticket?.status || 'Open')}
               </Badge>
               <p className="text-sm text-muted-foreground">
-                Created {ticket.created_at && formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
+                Created {ticket?.created_at && formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
               </p>
-              {ticket.ticket_number && (
+              {ticket?.ticket_number && (
                 <Badge variant="outline" className="text-muted-foreground">
                   #{ticket.ticket_number}
                 </Badge>
               )}
             </div>
           </div>
-          {isClient && (
+          {isClient && ticket && (
             <Button
               onClick={() => navigate(`/chat/${ticket.id}`)}
               variant="outline"
@@ -217,16 +217,16 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
         </div>
         
         <p className="text-muted-foreground">
-          {ticket.description || "No description provided."}
+          {ticket?.description || "No description provided."}
         </p>
         
         <div className="flex flex-wrap gap-2">
-          {ticket.technical_area && ticket.technical_area.map((area: string) => (
+          {ticket?.technical_area && ticket.technical_area.map((area: string) => (
             <Badge key={area} variant="secondary">
               {area}
             </Badge>
           ))}
-          {ticket.urgency && (
+          {ticket?.urgency && (
             <Badge 
               variant="outline" 
               className={
@@ -263,7 +263,7 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
             </TabsList>
             
             <TabsContent value="details">
-              <TicketDetailsPanel ticket={ticket} />
+              {ticket && <TicketDetailsPanel ticket={ticket} />}
             </TabsContent>
             
             <TabsContent value="comments">
@@ -275,7 +275,7 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
             </TabsContent>
             
             <TabsContent value="attachments">
-              <AttachmentsPanel ticket={ticket} />
+              {ticket && <AttachmentsPanel ticket={ticket} />}
             </TabsContent>
             
             {isClient && (
@@ -295,7 +295,7 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
         
         <div className="col-span-1 space-y-6">
           {/* Action Panels */}
-          {isDeveloper && (
+          {isDeveloper && ticket && (
             <DeveloperApplicationPanel
               devUpdateVisibility={{
                 show: !!(applicationStatus === "approved" && hasApplied),
@@ -306,16 +306,18 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
               userType={userType}
               applicationStatus={applicationStatus}
               hasApplied={hasApplied}
-              onApply={onApply}
+              onApply={() => onApply(ticketId)} // Fix: Call onApply with ticketId parameter
               fetchLatestTicketData={onRefresh}
             />
           )}
           
-          <StatusActionCard
-            ticket={ticket}
-            userType={userType as any}
-            onStatusUpdated={handleStatusUpdated}
-          />
+          {ticket && (
+            <StatusActionCard
+              ticket={ticket}
+              userType={userType as any}
+              onStatusUpdated={handleStatusUpdated}
+            />
+          )}
           
           <TicketHistoryPanel 
             ticketId={ticketId} 
