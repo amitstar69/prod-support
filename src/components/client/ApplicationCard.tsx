@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HelpRequestMatch } from '../../hooks/useTicketApplications';
+import { HelpRequestMatch } from '../../types/helpRequest';
 import { updateApplicationStatus } from '../../integrations/supabase/helpRequestsApplications';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
