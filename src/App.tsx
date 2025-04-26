@@ -32,7 +32,8 @@ import ApplicationDetailPage from './pages/ApplicationDetailPage';
 import TicketDetailPage from './pages/TicketDetailPage';
 import TicketStatusTest from './pages/TicketStatusTest';
 import ClientTicketsPage from './pages/ClientTicketsPage';
-import ManageApplicationsPage from './pages/ManageApplicationsPage';
+// Remove the import for ManageApplicationsPage
+// import ManageApplicationsPage from './pages/ManageApplicationsPage';
 
 // Import contexts
 import { AuthProvider, useAuth } from './contexts/auth';
@@ -294,11 +295,7 @@ function App() {
                 {/* Ticket status test route */}
                 <Route path="/ticket-status-test" element={<TicketStatusTest />} />
                 
-                <Route path="/client/help-request/:helpRequestId/applications" element={
-                  <ProtectedRoute requiredUserType="client">
-                    <ManageApplicationsPage />
-                  </ProtectedRoute>
-                } />
+                {/* Removed the route for ManageApplicationsPage */}
               </Routes>
             </Suspense>
           </BrowserRouter>
