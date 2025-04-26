@@ -139,23 +139,28 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
 // Helper function to ensure realtime is enabled for notifications table
 const enableRealtimeForNotifications = async () => {
   try {
-    const { error } = await supabase
-      .rpc('realtime.enable_notifications', {
-        table_name: 'notifications'
-      })
-      .then((res) => {
-        console.log('Result of enabling realtime for notifications:', res);
-        return res;
+    // Instead of using RPC, directly configure the channel
+    // This approach avoids the need for a custom database function
+    const channel = supabase.channel('realtime:public:notifications');
+    
+    channel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, 
+          payload => {
+            console.log('Realtime notification change detected:', payload);
+          })
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Realtime enabled for notifications table');
+        } else {
+          console.error('Error enabling realtime for notifications:', status);
+        }
       });
       
-    if (error) {
-      console.error('Error enabling realtime for notifications:', error);
-    } else {
-      console.log('Realtime enabled for notifications table');
-    }
+    return channel;
   } catch (err) {
     console.error('Exception enabling realtime for notifications:', err);
-    // Continue anyway - the RPC might not exist and that's okay
+    // Continue anyway - the channel setup might fail but that's okay
+    return null;
   }
 };
 
