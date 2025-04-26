@@ -1,28 +1,49 @@
-
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HelpRequestMatch } from '../../hooks/useTicketApplications';
+import { updateApplicationStatus } from '../../hooks/useTicketApplicationActions';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { MessageCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ApplicationCardProps {
   application: HelpRequestMatch;
 }
 
 const ApplicationCard = ({ application }: ApplicationCardProps) => {
-  const handleApprove = () => {
-    // TODO: Implement approval logic
-    console.log('Approve application:', application.id);
+  const navigate = useNavigate();
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleApprove = async () => {
+    try {
+      setIsUpdating(true);
+      await updateApplicationStatus(application.id, 'approved');
+      toast.success('Application approved successfully');
+    } catch (error) {
+      toast.error('Failed to approve application');
+      console.error('Error approving application:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  const handleReject = () => {
-    // TODO: Implement rejection logic
-    console.log('Reject application:', application.id);
+  const handleReject = async () => {
+    try {
+      setIsUpdating(true);
+      await updateApplicationStatus(application.id, 'rejected');
+      toast.success('Application rejected successfully');
+    } catch (error) {
+      toast.error('Failed to reject application');
+      console.error('Error rejecting application:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleChat = () => {
-    // TODO: Implement chat logic
-    console.log('Open chat with:', application.developer_id);
+    navigate(`/chat/${application.request_id}/${application.developer_id}`);
   };
 
   return (
@@ -70,13 +91,15 @@ const ApplicationCard = ({ application }: ApplicationCardProps) => {
             onClick={handleApprove}
             className="flex-1"
             variant="default"
+            disabled={isUpdating}
           >
-            Approve
+            {isUpdating ? 'Updating...' : 'Approve'}
           </Button>
           <Button 
             onClick={handleChat}
             variant="outline"
             size="icon"
+            disabled={isUpdating}
           >
             <MessageCircle className="h-4 w-4" />
           </Button>
@@ -84,8 +107,9 @@ const ApplicationCard = ({ application }: ApplicationCardProps) => {
             onClick={handleReject}
             className="flex-1"
             variant="destructive"
+            disabled={isUpdating}
           >
-            Reject
+            {isUpdating ? 'Updating...' : 'Reject'}
           </Button>
         </CardFooter>
       )}
