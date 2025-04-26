@@ -4,15 +4,18 @@ import { Button } from '../ui/button';
 import { toast } from 'sonner';
 import { updateApplicationStatus } from '../../integrations/supabase/helpRequestsApplications';
 import { useAuth } from '../../contexts/auth';
+import { useNavigate } from 'react-router-dom';
 
 interface NotificationActionsProps {
   notification: {
     id: string;
     notification_type: string;
     action_data: {
-      application_id: string;
-      developer_name: string;
-      request_title: string;
+      application_id?: string;
+      developer_name?: string;
+      request_title?: string;
+      request_id?: string;
+      status?: string;
     };
   };
   onActionComplete: () => void;
@@ -23,6 +26,7 @@ const NotificationActions: React.FC<NotificationActionsProps> = ({
   onActionComplete 
 }) => {
   const { userId } = useAuth();
+  const navigate = useNavigate();
 
   const handleAccept = async () => {
     if (!userId || !notification.action_data?.application_id) return;
@@ -70,6 +74,13 @@ const NotificationActions: React.FC<NotificationActionsProps> = ({
     }
   };
 
+  const handleViewRequest = () => {
+    if (notification.action_data?.request_id) {
+      navigate(`/client/tickets/${notification.action_data.request_id}`);
+    }
+  };
+
+  // Show different actions based on notification type
   if (notification.notification_type === 'new_application') {
     return (
       <div className="flex gap-2 mt-2">
@@ -87,6 +98,21 @@ const NotificationActions: React.FC<NotificationActionsProps> = ({
           className="flex-1"
         >
           Accept
+        </Button>
+      </div>
+    );
+  }
+
+  if (notification.notification_type.startsWith('application_')) {
+    return (
+      <div className="mt-2">
+        <Button 
+          size="sm"
+          variant="outline"
+          onClick={handleViewRequest}
+          className="w-full"
+        >
+          View Request
         </Button>
       </div>
     );

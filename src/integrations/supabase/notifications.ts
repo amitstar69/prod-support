@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { toast } from 'sonner';
 
@@ -89,8 +88,7 @@ export const markAllNotificationsAsRead = async (userId: string) => {
   }
 };
 
-// Setup realtime subscription for notifications
-export const setupNotificationsSubscription = (userId: string, callback: (notification: Notification) => void) => {
+export const setupNotificationsSubscription = (userId: string, callback: (notification: any) => void) => {
   console.log('Setting up notifications subscription for user:', userId);
   
   if (!userId) {
@@ -111,7 +109,7 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
         },
         (payload) => {
           console.log('New notification received:', payload);
-          callback(payload.new as Notification);
+          callback(payload.new);
         }
       )
       .subscribe((status) => {
@@ -125,7 +123,6 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
         }
       });
       
-    // Return the cleanup function
     return () => {
       console.log('Cleaning up notifications subscription');
       supabase.removeChannel(channel);
@@ -137,7 +134,6 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
   }
 };
 
-// Create a notification manually (backup method if trigger doesn't work)
 export const createNotification = async (notification: {
   user_id: string;
   related_entity_id: string;
