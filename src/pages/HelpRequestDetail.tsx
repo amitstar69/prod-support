@@ -2,16 +2,16 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 
-const Profile: React.FC = () => {
+const HelpRequestDetail: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>Profile Page (Placeholder)</CardTitle>
+          <CardTitle>Help Request Detail Page (Placeholder)</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            This is a placeholder profile page. Actual profile management functionality will be implemented soon.
+            This is a placeholder help request detail page. Actual help request details will be implemented soon.
           </p>
         </CardContent>
       </Card>
@@ -19,4 +19,4 @@ const Profile: React.FC = () => {
   );
 };
 
-export default Profile;
+export default HelpRequestDetail;
