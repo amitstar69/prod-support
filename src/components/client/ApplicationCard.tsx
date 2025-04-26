@@ -20,7 +20,8 @@ const ApplicationCard = ({ application }: ApplicationCardProps) => {
   const handleApprove = async () => {
     try {
       setIsUpdating(true);
-      await updateApplicationStatus(application.id, 'approved');
+      // Added third argument: application.request_id
+      await updateApplicationStatus(application.id, 'approved', application.request_id);
       toast.success('Application approved successfully');
     } catch (error) {
       toast.error('Failed to approve application');
@@ -33,7 +34,8 @@ const ApplicationCard = ({ application }: ApplicationCardProps) => {
   const handleReject = async () => {
     try {
       setIsUpdating(true);
-      await updateApplicationStatus(application.id, 'rejected');
+      // Added third argument: application.request_id
+      await updateApplicationStatus(application.id, 'rejected', application.request_id);
       toast.success('Application rejected successfully');
     } catch (error) {
       toast.error('Failed to reject application');
