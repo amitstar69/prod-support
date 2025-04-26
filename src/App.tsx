@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import {
   BrowserRouter as Router,
@@ -10,23 +11,16 @@ import {
 import { useAuth } from './contexts/auth';
 import { getUserHomePage, isCorrectUserPath } from './utils/navigationUtils';
 import LoginPage from './pages/LoginPage';
-import LogoutPage from './pages/LogoutPage';
 import RegisterPage from './pages/RegisterPage';
-import HomePage from './pages/HomePage';
 import ClientDashboard from './pages/ClientDashboard';
 import DeveloperDashboard from './pages/DeveloperDashboard';
-import SearchPage from './pages/SearchPage';
-import ProductDetailPage from './pages/ProductDetailPage';
 import DeveloperProfilePage from './pages/DeveloperProfilePage';
-import HelpRequestDetailPage from './pages/HelpRequestDetailPage';
-import MyApplicationsPage from './pages/MyApplicationsPage';
-import SessionsHistoryPage from './pages/SessionsHistoryPage';
-import ProfilePage from './pages/ProfilePage';
+import ProfilePage from './pages/Profile';
 import { ApplicationDetailPage } from './pages';
 
 // ProtectedRoute component
 function ProtectedRoute({ children, userType }: { children: React.ReactNode, userType?: string }) {
-  const { isAuthenticated, isLoading, loggedInUserType } = useAuth();
+  const { isAuthenticated, isLoading, userType: loggedInUserType } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -59,7 +53,7 @@ function ProtectedRoute({ children, userType }: { children: React.ReactNode, use
 
 // AutoRedirectToDashboard component
 function AutoRedirectToDashboard() {
-  const { isAuthenticated, isLoading, loggedInUserType } = useAuth();
+  const { isAuthenticated, isLoading, userType: loggedInUserType } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -86,13 +80,9 @@ function AutoRedirectToDashboard() {
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<Navigate to="/login" />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/logout" element={<LogoutPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/search" element={<SearchPage />} />
-      <Route path="/product/:productId" element={<ProductDetailPage />} />
-      <Route path="/developer-profiles/:developerId" element={<DeveloperProfilePage />} />
       
       {/* Client Routes */}
       <Route 
@@ -123,7 +113,7 @@ function App() {
         path="/client/tickets/:ticketId" 
         element={
           <ProtectedRoute userType="client">
-            <HelpRequestDetailPage />
+            <ClientDashboard />
           </ProtectedRoute>
         } 
       />
@@ -131,7 +121,7 @@ function App() {
         path="/client/sessions"
         element={
           <ProtectedRoute userType="client">
-            <SessionsHistoryPage />
+            <ClientDashboard />
           </ProtectedRoute>
         }
       />
@@ -157,7 +147,7 @@ function App() {
         path="/developer/sessions"
         element={
           <ProtectedRoute userType="developer">
-            <SessionsHistoryPage />
+            <DeveloperDashboard />
           </ProtectedRoute>
         }
       />
@@ -176,9 +166,15 @@ function App() {
         path="/my-applications" 
         element={
           <ProtectedRoute userType="developer">
-            <MyApplicationsPage />
+            <DeveloperDashboard />
           </ProtectedRoute>
         } 
+      />
+      
+      {/* Developer profiles page */}
+      <Route 
+        path="/developer-profiles/:developerId"
+        element={<DeveloperProfilePage />} 
       />
       
       {/* Add the application detail route */}

@@ -31,7 +31,6 @@ const NotificationsDropdown: React.FC = () => {
     await markNotificationAsRead(notification.id);
     
     if (notification.notification_type === 'new_application') {
-      // If it's a new application notification, navigate to the application detail page
       if (notification.action_data && notification.action_data.application_id) {
         navigate(`/client/applications/${notification.action_data.application_id}`);
         setIsOpen(false);
@@ -43,7 +42,9 @@ const NotificationsDropdown: React.FC = () => {
     
     switch (notification.entity_type) {
       case 'application':
-        if (notification.related_entity_id && notification.related_entity_id.includes('-')) {
+        if (notification.related_entity_id && !notification.related_entity_id.includes('-')) {
+          navigate(`/client/applications/${notification.related_entity_id}`);
+        } else if (notification.related_entity_id && notification.related_entity_id.includes('-')) {
           try {
             const { data, error } = await supabase
               .from('help_request_matches')

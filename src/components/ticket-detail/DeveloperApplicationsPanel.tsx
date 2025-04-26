@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { HelpRequestMatch } from '../../types/helpRequest';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
+import { useNavigate } from 'react-router-dom';
 
 interface DeveloperApplicationsPanelProps {
   ticketId: string;
@@ -21,6 +22,7 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
   const [applications, setApplications] = useState<HelpRequestMatch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchApplications();
