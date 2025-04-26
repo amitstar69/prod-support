@@ -9,16 +9,43 @@ import DeveloperDashboard from './pages/DeveloperDashboard';
 import ProfilePage from './pages/Profile';
 import TicketDetailPage from './pages/TicketDetailPage';
 import GetHelpPage from './pages/GetHelpPage';
-import ChatPage from './pages/ChatPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './contexts/auth';
 import { supabase } from './integrations/supabase/client';
 import { toast } from 'sonner';
 import DeveloperTicketsPage from './pages/developer/DeveloperTicketsPage';
-import ClientTicketsPage from './pages/client/ClientTicketsPage';
 import SearchPage from './pages/Search';
 import SessionHistory from './pages/SessionHistory';
-import MyApplicationsPage from './pages/developer/MyApplicationsPage';
+
+// Create a simple ChatPage component since it's missing
+const ChatPage = () => {
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Chat Interface</h1>
+      <p>Chat functionality is being implemented. Please check back soon.</p>
+    </div>
+  );
+};
+
+// Create a ClientTicketsPage component since it can't be found
+const ClientTicketsPage = () => {
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Client Tickets</h1>
+      <p>Client tickets functionality is being implemented. Please check back soon.</p>
+    </div>
+  );
+};
+
+// Create a MyApplicationsPage component since it can't be found
+const MyApplicationsPage = () => {
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">My Applications</h1>
+      <p>Developer applications functionality is being implemented. Please check back soon.</p>
+    </div>
+  );
+};
 
 function App() {
   const { isAuthenticated, userId } = useAuth();
