@@ -1,17 +1,25 @@
 
 import { supabase } from './client';
 import { toast } from 'sonner';
-import { Notification } from '../../components/notifications/types';
-import { enableRealtimeForTable } from './setupRealtime';
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  related_entity_id: string;
+  entity_type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 export const fetchUserNotifications = async (userId: string | null) => {
   try {
     if (!userId) {
-      console.log('No user ID provided for fetching notifications');
       return { success: false, error: 'User ID is required', data: [] };
     }
 
-    console.log('Fetching notifications for user:', userId);
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
@@ -23,7 +31,6 @@ export const fetchUserNotifications = async (userId: string | null) => {
       return { success: false, error: error.message, data: [] };
     }
 
-    console.log('Fetched notifications:', data ? data.length : 0);
     return { success: true, data: data as Notification[] };
   } catch (error) {
     console.error('Exception fetching notifications:', error);
@@ -37,7 +44,6 @@ export const fetchUserNotifications = async (userId: string | null) => {
 
 export const markNotificationAsRead = async (notificationId: string) => {
   try {
-    console.log('Marking notification as read:', notificationId);
     const { data, error } = await supabase
       .from('notifications')
       .update({ is_read: true })
@@ -49,7 +55,6 @@ export const markNotificationAsRead = async (notificationId: string) => {
       return { success: false, error: error.message };
     }
 
-    console.log('Notification marked as read:', notificationId);
     return { success: true, data };
   } catch (error) {
     console.error('Exception marking notification as read:', error);
@@ -62,7 +67,6 @@ export const markNotificationAsRead = async (notificationId: string) => {
 
 export const markAllNotificationsAsRead = async (userId: string) => {
   try {
-    console.log('Marking all notifications as read for user:', userId);
     const { data, error } = await supabase
       .from('notifications')
       .update({ is_read: true })
@@ -75,7 +79,6 @@ export const markAllNotificationsAsRead = async (userId: string) => {
       return { success: false, error: error.message };
     }
 
-    console.log('All notifications marked as read for user:', userId, 'Count:', data.length);
     return { success: true, data };
   } catch (error) {
     console.error('Exception marking all notifications as read:', error);
@@ -96,11 +99,8 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
   }
   
   try {
-    // First, ensure realtime is enabled for the notifications table
-    enableRealtimeForTable('notifications');
-    
     const channel = supabase
-      .channel(`notifications_${userId}`)
+      .channel('notifications_changes')
       .on(
         'postgres_changes',
         {
@@ -110,7 +110,7 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
           filter: `user_id=eq.${userId}`
         },
         (payload) => {
-          console.log('New notification received via subscription:', payload);
+          console.log('New notification received:', payload);
           callback(payload.new as Notification);
         }
       )
@@ -144,11 +144,8 @@ export const createNotification = async (notification: {
   entity_type: string;
   title: string;
   message: string;
-  notification_type?: string;
-  action_data?: any;
 }) => {
   try {
-    console.log('Creating notification:', notification);
     const { data, error } = await supabase
       .from('notifications')
       .insert([notification])
@@ -159,7 +156,6 @@ export const createNotification = async (notification: {
       return { success: false, error: error.message };
     }
 
-    console.log('Notification created successfully:', data);
     return { success: true, data };
   } catch (error) {
     console.error('Exception creating notification:', error);

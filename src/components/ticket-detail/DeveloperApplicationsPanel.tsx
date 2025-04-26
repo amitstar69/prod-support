@@ -8,7 +8,6 @@ import { toast } from 'sonner';
 import { HelpRequestMatch } from '../../types/helpRequest';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
-import { useNavigate } from 'react-router-dom';
 
 interface DeveloperApplicationsPanelProps {
   ticketId: string;
@@ -22,7 +21,6 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
   const [applications, setApplications] = useState<HelpRequestMatch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchApplications();
@@ -161,10 +159,6 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
     // Implementation will depend on your chat component
   };
 
-  const handleViewApplicationDetails = (applicationId: string) => {
-    navigate(`/client/applications/${applicationId}`);
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -272,9 +266,12 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => handleViewApplicationDetails(application.id!)}
+                        onClick={() => handleChatWithDeveloper(
+                          application.developer_id, 
+                          application.profiles?.name || 'Developer'
+                        )}
                       >
-                        View Details
+                        Chat
                       </Button>
                       <Button 
                         size="sm" 

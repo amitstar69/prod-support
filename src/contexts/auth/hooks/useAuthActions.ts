@@ -5,7 +5,6 @@ import { login as authLogin, LoginResult } from '../authLogin';
 import { loginWithOAuth as authLoginWithOAuth } from '../authOAuth';
 import { register as authRegister } from '../authRegister';
 import { logoutUser } from '../authUtils';
-import { supabase } from '../../../integrations/supabase/client';
 
 export const useAuthActions = (
   setAuthState: Dispatch<SetStateAction<AuthState>>,
@@ -40,76 +39,28 @@ export const useAuthActions = (
     userType: UserType,
     rememberMe: boolean = false
   ): Promise<LoginResult> => {
-    console.log('handleLogin called with:', { email, userType, rememberMe });
+    console.log('handleLogin called');
     setIsLoading(true);
     try {
-      // Use the actual Supabase authentication instead of the placeholder
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      const result = await authLogin(
+        email, 
+        password, 
+        userType, 
+        rememberMe
+      );
       
-      if (signInError) {
-        console.error('Sign in error:', signInError);
-        return {
-          success: false,
-          error: signInError.message
-        };
+      if (result.success) {
+        setAuthState(prev => ({
+          ...prev,
+          isAuthenticated: true,
+          userType: userType,
+        }));
+        console.log(`Login successful as ${userType}, setting auth state`);
+      } else {
+        console.error('Login failed:', result.error);
       }
       
-      if (!signInData.user) {
-        return {
-          success: false,
-          error: 'Failed to authenticate user'
-        };
-      }
-      
-      // Check if email is verified
-      if (signInData.user.email_confirmed_at === null) {
-        // Sign out if email not verified
-        await supabase.auth.signOut();
-        return {
-          success: false,
-          error: 'Please verify your email before logging in.',
-          requiresVerification: true
-        };
-      }
-      
-      // Fetch user profile to check user type
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('user_type')
-        .eq('id', signInData.user.id)
-        .single();
-        
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        return {
-          success: false,
-          error: 'Error verifying user type'
-        };
-      }
-      
-      // Check if user type matches
-      if (profileData.user_type !== userType) {
-        // Sign out if user type doesn't match
-        await supabase.auth.signOut();
-        return {
-          success: false,
-          error: `You are registered as a ${profileData.user_type}, not a ${userType}. Please use the correct login option.`
-        };
-      }
-      
-      // Update auth state
-      setAuthState(prevState => ({
-        ...prevState,
-        isAuthenticated: true,
-        userType: userType,
-        userId: signInData.user?.id
-      }));
-      
-      console.log(`Login successful as ${userType}, setting auth state`);
-      return { success: true };
+      return result;
     } catch (error: any) {
       console.error('Login exception:', error);
       return {

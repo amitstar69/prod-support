@@ -2,7 +2,7 @@
 import React, { KeyboardEvent } from 'react';
 import { Label } from '@/components/ui/label';
 
-export interface LoginInputFieldProps {
+interface LoginInputFieldProps {
   id: string;
   label: string;
   type: string;

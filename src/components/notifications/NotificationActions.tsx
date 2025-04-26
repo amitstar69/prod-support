@@ -4,10 +4,17 @@ import { Button } from '../ui/button';
 import { toast } from 'sonner';
 import { updateApplicationStatus } from '../../integrations/supabase/helpRequestsApplications';
 import { useAuth } from '../../contexts/auth';
-import { Notification } from './types'; // Update import to use types.ts
 
 interface NotificationActionsProps {
-  notification: Notification;
+  notification: {
+    id: string;
+    notification_type: string;
+    action_data: {
+      application_id: string;
+      developer_name: string;
+      request_title: string;
+    };
+  };
   onActionComplete: () => void;
 }
 
