@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect'; // Import jest-dom for additional matchers
 import NotificationsDropdown from '../NotificationsDropdown';
 import { AuthProvider } from '../../../contexts/auth';
 import { supabase } from '../../../integrations/supabase/client';
@@ -22,14 +23,6 @@ jest.mock('../../../contexts/auth', () => ({
     userId: 'test-user-id'
   })
 }));
-
-// Add expect matchers
-expect.extend({
-  toBeInTheDocument: (received) => ({
-    message: () => `expected ${received} to be in the document`,
-    pass: Boolean(received),
-  }),
-});
 
 describe('NotificationsDropdown', () => {
   beforeEach(() => {
