@@ -1,12 +1,17 @@
 
-import { HelpRequestMatch } from '../../hooks/useTicketApplications';
+import { HelpRequestMatch } from '../../types/helpRequest';
 import ApplicationCard from './ApplicationCard';
 
 interface ApplicationsListProps {
   applications: HelpRequestMatch[];
+  isLoading?: boolean;
 }
 
-const ApplicationsList = ({ applications }: ApplicationsListProps) => {
+const ApplicationsList = ({ applications, isLoading }: ApplicationsListProps) => {
+  if (isLoading) {
+    return <div className="text-center p-8 text-muted-foreground">Loading applications...</div>;
+  }
+
   if (!applications.length) {
     return (
       <div className="text-center p-8 text-muted-foreground">
