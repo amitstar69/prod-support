@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect'; // Add this import for expect matchers
+import '@testing-library/jest-dom'; // Import jest-dom for additional matchers
 import NotificationsDropdown from '../NotificationsDropdown';
 import { AuthProvider } from '../../../contexts/auth';
 import { supabase } from '../../../integrations/supabase/client';

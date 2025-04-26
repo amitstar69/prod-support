@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Notification } from './types';
 import { fetchUserNotifications, setupNotificationsSubscription } from '../../integrations/supabase/notifications';
@@ -7,18 +7,23 @@ import { fetchUserNotifications, setupNotificationsSubscription } from '../../in
 export const useNotifications = (userId: string | null, handleNotificationClick: (notification: Notification) => void) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
-  const loadNotifications = async () => {
-    if (!userId) return;
+  const loadNotifications = useCallback(async () => {
+    if (!userId) {
+      console.log('No userId provided, skipping notification fetch');
+      return;
+    }
     
     setIsLoading(true);
+    setHasError(false);
     
     try {
       console.log('Fetching notifications for user:', userId);
       const result = await fetchUserNotifications(userId);
       
       if (result.success) {
-        console.log('Loaded notifications:', result.data.length);
+        console.log('Successfully loaded notifications:', result.data.length);
         const componentNotifications: Notification[] = result.data.map(notification => ({
           ...notification,
           notification_type: notification.notification_type || 'general',
@@ -26,13 +31,17 @@ export const useNotifications = (userId: string | null, handleNotificationClick:
         setNotifications(componentNotifications);
       } else {
         console.error('Error loading notifications:', result.error);
+        setHasError(true);
+        toast.error('Failed to load notifications');
       }
     } catch (error) {
       console.error('Exception loading notifications:', error);
+      setHasError(true);
+      toast.error('An error occurred while loading notifications');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     if (userId) {
@@ -46,7 +55,13 @@ export const useNotifications = (userId: string | null, handleNotificationClick:
           ...newNotification,
           notification_type: newNotification.notification_type || 'general',
         };
-        setNotifications(prev => [componentNotification, ...prev]);
+        
+        setNotifications(prev => {
+          // Check if notification already exists to avoid duplicates
+          const exists = prev.some(n => n.id === componentNotification.id);
+          if (exists) return prev;
+          return [componentNotification, ...prev];
+        });
         
         toast.info(componentNotification.title, {
           description: componentNotification.message,
@@ -59,11 +74,12 @@ export const useNotifications = (userId: string | null, handleNotificationClick:
       
       return cleanup;
     }
-  }, [userId, handleNotificationClick]);
+  }, [userId, handleNotificationClick, loadNotifications]);
 
   return { 
     notifications, 
-    isLoading, 
+    isLoading,
+    hasError,
     setNotifications,
     refresh: loadNotifications // Export refresh function to allow manual refresh
   };

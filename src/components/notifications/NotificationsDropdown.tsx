@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BellIcon, BellRingIcon, CheckIcon, RefreshCw } from 'lucide-react';
+import { BellIcon, BellRingIcon, CheckIcon, RefreshCw, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import { Button } from '../ui/button';
 import { markAllNotificationsAsRead } from '../../integrations/supabase/notifications';
@@ -98,7 +98,7 @@ const NotificationsDropdown: React.FC = () => {
     }
   };
 
-  const { notifications, isLoading, setNotifications, refresh } = useNotifications(userId, handleNotificationClick);
+  const { notifications, isLoading, hasError, setNotifications, refresh } = useNotifications(userId, handleNotificationClick);
 
   const handleRefresh = () => {
     console.log('Manually refreshing notifications');
@@ -157,9 +157,10 @@ const NotificationsDropdown: React.FC = () => {
                 variant="ghost" 
                 size="sm" 
                 onClick={handleRefresh}
+                disabled={isLoading}
                 className="h-8 text-xs"
               >
-                <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
               {unreadCount > 0 && (
@@ -181,6 +182,20 @@ const NotificationsDropdown: React.FC = () => {
             {isLoading ? (
               <div className="py-6 text-center text-muted-foreground flex justify-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground"></div>
+              </div>
+            ) : hasError ? (
+              <div className="py-6 text-center text-muted-foreground">
+                <div className="flex flex-col items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                  <p>Failed to load notifications</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleRefresh}
+                  >
+                    Try Again
+                  </Button>
+                </div>
               </div>
             ) : notifications.length === 0 ? (
               <div className="py-6 text-center text-muted-foreground">

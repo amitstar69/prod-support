@@ -2,6 +2,7 @@
 import { supabase } from './client';
 import { toast } from 'sonner';
 import { Notification } from '../../components/notifications/types';
+import { enableRealtimeForTable } from './setupRealtime';
 
 export const fetchUserNotifications = async (userId: string | null) => {
   try {
@@ -95,11 +96,11 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
   }
   
   try {
-    // First, let's make sure realtime is enabled for the notifications table
-    enableRealtimeForNotifications();
+    // First, ensure realtime is enabled for the notifications table
+    enableRealtimeForTable('notifications');
     
     const channel = supabase
-      .channel(`notifications_changes_${userId}`)
+      .channel(`notifications_${userId}`)
       .on(
         'postgres_changes',
         {
@@ -109,7 +110,7 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
           filter: `user_id=eq.${userId}`
         },
         (payload) => {
-          console.log('New notification received:', payload);
+          console.log('New notification received via subscription:', payload);
           callback(payload.new as Notification);
         }
       )
@@ -133,34 +134,6 @@ export const setupNotificationsSubscription = (userId: string, callback: (notifi
     console.error('Exception setting up notifications subscription:', error);
     toast.error('Notification connection failed. Some features may not work.');
     return () => {}; // Return empty cleanup function
-  }
-};
-
-// Helper function to ensure realtime is enabled for notifications table
-const enableRealtimeForNotifications = async () => {
-  try {
-    // Instead of using RPC, directly configure the channel
-    // This approach avoids the need for a custom database function
-    const channel = supabase.channel('realtime:public:notifications');
-    
-    channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, 
-          payload => {
-            console.log('Realtime notification change detected:', payload);
-          })
-      .subscribe(status => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Realtime enabled for notifications table');
-        } else {
-          console.error('Error enabling realtime for notifications:', status);
-        }
-      });
-      
-    return channel;
-  } catch (err) {
-    console.error('Exception enabling realtime for notifications:', err);
-    // Continue anyway - the channel setup might fail but that's okay
-    return null;
   }
 };
 
