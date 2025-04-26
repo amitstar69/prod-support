@@ -1,13 +1,14 @@
+
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import HomePage from './pages/HomePage';
+import HomePage from './pages/Index';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
+import ClientDashboard from './pages/ClientDashboard';
 import DeveloperDashboard from './pages/DeveloperDashboard';
-import ProfilePage from './pages/ProfilePage';
+import ProfilePage from './pages/Profile';
 import TicketDetailPage from './pages/TicketDetailPage';
-import NewHelp from './pages/NewHelp';
+import GetHelpPage from './pages/GetHelpPage';
 import ChatPage from './pages/ChatPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './contexts/auth';
@@ -15,16 +16,22 @@ import { supabase } from './integrations/supabase/client';
 import { toast } from 'sonner';
 import DeveloperTicketsPage from './pages/developer/DeveloperTicketsPage';
 import ClientTicketsPage from './pages/client/ClientTicketsPage';
-import SearchPage from './pages/SearchPage';
-import SessionHistoryPage from './pages/SessionHistoryPage';
+import SearchPage from './pages/Search';
+import SessionHistory from './pages/SessionHistory';
 import MyApplicationsPage from './pages/developer/MyApplicationsPage';
 
 function App() {
-  const { isAuthenticated, userId, initializeAuth } = useAuth();
+  const { isAuthenticated, userId } = useAuth();
 
   useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]);
+    // Check for session on component mount
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      console.log('[App] Checking initial session:', data.session ? 'Found session' : 'No session');
+    };
+    
+    checkSession();
+  }, []);
 
   useEffect(() => {
     const handleAuthChange = (event: any) => {
@@ -51,7 +58,7 @@ function App() {
         {/* Client Routes */}
         <Route path="/dashboard" element={
           <ProtectedRoute requiredUserType="client">
-            <DashboardPage />
+            <ClientDashboard />
           </ProtectedRoute>
         } />
         <Route path="/client-tickets" element={
@@ -90,9 +97,9 @@ function App() {
           </ProtectedRoute>
         } />
         
-        <Route path="/new-help" element={
+        <Route path="/get-help" element={
           <ProtectedRoute requiredUserType="client">
-            <NewHelp />
+            <GetHelpPage />
           </ProtectedRoute>
         } />
         
@@ -104,7 +111,7 @@ function App() {
 
         {/* Public Routes */}
         <Route path="/search" element={<SearchPage />} />
-        <Route path="/session-history" element={<SessionHistoryPage />} />
+        <Route path="/session-history" element={<SessionHistory />} />
       </Routes>
     </BrowserRouter>
   );
