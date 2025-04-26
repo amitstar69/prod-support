@@ -36,6 +36,14 @@ const TicketDetailPage = () => {
 
   const role = userType as "client" | "developer";
 
+  // Debug log to help track user type and access permissions
+  console.log('[TicketDetailPage] Initializing with:', { 
+    userType, 
+    role,
+    ticketId,
+    isAuthenticated
+  });
+
   // Check if the ticket is awaiting client approval for developer applications
   const isAwaitingDeveloperApproval = ticket?.status === 'awaiting_client_approval' || 
                                       ticket?.status === 'dev_requested';
@@ -84,19 +92,34 @@ const TicketDetailPage = () => {
     if (role !== "developer" || !isAuthenticated || !userId || !ticketId) return;
 
     const checkApplicationStatus = async () => {
-      const { data: matchData, error: matchError } = await supabase
-        .from('help_request_matches')
-        .select('status')
-        .eq('request_id', ticketId)
-        .eq('developer_id', userId)
-        .maybeSingle();
+      console.log('[TicketDetailPage] Checking application status for developer:', userId);
+      try {
+        const { data: matchData, error: matchError } = await supabase
+          .from('help_request_matches')
+          .select('status')
+          .eq('request_id', ticketId)
+          .eq('developer_id', userId)
+          .maybeSingle();
 
-      if (matchError) return;
-      if (matchData) {
-        setHasApplied(true);
-        setApplicationStatus(matchData.status);
+        if (matchError) {
+          console.error('[TicketDetailPage] Error checking application status:', matchError);
+          return;
+        }
+        
+        if (matchData) {
+          console.log('[TicketDetailPage] Application found with status:', matchData.status);
+          setHasApplied(true);
+          setApplicationStatus(matchData.status);
+        } else {
+          console.log('[TicketDetailPage] No application found');
+          setHasApplied(false);
+          setApplicationStatus(null);
+        }
+      } catch (err) {
+        console.error('[TicketDetailPage] Exception checking application status:', err);
       }
     };
+    
     checkApplicationStatus();
   }, [role, isAuthenticated, userId, ticketId]);
 
@@ -122,7 +145,7 @@ const TicketDetailPage = () => {
         return;
       }
       
-      console.log('[TicketDetailPage] Successfully fetched ticket data');
+      console.log('[TicketDetailPage] Successfully fetched ticket data:', data);
       setTicket(data as HelpRequest);
     } catch (err) {
       console.error('[TicketDetailPage] Exception fetching ticket:', err);
@@ -144,6 +167,7 @@ const TicketDetailPage = () => {
       navigate('/login', { state: { returnTo: `/tickets/${ticketId}` } });
       return;
     }
+    console.log('[TicketDetailPage] Opening application modal');
     setShowApplicationModal(true);
   };
 
@@ -152,6 +176,8 @@ const TicketDetailPage = () => {
     setHasApplied(true);
     setApplicationStatus('pending');
     toast.success('Your application has been submitted successfully!');
+    console.log('[TicketDetailPage] Application submitted successfully');
+    
     if (isAuthenticated && userId && ticketId) {
       const { data } = await supabase
         .from('help_request_matches')
@@ -220,7 +246,7 @@ const TicketDetailPage = () => {
     );
   }
 
-  console.log('[TicketDetailPage] Rendering with role:', role, 'ticket:', ticket?.id);
+  console.log('[TicketDetailPage] Rendering with role:', role, 'ticket:', ticket?.id, 'hasApplied:', hasApplied, 'applicationStatus:', applicationStatus);
 
   return (
     <Layout>

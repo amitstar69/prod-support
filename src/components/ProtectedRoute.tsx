@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   userType?: 'developer' | 'client'; // Deprecated, use requiredUserType instead
   requiredUserType?: 'developer' | 'client';
+  allowedUserTypes?: ('developer' | 'client')[];
   allowPublicAccess?: boolean;
   requireProfileCompletion?: boolean;
   requiredCompletionPercentage?: number;
@@ -18,6 +19,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children, 
   userType, // This property is deprecated, use requiredUserType instead
   requiredUserType,
+  allowedUserTypes,
   allowPublicAccess = false,
   requireProfileCompletion = false,
   requiredCompletionPercentage = 50
@@ -31,7 +33,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   console.log('[ProtectedRoute] Route protection check:', { 
     isAuthenticated, 
     authUserType, 
-    requiredUserType: actualRequiredUserType 
+    requiredUserType: actualRequiredUserType,
+    allowedUserTypes
   });
 
   // Start with the auth check
@@ -40,8 +43,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       allowPublicAccess={allowPublicAccess}
       requiredUserType={actualRequiredUserType}
     >
-      {/* Then check for correct user type */}
-      <UserTypeCheck requiredUserType={actualRequiredUserType}>
+      {/* Then check for correct user type, supporting multiple allowed types */}
+      <UserTypeCheck 
+        requiredUserType={actualRequiredUserType}
+        allowedUserTypes={allowedUserTypes}
+      >
         {/* Finally, check for profile completion if needed */}
         {requireProfileCompletion ? (
           <ProtectedProfileRoute requiredCompletionPercentage={requiredCompletionPercentage}>
