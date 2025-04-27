@@ -47,6 +47,26 @@ const ApplicationCard = ({ application }: ApplicationCardProps) => {
     navigate(`/chat/${application.request_id}/${application.developer_id}`);
   };
 
+  const renderStatusBadge = () => {
+    if (application.status === 'approved_by_client') {
+      return (
+        <Badge variant="default" className="bg-green-500">
+          Approved by Client
+        </Badge>
+      );
+    }
+    
+    if (application.status === 'rejected_by_client') {
+      return (
+        <Badge variant="secondary" className="bg-gray-400">
+          Rejected by Client
+        </Badge>
+      );
+    }
+    
+    return null;
+  };
+
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="flex-row justify-between items-start space-y-0">
@@ -58,12 +78,7 @@ const ApplicationCard = ({ application }: ApplicationCardProps) => {
             Match Score: {Math.round(application.match_score * 100)}%
           </p>
         </div>
-        {application.status === 'approved' && (
-          <Badge variant="default" className="bg-green-500">Approved</Badge>
-        )}
-        {application.status === 'rejected' && (
-          <Badge variant="secondary" className="bg-gray-400">Rejected</Badge>
-        )}
+        {renderStatusBadge()}
       </CardHeader>
 
       <CardContent className="flex-grow">
