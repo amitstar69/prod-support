@@ -7,6 +7,7 @@ import { HelpRequest } from "../../types/helpRequest";
 import DeveloperStatusUpdate from "../help/DeveloperStatusUpdate";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Info, LockIcon } from "lucide-react";
+import { toast } from "sonner";
 
 interface DeveloperApplicationPanelProps {
   devUpdateVisibility: {
@@ -22,6 +23,7 @@ interface DeveloperApplicationPanelProps {
   fetchLatestTicketData: () => Promise<void>;
   isPaidDeveloper?: boolean;
   freeApplicationsRemaining?: number;
+  assignedTicketCount?: number;
   onUpgradeClick?: () => void;
 }
 
@@ -36,20 +38,54 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
   fetchLatestTicketData,
   isPaidDeveloper = false,
   freeApplicationsRemaining = 0,
+  assignedTicketCount = 0,
   onUpgradeClick
 }) => {
   if (!ticket) return null;
 
-  // Always show the status update component for approved developers
   const showStatusUpdate = userType === "developer" && hasApplied && applicationStatus === "approved";
   const showApplyButton = userType === "developer" && !hasApplied;
 
-  const canApply = isPaidDeveloper || freeApplicationsRemaining > 0;
-  const shouldShowUpgradeButton = !isPaidDeveloper && freeApplicationsRemaining === 0;
+  const handleApplyClick = () => {
+    if (isPaidDeveloper || assignedTicketCount < 2) {
+      onApply();
+    } else {
+      toast.error("You've reached your free project limit. Upgrade to continue working!");
+      if (onUpgradeClick) {
+        onUpgradeClick();
+      }
+    }
+  };
 
-  const getApplyButtonText = () => {
-    if (isPaidDeveloper) return "Apply for This Ticket";
-    return `Apply Now (Free - ${freeApplicationsRemaining} left)`;
+  const renderApplyButton = () => {
+    if (isPaidDeveloper) {
+      return (
+        <Button onClick={handleApplyClick}>
+          Apply Now
+        </Button>
+      );
+    } else if (assignedTicketCount < 2) {
+      return (
+        <Button onClick={handleApplyClick}>
+          Apply Now (Free Ticket)
+        </Button>
+      );
+    } else {
+      return (
+        <div className="flex flex-col items-center">
+          <div className="text-center text-muted-foreground mb-2">
+            <div className="text-sm font-medium">Free Ticket Limit Reached</div>
+            <div className="text-xs">
+              Upgrade to work on more projects!
+            </div>
+          </div>
+          <Button onClick={onUpgradeClick}>
+            <LockIcon className="mr-2 h-4 w-4" />
+            Upgrade to Continue
+          </Button>
+        </div>
+      );
+    }
   };
 
   return (
@@ -77,33 +113,7 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
             <p className="text-sm text-muted-foreground">
               You can apply to help with this ticket if you have the required skills and availability.
             </p>
-            {shouldShowUpgradeButton ? (
-              <>
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertTitle>No Free Applications Left</AlertTitle>
-                  <AlertDescription>
-                    Upgrade to a paid developer account to submit unlimited applications.
-                  </AlertDescription>
-                </Alert>
-                <Button 
-                  onClick={onUpgradeClick} 
-                  className="w-full"
-                  variant="default"
-                >
-                  <LockIcon className="w-4 h-4 mr-2" />
-                  Upgrade to Apply
-                </Button>
-              </>
-            ) : (
-              <Button 
-                onClick={onApply} 
-                className="w-full" 
-                disabled={!canApply}
-              >
-                {getApplyButtonText()}
-              </Button>
-            )}
+            {renderApplyButton()}
           </div>
         ) : hasApplied ? (
           <div className="space-y-4">

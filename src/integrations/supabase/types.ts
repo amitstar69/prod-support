@@ -183,6 +183,7 @@ export type Database = {
       }
       developer_profiles: {
         Row: {
+          assigned_ticket_count: number | null
           availability: boolean | null
           category: string | null
           certifications: Json | null
@@ -206,6 +207,7 @@ export type Database = {
           skills: string[] | null
         }
         Insert: {
+          assigned_ticket_count?: number | null
           availability?: boolean | null
           category?: string | null
           certifications?: Json | null
@@ -229,6 +231,7 @@ export type Database = {
           skills?: string[] | null
         }
         Update: {
+          assigned_ticket_count?: number | null
           availability?: boolean | null
           category?: string | null
           certifications?: Json | null

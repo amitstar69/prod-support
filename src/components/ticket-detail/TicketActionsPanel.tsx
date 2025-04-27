@@ -1,12 +1,12 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../integrations/supabase/client';
 import DeveloperApplicationPanel from '../../components/developer-ticket-detail/DeveloperApplicationPanel';
 import StatusActionCard from './StatusActionCard';
 import { UserType } from '../../utils/helpRequestStatusUtils';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Bug, Loader2 } from 'lucide-react';
 import { getCurrentUserData } from '../../contexts/auth';
-import { useEffect, useState } from 'react';
 
 const TicketActionsPanel = ({
   role,
@@ -40,11 +40,9 @@ const TicketActionsPanel = ({
     fetchDeveloperProfile();
   }, [role, userId]);
 
-  // Log to help debug why component might not be showing
   console.log('[TicketActionsPanel] Rendering with role:', role, 'ticket status:', ticket?.status, 
     'applicationStatus:', applicationStatus, 'hasApplied:', hasApplied);
   
-  // Safety check for missing data
   if (!ticket) {
     return (
       <Alert variant="destructive">
@@ -56,7 +54,6 @@ const TicketActionsPanel = ({
   }
   
   if (role === "developer") {
-    // Show loading state while fetching developer profile
     if (isLoadingProfile) {
       return (
         <div className="flex items-center justify-center p-8">
@@ -66,7 +63,6 @@ const TicketActionsPanel = ({
       );
     }
 
-    // Show developer application panel if they haven't been approved yet
     if (applicationStatus !== "approved" || !hasApplied) {
       console.log('[TicketActionsPanel] Showing DeveloperApplicationPanel for non-approved developer');
       return (
@@ -84,12 +80,12 @@ const TicketActionsPanel = ({
           fetchLatestTicketData={fetchLatestTicketData}
           isPaidDeveloper={developerProfile?.isPaidDeveloper ?? false}
           freeApplicationsRemaining={developerProfile?.freeApplicationsRemaining ?? 0}
+          assignedTicketCount={developerProfile?.assignedTicketCount ?? 0}
           onUpgradeClick={() => window.location.href = '/developer/upgrade'}
         />
       );
     }
     
-    // Show status actions if the developer is approved
     console.log('[TicketActionsPanel] Showing StatusActionCard for approved developer');
     return (
       <StatusActionCard
@@ -101,7 +97,6 @@ const TicketActionsPanel = ({
   }
 
   if (role === "client") {
-    // Always render the StatusActionCard for clients
     console.log('[TicketActionsPanel] Showing StatusActionCard for client');
     return (
       <StatusActionCard
