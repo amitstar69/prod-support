@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -13,6 +12,7 @@ import { messageTypeIconMap } from '../../utils/messageTypeIcons';
 import { useTicketApplications } from '../../hooks/ticket-detail/useTicketApplications';
 import MainContent from './MainContent';
 import SidebarContent from './SidebarContent';
+import { supabase } from '../../integrations/supabase/client';
 
 interface TicketDetailContentProps {
   ticket: HelpRequest | null;
@@ -42,19 +42,28 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
   const navigate = useNavigate();
   const { userId, userType } = useAuth();
   const [activeTab, setActiveTab] = useState('details');
+  const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
 
   const isClient = userType === 'client';
   const isDeveloper = userType === 'developer';
 
-  const { applications, isLoadingApplications } = useTicketApplications(
-    ticketId,
-    userId,
-    isClient
-  );
+  useEffect(() => {
+    const fetchPendingApplicationsCount = async () => {
+      if (isClient && ticketId) {
+        const { count, error } = await supabase
+          .from('help_request_matches')
+          .select('*', { count: 'exact', head: true })
+          .eq('request_id', ticketId)
+          .eq('status', 'pending');
+          
+        if (!error && count !== null) {
+          setPendingApplicationsCount(count);
+        }
+      }
+    };
 
-  const handleStatusUpdated = async (): Promise<void> => {
-    return onStatusUpdated();
-  };
+    fetchPendingApplicationsCount();
+  }, [ticketId, isClient]);
 
   if (isLoading) {
     return (
@@ -99,6 +108,22 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
 
   return (
     <div className="space-y-8">
+      {isClient && pendingApplicationsCount > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Developer Applications Pending</CardTitle>
+              <CardDescription>{pendingApplicationsCount} developers have applied</CardDescription>
+            </div>
+            <Button 
+              onClick={() => navigate(`/client/help-request/${ticketId}/applications`)}
+            >
+              View Applications
+            </Button>
+          </CardHeader>
+        </Card>
+      )}
+
       <div className="bg-white rounded-lg shadow-sm border p-6 space-y-4">
         <div className="flex flex-col md:flex-row justify-between gap-4">
           <div>
