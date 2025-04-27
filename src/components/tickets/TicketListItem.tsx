@@ -10,9 +10,8 @@ import { useNavigate } from 'react-router-dom';
 import TicketStatus from './TicketStatus';
 import PendingApplicationsBadge from '../dashboard/PendingApplicationsBadge';
 
-// New interface extending HelpRequest
 interface TicketWithApplications extends HelpRequest {
-  pendingApplicationsCount: number;
+  pendingApplicationsCount?: number;
 }
 
 interface TicketListItemProps {
@@ -28,7 +27,6 @@ interface TicketListItemProps {
   viewMode?: 'grid' | 'list';
 }
 
-// Helper function to check if a ticket is in a claimable state
 const isTicketClaimable = (status: string): boolean => {
   const claimableStatuses = [
     HELP_REQUEST_STATUSES.SUBMITTED,
@@ -37,15 +35,12 @@ const isTicketClaimable = (status: string): boolean => {
     HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL
   ];
   
-  // Normalize status (replace hyphens with underscores)
   const normalizedStatus = status?.replace(/-/g, '_');
   
-  // Check if status is in the claimable list
   return claimableStatuses.includes(normalizedStatus as any) || 
          claimableStatuses.includes(status as any);
 };
 
-// Updated component signature to use TicketWithApplications
 const TicketListItem: React.FC<TicketListItemProps> = ({
   ticket,
   expandedTicket,
@@ -60,8 +55,10 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  const pendingCount = ticket.pendingApplicationsCount ?? 0;
+
   const handleViewDetails = (ticketId: string) => {
-    if (ticket.pendingApplicationsCount && ticket.pendingApplicationsCount > 0) {
+    if (pendingCount > 0) {
       navigate(`/client/help-request/${ticketId}/applications`);
     } else {
       onViewDetails(ticketId);
@@ -82,8 +79,6 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
 
   console.log(`Rendering ticket ${ticket.id} with status ${ticket.status}, isApplication: ${isApplication}`);
 
-  // Determine if this ticket should show claim button
-  // Never show claim button for applications (tickets already approved for the developer)
   const shouldShowClaimButton = !isApplication && !isRecommended && isTicketClaimable(ticket.status || '');
 
   if (viewMode === 'list') {
@@ -98,7 +93,7 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
           <p className="text-sm text-muted-foreground mb-2">{ticket.description}</p>
           
           {ticket.id && !isApplication && (
-            <PendingApplicationsBadge count={ticket.pendingApplicationsCount || 0} />
+            <PendingApplicationsBadge count={pendingCount} />
           )}
           
           <div className="flex flex-wrap gap-1">
@@ -135,7 +130,6 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
     );
   }
 
-  // Grid view
   return (
     <Card className={`overflow-hidden hover:shadow-md transition-shadow ${
       expandedTicket === ticket.id ? 'ring-2 ring-primary' : ''
@@ -154,7 +148,7 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
       
       <CardContent className="pb-2">
         {ticket.id && !isApplication && (
-          <PendingApplicationsBadge count={ticket.pendingApplicationsCount || 0} />
+          <PendingApplicationsBadge count={pendingCount} />
         )}
         
         <div className="flex flex-wrap gap-1 mb-3">
