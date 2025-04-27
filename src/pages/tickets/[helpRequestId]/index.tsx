@@ -1,6 +1,5 @@
-
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '../../../integrations/supabase/client';
 import StatusDropdown from '../../../components/developer-actions/StatusDropdown';
@@ -8,11 +7,13 @@ import { useAuth } from '../../../contexts/auth';
 import Layout from '../../../components/Layout';
 import { HelpRequest } from '../../../types/helpRequest';
 import { useHelpRequestData } from '../../../hooks/help-request/useHelpRequestData';
+import { Button } from '../../../components/ui/button';
 
 const TicketDetailsPage = () => {
   const { helpRequestId } = useParams();
   const { userType } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
+  const navigate = useNavigate();
   const { ticket, isLoading, error } = useHelpRequestData(helpRequestId);
 
   const handleStatusChange = async (newStatus: string) => {
@@ -36,6 +37,10 @@ const TicketDetailsPage = () => {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const handleViewApplications = () => {
+    navigate(`/client/help-request/${helpRequestId}/applications`);
   };
 
   if (isLoading) {
@@ -77,15 +82,28 @@ const TicketDetailsPage = () => {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow p-6 mt-6">
-          <h3 className="text-lg font-semibold mb-4">Status Actions</h3>
-          <StatusDropdown
-            defaultStatusId={ticket.status}
-            onStatusChange={handleStatusChange}
-            userType={userType as 'client' | 'developer'}
-            disabled={isUpdating}
-          />
-        </div>
+        {userType === 'client' && (
+          <div className="bg-white rounded-lg shadow p-6 mt-6">
+            <h3 className="text-lg font-semibold mb-4">Status Actions</h3>
+            {ticket.selected_developer_id ? (
+              <StatusDropdown
+                defaultStatusId={ticket.status}
+                onStatusChange={handleStatusChange}
+                userType={userType as 'client' | 'developer'}
+                disabled={isUpdating}
+              />
+            ) : (
+              <div className="flex flex-col items-center space-y-4 p-4 bg-yellow-50 rounded-lg">
+                <p className="text-yellow-800 text-center">
+                  No developer approved yet for this help request.
+                </p>
+                <Button onClick={handleViewApplications}>
+                  View Developer Applications
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="bg-white rounded-lg shadow p-6 mt-6">
           <h3 className="text-lg font-semibold mb-4">Ticket Information</h3>
