@@ -8,16 +8,13 @@ export const useHelpRequestData = (ticketId?: string, initialTicket?: HelpReques
   const [isLoading, setIsLoading] = useState<boolean>(!initialTicket && !!ticketId);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (ticketId && !initialTicket) {
-      fetchTicket();
-    }
-  }, [ticketId, initialTicket]);
-
   const fetchTicket = async () => {
+    if (!ticketId) return;
+    
     try {
       setIsLoading(true);
-      const response = await getHelpRequest(ticketId!);
+      setError(null);
+      const response = await getHelpRequest(ticketId);
       
       if (response.success && response.data) {
         setTicket(response.data as HelpRequest);
@@ -32,5 +29,15 @@ export const useHelpRequestData = (ticketId?: string, initialTicket?: HelpReques
     }
   };
 
-  return { ticket, setTicket, isLoading, error };
+  const refetchTicket = () => {
+    return fetchTicket();
+  };
+
+  useEffect(() => {
+    if (ticketId && !initialTicket) {
+      fetchTicket();
+    }
+  }, [ticketId, initialTicket]);
+
+  return { ticket, setTicket, isLoading, error, refetchTicket };
 };
