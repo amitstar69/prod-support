@@ -5,6 +5,7 @@ import { supabase } from '../../../integrations/supabase/client';
 import { useAuth } from '../../../contexts/auth';
 import Layout from '../../../components/Layout';
 import { Button } from '../../../components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/card';
 import { useHelpRequestData } from '../../../hooks/help-request/useHelpRequestData';
 import StatusActionCard from '../../../components/ticket-detail/StatusActionCard';
 
@@ -67,6 +68,26 @@ const TicketDetailsPage = () => {
               onStatusUpdated={refetchTicket}
             />
           </div>
+        )}
+
+        {userType === 'client' && 
+         ticket.status === 'awaiting_client_approval' && 
+         !ticket.selected_developer_id && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Developer Applications Pending</CardTitle>
+              <CardDescription>
+                Developers have applied to this request. Please review and approve a developer.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={() => navigate(`/client/help-request/${helpRequestId}/applications`)}
+              >
+                View Developer Applications
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
         <div className="bg-white rounded-lg shadow p-6 mt-6">
