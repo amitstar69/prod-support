@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '../../../integrations/supabase/client';
@@ -8,6 +8,7 @@ import { Button } from '../../../components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/card';
 import { useHelpRequestData } from '../../../hooks/help-request/useHelpRequestData';
 import StatusActionCard from '../../../components/ticket-detail/StatusActionCard';
+import DeveloperApplicationPanel from '../../../components/developer-ticket-detail/DeveloperApplicationPanel';
 
 const TicketDetailsPage = () => {
   const { helpRequestId } = useParams();
@@ -16,8 +17,75 @@ const TicketDetailsPage = () => {
   const navigate = useNavigate();
   const { ticket, isLoading, error, refetchTicket } = useHelpRequestData(helpRequestId);
 
+  const [hasApplied, setHasApplied] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+
   const handleViewApplications = () => {
     navigate(`/client/help-request/${helpRequestId}/applications`);
+  };
+
+  // Add these new state variables
+  const [isPaidDeveloper, setIsPaidDeveloper] = useState(false);
+  const [freeApplicationsRemaining, setFreeApplicationsRemaining] = useState(2);
+  const role = userType as "client" | "developer";
+  const { userId } = useAuth();
+
+  useEffect(() => {
+    if (userId && userType === 'developer') {
+      // Fetch developer profile details
+      const fetchDeveloperStatus = async () => {
+        const { data: profile, error } = await supabase
+          .from('developer_profiles')
+          .select('is_paid_developer, free_applications_remaining')
+          .eq('id', userId)
+          .single();
+
+        if (!error && profile) {
+          setIsPaidDeveloper(profile.is_paid_developer);
+          setFreeApplicationsRemaining(profile.free_applications_remaining);
+        }
+      };
+
+      fetchDeveloperStatus();
+    }
+  }, [userId, userType]);
+
+  useEffect(() => {
+    if (!helpRequestId || !userId) return;
+
+    const checkApplicationStatus = async () => {
+      try {
+        const { data: matchData, error: matchError } = await supabase
+          .from('help_request_matches')
+          .select('status')
+          .eq('request_id', helpRequestId)
+          .eq('developer_id', userId)
+          .maybeSingle();
+
+        if (matchError) {
+          console.error('[TicketDetailPage] Error checking application status:', matchError);
+          return;
+        }
+
+        if (matchData) {
+          console.log('[TicketDetailPage] Application found with status:', matchData.status);
+          setHasApplied(true);
+          setApplicationStatus(matchData.status);
+        } else {
+          console.log('[TicketDetailPage] No application found');
+          setHasApplied(false);
+          setApplicationStatus(null);
+        }
+      } catch (err) {
+        console.error('[TicketDetailPage] Exception checking application status:', err);
+      }
+    };
+
+    checkApplicationStatus();
+  }, [role, userId, helpRequestId]);
+
+  const handleUpgradeClick = () => {
+    navigate('/developer/upgrade');
   };
 
   if (isLoading) {
@@ -44,6 +112,10 @@ const TicketDetailsPage = () => {
       </Layout>
     );
   }
+
+  const handleApplyClick = () => {
+    navigate(`/tickets/${helpRequestId}`);
+  };
 
   return (
     <Layout>
@@ -88,6 +160,25 @@ const TicketDetailsPage = () => {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {userType === 'developer' && (
+          <DeveloperApplicationPanel
+            devUpdateVisibility={{
+              show: !!(applicationStatus === "approved" && hasApplied),
+              reason: "",
+            }}
+            ticket={ticket}
+            ticketId={helpRequestId}
+            userType={role}
+            applicationStatus={applicationStatus}
+            hasApplied={hasApplied}
+            onApply={handleApplyClick}
+            fetchLatestTicketData={refetchTicket}
+            isPaidDeveloper={isPaidDeveloper}
+            freeApplicationsRemaining={freeApplicationsRemaining}
+            onUpgradeClick={handleUpgradeClick}
+          />
         )}
 
         <div className="bg-white rounded-lg shadow p-6 mt-6">

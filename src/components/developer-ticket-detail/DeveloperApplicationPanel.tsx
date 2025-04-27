@@ -6,7 +6,7 @@ import { Button } from "../../components/ui/button";
 import { HelpRequest } from "../../types/helpRequest";
 import DeveloperStatusUpdate from "../help/DeveloperStatusUpdate";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { Info } from "lucide-react";
+import { Info, LockIcon } from "lucide-react";
 
 interface DeveloperApplicationPanelProps {
   devUpdateVisibility: {
@@ -20,6 +20,9 @@ interface DeveloperApplicationPanelProps {
   hasApplied: boolean;
   onApply: () => void;
   fetchLatestTicketData: () => Promise<void>;
+  isPaidDeveloper?: boolean;
+  freeApplicationsRemaining?: number;
+  onUpgradeClick?: () => void;
 }
 
 const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
@@ -30,7 +33,10 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
   applicationStatus,
   hasApplied,
   onApply,
-  fetchLatestTicketData
+  fetchLatestTicketData,
+  isPaidDeveloper = false,
+  freeApplicationsRemaining = 0,
+  onUpgradeClick
 }) => {
   if (!ticket) return null;
 
@@ -38,14 +44,13 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
   const showStatusUpdate = userType === "developer" && hasApplied && applicationStatus === "approved";
   const showApplyButton = userType === "developer" && !hasApplied;
 
-  console.log("DeveloperApplicationPanel render state:", {
-    showStatusUpdate,
-    showApplyButton,
-    applicationStatus,
-    hasApplied,
-    userType,
-    ticketStatus: ticket.status
-  });
+  const canApply = isPaidDeveloper || freeApplicationsRemaining > 0;
+  const shouldShowUpgradeButton = !isPaidDeveloper && freeApplicationsRemaining === 0;
+
+  const getApplyButtonText = () => {
+    if (isPaidDeveloper) return "Apply for This Ticket";
+    return `Apply Now (Free - ${freeApplicationsRemaining} left)`;
+  };
 
   return (
     <Card className="mb-6">
@@ -72,9 +77,33 @@ const DeveloperApplicationPanel: React.FC<DeveloperApplicationPanelProps> = ({
             <p className="text-sm text-muted-foreground">
               You can apply to help with this ticket if you have the required skills and availability.
             </p>
-            <Button onClick={onApply} className="w-full">
-              Apply for This Ticket
-            </Button>
+            {shouldShowUpgradeButton ? (
+              <>
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>No Free Applications Left</AlertTitle>
+                  <AlertDescription>
+                    Upgrade to a paid developer account to submit unlimited applications.
+                  </AlertDescription>
+                </Alert>
+                <Button 
+                  onClick={onUpgradeClick} 
+                  className="w-full"
+                  variant="default"
+                >
+                  <LockIcon className="w-4 h-4 mr-2" />
+                  Upgrade to Apply
+                </Button>
+              </>
+            ) : (
+              <Button 
+                onClick={onApply} 
+                className="w-full" 
+                disabled={!canApply}
+              >
+                {getApplyButtonText()}
+              </Button>
+            )}
           </div>
         ) : hasApplied ? (
           <div className="space-y-4">

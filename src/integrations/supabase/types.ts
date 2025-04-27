@@ -121,6 +121,33 @@ export type Database = {
           },
         ]
       }
+      developer_application_counts: {
+        Row: {
+          created_at: string | null
+          developer_id: string | null
+          id: string
+          last_application_date: string | null
+          total_applications: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          developer_id?: string | null
+          id?: string
+          last_application_date?: string | null
+          total_applications?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          developer_id?: string | null
+          id?: string
+          last_application_date?: string | null
+          total_applications?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       developer_payments: {
         Row: {
           amount: number
@@ -163,8 +190,10 @@ export type Database = {
           education: Json | null
           experience: string | null
           featured: boolean | null
+          free_applications_remaining: number | null
           hourly_rate: number | null
           id: string
+          is_paid_developer: boolean | null
           languages_spoken: Json | null
           last_active: string | null
           minute_rate: number | null
@@ -184,8 +213,10 @@ export type Database = {
           education?: Json | null
           experience?: string | null
           featured?: boolean | null
+          free_applications_remaining?: number | null
           hourly_rate?: number | null
           id: string
+          is_paid_developer?: boolean | null
           languages_spoken?: Json | null
           last_active?: string | null
           minute_rate?: number | null
@@ -205,8 +236,10 @@ export type Database = {
           education?: Json | null
           experience?: string | null
           featured?: boolean | null
+          free_applications_remaining?: number | null
           hourly_rate?: number | null
           id?: string
+          is_paid_developer?: boolean | null
           languages_spoken?: Json | null
           last_active?: string | null
           minute_rate?: number | null
