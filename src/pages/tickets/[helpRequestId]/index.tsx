@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -5,9 +6,8 @@ import { supabase } from '../../../integrations/supabase/client';
 import StatusDropdown from '../../../components/developer-actions/StatusDropdown';
 import { useAuth } from '../../../contexts/auth';
 import Layout from '../../../components/Layout';
-import { HelpRequest } from '../../../types/helpRequest';
-import { useHelpRequestData } from '../../../hooks/help-request/useHelpRequestData';
 import { Button } from '../../../components/ui/button';
+import { useHelpRequestData } from '../../../hooks/help-request/useHelpRequestData';
 
 const TicketDetailsPage = () => {
   const { helpRequestId } = useParams();
