@@ -8,7 +8,7 @@ export const HELP_REQUEST_STATUSES = {
   SUBMITTED: 'submitted',
   PENDING_MATCH: 'pending_match',
   DEV_REQUESTED: 'dev_requested',
-  AWAITING_CLIENT_APPROVAL: 'awaiting_client_approval',
+  AWAITING_CLIENT_APPROVAL: 'awaiting_client_approval', // Already exists
   PENDING_DEVELOPER_APPROVAL: 'pending_developer_approval',
   APPROVED: 'approved',
   REQUIREMENTS_REVIEW: 'requirements_review',
@@ -20,18 +20,18 @@ export const HELP_REQUEST_STATUSES = {
   QA_PASS: 'qa_pass',
   READY_FOR_FINAL_ACTION: 'ready_for_final_action',
   RESOLVED: 'resolved',
-  CANCELLED: 'cancelled', // Changed from CANCELLED_BY_CLIENT to match database constraint
+  CANCELLED: 'cancelled', 
   OPEN: 'open'
 } as const;
 
 // Create a type from the values
 export type HelpRequestStatus = typeof HELP_REQUEST_STATUSES[keyof typeof HELP_REQUEST_STATUSES];
 
-// Define match status constants
+// Define match status constants with new statuses
 export const MATCH_STATUSES = {
   PENDING: 'pending',
-  APPROVED: 'approved',
-  REJECTED: 'rejected',
+  APPROVED_BY_CLIENT: 'approved_by_client',
+  REJECTED_BY_CLIENT: 'rejected_by_client',
   ABANDONED_BY_DEV: 'abandoned_by_dev'
 } as const;
 
