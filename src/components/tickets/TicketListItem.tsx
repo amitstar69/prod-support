@@ -8,6 +8,7 @@ import { Progress } from '../ui/progress';
 import { HELP_REQUEST_STATUSES } from '../../utils/constants/statusConstants';
 import { useNavigate } from 'react-router-dom';
 import TicketStatus from './TicketStatus';
+import PendingApplicationsBadge from '../dashboard/PendingApplicationsBadge';
 
 interface TicketListItemProps {
   ticket: HelpRequest;
@@ -53,23 +54,12 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  // Add logging to view details function
   const handleViewDetails = (ticketId: string) => {
-    console.log('View Details clicked:', {
-      ticketId,
-      isApplication,
-      ticket,
-      currentPath: window.location.pathname
-    });
-
-    // Log potential navigation paths
-    console.log('Potential navigation paths:', {
-      developerTicketPath: `/developer/tickets/${ticketId}`,
-      clientTicketPath: `/client/tickets/${ticketId}`,
-      clientApplicationPath: `/client/applications/${ticket.id}`
-    });
-
-    onViewDetails(ticketId);
+    if (ticket.pendingApplicationsCount && ticket.pendingApplicationsCount > 0) {
+      navigate(`/client/help-request/${ticketId}/applications`);
+    } else {
+      onViewDetails(ticketId);
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -101,6 +91,10 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
           
           <p className="text-sm text-muted-foreground mb-2">{ticket.description}</p>
           
+          {ticket.id && !isApplication && (
+            <PendingApplicationsBadge count={ticket.pendingApplicationsCount || 0} />
+          )}
+          
           <div className="flex flex-wrap gap-1">
             {ticket.technical_area && ticket.technical_area.map((area, i) => (
               <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
@@ -116,8 +110,11 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
             size="sm"
             onClick={() => handleViewDetails(ticket.id!)}
           >
-            View Details
+            {ticket.pendingApplicationsCount && ticket.pendingApplicationsCount > 0 
+              ? 'Review Applications' 
+              : 'View Details'}
           </Button>
+          
           {onChatClick && isApplication && (
             <Button
               variant="outline"
@@ -132,7 +129,7 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
     );
   }
 
-  // Grid view (default)
+  // Grid view
   return (
     <Card className={`overflow-hidden hover:shadow-md transition-shadow ${
       expandedTicket === ticket.id ? 'ring-2 ring-primary' : ''
@@ -144,10 +141,16 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
           </CardTitle>
           <TicketStatus status={ticket.status || 'pending'} />
         </div>
-        <CardDescription className="line-clamp-2 text-xs">{ticket.description}</CardDescription>
+        <CardDescription className="line-clamp-2 text-xs">
+          {ticket.description}
+        </CardDescription>
       </CardHeader>
       
       <CardContent className="pb-2">
+        {ticket.id && !isApplication && (
+          <PendingApplicationsBadge count={ticket.pendingApplicationsCount || 0} />
+        )}
+        
         <div className="flex flex-wrap gap-1 mb-3">
           {ticket.technical_area && ticket.technical_area.slice(0, 3).map((area, i) => (
             <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 text-xs">
@@ -186,8 +189,9 @@ const TicketListItem: React.FC<TicketListItemProps> = ({
           size="sm"
           onClick={() => handleViewDetails(ticket.id!)}
         >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          View Details
+          {ticket.pendingApplicationsCount && ticket.pendingApplicationsCount > 0 
+            ? 'Review Applications' 
+            : 'View Details'}
         </Button>
         
         {isApplication && onChatClick && (

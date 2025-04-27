@@ -10,6 +10,7 @@ export const useTicketApplications = (ticketId: string) => {
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'created_at' | 'match_score'>('created_at');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [pendingCount, setPendingCount] = useState(0);
 
   const fetchApplications = async () => {
     try {
@@ -37,6 +38,10 @@ export const useTicketApplications = (ticketId: string) => {
 
       const typedData = data as unknown as HelpRequestMatch[];
       setApplications(typedData || []);
+      
+      // Calculate pending count
+      const pendingApplications = typedData?.filter(app => app.status === 'pending') || [];
+      setPendingCount(pendingApplications.length);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load applications';
       setError(message);
@@ -85,6 +90,7 @@ export const useTicketApplications = (ticketId: string) => {
     setSortBy,
     statusFilter,
     setStatusFilter,
+    pendingCount,
     refetch: fetchApplications,
   };
 };
