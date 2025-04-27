@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
@@ -16,6 +15,7 @@ import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
 import { HelpRequestMatch } from '../types/helpRequest';
 import { isClientCategories, ClientTicketCategories } from '../types/ticketCategories';
+import PendingApplicationsBadge from '../components/dashboard/PendingApplicationsBadge';
 
 const ClientDashboard = () => {
   const navigate = useNavigate();
@@ -28,7 +28,8 @@ const ClientDashboard = () => {
   });
   const [developerApplications, setDeveloperApplications] = useState<Record<string, HelpRequestMatch[]>>({});
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);
-  
+  const [pendingApplicationsCounts, setPendingApplicationsCounts] = useState<Record<string, number>>({});
+
   const {
     categorizedTickets,
     isLoading,
@@ -39,7 +40,6 @@ const ClientDashboard = () => {
     fetchTickets
   } = useDeveloperDashboard();
 
-  // Check if we have client categories and cast appropriately
   const clientTickets = isClientCategories(categorizedTickets) 
     ? categorizedTickets 
     : { 
@@ -49,13 +49,11 @@ const ClientDashboard = () => {
         completedTickets: [] 
       } as ClientTicketCategories;
 
-  // Safely get categories
   const activeTickets = clientTickets.activeTickets;
   const inProgressTickets = clientTickets.inProgressTickets;
   const completedTickets = clientTickets.completedTickets;
   const pendingApprovalTickets = clientTickets.pendingApprovalTickets;
 
-  // Toggle section expansion
   const toggleSection = (section: 'active' | 'pendingApproval' | 'inProgress' | 'completed') => {
     setExpandedSections(prev => ({
       ...prev,
@@ -63,7 +61,6 @@ const ClientDashboard = () => {
     }));
   };
 
-  // Fetch developer applications for pending approval tickets
   useEffect(() => {
     const fetchApplications = async () => {
       if (!pendingApprovalTickets?.length || !isAuthenticated) return;
@@ -72,10 +69,8 @@ const ClientDashboard = () => {
         setIsLoadingApplications(true);
         const ticketIds = pendingApprovalTickets.map(ticket => ticket.id);
         
-        // Create a map to store applications by ticket ID
         const applicationsByTicket: Record<string, HelpRequestMatch[]> = {};
         
-        // Fetch applications for each ticket
         for (const ticketId of ticketIds) {
           if (!ticketId) continue;
           
@@ -93,9 +88,7 @@ const ClientDashboard = () => {
           }
           
           if (data && data.length > 0) {
-            // Process the data to ensure it matches our type
             const typedApplications: HelpRequestMatch[] = data.map(app => {
-              // Handle potentially malformed profiles data
               let safeProfiles = app.profiles;
               
               if (!safeProfiles || typeof safeProfiles !== 'object') {
@@ -105,7 +98,6 @@ const ClientDashboard = () => {
                   image: null
                 };
               } else if ('error' in safeProfiles) {
-                // If it's an error object, replace with safe default data
                 safeProfiles = { 
                   id: app.developer_id, 
                   name: 'Unknown Developer',
@@ -134,11 +126,35 @@ const ClientDashboard = () => {
     fetchApplications();
   }, [pendingApprovalTickets, isAuthenticated]);
 
-  // Real-time updates for applications
+  useEffect(() => {
+    const fetchApplicationsCounts = async () => {
+      if (!activeTickets?.length) return;
+      
+      const newCounts: Record<string, number> = {};
+      
+      for (const ticket of activeTickets) {
+        if (!ticket.id) continue;
+        
+        const { count, error } = await supabase
+          .from('help_request_matches')
+          .select('*', { count: 'exact', head: true })
+          .eq('request_id', ticket.id)
+          .eq('status', 'pending');
+          
+        if (!error && count !== null) {
+          newCounts[ticket.id] = count;
+        }
+      }
+      
+      setPendingApplicationsCounts(newCounts);
+    };
+
+    fetchApplicationsCounts();
+  }, [activeTickets]);
+
   useEffect(() => {
     if (!isAuthenticated || !userId) return;
     
-    // Subscribe to changes in help request matches
     const channel = supabase
       .channel('client-applications-changes')
       .on(
@@ -150,7 +166,7 @@ const ClientDashboard = () => {
         },
         () => {
           console.log('[ClientDashboard] Applications changed, refreshing data');
-          fetchTickets(false); // Don't show loading state for realtime updates
+          fetchTickets(false);
         }
       )
       .subscribe();
@@ -162,11 +178,9 @@ const ClientDashboard = () => {
 
   const handleOpenChat = (helpRequestId: string, developerId: string, developerName?: string) => {
     console.log('Opening chat for request:', helpRequestId, 'with developer:', developerId);
-    // Navigate to chat page or open chat dialog
     navigate(`/chat/${helpRequestId}?with=${developerId}&name=${developerName || 'Developer'}`);
   };
 
-  // Function to create preview of tickets (first 3)
   const createTicketPreview = (ticketList: any[], type: string) => {
     if (!ticketList) return null;
     
@@ -200,7 +214,7 @@ const ClientDashboard = () => {
       </>
     );
   };
-  
+
   return (
     <Layout>
       <DashboardBanner />
@@ -215,7 +229,6 @@ const ClientDashboard = () => {
         />
 
         <div className="space-y-6">
-          {/* Active Help Requests Section */}
           <Collapsible 
             open={expandedSections.active} 
             onOpenChange={() => toggleSection('active')}
@@ -235,11 +248,52 @@ const ClientDashboard = () => {
               </CollapsibleTrigger>
             </div>
             <CollapsibleContent className="p-4">
-              {createTicketPreview(activeTickets, 'active')}
+              {activeTickets && activeTickets.length > 0 ? (
+                <div className="space-y-4">
+                  {activeTickets.map(ticket => (
+                    <div key={ticket.id} className="bg-white p-4 rounded-lg border">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-medium">{ticket.title}</h3>
+                            {ticket.id && (
+                              <PendingApplicationsBadge count={pendingApplicationsCounts[ticket.id] || 0} />
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-1">{ticket.description}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/client/tickets/${ticket.id}`)}
+                        >
+                          View Details
+                        </Button>
+                      </div>
+                      
+                      <div className="mt-4 pt-4 border-t">
+                        <DeveloperApplicationsPanel
+                          applications={developerApplications[ticket.id || ''] || []}
+                          ticketId={ticket.id!}
+                          clientId={userId!}
+                          isLoading={isLoadingApplications && !developerApplications[ticket.id || '']}
+                          onApplicationUpdate={() => {
+                            fetchTickets();
+                          }}
+                          onOpenChat={(developerId, developerName) => 
+                            handleOpenChat(ticket.id!, developerId, developerName)
+                          }
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">No active help requests.</p>
+              )}
             </CollapsibleContent>
           </Collapsible>
           
-          {/* Pending Developer Approval Section */}
           <Collapsible 
             open={expandedSections.pendingApproval} 
             onOpenChange={() => toggleSection('pendingApproval')}
@@ -278,7 +332,6 @@ const ClientDashboard = () => {
                           </Button>
                         </div>
                         
-                        {/* Developer Applications */}
                         <div className="mt-4 pt-4 border-t">
                           <DeveloperApplicationsPanel
                             applications={developerApplications[ticket.id || ''] || []}
@@ -286,7 +339,6 @@ const ClientDashboard = () => {
                             clientId={userId!}
                             isLoading={isLoadingApplications && !developerApplications[ticket.id || '']}
                             onApplicationUpdate={() => {
-                              // Re-fetch applications and tickets when an application is updated
                               fetchTickets();
                             }}
                             onOpenChat={(developerId, developerName) => 
@@ -304,7 +356,6 @@ const ClientDashboard = () => {
             </CollapsibleContent>
           </Collapsible>
           
-          {/* In Progress Help Requests Section */}
           <Collapsible 
             open={expandedSections.inProgress} 
             onOpenChange={() => toggleSection('inProgress')}
@@ -328,7 +379,6 @@ const ClientDashboard = () => {
             </CollapsibleContent>
           </Collapsible>
           
-          {/* Completed Help Requests Section */}
           <Collapsible 
             open={expandedSections.completed} 
             onOpenChange={() => toggleSection('completed')}
