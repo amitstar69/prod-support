@@ -1,43 +1,19 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '../../../integrations/supabase/client';
-import StatusDropdown from '../../../components/developer-actions/StatusDropdown';
 import { useAuth } from '../../../contexts/auth';
 import Layout from '../../../components/Layout';
 import { Button } from '../../../components/ui/button';
 import { useHelpRequestData } from '../../../hooks/help-request/useHelpRequestData';
+import StatusActionCard from '../../../components/ticket-detail/StatusActionCard';
 
 const TicketDetailsPage = () => {
   const { helpRequestId } = useParams();
   const { userType } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
   const navigate = useNavigate();
-  const { ticket, isLoading, error } = useHelpRequestData(helpRequestId);
-
-  const handleStatusChange = async (newStatus: string) => {
-    try {
-      setIsUpdating(true);
-      
-      const { error } = await supabase
-        .from('help_requests')
-        .update({ status: newStatus })
-        .eq('id', helpRequestId);
-
-      if (error) {
-        toast.error(`Failed to update status: ${error.message}`);
-        return;
-      }
-
-      toast.success('Status updated successfully');
-    } catch (err) {
-      console.error('Error updating status:', err);
-      toast.error('Failed to update ticket status');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
+  const { ticket, isLoading, error, refetchTicket } = useHelpRequestData(helpRequestId);
 
   const handleViewApplications = () => {
     navigate(`/client/help-request/${helpRequestId}/applications`);
@@ -85,23 +61,11 @@ const TicketDetailsPage = () => {
         {userType === 'client' && (
           <div className="bg-white rounded-lg shadow p-6 mt-6">
             <h3 className="text-lg font-semibold mb-4">Status Actions</h3>
-            {ticket.selected_developer_id ? (
-              <StatusDropdown
-                defaultStatusId={ticket.status}
-                onStatusChange={handleStatusChange}
-                userType={userType as 'client' | 'developer'}
-                disabled={isUpdating}
-              />
-            ) : (
-              <div className="flex flex-col items-center space-y-4 p-4 bg-yellow-50 rounded-lg">
-                <p className="text-yellow-800 text-center">
-                  No developer approved yet for this help request.
-                </p>
-                <Button onClick={handleViewApplications}>
-                  View Developer Applications
-                </Button>
-              </div>
-            )}
+            <StatusActionCard
+              ticket={ticket}
+              userType={userType}
+              onStatusUpdated={refetchTicket}
+            />
           </div>
         )}
 
