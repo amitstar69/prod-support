@@ -9,7 +9,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../../contexts/auth';
 import { useNavigate } from 'react-router-dom';
 import { messageTypeIconMap } from '../../utils/messageTypeIcons';
-import { useTicketApplications } from '../../hooks/ticket-detail/useTicketApplications';
 import MainContent from './MainContent';
 import SidebarContent from './SidebarContent';
 import { supabase } from '../../integrations/supabase/client';
@@ -185,8 +184,8 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
             ticketId={ticketId}
             userId={userId!}
             isClient={isClient}
-            applications={applications}
-            isLoadingApplications={isLoadingApplications}
+            applications={[]}
+            isLoadingApplications={false}
             onRefresh={onRefresh}
             activeTab={activeTab}
             onTabChange={setActiveTab}
@@ -201,7 +200,7 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = ({
             applicationStatus={applicationStatus}
             hasApplied={hasApplied}
             onApply={() => onApply(ticketId)}
-            onRefresh={handleStatusUpdated}
+            onRefresh={onStatusUpdated}
           />
         </div>
       </div>
