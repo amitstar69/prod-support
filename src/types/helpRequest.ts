@@ -30,6 +30,7 @@ export interface HelpRequest {
   application_id?: string;
   application_status?: string;
   developer_id?: string;
+  selected_developer_id?: string | null; // Added the new field
 }
 
 export interface TicketComment {
