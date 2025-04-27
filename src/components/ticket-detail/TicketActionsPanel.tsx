@@ -4,7 +4,9 @@ import DeveloperApplicationPanel from '../../components/developer-ticket-detail/
 import StatusActionCard from './StatusActionCard';
 import { UserType } from '../../utils/helpRequestStatusUtils';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { Bug } from 'lucide-react';
+import { Bug, Loader2 } from 'lucide-react';
+import { getCurrentUserData } from '../../contexts/auth';
+import { useEffect, useState } from 'react';
 
 const TicketActionsPanel = ({
   role,
@@ -16,6 +18,28 @@ const TicketActionsPanel = ({
   onApply,
   fetchLatestTicketData
 }) => {
+  const [developerProfile, setDeveloperProfile] = useState(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
+  useEffect(() => {
+    const fetchDeveloperProfile = async () => {
+      if (role === 'developer' && userId) {
+        try {
+          const userData = await getCurrentUserData();
+          setDeveloperProfile(userData);
+        } catch (error) {
+          console.error('Error fetching developer profile:', error);
+        } finally {
+          setIsLoadingProfile(false);
+        }
+      } else {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    fetchDeveloperProfile();
+  }, [role, userId]);
+
   // Log to help debug why component might not be showing
   console.log('[TicketActionsPanel] Rendering with role:', role, 'ticket status:', ticket?.status, 
     'applicationStatus:', applicationStatus, 'hasApplied:', hasApplied);
@@ -32,6 +56,16 @@ const TicketActionsPanel = ({
   }
   
   if (role === "developer") {
+    // Show loading state while fetching developer profile
+    if (isLoadingProfile) {
+      return (
+        <div className="flex items-center justify-center p-8">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span className="ml-2">Loading your profile...</span>
+        </div>
+      );
+    }
+
     // Show developer application panel if they haven't been approved yet
     if (applicationStatus !== "approved" || !hasApplied) {
       console.log('[TicketActionsPanel] Showing DeveloperApplicationPanel for non-approved developer');
@@ -48,6 +82,9 @@ const TicketActionsPanel = ({
           hasApplied={hasApplied}
           onApply={onApply}
           fetchLatestTicketData={fetchLatestTicketData}
+          isPaidDeveloper={developerProfile?.isPaidDeveloper ?? false}
+          freeApplicationsRemaining={developerProfile?.freeApplicationsRemaining ?? 0}
+          onUpgradeClick={() => window.location.href = '/developer/upgrade'}
         />
       );
     }
