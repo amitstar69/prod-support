@@ -10,8 +10,13 @@ import { useNavigate } from 'react-router-dom';
 import TicketStatus from './TicketStatus';
 import PendingApplicationsBadge from '../dashboard/PendingApplicationsBadge';
 
+// New interface extending HelpRequest
+interface TicketWithApplications extends HelpRequest {
+  pendingApplicationsCount: number;
+}
+
 interface TicketListItemProps {
-  ticket: HelpRequest;
+  ticket: TicketWithApplications;
   expandedTicket: string | null;
   isRecommended?: boolean;
   isApplication?: boolean;
@@ -40,6 +45,7 @@ const isTicketClaimable = (status: string): boolean => {
          claimableStatuses.includes(status as any);
 };
 
+// Updated component signature to use TicketWithApplications
 const TicketListItem: React.FC<TicketListItemProps> = ({
   ticket,
   expandedTicket,
