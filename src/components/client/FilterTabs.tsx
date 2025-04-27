@@ -17,10 +17,18 @@ const FilterTabs = ({ onFilterChange }: FilterTabsProps) => {
   return (
     <Tabs value={activeTab} onValueChange={handleValueChange} className="w-full sm:w-auto">
       <TabsList className="grid w-full sm:w-auto sm:inline-flex grid-cols-2 sm:grid-cols-none gap-1">
-        <TabsTrigger value="all">All</TabsTrigger>
-        <TabsTrigger value="pending">Pending</TabsTrigger>
-        <TabsTrigger value="approved">Approved</TabsTrigger>
-        <TabsTrigger value="rejected">Rejected</TabsTrigger>
+        <TabsTrigger value="all">
+          All
+        </TabsTrigger>
+        <TabsTrigger value="pending">
+          Pending
+        </TabsTrigger>
+        <TabsTrigger value="approved_by_client">
+          Approved by Client
+        </TabsTrigger>
+        <TabsTrigger value="rejected_by_client">
+          Rejected by Client
+        </TabsTrigger>
       </TabsList>
     </Tabs>
   );
