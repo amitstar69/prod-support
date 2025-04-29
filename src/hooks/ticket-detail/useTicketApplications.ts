@@ -57,9 +57,9 @@ export const useTicketApplications = (ticketId: string, userId: string | null, i
             const dp = app.developer_profiles;
             safeDeveloperProfiles = {
               id: app.developer_id,
-              skills: Array.isArray(dp.skills) ? dp.skills : [],
-              experience: typeof dp.experience === 'string' ? dp.experience : '',
-              hourly_rate: typeof dp.hourly_rate === 'number' ? dp.hourly_rate : 0
+              skills: Array.isArray(dp?.skills) ? dp.skills : [],
+              experience: typeof dp?.experience === 'string' ? dp.experience : '',
+              hourly_rate: typeof dp?.hourly_rate === 'number' ? dp.hourly_rate : 0
             };
           }
           

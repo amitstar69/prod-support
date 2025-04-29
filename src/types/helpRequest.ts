@@ -1,4 +1,3 @@
-
 export interface HelpRequest {
   id?: string;
   client_id?: string;
@@ -17,13 +16,19 @@ export interface HelpRequest {
   ticket_number?: number;
   attachments?: any[] | string | null;
   
-  // Add the missing properties
+  // Additional properties
   nda_required?: boolean;
   preferred_developer_location?: string;
   preferred_developer_experience?: string;
   developer_qa_notes?: string;
   client_feedback?: string;
   cancellation_reason?: string;
+  
+  // Missing properties causing build errors
+  qa_start_time?: string;
+  qa_complete_time?: string;
+  client_review_start_time?: string;
+  client_review_complete_time?: string;
 }
 
 export interface HelpSession {
@@ -81,6 +86,27 @@ export interface HelpRequestMatch {
   updated_at?: string;
   profiles?: Profile;
   developer_profiles?: DeveloperProfile;
+}
+
+// Restore missing types
+export interface TicketComment {
+  id?: string;
+  ticket_id?: string;
+  user_id?: string;
+  content?: string;
+  created_at?: string;
+  updated_at?: string;
+  is_internal?: boolean;
+}
+
+export interface TicketHistoryEntry {
+  id?: string;
+  ticket_id?: string;
+  user_id?: string;
+  action_type?: string;
+  previous_value?: string;
+  new_value?: string;
+  created_at?: string;
 }
 
 // Constants for form options

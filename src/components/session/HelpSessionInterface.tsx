@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
@@ -148,7 +149,7 @@ const HelpSessionInterface = ({
           >
             <ResizablePanel defaultSize={50} className="h-full">
               <ChatInterface 
-                helpRequestId={sessionId} 
+                sessionId={sessionId} 
                 otherId={otherUserId}
                 otherName={otherUserName}
                 currentUserId={currentUserId}
@@ -172,7 +173,7 @@ const HelpSessionInterface = ({
             </TabsList>
             <TabsContent value="chat" className="h-[calc(100%-46px)]">
               <ChatInterface 
-                helpRequestId={sessionId} 
+                sessionId={sessionId} 
                 otherId={otherUserId}
                 otherName={otherUserName}
                 currentUserId={currentUserId}

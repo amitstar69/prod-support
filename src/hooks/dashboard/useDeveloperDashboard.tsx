@@ -1,162 +1,86 @@
-
-import { useState, useCallback, useEffect } from 'react';
-import { useAuth } from '../../contexts/auth';
+// Refactored: Root hook delegates to focused hooks for logic
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
-import { useTicketFetching } from './useTicketFetching';
-import { useTicketFilters } from './useTicketFilters';
-import { useMyTicketApplications } from './useMyTicketApplications'; 
-import { supabase } from '../../integrations/supabase/client';
-import { 
-  ClientTicketCategories, 
-  DeveloperTicketCategories, 
-  isClientCategories, 
-  isDeveloperCategories 
-} from '../../types/ticketCategories';
+import { useRecommendedTickets } from './useRecommendedTickets';
+import { useMyTicketApplications } from './useMyTicketApplications';
+import { useTicketApplicationActions } from './useTicketApplicationActions';
+import { useTicketApplicationsSubscriptions } from './useTicketApplicationsSubscriptions';
+import { toast } from 'sonner';
 
-export const useDeveloperDashboard = () => {
-  const { userId, isAuthenticated, userType } = useAuth();
-  const [showFilters, setShowFilters] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
-  
-  // Temp fix for compatibility with old API
+// Keep types matching the old interface for compatibility
+export interface UseTicketApplicationsResult {
+  recommendedTickets: HelpRequest[];
+  myApplications: HelpRequest[];
+  isLoadingApplications: boolean;
+  hasError: boolean;
+  handleClaimTicket: (ticketId: string) => void;
+  fetchMyApplications: (isAuthenticated: boolean, userId: string | null) => Promise<void>;
+  checkApplicationStatus: (ticketId: string, userId: string) => Promise<string | null>;
+  dataSource: string;
+}
+
+export const useTicketApplications = (
+  tickets: HelpRequest[],
+  isAuthenticated: boolean,
+  userId: string | null,
+  userType: string | null,
+  refreshTickets: () => void
+): UseTicketApplicationsResult => {
+  const recommendedTicketsResult = useRecommendedTickets(tickets, isAuthenticated, userId);
   const { 
-    tickets, 
-    isLoading, 
-    hasError, 
-    dataSource,
-    fetchTickets,
-    handleForceRefresh 
-  } = useTicketFetching('all');
-  
-  // Temporarily simplify filter handling to avoid type errors
-  const {
-    filteredTickets,
-    filterOptions, 
-    updateFilterOptions, 
-    resetFilters,
-    getFilterLabelForStatus
-  } = useTicketFilters(tickets);
-  
-  // Simple adapter for compatibility with old code
-  const filters = filterOptions;
-  const handleFilterChange = updateFilterOptions;
-  
-  // Simple adapter function for getFilteredTickets
-  const getFilteredTickets = (userType?: string) => {
-    if (!userType || userType === 'developer') {
-      return {
-        openTickets: filteredTickets.filter(ticket => ticket.status === 'open'),
-        myTickets: filteredTickets.filter(ticket => ticket.status === 'in_progress'),
-        activeTickets: filteredTickets.filter(ticket => ['pending_match', 'awaiting_client_approval'].includes(ticket.status || '')),
-        completedTickets: filteredTickets.filter(ticket => ticket.status === 'completed')
-      };
-    } else {
-      return {
-        activeTickets: filteredTickets.filter(ticket => ticket.status === 'open'),
-        pendingApprovalTickets: filteredTickets.filter(ticket => ticket.status === 'pending_match'),
-        inProgressTickets: filteredTickets.filter(ticket => ticket.status === 'in_progress'),
-        completedTickets: filteredTickets.filter(ticket => ticket.status === 'completed')
-      };
-    }
-  };
-
-  // Create categorized tickets and ensure type safety
-  const rawCategorizedTickets = getFilteredTickets(userType);
-  
-  // Create type-safe categorized tickets object
-  let categorizedTickets;
-  
-  if (userType === 'client') {
-    // Type assertion with safety check
-    categorizedTickets = {
-      activeTickets: 'activeTickets' in rawCategorizedTickets ? rawCategorizedTickets.activeTickets : [],
-      pendingApprovalTickets: 'pendingApprovalTickets' in rawCategorizedTickets ? (rawCategorizedTickets as any).pendingApprovalTickets : [],
-      inProgressTickets: 'inProgressTickets' in rawCategorizedTickets ? (rawCategorizedTickets as any).inProgressTickets : [],
-      completedTickets: rawCategorizedTickets.completedTickets || []
-    } as ClientTicketCategories;
-  } else {
-    // Type assertion with safety check
-    categorizedTickets = {
-      openTickets: 'openTickets' in rawCategorizedTickets ? (rawCategorizedTickets as any).openTickets : [],
-      myTickets: 'myTickets' in rawCategorizedTickets ? (rawCategorizedTickets as any).myTickets : [],
-      activeTickets: 'activeTickets' in rawCategorizedTickets ? rawCategorizedTickets.activeTickets : [],
-      completedTickets: rawCategorizedTickets.completedTickets || []
-    } as DeveloperTicketCategories;
-  }
-  
-  // Use hook for applications
-  const {
-    myApplications,
-    isLoading: isLoadingApplications,
-    hasError: hasApplicationError,
-    fetchMyApplications
+    myApplications, 
+    fetchMyApplications, 
+    isLoading: isLoadingApplications, 
+    hasError,
+    dataSource: applicationsDataSource 
   } = useMyTicketApplications();
   
-  // Temporary mock functions to fix errors
-  const handleClaimTicket = async () => {
-    console.log('Claim ticket functionality temporarily disabled');
-    toast.info('Claim ticket functionality temporarily disabled');
-  };
+  const { handleClaimTicket, checkApplicationStatus } = useTicketApplicationActions(
+    isAuthenticated, userId, userType, refreshTickets, fetchMyApplications
+  );
   
-  const checkApplicationStatus = async () => {
-    console.log('Application status check temporarily disabled');
-    return null;
-  };
-  
-  const recommendedTickets = tickets.slice(0, 3); // Temporary implementation
+  // Flag to track if we've already made an initial fetch
+  const hasInitiallyFetched = useRef(false);
 
-  // Set up real-time listener for ticket updates
+  // Memoize the function call to prevent unnecessary re-renders
+  const fetchApplicationsIfAuthenticated = useCallback(() => {
+    if (isAuthenticated && userId && !hasInitiallyFetched.current) {
+      console.log('[Applications] Auto-fetching applications for user', userId);
+      fetchMyApplications(isAuthenticated, userId).catch(error => {
+        console.error('[Applications] Error in initial fetch:', error);
+        toast.error('Failed to load your applications');
+      });
+      hasInitiallyFetched.current = true;
+    }
+  }, [isAuthenticated, userId, fetchMyApplications]);
+  
+  // Refreshed list of applications when user changes or is authenticated
   useEffect(() => {
-    if (!isAuthenticated || !userId) return;
+    fetchApplicationsIfAuthenticated();
     
-    const channel = supabase
-      .channel('dashboard-tickets-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'help_requests'
-        },
-        () => {
-          console.log('[DeveloperDashboard] Ticket data changed, refreshing');
-          fetchTickets(false); // Refresh without showing loading state
-        }
-      )
-      .subscribe();
-      
+    // Reset the flag when user changes
     return () => {
-      supabase.removeChannel(channel);
+      hasInitiallyFetched.current = false;
     };
-  }, [isAuthenticated, userId, fetchTickets]);
+  }, [fetchApplicationsIfAuthenticated]);
+
+  // Real-time subscription for application status change notifications
+  useTicketApplicationsSubscriptions(
+    isAuthenticated,
+    userId,
+    userType,
+    (isAuth, id) => fetchMyApplications(isAuth, id)
+  );
 
   return {
-    tickets,
-    filteredTickets,
-    categorizedTickets,
-    recommendedTickets,
-    myApplications,
-    isLoading,
+    recommendedTickets: recommendedTicketsResult || [],
+    myApplications: myApplications || [],
     isLoadingApplications,
     hasError,
-    hasApplicationError,
-    dataSource,
-    showFilters,
-    setShowFilters,
-    filters,
-    userId,
-    isAuthenticated,
-    activeTab,
-    setActiveTab,
-    handleFilterChange,
-    resetFilters,
     handleClaimTicket,
-    handleForceRefresh,
-    fetchTickets,
     fetchMyApplications,
-    checkApplicationStatus
+    checkApplicationStatus,
+    // Use the dataSource from applications hook for consistency
+    dataSource: applicationsDataSource
   };
 };
-
-// Export default for backward compatibility
-export default useDeveloperDashboard;

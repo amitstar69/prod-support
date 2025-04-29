@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../integrations/supabase/client';
 import DeveloperApplicationPanel from '../../components/developer-ticket-detail/DeveloperApplicationPanel';
@@ -6,6 +7,8 @@ import { UserType } from '../../utils/helpRequestStatusUtils';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Bug, Loader2 } from 'lucide-react';
 import { getCurrentUserData } from '../../contexts/auth';
+import { Button } from '../ui/button';
+import { toast } from 'sonner';
 
 const TicketActionsPanel = ({
   role,
