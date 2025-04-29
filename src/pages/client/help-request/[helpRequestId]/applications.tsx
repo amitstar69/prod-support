@@ -5,10 +5,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../../../components
 import FilterTabs from '../../../../components/client/FilterTabs';
 import SortDropdown from '../../../../components/client/SortDropdown';
 import ApplicationsList from '../../../../components/client/ApplicationsList';
-import { useTicketApplications } from '../../../../hooks/useTicketApplications';
 import { useState } from 'react';
 import { HelpRequestMatch } from '../../../../types/helpRequest';
 import { Loader2 } from 'lucide-react';
+import { useTicketApplications } from '../../../../hooks/useTicketApplications';
 
 const ManageApplicationsPage = () => {
   const { helpRequestId } = useParams();
@@ -16,14 +16,34 @@ const ManageApplicationsPage = () => {
   const [filterBy, setFilterBy] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   
-  const { applications, isLoading, error } = useTicketApplications(helpRequestId as string);
+  const { 
+    applications, 
+    isLoading, 
+    error, 
+    statusFilter, 
+    setStatusFilter,
+    sortBy: apiSortBy,
+    setSortBy: setApiSortBy
+  } = useTicketApplications(helpRequestId as string);
 
-  const filteredApplications = applications.filter((app) => {
-    if (filterBy === 'all') return true;
-    return app.status === filterBy;
-  });
+  // Update filter in the API hook when local filter changes
+  const handleFilterChange = (value: string) => {
+    setFilterBy(value as typeof filterBy);
+    setStatusFilter(value);
+  };
 
-  const sortedApplications = [...filteredApplications].sort((a: HelpRequestMatch, b: HelpRequestMatch) => {
+  // Map local sort to API sort
+  const handleSortChange = (value: string) => {
+    setSortBy(value as typeof sortBy);
+    
+    // Only pass created_at or match_score to the API
+    if (value === 'created_at' || value === 'match_score') {
+      setApiSortBy(value);
+    }
+  };
+
+  // Client-side sorting for fields not supported by the API
+  const sortedApplications = [...applications].sort((a: HelpRequestMatch, b: HelpRequestMatch) => {
     if (sortBy === 'match_score') {
       return (b.match_score || 0) - (a.match_score || 0);
     }
@@ -38,14 +58,6 @@ const ManageApplicationsPage = () => {
     }
     return 0;
   });
-
-  const handleSortChange = (value: string) => {
-    setSortBy(value as typeof sortBy);
-  };
-
-  const handleFilterChange = (value: string) => {
-    setFilterBy(value as typeof filterBy);
-  };
 
   const isProcessing = (applicationId: string) => {
     return processingIds.has(applicationId);

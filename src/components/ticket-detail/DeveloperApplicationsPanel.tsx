@@ -56,16 +56,18 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
         .from('help_request_matches')
         .select(`
           *,
-          profiles:developer_id (id, name, image)
+          profiles:developer_id (id, name, image, description, location)
         `)
         .eq('request_id', ticketId)
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.error('Error fetching applications:', error);
+        console.error('[DeveloperApplicationsPanel] Error fetching applications:', error);
         setError('Failed to load developer applications');
         return;
       }
+      
+      console.log('[DeveloperApplicationsPanel] Fetched applications:', data);
       
       // Ensure the data conforms to our expected type
       const typedApplications: HelpRequestMatch[] = (data || []).map(app => {
@@ -73,13 +75,6 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
         let safeProfiles = app.profiles;
         
         if (!safeProfiles || typeof safeProfiles !== 'object') {
-          safeProfiles = { 
-            id: app.developer_id, 
-            name: 'Unknown Developer',
-            image: null
-          };
-        } else if ('error' in safeProfiles) {
-          // If it's an error object, replace with safe default data
           safeProfiles = { 
             id: app.developer_id, 
             name: 'Unknown Developer',
@@ -95,7 +90,7 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
       
       setApplications(typedApplications);
     } catch (err) {
-      console.error('Exception fetching applications:', err);
+      console.error('[DeveloperApplicationsPanel] Exception fetching applications:', err);
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);

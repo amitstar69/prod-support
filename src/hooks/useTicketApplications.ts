@@ -21,7 +21,7 @@ export const useTicketApplications = (ticketId: string) => {
         .from('help_request_matches')
         .select(`
           *,
-          profiles:developer_id (id, name, image, experience)
+          profiles:developer_id (id, name, image, description, location)
         `)
         .eq('request_id', ticketId)
         .order(sortBy, { ascending: false });
@@ -36,8 +36,28 @@ export const useTicketApplications = (ticketId: string) => {
         throw new Error(fetchError.message);
       }
 
-      const typedData = data as unknown as HelpRequestMatch[];
-      setApplications(typedData || []);
+      console.log('[useTicketApplications] Fetched applications:', data);
+      
+      // Ensure we have valid profiles data for each application
+      const typedData = (data || []).map(app => {
+        // Handle potentially malformed profiles data
+        let safeProfiles = app.profiles;
+        
+        if (!safeProfiles || typeof safeProfiles !== 'object') {
+          safeProfiles = { 
+            id: app.developer_id, 
+            name: 'Unknown Developer',
+            image: null
+          };
+        }
+
+        return {
+          ...app,
+          profiles: safeProfiles
+        };
+      }) as HelpRequestMatch[];
+      
+      setApplications(typedData);
       
       // Calculate pending count
       const pendingApplications = typedData?.filter(app => app.status === 'pending') || [];
