@@ -3,3 +3,4 @@
 export * from './createHelpRequest';
 export * from './getHelpRequests';
 export * from './updateHelpRequest';
+export * from './getHelpRequestMatches';

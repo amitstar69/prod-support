@@ -20,25 +20,25 @@ export const getHelpRequestsForClient = async (clientId: string) => {
         .order('created_at', { ascending: false });
         
       if (error) {
-  console.error('[getHelpRequestsForClient] Error fetching from Supabase:', error);
-  return { 
-    success: false, 
-    error: error.message,
-    data: [],
-    storageMethod: 'database_error' 
-  };
-}
+        console.error('[getHelpRequestsForClient] Error fetching from Supabase:', error);
+        return { 
+          success: false, 
+          error: error.message,
+          data: [],
+          storageMethod: 'database_error' 
+        };
+      }
 
-if (!data) {
-  console.error('[getHelpRequestsForClient] No data returned from Supabase');
-  return {
-    success: false,
-    error: 'No data returned from Supabase',
-    data: [],
-    storageMethod: 'no_data'
-  };
-}
-        // Return error but don't fall back to localStorage
+      if (!data) {
+        console.error('[getHelpRequestsForClient] No data returned from Supabase');
+        return {
+          success: false,
+          error: 'No data returned from Supabase',
+          data: [],
+          storageMethod: 'no_data'
+        };
+      }
+      // Return error but don't fall back to localStorage
       console.log('[getHelpRequestsForClient] Successfully fetched', data?.length, 'tickets from Supabase');
       
       return { 
@@ -140,10 +140,11 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
       };
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[getAllPublicHelpRequests] Exception:', error);
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error', 
+      error: errorMessage, 
       data: [] 
     };
   }

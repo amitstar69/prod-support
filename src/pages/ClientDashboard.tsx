@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { HelpRequestMatch, HelpRequest } from '../types/helpRequest';
 import { isClientCategories, ClientTicketCategories } from '../types/ticketCategories';
 import PendingApplicationsBadge from '../components/dashboard/PendingApplicationsBadge';
+import { getPendingApplicationsForClient } from '../integrations/supabase/helpRequestsCore/getHelpRequestMatches';
 
 const ClientDashboard = () => {
   const navigate = useNavigate();
@@ -129,42 +130,20 @@ const ClientDashboard = () => {
 
   useEffect(() => {
     const fetchApplicationsCounts = async () => {
-      if (!activeTickets?.length || !isAuthenticated) return;
+      if (!userId || !isAuthenticated) return;
       
       try {
         setIsLoadingCounts(true);
-        console.log('[ClientDashboard] Fetching application counts for', activeTickets.length, 'tickets');
+        console.log('[ClientDashboard] Fetching application counts for client:', userId);
         
-        const newCounts: Record<string, number> = {};
+        const response = await getPendingApplicationsForClient(userId);
         
-        const ticketIds = activeTickets.filter(t => t.id).map(t => t.id);
-        
-        if (ticketIds.length === 0) {
-          console.log('[ClientDashboard] No valid ticket IDs to fetch counts for');
-          return;
+        if (response.success && response.data) {
+          console.log('[ClientDashboard] Fetched pending applications data:', response.data);
+          setPendingApplicationsCounts(response.data);
+        } else {
+          console.error('[ClientDashboard] Failed to fetch pending applications:', response.error);
         }
-        
-        const { data, error } = await supabase
-          .from('help_request_matches')
-          .select('request_id, count(*)', { count: 'exact' })
-          .eq('status', 'pending')
-          .in('request_id', ticketIds)
-          .group('request_id');
-          
-        if (error) {
-          console.error('[ClientDashboard] Error fetching application counts:', error);
-          return;
-        }
-          
-        data.forEach((item: any) => {
-          if (item.request_id && item.count) {
-            newCounts[item.request_id] = parseInt(item.count);
-          }
-        });
-        
-        console.log('[ClientDashboard] Fetched counts:', newCounts);
-        
-        setPendingApplicationsCounts(newCounts);
       } catch (err) {
         console.error('[ClientDashboard] Exception fetching application counts:', err);
       } finally {
@@ -172,14 +151,14 @@ const ClientDashboard = () => {
       }
     };
 
-    if (activeTickets && activeTickets.length > 0) {
+    if (userId && isAuthenticated) {
       const timer = setTimeout(() => {
         fetchApplicationsCounts();
       }, 1000);
       
       return () => clearTimeout(timer);
     }
-  }, [activeTickets, isAuthenticated]);
+  }, [userId, isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated || !userId) return;
