@@ -19,31 +19,22 @@ export const getHelpRequestsForClient = async (clientId: string) => {
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
         
-      if (error) {
-        console.error('[getHelpRequestsForClient] Error fetching from Supabase:', error);
+      if (error || !data) {
+        console.error('[getHelpRequestsForClient] Error fetching from Supabase:', error?.message || 'No data returned');
         return { 
           success: false, 
-          error: error.message,
+          error: error?.message || 'No data returned',
           data: [],
-          storageMethod: 'database_error' 
+          storageMethod: error ? 'database_error' : 'no_data' 
         };
       }
-
-      if (!data) {
-        console.error('[getHelpRequestsForClient] No data returned from Supabase');
-        return {
-          success: false,
-          error: 'No data returned from Supabase',
-          data: [],
-          storageMethod: 'no_data'
-        };
-      }
+      
       // Return error but don't fall back to localStorage
-      console.log('[getHelpRequestsForClient] Successfully fetched', data?.length, 'tickets from Supabase');
+      console.log('[getHelpRequestsForClient] Successfully fetched', data.length, 'tickets from Supabase');
       
       return { 
         success: true, 
-        data: data || [], 
+        data: data, 
         storageMethod: 'database' 
       };
     }
@@ -64,10 +55,17 @@ export const getHelpRequestsForClient = async (clientId: string) => {
     }
     
     // Invalid client ID format
-    return { success: false, error: 'Invalid client ID format' };
+    return { success: false, error: 'Invalid client ID format', data: [] };
     
   } catch (error) {
-    return handleError(error, 'Exception fetching help requests:');
+    let errorMessage = error instanceof Error ? error.message : 'Unknown error fetching help requests';
+    console.error('[getHelpRequestsForClient] Exception:', error);
+    return { 
+      success: false, 
+      error: errorMessage,
+      data: [],
+      storageMethod: 'error' 
+    };
   }
 };
 
@@ -101,29 +99,29 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
         .order('created_at', { ascending: false })
         .limit(50); // Add a reasonable limit to avoid fetching too much data
       
-      // Debug: Log what statuses are in the database
-      if (data && data.length > 0) {
-        const statuses = data.map(ticket => ticket.status);
-        const uniqueStatuses = [...new Set(statuses)];
-        console.log('[getAllPublicHelpRequests] Found ticket statuses:', uniqueStatuses);
-      }
-        
-      if (error) {
-        console.error('[getAllPublicHelpRequests] Error fetching from Supabase:', error);
+      if (error || !data) {
+        console.error('[getAllPublicHelpRequests] Error fetching from Supabase:', error?.message || 'No data returned');
         // Don't fall back to localStorage, return error instead
         return { 
           success: false, 
-          error: 'Failed to fetch help requests: ' + error.message,
+          error: 'Failed to fetch help requests: ' + (error?.message || 'No data returned'),
           data: [] 
         };
       }
       
+      // Debug: Log what statuses are in the database
+      if (data.length > 0) {
+        const statuses = data.map(ticket => ticket.status);
+        const uniqueStatuses = [...new Set(statuses)];
+        console.log('[getAllPublicHelpRequests] Found ticket statuses:', uniqueStatuses);
+      }
+      
       // Log fetched tickets for debugging
-      console.log('[getAllPublicHelpRequests] Fetched tickets from database:', data?.length);
+      console.log('[getAllPublicHelpRequests] Fetched tickets from database:', data.length);
       
       return {
         success: true,
-        data: data || [],
+        data: data,
         storageMethod: 'database'
       };
     } 
@@ -164,14 +162,14 @@ export const getHelpRequest = async (requestId: string) => {
         .eq('id', requestId)
         .maybeSingle();
         
-      if (error) {
-        console.error('[getHelpRequest] Error fetching from Supabase:', error);
+      if (error || !data) {
+        console.error('[getHelpRequest] Error fetching from Supabase:', error?.message || 'No data returned');
         // Don't fall back to localStorage, return error
-        return { success: false, error: error.message };
-      }
-      
-      if (!data) {
-        return { success: false, error: 'Help request not found in database' };
+        return { 
+          success: false, 
+          error: error?.message || 'Help request not found in database',
+          data: null 
+        };
       }
       
       console.log('[getHelpRequest] Successfully fetched ticket from Supabase');
@@ -197,7 +195,7 @@ export const getHelpRequest = async (requestId: string) => {
     return { success: false, error: 'Invalid help request ID format' };
     
   } catch (error) {
-    // Fix for the TypeScript error - handle error message extraction properly
+    // Properly handle error message extraction
     let errorMessage = 'Unknown error';
     if (error instanceof Error) {
       errorMessage = error.message;
