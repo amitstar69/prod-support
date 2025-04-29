@@ -27,9 +27,9 @@ export const useApplicationStatuses = (userType: 'client' | 'developer' = 'devel
 
       // Create status list from the predefined statuses in helpRequestStatusUtils.ts
       const statusList = Object.entries(HELP_REQUEST_STATUSES).map(([key, value]) => ({
-        id: value,
-        label: getStatusLabel(value),
-        value: value
+        id: value as string,
+        label: getStatusLabel(value as string),
+        value: value as string
       }));
 
       // Sort the statuses in a logical order for workflow progression
@@ -55,10 +55,10 @@ export const useApplicationStatuses = (userType: 'client' | 'developer' = 'devel
       const orderedStatuses = userType === 'client' ? clientStatuses : developerStatuses;
 
       // Filter and sort the status list
-      const formattedStatuses = statusList
-        .filter(status => orderedStatuses.includes(status.value as any))
+      const formattedStatuses: ApplicationStatus[] = statusList
+        .filter(status => orderedStatuses.includes(status.value))
         .sort((a, b) => {
-          return orderedStatuses.indexOf(a.value as any) - orderedStatuses.indexOf(b.value as any);
+          return orderedStatuses.indexOf(a.value) - orderedStatuses.indexOf(b.value);
         });
 
       console.log(`Prepared ${formattedStatuses.length} statuses for ${userType}`, formattedStatuses);

@@ -1,5 +1,3 @@
-
-// Define user types for status transitions
 import { HELP_REQUEST_STATUSES, normalizeStatus } from './constants/statusConstants';
 
 export type UserType = 'client' | 'developer' | 'system';

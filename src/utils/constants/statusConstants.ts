@@ -25,3 +25,27 @@ export const SESSION_STATUSES = {
   COMPLETED: 'completed',
   CANCELLED: 'cancelled'
 };
+
+// Help Request Workflow Statuses
+export const HELP_REQUEST_STATUSES = {
+  OPEN: 'open',
+  PENDING_MATCH: 'pending_match',
+  AWAITING_CLIENT_APPROVAL: 'awaiting_client_approval',
+  APPROVED: 'approved',
+  REQUIREMENTS_REVIEW: 'requirements_review',
+  NEED_MORE_INFO: 'need_more_info',
+  IN_PROGRESS: 'in_progress',
+  READY_FOR_QA: 'ready_for_qa',
+  READY_FOR_CLIENT_QA: 'ready_for_client_qa',
+  QA_FAIL: 'qa_fail',
+  QA_PASS: 'qa_pass',
+  READY_FOR_FINAL_ACTION: 'ready_for_final_action',
+  RESOLVED: 'resolved',
+  CANCELLED: 'cancelled',
+  COMPLETED: 'completed'
+};
+
+// Utility function to normalize status strings for comparison
+export const normalizeStatus = (status: string): string => {
+  return status.toLowerCase().replace(/[_\s-]/g, '');
+};
