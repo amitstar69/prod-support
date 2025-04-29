@@ -18,6 +18,8 @@ export const useTicketFetching = (
   const [dataSource, setDataSource] = useState<string>('sample');
   const [hasError, setHasError] = useState(false);
   const [lastFetchAttempt, setLastFetchAttempt] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
   const navigate = useNavigate();
 
   // Define a comprehensive list of statuses to include in filter
@@ -50,9 +52,17 @@ export const useTicketFetching = (
       // Set a shorter global timeout to prevent the app from getting stuck
       clearTimeoutFn = setGlobalLoadingTimeout(() => {
         setIsLoading(false);
-        setHasError(true);
-        toast.error('Failed to load tickets. Please try again.');
-      }, 10000); // Reduced from 15s to 10s
+        
+        // Only set error if we've tried a few times
+        if (retryCount >= maxRetries) {
+          setHasError(true);
+          toast.error('Failed to load tickets after multiple attempts.');
+        } else {
+          // Auto-retry
+          setRetryCount(prev => prev + 1);
+          fetchTickets(true);
+        }
+      }, 10000); // 10 second timeout
       
       if (!isAuthenticated) {
         console.log('[Ticket Fetching] Using sample tickets for unauthenticated user');
@@ -75,6 +85,9 @@ export const useTicketFetching = (
       
       if (isApiSuccess(response)) {
         console.log('[Ticket Fetching] All fetched tickets:', response.data.length);
+        
+        // Reset retry count on success
+        setRetryCount(0);
         
         // Include a comprehensive list of relevant statuses
         // This is intentionally broad to catch all active, pending, or in-progress tickets
@@ -105,25 +118,51 @@ export const useTicketFetching = (
         setHasError(false);
       } else {
         console.error('[Ticket Fetching] Error fetching tickets:', response.error);
-        setTickets([]);
-        setHasError(true);
-        toast.error('Failed to fetch tickets');
+        
+        // Only set error if we've tried a few times
+        if (retryCount >= maxRetries) {
+          setTickets([]);
+          setHasError(true);
+          toast.error('Failed to fetch tickets after multiple attempts');
+        } else {
+          // Auto-retry on error
+          setRetryCount(prev => prev + 1);
+          console.log(`[Ticket Fetching] Retry ${retryCount + 1}/${maxRetries}`);
+          
+          // Use sample data for first retry to ensure UI can continue
+          if (retryCount === 0) {
+            setTickets(sampleTickets);
+            setDataSource('sample (temporary)');
+          }
+          
+          // Schedule retry
+          setTimeout(() => fetchTickets(false), 2000);
+        }
       }
     } catch (error) {
       console.error('[Ticket Fetching] Exception:', error);
-      setTickets([]);
-      setHasError(true);
       
-      if (error instanceof Error && error.name === 'AbortError') {
-        toast.error('Request timed out. Please check your connection');
+      // Only set error if we've tried a few times
+      if (retryCount >= maxRetries) {
+        setTickets([]);
+        setHasError(true);
+        
+        if (error instanceof Error && error.name === 'AbortError') {
+          toast.error('Request timed out. Please check your connection');
+        } else {
+          toast.error('An unexpected error occurred after multiple attempts');
+        }
+        
+        // Fallback to sample data when fetch fails after retries
+        console.log('[Ticket Fetching] Using sample tickets as fallback after error');
+        setTickets(sampleTickets);
+        setDataSource('sample (fallback)');
       } else {
-        toast.error('An unexpected error occurred');
+        // Auto-retry on error
+        setRetryCount(prev => prev + 1);
+        console.log(`[Ticket Fetching] Retry ${retryCount + 1}/${maxRetries} after error`);
+        setTimeout(() => fetchTickets(retryCount > 0), 2000);
       }
-      
-      // Fallback to sample data when fetch fails
-      console.log('[Ticket Fetching] Using sample tickets as fallback after error');
-      setTickets(sampleTickets);
-      setDataSource('sample (fallback)');
     } finally {
       // Ensure we clear any timeout we created
       if (clearTimeoutFn) {
@@ -134,7 +173,7 @@ export const useTicketFetching = (
         setIsLoading(false);
       }
     }
-  }, [isAuthenticated, lastFetchAttempt, userType, activeStatuses]);
+  }, [isAuthenticated, lastFetchAttempt, userType, activeStatuses, retryCount, maxRetries]);
 
   // Initial fetch on mount
   useEffect(() => {
@@ -142,6 +181,7 @@ export const useTicketFetching = (
   }, [fetchTickets]);
 
   const handleForceRefresh = useCallback(() => {
+    setRetryCount(0); // Reset retry count on manual refresh
     toast.info('Refreshing tickets...');
     fetchTickets(true);
   }, [fetchTickets]);

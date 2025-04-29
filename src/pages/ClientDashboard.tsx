@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
@@ -17,6 +18,7 @@ import { HelpRequestMatch, HelpRequest } from '../types/helpRequest';
 import { isClientCategories, ClientTicketCategories } from '../types/ticketCategories';
 import PendingApplicationsBadge from '../components/dashboard/PendingApplicationsBadge';
 import { getPendingApplicationsForClient } from '../integrations/supabase/helpRequestsCore/getHelpRequestMatches';
+import { Skeleton } from '../components/ui/skeleton';
 
 const ClientDashboard = () => {
   const navigate = useNavigate();
@@ -31,6 +33,7 @@ const ClientDashboard = () => {
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);
   const [pendingApplicationsCounts, setPendingApplicationsCounts] = useState<Record<string, number>>({});
   const [isLoadingCounts, setIsLoadingCounts] = useState(false);
+  const [showErrorMessage, setShowErrorMessage] = useState(false);
 
   const {
     categorizedTickets,
@@ -39,17 +42,74 @@ const ClientDashboard = () => {
     setShowFilters,
     handleClaimTicket,
     handleForceRefresh,
-    fetchTickets
+    fetchTickets,
+    hasError
   } = useDeveloperDashboard();
 
+  useEffect(() => {
+    // Only show error message if we're still in error state after a delay
+    // This prevents quick flashes of error messages during normal loading
+    let errorTimeout: NodeJS.Timeout | null = null;
+    
+    if (hasError) {
+      errorTimeout = setTimeout(() => {
+        setShowErrorMessage(true);
+      }, 3000); // Show error message after 3 seconds if still in error state
+    } else {
+      setShowErrorMessage(false);
+    }
+    
+    return () => {
+      if (errorTimeout) clearTimeout(errorTimeout);
+    };
+  }, [hasError]);
+  
+  // Get all tickets and categorize them based on status
+  const categorizeTickets = (tickets: HelpRequest[]): ClientTicketCategories => {
+    const activeTickets: HelpRequest[] = [];
+    const pendingApprovalTickets: HelpRequest[] = [];
+    const inProgressTickets: HelpRequest[] = [];
+    const completedTickets: HelpRequest[] = [];
+    
+    if (!tickets || tickets.length === 0) {
+      return { 
+        activeTickets, 
+        pendingApprovalTickets, 
+        inProgressTickets, 
+        completedTickets 
+      };
+    }
+    
+    tickets.forEach(ticket => {
+      const status = (ticket.status || '').toLowerCase().replace(/-/g, '_');
+      
+      // Categorize based on status
+      if (status === 'awaiting_client_approval') {
+        pendingApprovalTickets.push(ticket);
+      } else if (['approved', 'in_progress'].includes(status)) {
+        inProgressTickets.push(ticket);
+      } else if (['resolved', 'completed'].includes(status)) {
+        completedTickets.push(ticket);
+      } else if (['open', 'pending_match'].includes(status)) {
+        activeTickets.push(ticket);
+      } else {
+        // Default to active for any other status
+        activeTickets.push(ticket);
+      }
+    });
+    
+    return { 
+      activeTickets, 
+      pendingApprovalTickets, 
+      inProgressTickets, 
+      completedTickets 
+    };
+  };
+
+  // Use the categorizedTickets from useDeveloperDashboard or categorize them manually
   const clientTickets = isClientCategories(categorizedTickets) 
     ? categorizedTickets 
-    : { 
-        activeTickets: [], 
-        pendingApprovalTickets: [], 
-        inProgressTickets: [], 
-        completedTickets: [] 
-      } as ClientTicketCategories;
+    : categorizeTickets(Array.isArray(categorizedTickets) ? categorizedTickets : []);
 
   const activeTickets = clientTickets.activeTickets;
   const inProgressTickets = clientTickets.inProgressTickets;
@@ -234,6 +294,34 @@ const ClientDashboard = () => {
     );
   };
 
+  const renderLoadingState = () => (
+    <div className="space-y-6">
+      {[1, 2, 3].map((index) => (
+        <div key={index} className="border rounded-lg overflow-hidden">
+          <div className="bg-muted/30 px-4 py-3 flex items-center justify-between">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+          </div>
+          <div className="p-4">
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="bg-white p-4 rounded-lg border">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="w-full">
+                      <Skeleton className="h-5 w-3/4 mb-2" />
+                      <Skeleton className="h-4 w-full" />
+                    </div>
+                    <Skeleton className="h-9 w-28" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <Layout>
       <DashboardBanner />
@@ -247,107 +335,54 @@ const ClientDashboard = () => {
           description="Track and manage your help requests"
         />
 
-        <div className="space-y-6">
-          <Collapsible 
-            open={expandedSections.active} 
-            onOpenChange={() => toggleSection('active')}
-            className="border rounded-lg overflow-hidden"
-          >
-            <div className="bg-muted/30 px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-medium">Active Help Requests</h2>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  {activeTickets?.length || 0}
-                </Badge>
-              </div>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-9 p-0">
-                  {expandedSections.active ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-            </div>
-            <CollapsibleContent className="p-4">
-              {activeTickets && activeTickets.length > 0 ? (
-                <div className="space-y-4">
-                  {activeTickets.map(ticket => (
-                    <div key={ticket.id} className="bg-white p-4 rounded-lg border">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-medium">{ticket.title}</h3>
-                            {ticket.id && (
-                              <PendingApplicationsBadge count={pendingApplicationsCounts[ticket.id] ?? 0} />
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground line-clamp-1">{ticket.description}</p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewDetails(ticket.id!)}
-                        >
-                          {(pendingApplicationsCounts[ticket.id!] ?? 0) > 0 ? 'Review Applications' : 'View Details'}
-                        </Button>
-                      </div>
-                      
-                      <div className="mt-4 pt-4 border-t">
-                        <DeveloperApplicationsPanel
-                          applications={developerApplications[ticket.id || ''] || []}
-                          ticketId={ticket.id!}
-                          clientId={userId!}
-                          isLoading={isLoadingApplications && !developerApplications[ticket.id || '']}
-                          onApplicationUpdate={() => {
-                            fetchTickets();
-                          }}
-                          onOpenChat={(developerId, developerName) => 
-                            handleOpenChat(ticket.id!, developerId, developerName)
-                          }
-                        />
-                      </div>
-                    </div>
-                  ))}
+        {isLoading ? (
+          renderLoadingState()
+        ) : showErrorMessage && hasError ? (
+          <div className="p-8 text-center">
+            <p className="text-red-500 mb-4">Failed to fetch your help requests.</p>
+            <Button onClick={handleForceRefresh}>Try Again</Button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <Collapsible 
+              open={expandedSections.active} 
+              onOpenChange={() => toggleSection('active')}
+              className="border rounded-lg overflow-hidden"
+            >
+              <div className="bg-muted/30 px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-medium">Active Help Requests</h2>
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    {activeTickets?.length || 0}
+                  </Badge>
                 </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-8">No active help requests.</p>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
-          
-          <Collapsible 
-            open={expandedSections.pendingApproval} 
-            onOpenChange={() => toggleSection('pendingApproval')}
-            className="border rounded-lg overflow-hidden"
-          >
-            <div className="bg-muted/30 px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-medium">Pending Developer Approval</h2>
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                  {pendingApprovalTickets?.length || 0}
-                </Badge>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-9 p-0">
+                    {expandedSections.active ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
               </div>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-9 p-0">
-                  {expandedSections.pendingApproval ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-            </div>
-            <CollapsibleContent className="p-4">
-              {pendingApprovalTickets && pendingApprovalTickets.length > 0 ? (
-                <div className="space-y-6">
-                  {pendingApprovalTickets.map(ticket => (
-                    <div key={ticket.id} className="border rounded-lg overflow-hidden">
-                      <div className="bg-white p-4">
+              <CollapsibleContent className="p-4">
+                {activeTickets && activeTickets.length > 0 ? (
+                  <div className="space-y-4">
+                    {activeTickets.map(ticket => (
+                      <div key={ticket.id} className="bg-white p-4 rounded-lg border">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                           <div>
-                            <h3 className="font-medium">{ticket.title}</h3>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-medium">{ticket.title}</h3>
+                              {ticket.id && (
+                                <PendingApplicationsBadge count={pendingApplicationsCounts[ticket.id] ?? 0} />
+                              )}
+                            </div>
                             <p className="text-sm text-muted-foreground line-clamp-1">{ticket.description}</p>
                           </div>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => navigate(`/client/tickets/${ticket.id}`)}
+                            onClick={() => handleViewDetails(ticket.id!)}
                           >
-                            View Details
+                            {(pendingApplicationsCounts[ticket.id!] ?? 0) > 0 ? 'Review Applications' : 'View Details'}
                           </Button>
                         </div>
                         
@@ -366,61 +401,123 @@ const ClientDashboard = () => {
                           />
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">No active help requests.</p>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+            
+            <Collapsible 
+              open={expandedSections.pendingApproval} 
+              onOpenChange={() => toggleSection('pendingApproval')}
+              className="border rounded-lg overflow-hidden"
+            >
+              <div className="bg-muted/30 px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-medium">Pending Developer Approval</h2>
+                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                    {pendingApprovalTickets?.length || 0}
+                  </Badge>
                 </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-8">No help requests waiting for developer approval.</p>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
-          
-          <Collapsible 
-            open={expandedSections.inProgress} 
-            onOpenChange={() => toggleSection('inProgress')}
-            className="border rounded-lg overflow-hidden"
-          >
-            <div className="bg-muted/30 px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-medium">In Progress Help Requests</h2>
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                  {inProgressTickets?.length || 0}
-                </Badge>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-9 p-0">
+                    {expandedSections.pendingApproval ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
               </div>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-9 p-0">
-                  {expandedSections.inProgress ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-            </div>
-            <CollapsibleContent className="p-4">
-              {createTicketPreview(inProgressTickets, 'in-progress')}
-            </CollapsibleContent>
-          </Collapsible>
-          
-          <Collapsible 
-            open={expandedSections.completed} 
-            onOpenChange={() => toggleSection('completed')}
-            className="border rounded-lg overflow-hidden"
-          >
-            <div className="bg-muted/30 px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-medium">Completed Help Requests</h2>
-                <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200">
-                  {completedTickets?.length || 0}
-                </Badge>
+              <CollapsibleContent className="p-4">
+                {pendingApprovalTickets && pendingApprovalTickets.length > 0 ? (
+                  <div className="space-y-6">
+                    {pendingApprovalTickets.map(ticket => (
+                      <div key={ticket.id} className="border rounded-lg overflow-hidden">
+                        <div className="bg-white p-4">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                              <h3 className="font-medium">{ticket.title}</h3>
+                              <p className="text-sm text-muted-foreground line-clamp-1">{ticket.description}</p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewDetails(ticket.id!)}
+                            >
+                              {(pendingApplicationsCounts[ticket.id!] ?? 0) > 0 ? 'Review Applications' : 'View Details'}
+                            </Button>
+                          </div>
+                          
+                          <div className="mt-4 pt-4 border-t">
+                            <DeveloperApplicationsPanel
+                              applications={developerApplications[ticket.id || ''] || []}
+                              ticketId={ticket.id!}
+                              clientId={userId!}
+                              isLoading={isLoadingApplications && !developerApplications[ticket.id || '']}
+                              onApplicationUpdate={() => {
+                                fetchTickets();
+                              }}
+                              onOpenChat={(developerId, developerName) => 
+                                handleOpenChat(ticket.id!, developerId, developerName)
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">No help requests waiting for developer approval.</p>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+            
+            <Collapsible 
+              open={expandedSections.inProgress} 
+              onOpenChange={() => toggleSection('inProgress')}
+              className="border rounded-lg overflow-hidden"
+            >
+              <div className="bg-muted/30 px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-medium">In Progress Help Requests</h2>
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    {inProgressTickets?.length || 0}
+                  </Badge>
+                </div>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-9 p-0">
+                    {expandedSections.inProgress ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
               </div>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-9 p-0">
-                  {expandedSections.completed ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-            </div>
-            <CollapsibleContent className="p-4">
-              {createTicketPreview(completedTickets, 'completed')}
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
+              <CollapsibleContent className="p-4">
+                {createTicketPreview(inProgressTickets, 'in-progress')}
+              </CollapsibleContent>
+            </Collapsible>
+            
+            <Collapsible 
+              open={expandedSections.completed} 
+              onOpenChange={() => toggleSection('completed')}
+              className="border rounded-lg overflow-hidden"
+            >
+              <div className="bg-muted/30 px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-medium">Completed Help Requests</h2>
+                  <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200">
+                    {completedTickets?.length || 0}
+                  </Badge>
+                </div>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-9 p-0">
+                    {expandedSections.completed ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent className="p-4">
+                {createTicketPreview(completedTickets, 'completed')}
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        )}
 
         <div className="mt-8 flex justify-center">
           <Button

@@ -22,72 +22,41 @@ export const getPendingApplicationsForClient = async (clientId: string) => {
       };
     }
 
-    // First, get all help request IDs for this client
-    const { data: helpRequests, error: helpRequestsError } = await supabase
-      .from('help_requests')
-      .select('id')
-      .eq('client_id', clientId);
-      
-    if (helpRequestsError) {
-      console.error('[getPendingApplicationsForClient] Error fetching help requests:', helpRequestsError);
-      return { 
-        success: false, 
-        error: helpRequestsError.message, 
-        data: {} 
-      };
-    }
-    
-    if (!helpRequests || helpRequests.length === 0) {
-      console.log('[getPendingApplicationsForClient] No help requests found for client');
-      return { 
-        success: true, 
-        data: {} 
-      };
-    }
-    
-    const requestIds = helpRequests.map(request => request.id);
-    
-    // Then, fetch all pending applications for these request IDs
+    // Get all applications with their help request information in one query
     const { data, error } = await supabase
       .from('help_request_matches')
-      .select('request_id')
+      .select('*, help_requests!inner(id, client_id, title)')
       .eq('status', 'pending')
-      .in('request_id', requestIds);
+      .eq('help_requests.client_id', clientId);
       
-    if (error) {
-      console.error('[getPendingApplicationsForClient] Error fetching applications:', error);
+    if (error || !data) {
+      console.error('[getPendingApplicationsForClient] Error fetching data:', error?.message || 'No data returned');
       return { 
         success: false, 
-        error: error.message, 
+        error: error?.message || 'Failed to fetch applications', 
         data: {} 
       };
     }
     
-    if (!data || data.length === 0) {
-      console.log('[getPendingApplicationsForClient] No pending applications found');
-      return {
-        success: true,
-        data: {}
-      };
-    }
+    console.log('[getPendingApplicationsForClient] Found', data.length, 'pending applications');
     
-    // Group applications by request_id and count them
-    const applicationCountsByRequestId: Record<string, number> = {};
+    // Group applications by request_id manually in JavaScript
+    const pendingApplicationsGrouped: Record<string, number> = {};
     
     data.forEach(application => {
-      const requestId = application.request_id;
-      if (!applicationCountsByRequestId[requestId]) {
-        applicationCountsByRequestId[requestId] = 1;
+      const ticketId = application.request_id;
+      if (!pendingApplicationsGrouped[ticketId]) {
+        pendingApplicationsGrouped[ticketId] = 1;
       } else {
-        applicationCountsByRequestId[requestId] += 1;
+        pendingApplicationsGrouped[ticketId] += 1;
       }
     });
     
-    console.log('[getPendingApplicationsForClient] Grouped pending applications:', applicationCountsByRequestId);
+    console.log('[getPendingApplicationsForClient] Grouped pending applications:', pendingApplicationsGrouped);
     
     return { 
       success: true, 
-      data: applicationCountsByRequestId 
+      data: pendingApplicationsGrouped 
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
