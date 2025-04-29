@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -9,6 +8,7 @@ import { toast } from 'sonner';
 import { HelpRequestMatch } from '../../types/helpRequest';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
+import { MATCH_STATUSES } from '../../utils/constants/statusConstants';
 
 interface DeveloperApplicationsPanelProps {
   ticketId: string;
@@ -84,6 +84,10 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
             description: '',
             location: ''
           };
+        } else if (!safeProfiles.description) {
+          safeProfiles.description = '';
+        } else if (!safeProfiles.location) {
+          safeProfiles.location = '';
         }
 
         // Handle potentially malformed developer_profiles data

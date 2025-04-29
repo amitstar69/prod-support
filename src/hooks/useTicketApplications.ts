@@ -1,8 +1,9 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
 import { HelpRequestMatch } from '../types/helpRequest';
+import { VALID_MATCH_STATUSES } from '../integrations/supabase/helpRequestsApplications';
 
 export const useTicketApplications = (ticketId: string) => {
   const [applications, setApplications] = useState<HelpRequestMatch[]>([]);
@@ -12,7 +13,7 @@ export const useTicketApplications = (ticketId: string) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [pendingCount, setPendingCount] = useState(0);
 
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -80,7 +81,7 @@ export const useTicketApplications = (ticketId: string) => {
       setApplications(typedData);
       
       // Calculate pending count
-      const pendingApplications = typedData?.filter(app => app.status === 'pending') || [];
+      const pendingApplications = typedData?.filter(app => app.status === VALID_MATCH_STATUSES.PENDING) || [];
       setPendingCount(pendingApplications.length);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load applications';
@@ -89,13 +90,13 @@ export const useTicketApplications = (ticketId: string) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [ticketId, sortBy, statusFilter]);
 
   useEffect(() => {
     if (ticketId) {
       fetchApplications();
     }
-  }, [ticketId, sortBy, statusFilter]);
+  }, [ticketId, fetchApplications]);
 
   useEffect(() => {
     if (!ticketId) return;
@@ -120,7 +121,7 @@ export const useTicketApplications = (ticketId: string) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [ticketId]);
+  }, [ticketId, fetchApplications]);
 
   return {
     applications,

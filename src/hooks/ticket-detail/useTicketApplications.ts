@@ -39,6 +39,10 @@ export const useTicketApplications = (ticketId: string, userId: string | null, i
               description: '',
               location: ''
             };
+          } else if (!safeProfiles.description) {
+            safeProfiles.description = '';
+          } else if (!safeProfiles.location) {
+            safeProfiles.location = '';
           }
           
           // Handle potentially malformed developer_profiles data

@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HelpRequestMatch, ApplicationStatus } from '../../types/helpRequest';
-import { updateApplicationStatus, VALID_MATCH_STATUSES } from '../../integrations/supabase/helpRequestsApplications';
+import { HelpRequestMatch } from '../../types/helpRequest';
+import { updateApplicationStatus } from '../../integrations/supabase/helpRequestsApplications';
+import { MATCH_STATUSES } from '../../utils/constants/statusConstants';
 import { toast } from 'sonner';
 import ApplicationCard from './ApplicationCard';
 import ApprovalDialog from './ApprovalDialog';
@@ -33,13 +33,9 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Approving application...');
       
-      // Make sure we're using the exact value from our constants that match the database constraint
-      const statusValue = VALID_MATCH_STATUSES.APPROVED;
-      console.log('Approving application with status:', statusValue);
-      
       const result = await updateApplicationStatus(
         applicationId, 
-        statusValue as ApplicationStatus, 
+        'approved', 
         clientId
       );
       
@@ -76,13 +72,9 @@ const DeveloperApplications: React.FC<DeveloperApplicationsProps> = ({
       setProcessingApplicationIds(prev => [...prev, applicationId]);
       toast.loading('Rejecting application...');
       
-      // Make sure we're using the exact value from our constants that match the database constraint
-      const statusValue = VALID_MATCH_STATUSES.REJECTED;
-      console.log('Rejecting application with status:', statusValue);
-      
       const result = await updateApplicationStatus(
         applicationId, 
-        statusValue as ApplicationStatus, 
+        'rejected', 
         clientId
       );
       

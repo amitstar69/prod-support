@@ -1,19 +1,19 @@
 
 import React from 'react';
+import { Card, CardContent, CardFooter } from '../ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { Clock, Hourglass, DollarSign, MessageCircle, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
-import { ApplicationStatus } from '../../types/helpRequest';
-import { VALID_MATCH_STATUSES } from '../../integrations/supabase/helpRequestsApplications';
+import { MATCH_STATUSES } from '../../utils/constants/statusConstants';
+import { formatDistanceToNow } from 'date-fns';
+import { Eye, MessageSquare } from 'lucide-react';
 
 interface ApplicationCardProps {
   application: any;
-  onApprove: (applicationId: string) => Promise<void>;
-  onReject: (applicationId: string) => Promise<void>;
+  onApprove: (applicationId: string) => void;
+  onReject: (applicationId: string) => void;
+  onViewDetails: (applicationId: string) => void;
   onOpenChat: (developerId: string, applicationId: string) => void;
-  onViewDetails?: (applicationId: string) => void;
   isProcessing: (applicationId: string) => boolean;
 }
 
@@ -21,155 +21,104 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
   application,
   onApprove,
   onReject,
-  onOpenChat,
   onViewDetails,
+  onOpenChat,
   isProcessing
 }) => {
-  const formatCurrency = (value: number) => {
-    return `$${value}`;
-  };
-
-  const getDeveloperName = (application: any) => {
-    if (application.developers?.profiles?.name) {
-      return application.developers.profiles.name;
+  // Safely access the developer profile data
+  const developerName = application.profiles?.name || 'Anonymous Developer';
+  const developerImage = application.profiles?.image || '';
+  const developerExperience = application.developer_profiles?.experience || '';
+  const applicationStatus = application.status;
+  const applicationDate = application.created_at;
+  const isProcessingAction = isProcessing(application.id);
+  
+  // Get appropriate status display
+  const getStatusBadge = () => {
+    switch (applicationStatus) {
+      case MATCH_STATUSES.APPROVED_BY_CLIENT:
+        return <Badge variant="success">Approved</Badge>;
+      case MATCH_STATUSES.REJECTED_BY_CLIENT:
+        return <Badge variant="destructive">Rejected</Badge>;
+      case MATCH_STATUSES.PENDING:
+        return <Badge variant="outline">Pending</Badge>;
+      default:
+        return <Badge variant="outline">{applicationStatus}</Badge>;
     }
-    if (application.developer?.profile?.name) {
-      return application.developer.profile.name;
-    }
-    if (application.developer?.name) {
-      return application.developer.name;
-    }
-    return 'Developer';
   };
   
-  const getDeveloperImage = (application: any) => {
-    if (application.developers?.profiles?.image) {
-      return application.developers.profiles.image;
-    }
-    if (application.developer?.profile?.image) {
-      return application.developer.profile.image;
-    }
-    if (application.developer?.image) {
-      return application.developer.image;
-    }
-    return '/placeholder.svg';
-  };
-
-  const APPLICATION_STATUSES = VALID_MATCH_STATUSES;
-
   return (
-    <Card key={application.id} className="overflow-hidden">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src={getDeveloperImage(application)} alt={getDeveloperName(application)} />
-              <AvatarFallback>{getDeveloperName(application).charAt(0)}</AvatarFallback>
+    <Card className="overflow-hidden border border-muted">
+      <CardContent className="pt-6">
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center space-x-4">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={developerImage} alt={developerName} />
+              <AvatarFallback>{developerName.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
-            <CardTitle className="text-lg">{getDeveloperName(application)}</CardTitle>
-          </div>
-          <Badge 
-            variant="outline"
-            className={`
-              ${application.status === APPLICATION_STATUSES.APPROVED ? 'bg-green-50 text-green-800 border-green-200' : 
-               application.status === APPLICATION_STATUSES.REJECTED ? 'bg-red-50 text-red-800 border-red-200' :
-               'bg-blue-50 text-blue-800 border-blue-200'}
-            `}
-          >
-            {application.status}
-          </Badge>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-3">
-        {application.proposed_message && (
-          <div className="bg-muted p-3 rounded text-sm">
-            <p className="line-clamp-3">{application.proposed_message}</p>
-          </div>
-        )}
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center gap-2">
-            <Hourglass className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">
-              {application.proposed_duration} minutes
-            </span>
+            <div className="space-y-1">
+              <h4 className="font-semibold leading-none">{developerName}</h4>
+              <div className="flex items-center text-sm text-muted-foreground">
+                {applicationDate && (
+                  <span>Applied {formatDistanceToNow(new Date(applicationDate), { addSuffix: true })}</span>
+                )}
+              </div>
+            </div>
+            <div className="ml-auto">{getStatusBadge()}</div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">
-              {formatCurrency(application.proposed_rate)}/hr
-            </span>
-          </div>
-        </div>
-        
-        <div className="bg-muted/50 p-3 rounded">
-          <div className="flex justify-between items-center text-sm">
-            <span>Estimated total cost:</span>
-            <span className="font-medium">
-              {formatCurrency(Math.round(application.proposed_rate * (application.proposed_duration / 60)))}
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Based on {application.proposed_duration} minutes at {formatCurrency(application.proposed_rate)}/hour
-          </p>
+          {developerExperience && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground line-clamp-2">{developerExperience}</p>
+            </div>
+          )}
+          
+          {application.proposed_message && (
+            <div className="p-3 bg-muted/20 rounded-md">
+              <p className="text-sm italic">"{application.proposed_message}"</p>
+            </div>
+          )}
         </div>
       </CardContent>
       
-      <CardFooter className="gap-3 flex flex-wrap">
-        {onViewDetails && (
-          <Button 
-            className="w-full"
-            variant="outline"
-            onClick={() => onViewDetails(application.id)}
-            disabled={isProcessing(application.id)}
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            View Details
-          </Button>
-        )}
-        
-        {application.status === APPLICATION_STATUSES.PENDING && (
-          <div className="flex gap-2 w-full">
-            <Button 
-              className="flex-1"
-              onClick={() => onApprove(application.id)}
-              disabled={isProcessing(application.id)}
-            >
-              {isProcessing(application.id) ? (
-                <span className="flex items-center">
-                  <span className="animate-spin mr-2">◌</span>
-                  Processing...
-                </span>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Approve
-                </>
-              )}
-            </Button>
-            <Button 
-              className="flex-1"
-              variant="outline"
-              onClick={() => onReject(application.id)}
-              disabled={isProcessing(application.id)}
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Reject
-            </Button>
-          </div>
-        )}
-        
+      <CardFooter className="flex flex-wrap justify-between gap-2 p-4 pt-0">
         <Button 
-          className={application.status === APPLICATION_STATUSES.PENDING ? 'w-full' : 'flex-1'}
-          variant={application.status === APPLICATION_STATUSES.PENDING ? 'outline' : 'default'}
-          onClick={() => onOpenChat(application.developer_id, application.id)}
-          disabled={isProcessing(application.id)}
+          variant="outline" 
+          size="sm"
+          onClick={() => onViewDetails(application.id)}
         >
-          <MessageCircle className="h-4 w-4 mr-2" />
-          Message
+          <Eye className="mr-1 h-4 w-4" /> Details
         </Button>
+        
+        <div className="flex gap-2 justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChat(application.developer_id, application.id)}
+          >
+            <MessageSquare className="mr-1 h-4 w-4" /> Chat
+          </Button>
+          
+          {applicationStatus === MATCH_STATUSES.PENDING && (
+            <>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={() => onReject(application.id)}
+                disabled={isProcessingAction}
+              >
+                Reject
+              </Button>
+              <Button 
+                size="sm"
+                onClick={() => onApprove(application.id)}
+                disabled={isProcessingAction}
+              >
+                Accept
+              </Button>
+            </>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );
