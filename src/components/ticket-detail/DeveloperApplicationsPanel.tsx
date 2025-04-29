@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../integrations/supabase/client';
-import { HelpRequestMatch } from '../../types/helpRequest';
+import { HelpRequestMatch, DeveloperProfile } from '../../types/helpRequest';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
@@ -36,7 +37,42 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
           console.error('Error fetching applications:', error);
           setError(error.message);
         } else {
-          setApplications(data || []);
+          // Safely process the data with proper type handling
+          const processedData = (data || []).map(app => {
+            // Safely handle profiles data
+            const safeProfiles = app.profiles && typeof app.profiles === 'object' 
+              ? app.profiles 
+              : { 
+                  id: app.developer_id, 
+                  name: 'Unknown Developer',
+                  image: null,
+                  description: '',
+                  location: ''
+                };
+            
+            // Safely handle developer_profiles data
+            const safeDeveloperProfiles: DeveloperProfile = app.developer_profiles && typeof app.developer_profiles === 'object'
+              ? {
+                  id: app.developer_id,
+                  skills: Array.isArray(app.developer_profiles.skills) ? app.developer_profiles.skills : [],
+                  experience: typeof app.developer_profiles.experience === 'string' ? app.developer_profiles.experience : '',
+                  hourly_rate: typeof app.developer_profiles.hourly_rate === 'number' ? app.developer_profiles.hourly_rate : 0
+                }
+              : {
+                  id: app.developer_id,
+                  skills: [],
+                  experience: '',
+                  hourly_rate: 0
+                };
+            
+            return {
+              ...app,
+              profiles: safeProfiles,
+              developer_profiles: safeDeveloperProfiles
+            } as HelpRequestMatch;
+          });
+          
+          setApplications(processedData);
         }
       } catch (err) {
         console.error('Failed to fetch applications:', err);

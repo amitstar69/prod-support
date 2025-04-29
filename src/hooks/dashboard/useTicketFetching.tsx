@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../../integrations/supabase/client';
 import { HelpRequest } from '../../types/helpRequest';
@@ -8,10 +7,11 @@ interface UseTicketFetchingResult {
   tickets: HelpRequest[];
   isLoading: boolean;
   error: string | null;
-  fetchTickets: () => Promise<void>;
+  fetchTickets: (showLoading?: boolean) => Promise<void>;
   category: string;
   hasError?: boolean;
   dataSource?: string;
+  handleForceRefresh?: () => Promise<void>;
 }
 
 const determineTicketCategory = (status: string) => {
@@ -86,8 +86,10 @@ export const useTicketFetching = (initialCategory: string): UseTicketFetchingRes
   const [dataSource, setDataSource] = useState<string>('cache');
   const [hasError, setHasError] = useState<boolean>(false);
 
-  const fetchTickets = async () => {
-    setIsLoading(true);
+  const fetchTickets = async (showLoading: boolean = true) => {
+    if (showLoading) {
+      setIsLoading(true);
+    }
     setError(null);
     setHasError(false);
 
@@ -126,13 +128,20 @@ export const useTicketFetching = (initialCategory: string): UseTicketFetchingRes
       setError(err instanceof Error ? err.message : 'Failed to load tickets');
       setHasError(true);
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
+  };
+
+  // Add a force refresh method that doesn't show loading state
+  const handleForceRefresh = async () => {
+    await fetchTickets(false);
   };
 
   useEffect(() => {
     fetchTickets();
   }, [category]);
 
-  return { tickets, isLoading, error, fetchTickets, category, hasError, dataSource };
+  return { tickets, isLoading, error, fetchTickets, category, hasError, dataSource, handleForceRefresh };
 };

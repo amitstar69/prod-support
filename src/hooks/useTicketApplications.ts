@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
-import { HelpRequestMatch } from '../types/helpRequest';
+import { HelpRequestMatch, DeveloperProfile } from '../types/helpRequest';
 import { MATCH_STATUSES } from '../utils/constants/statusConstants';
 
 export const useTicketApplications = (ticketId: string) => {
@@ -57,14 +58,20 @@ export const useTicketApplications = (ticketId: string) => {
         }
 
         // Handle potentially malformed developer_profiles data
-        let safeDeveloperProfiles = app.developer_profiles;
+        let safeDeveloperProfiles: DeveloperProfile = {
+          id: app.developer_id,
+          skills: [],
+          experience: '',
+          hourly_rate: 0
+        };
         
-        if (!safeDeveloperProfiles || typeof safeDeveloperProfiles !== 'object') {
+        if (app.developer_profiles && typeof app.developer_profiles === 'object') {
+          const dp = app.developer_profiles;
           safeDeveloperProfiles = {
             id: app.developer_id,
-            skills: [],
-            experience: '',
-            hourly_rate: 0
+            skills: Array.isArray(dp.skills) ? dp.skills : [],
+            experience: typeof dp.experience === 'string' ? dp.experience : '',
+            hourly_rate: typeof dp.hourly_rate === 'number' ? dp.hourly_rate : 0
           };
         }
 

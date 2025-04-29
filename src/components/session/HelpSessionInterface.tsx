@@ -1,409 +1,196 @@
-import React, { useState, useEffect } from 'react';
-import { HelpRequest, HelpSession } from '../../types/helpRequest';
-import { supabase } from '../../integrations/supabase/client';
-import { Button } from '../ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
-import { Textarea } from '../ui/textarea';
-import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
-import { Clock, Calendar, User, Code, MessageSquare } from 'lucide-react';
-import CodeEditor from '../code/CodeEditor';
-import ChatInterface from '../chat/ChatInterface';
+import { useState, useEffect, useRef } from 'react';
+import { Button } from "../ui/button";
+import { Separator } from "../ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "../ui/resizable";
+import ChatInterface from "./ChatInterface";
+import { 
+  ArrowRight, 
+  MessageSquare, 
+  Code, 
+  SplitSquareVertical, 
+  MonitorSmartphone,
+  RefreshCw
+} from "lucide-react";
+// import CodeEditor from "../code/CodeEditor"; // Temporarily commented out
 
-interface HelpSessionInterfaceProps {
-  sessionId: string;
-  userId: string;
-  userRole: 'client' | 'developer';
-}
-
-const HelpSessionInterface: React.FC<HelpSessionInterfaceProps> = ({
-  sessionId,
-  userId,
-  userRole
+const HelpSessionInterface = ({ 
+  sessionId, 
+  clientId, 
+  developerId, 
+  currentUserId,
+  sessionDetails,
+  onSessionEnd
 }) => {
-  const [session, setSession] = useState<HelpSession | null>(null);
-  const [helpRequest, setHelpRequest] = useState<HelpRequest | null>(null);
-  const [sharedCode, setSharedCode] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('code');
-  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState('chat');
+  const [screenSharing, setScreenSharing] = useState(false);
+  const [sharedCode, setSharedCode] = useState('');
+  const [showSideBySide, setShowSideBySide] = useState(false);
+  const [otherUserId, setOtherUserId] = useState('');
+  const [otherUserName, setOtherUserName] = useState('');
+  const [codeLanguage, setCodeLanguage] = useState('javascript');
+  const codeEditorRef = useRef(null);
+  const [editorText, setEditorText] = useState("// Start coding here");
+  
+  useEffect(() => {
+    if (clientId && developerId && currentUserId) {
+      const otherId = currentUserId === clientId ? developerId : clientId;
+      setOtherUserId(otherId);
 
-  const processHelpRequest = (request: any): HelpRequest => {
-    // Normalize attachments to always be an array
-    let attachmentsArray: any[] = [];
-    if (request.attachments) {
-      if (Array.isArray(request.attachments)) {
-        attachmentsArray = request.attachments;
-      } else if (typeof request.attachments === 'string') {
-        try {
-          const parsed = JSON.parse(request.attachments);
-          attachmentsArray = Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-          attachmentsArray = [];
-        }
+      // Determine the other user's name based on sessionDetails
+      if (sessionDetails) {
+        const otherUser = currentUserId === clientId ? sessionDetails.developer : sessionDetails.client;
+        setOtherUserName(otherUser?.name || 'Other User');
       }
     }
-
-    return {
-      ...request,
-      attachments: attachmentsArray
-    } as HelpRequest;
+  }, [clientId, developerId, currentUserId, sessionDetails]);
+  
+  const toggleScreenSharing = () => {
+    setScreenSharing(!screenSharing);
   };
 
-  useEffect(() => {
-    const fetchSessionData = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        // Fetch session data
-        const { data: sessionData, error: sessionError } = await supabase
-          .from('help_sessions')
-          .select('*')
-          .eq('id', sessionId)
-          .single();
-          
-        if (sessionError) {
-          throw new Error(`Failed to load session: ${sessionError.message}`);
-        }
-        
-        if (!sessionData) {
-          throw new Error('Session not found');
-        }
-        
-        setSession(sessionData);
-        setSharedCode(sessionData.shared_code || '');
-        
-        // Fetch the associated help request
-        if (sessionData.request_id) {
-          const { data: requestData, error: requestError } = await supabase
-            .from('help_requests')
-            .select('*')
-            .eq('id', sessionData.request_id)
-            .single();
-            
-          if (requestError) {
-            throw new Error(`Failed to load help request: ${requestError.message}`);
-          }
-          
-          if (requestData) {
-            setHelpRequest(processHelpRequest(requestData));
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching session data:', err);
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchSessionData();
-    
-    // Set up real-time subscription for code updates
-    const channel = supabase
-      .channel(`session-${sessionId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'help_sessions',
-          filter: `id=eq.${sessionId}`
-        },
-        (payload) => {
-          console.log('Session updated:', payload);
-          const updatedSession = payload.new as HelpSession;
-          
-          // Only update if the shared_code has changed and it's not from our own update
-          if (updatedSession.shared_code !== sharedCode && !isSaving) {
-            setSharedCode(updatedSession.shared_code || '');
-            setSession(prevSession => ({
-              ...prevSession,
-              ...updatedSession
-            }));
-          }
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [sessionId]);
-  
-  const handleCodeChange = (newCode: string) => {
+  const handleCodeChange = (newCode) => {
     setSharedCode(newCode);
   };
-  
-  const saveCode = async () => {
-    if (!session) return;
-    
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from('help_sessions')
-        .update({ shared_code: sharedCode })
-        .eq('id', session.id);
-        
-      if (error) {
-        throw new Error(`Failed to save code: ${error.message}`);
-      }
-      
-      toast.success('Code saved successfully');
-    } catch (err) {
-      console.error('Error saving code:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to save code');
-    } finally {
-      setIsSaving(false);
+
+  const handleEndSession = () => {
+    if (onSessionEnd) {
+      onSessionEnd();
     }
   };
   
-  const startSession = async () => {
-    if (!session) return;
-    
-    try {
-      const { error } = await supabase
-        .from('help_sessions')
-        .update({ 
-          actual_start: new Date().toISOString(),
-          status: 'in_progress'
-        })
-        .eq('id', session.id);
-        
-      if (error) {
-        throw new Error(`Failed to start session: ${error.message}`);
-      }
-      
-      setSession(prev => ({
-        ...prev!,
-        actual_start: new Date().toISOString(),
-        status: 'in_progress'
-      }));
-      
-      toast.success('Session started');
-    } catch (err) {
-      console.error('Error starting session:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to start session');
+  const toggleSideBySideView = () => {
+    setShowSideBySide(!showSideBySide);
+  };
+  
+  const handleRefreshCode = () => {
+    if (codeEditorRef.current) {
+      codeEditorRef.current.refresh();
     }
   };
   
-  const endSession = async () => {
-    if (!session) return;
-    
-    try {
-      const { error } = await supabase
-        .from('help_sessions')
-        .update({ 
-          actual_end: new Date().toISOString(),
-          status: 'completed'
-        })
-        .eq('id', session.id);
-        
-      if (error) {
-        throw new Error(`Failed to end session: ${error.message}`);
-      }
-      
-      setSession(prev => ({
-        ...prev!,
-        actual_end: new Date().toISOString(),
-        status: 'completed'
-      }));
-      
-      toast.success('Session completed');
-    } catch (err) {
-      console.error('Error ending session:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to end session');
-    }
-  };
-  
-  if (isLoading) {
+  // Temporary render function that replaces the CodeEditor component
+  const renderTemporaryCodeEditor = () => {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading session...</p>
+      <div className="h-full w-full bg-gray-800 text-white p-4 font-mono overflow-auto">
+        <div className="mb-4">
+          <p className="text-yellow-300 text-xs">// CodeEditor component temporarily disabled</p>
+          <p className="text-yellow-300 text-xs">// This is a placeholder UI for the code editor</p>
+        </div>
+        <textarea
+          className="w-full h-[80%] bg-gray-900 text-green-400 p-2 border border-gray-700 rounded"
+          value={editorText}
+          onChange={(e) => setEditorText(e.target.value)}
+        />
+        <div className="mt-2 flex justify-between">
+          <div>
+            <select 
+              className="bg-gray-700 text-white px-2 py-1 rounded"
+              value={codeLanguage}
+              onChange={(e) => setCodeLanguage(e.target.value)}
+            >
+              <option value="javascript">JavaScript</option>
+              <option value="typescript">TypeScript</option>
+              <option value="html">HTML</option>
+              <option value="css">CSS</option>
+              <option value="json">JSON</option>
+            </select>
+          </div>
+          <button 
+            className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+            onClick={() => console.log('Code saved (placeholder)')}
+          >
+            Save
+          </button>
         </div>
       </div>
     );
-  }
+  };
   
-  if (error) {
-    return (
-      <Card className="border-destructive">
-        <CardHeader>
-          <CardTitle className="text-destructive">Error</CardTitle>
-          <CardDescription>Failed to load session</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>{error}</p>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={() => window.location.reload()}>Try Again</Button>
-        </CardFooter>
-      </Card>
-    );
-  }
-  
-  if (!session) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Session Not Found</CardTitle>
-          <CardDescription>The requested session could not be found</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>Please check the session ID and try again.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  const isSessionActive = session.status === 'in_progress';
-  const isSessionCompleted = session.status === 'completed';
-  const canStartSession = session.status === 'scheduled' && userRole === 'developer';
-  const canEndSession = isSessionActive && userRole === 'developer';
-  const otherId = userRole === 'client' ? session.developer_id : session.client_id;
+  // Find every instance where <CodeEditor /> is used and replace it with renderTemporaryCodeEditor()
   
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Help Session</span>
-            <div className="text-sm font-normal bg-muted px-3 py-1 rounded-full">
-              {session.status}
-            </div>
-          </CardTitle>
-          <CardDescription>
-            {helpRequest?.title || 'Untitled Help Request'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Scheduled:</span>
-              <span>
-                {session.scheduled_start ? new Date(session.scheduled_start).toLocaleString() : 'Not scheduled'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Duration:</span>
-              <span>
-                {session.scheduled_end && session.scheduled_start ? 
-                  `${Math.round((new Date(session.scheduled_end).getTime() - new Date(session.scheduled_start).getTime()) / 60000)} minutes` : 
-                  'Not specified'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">
-                {userRole === 'client' ? 'Developer:' : 'Client:'}
-              </span>
-              <span>
-                {userRole === 'client' ? 
-                  `Developer #${session.developer_id?.substring(0, 6)}` : 
-                  `Client #${session.client_id?.substring(0, 6)}`}
-              </span>
-            </div>
-            {session.actual_start && (
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-green-500" />
-                <span className="text-muted-foreground">Started:</span>
-                <span>
-                  {formatDistanceToNow(new Date(session.actual_start), { addSuffix: true })}
-                </span>
-              </div>
-            )}
+    <div className="h-full flex flex-col">
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Help Session</h2>
+          <Button variant="destructive" onClick={handleEndSession}>
+            End Session <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+        <Separator className="my-4" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" onClick={toggleScreenSharing}>
+              {screenSharing ? 'Stop Sharing' : 'Share Screen'}
+              <MonitorSmartphone className="ml-2 h-4 w-4" />
+            </Button>
+            <Button variant="outline" onClick={toggleSideBySideView}>
+              {showSideBySide ? 'Single View' : 'Side-by-Side'}
+              <SplitSquareVertical className="ml-2 h-4 w-4" />
+            </Button>
+            <Button variant="outline" onClick={handleRefreshCode}>
+              Refresh Code <RefreshCw className="ml-2 h-4 w-4" />
+            </Button>
           </div>
-          
-          {helpRequest && (
-            <div className="mt-4 p-3 bg-muted/30 rounded-md">
-              <h4 className="text-sm font-medium mb-1">Help Request Description</h4>
-              <p className="text-sm text-muted-foreground">{helpRequest.description}</p>
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          {canStartSession && (
-            <Button onClick={startSession}>Start Session</Button>
-          )}
-          {canEndSession && (
-            <Button onClick={endSession} variant="outline">End Session</Button>
-          )}
-          {isSessionCompleted && (
-            <div className="text-sm text-muted-foreground">
-              Session completed {session.actual_end && formatDistanceToNow(new Date(session.actual_end), { addSuffix: true })}
-            </div>
-          )}
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
       
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-2">
-          <TabsTrigger value="code" className="flex items-center gap-2">
-            <Code className="h-4 w-4" />
-            <span>Shared Code</span>
-          </TabsTrigger>
-          <TabsTrigger value="chat" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            <span>Chat</span>
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="code" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Shared Code Editor</CardTitle>
-              <CardDescription>
-                Code changes are shared in real-time between you and the {userRole === 'client' ? 'developer' : 'client'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="min-h-[400px] border rounded-md">
-                <CodeEditor
-                  value={sharedCode}
-                  onChange={handleCodeChange}
-                  language="javascript"
-                  readOnly={isSessionCompleted}
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                onClick={saveCode} 
-                disabled={isSaving || isSessionCompleted}
-              >
-                {isSaving ? 'Saving...' : 'Save Code'}
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        <TabsContent value="chat" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Session Chat</CardTitle>
-              <CardDescription>
-                Communicate with the {userRole === 'client' ? 'developer' : 'client'} during your session
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {otherId && (
-                <ChatInterface
-                  helpRequestId={session.request_id || ''}
-                  otherId={otherId}
-                  otherName={userRole === 'client' ? 'Developer' : 'Client'}
-                  currentUserId={userId}
-                  readOnly={isSessionCompleted}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <div className="flex-grow overflow-hidden">
+        {showSideBySide ? (
+          <ResizablePanelGroup
+            direction="horizontal"
+            className="h-full border rounded-md"
+          >
+            <ResizablePanel defaultSize={50} className="h-full">
+              <ChatInterface 
+                helpRequestId={sessionId} 
+                otherId={otherUserId}
+                otherName={otherUserName}
+                currentUserId={currentUserId}
+                readOnly={false}
+              />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={50} className="h-full">
+              {renderTemporaryCodeEditor()}
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="chat" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" /> Chat
+              </TabsTrigger>
+              <TabsTrigger value="code" className="flex items-center gap-2">
+                <Code className="h-4 w-4" /> Code Editor
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="chat" className="h-[calc(100%-46px)]">
+              <ChatInterface 
+                helpRequestId={sessionId} 
+                otherId={otherUserId}
+                otherName={otherUserName}
+                currentUserId={currentUserId}
+                readOnly={false}
+              />
+            </TabsContent>
+            <TabsContent value="code" className="h-[calc(100%-46px)]">
+              {renderTemporaryCodeEditor()}
+            </TabsContent>
+          </Tabs>
+        )}
+      </div>
+      
+      <div className="p-4 border-t">
+        <p className="text-sm text-muted-foreground">
+          Session ID: {sessionId} | Client ID: {clientId} | Developer ID: {developerId}
+        </p>
+      </div>
     </div>
   );
 };

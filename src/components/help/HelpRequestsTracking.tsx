@@ -179,7 +179,9 @@ const HelpRequestsTracking: React.FC = () => {
           localHelpRequests = [];
         }
         
-        const userLocalHelpRequests = localHelpRequests.filter((req: HelpRequest) => req.client_id === userId);
+        const userLocalHelpRequests = processHelpRequests(
+          localHelpRequests.filter((req: HelpRequest) => req.client_id === userId)
+        );
         console.log('Local help requests for user:', userLocalHelpRequests);
         
         const isLocalAuth = userId.startsWith('client-');
@@ -226,12 +228,12 @@ const HelpRequestsTracking: React.FC = () => {
                     .eq('client_id', userId);
                     
                   if (refreshedData && refreshedData.length > 0) {
-                    setHelpRequests(refreshedData);
+                    setHelpRequests(processHelpRequests(refreshedData));
                   } else {
-                    setHelpRequests(data || []);
+                    setHelpRequests(processHelpRequests(data || []));
                   }
                 } else {
-                  setHelpRequests(data || []);
+                  setHelpRequests(processHelpRequests(data || []));
                   setDataSource('database');
                 }
               }

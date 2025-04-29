@@ -1,6 +1,8 @@
+
 import React from 'react';
 import ChatCommentsPanel from "../tickets/ChatCommentsPanel";
 import TicketComments from "../tickets/TicketComments";
+import { HelpRequest } from "../../types/helpRequest";
 
 interface CommentsSectionProps {
   visible: boolean;
@@ -8,7 +10,8 @@ interface CommentsSectionProps {
   ticketId?: string;
   userId: string;
   role?: string;
-  userRole?: string;
+  userRole?: string; // Added to accept both role and userRole
+  userType?: string; // Added for flexibility
 }
 
 const CommentsSection = ({
@@ -18,15 +21,21 @@ const CommentsSection = ({
   userId,
   role,
   userRole,
+  userType,
 }: CommentsSectionProps) => {
   if (!visible) return null;
-  if (role === "developer") {
+  
+  // Use the first available role identifier
+  const effectiveRole = role || userRole || userType;
+  
+  if (effectiveRole === "developer") {
     return <ChatCommentsPanel ticketId={ticketId} userId={userId} />;
   }
+  
   return (
     <TicketComments
       ticketId={ticketId}
-      userRole={role || userRole}
+      userRole={effectiveRole}
       userId={userId}
     />
   );
