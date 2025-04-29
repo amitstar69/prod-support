@@ -47,16 +47,15 @@ export const getPendingApplicationsForClient = async (clientId: string) => {
     
     const requestIds = helpRequests.map(request => request.id);
     
-    // Then, count pending applications for each request ID
+    // Then, fetch all pending applications for these request IDs
     const { data, error } = await supabase
       .from('help_request_matches')
-      .select('request_id, count(*)', { count: 'exact' })
+      .select('request_id')
       .eq('status', 'pending')
-      .in('request_id', requestIds)
-      .groupBy('request_id');
+      .in('request_id', requestIds);
       
     if (error) {
-      console.error('[getPendingApplicationsForClient] Error fetching application counts:', error);
+      console.error('[getPendingApplicationsForClient] Error fetching applications:', error);
       return { 
         success: false, 
         error: error.message, 
@@ -64,16 +63,27 @@ export const getPendingApplicationsForClient = async (clientId: string) => {
       };
     }
     
-    // Convert the array of results to a mapping of request_id -> count
+    if (!data || data.length === 0) {
+      console.log('[getPendingApplicationsForClient] No pending applications found');
+      return {
+        success: true,
+        data: {}
+      };
+    }
+    
+    // Group applications by request_id and count them
     const applicationCountsByRequestId: Record<string, number> = {};
     
-    data?.forEach(item => {
-      if (item.request_id && item.count) {
-        applicationCountsByRequestId[item.request_id] = parseInt(item.count);
+    data.forEach(application => {
+      const requestId = application.request_id;
+      if (!applicationCountsByRequestId[requestId]) {
+        applicationCountsByRequestId[requestId] = 1;
+      } else {
+        applicationCountsByRequestId[requestId] += 1;
       }
     });
     
-    console.log('[getPendingApplicationsForClient] Fetched counts:', applicationCountsByRequestId);
+    console.log('[getPendingApplicationsForClient] Grouped pending applications:', applicationCountsByRequestId);
     
     return { 
       success: true, 

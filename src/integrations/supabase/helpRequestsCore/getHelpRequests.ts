@@ -197,6 +197,16 @@ export const getHelpRequest = async (requestId: string) => {
     return { success: false, error: 'Invalid help request ID format' };
     
   } catch (error) {
-    return handleError(error, 'Exception fetching help request:');
+    // Fix for the TypeScript error - handle error message extraction properly
+    let errorMessage = 'Unknown error';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'object' && error !== null) {
+      // Handle case where error might be a different object type
+      errorMessage = String(error);
+    }
+    
+    console.error('[getHelpRequest] Exception:', error);
+    return { success: false, error: errorMessage };
   }
 };
