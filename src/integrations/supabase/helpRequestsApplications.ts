@@ -1,7 +1,10 @@
 
 import { supabase } from './client';
-import { MATCH_STATUSES } from '../utils/constants/statusConstants';
+import { MATCH_STATUSES } from '../../utils/constants/statusConstants';
 import { toast } from 'sonner';
+
+// Export valid match statuses for use in other components
+export const VALID_MATCH_STATUSES = MATCH_STATUSES;
 
 /**
  * Update the status of a help request application

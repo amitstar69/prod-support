@@ -1,8 +1,9 @@
 
+import { useCallback } from 'react';
+import { supabase } from '../../integrations/supabase/client';
+import { submitDeveloperApplication } from '../../integrations/supabase/helpRequestsApplications';
+import { MATCH_STATUSES } from '../../utils/constants/statusConstants';
 import { toast } from 'sonner';
-import { submitDeveloperApplication, getDeveloperApplicationsForRequest } from '../../integrations/supabase/helpRequestsApplications';
-
-const MAX_RATE = 9.99;
 
 export const useTicketApplicationActions = (
   isAuthenticated: boolean,
@@ -11,59 +12,69 @@ export const useTicketApplicationActions = (
   refreshTickets: () => void,
   fetchMyApplications: (isAuthenticated: boolean, userId: string | null) => Promise<void>
 ) => {
-  const handleClaimTicket = async (ticketId: string) => {
-    if (!isAuthenticated || !userId) {
-      toast.error('You must be logged in to claim tickets');
-      return;
-    }
-    if (userType !== 'developer') {
-      toast.error('Only developers can claim tickets');
-      return;
-    }
-    try {
-      toast.loading('Processing your application...');
-      const defaultRate = 5;
-      const formattedRate = Math.min(Math.max(0, parseFloat(defaultRate.toFixed(2))), MAX_RATE);
-      const defaultDuration = 60;
+  const handleClaimTicket = useCallback(
+    async (ticketId: string) => {
+      if (!isAuthenticated || !userId) {
+        toast.error('Please log in to apply for tickets');
+        return;
+      }
 
-      const result = await submitDeveloperApplication(
-        ticketId,
-        userId as string,
-        {
-          proposed_message: "I'd like to help with your request. I have experience in this area.",
-          proposed_duration: defaultDuration,
-          proposed_rate: formattedRate
-        }
-      );
+      if (userType !== 'developer') {
+        toast.error('Only developers can apply for tickets');
+        return;
+      }
 
-      toast.dismiss();
-      if (result.success) {
-        toast.success('Application submitted successfully!');
-        refreshTickets();
-        if (userId) {
+      try {
+        // Simple message for now - could be expanded to include more details
+        const message = "I'd like to help with this request!";
+        
+        const result = await submitDeveloperApplication(
+          ticketId,
+          userId,
+          message,
+          undefined,  // proposed rate
+          undefined   // proposed duration
+        );
+
+        if (result.success) {
+          toast.success('Successfully applied to help request!');
+          refreshTickets();
           await fetchMyApplications(isAuthenticated, userId);
+        } else {
+          toast.error(result.error || 'Failed to apply to help request');
         }
-      } else {
-        toast.error(`Failed to submit application: ${result.error}`);
+      } catch (error) {
+        console.error('Failed to claim ticket:', error);
+        toast.error('An unexpected error occurred');
       }
-    } catch (error) {
-      toast.dismiss();
-      toast.error('An error occurred while processing your application');
-    }
-  };
+    },
+    [isAuthenticated, userId, userType, refreshTickets, fetchMyApplications]
+  );
 
-  const checkApplicationStatus = async (ticketId: string, developerId: string): Promise<string | null> => {
-    try {
-      const result = await getDeveloperApplicationsForRequest(ticketId);
-      if (result.success && result.data) {
-        const myApplication = result.data.find(app => app.developer_id === developerId);
-        return myApplication ? myApplication.status : null;
+  const checkApplicationStatus = useCallback(
+    async (ticketId: string, userId: string) => {
+      try {
+        // Check if user has already applied to this ticket
+        const { data, error } = await supabase
+          .from('help_request_matches')
+          .select('status')
+          .eq('request_id', ticketId)
+          .eq('developer_id', userId)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error checking application:', error);
+          return null;
+        }
+
+        return data?.status || null;
+      } catch (err) {
+        console.error('Error in checkApplicationStatus:', err);
+        return null;
       }
-      return null;
-    } catch {
-      return null;
-    }
-  };
+    },
+    []
+  );
 
   return { handleClaimTicket, checkApplicationStatus };
 };

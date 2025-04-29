@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardFooter } from '../ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -34,16 +33,16 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
   const isProcessingAction = isProcessing(application.id);
   
   // Get appropriate status display
-  const getStatusBadge = () => {
-    switch (applicationStatus) {
+  const renderStatus = () => {
+    switch (application.status) {
       case MATCH_STATUSES.APPROVED_BY_CLIENT:
-        return <Badge variant="success">Approved</Badge>;
+        return <Badge variant="default" className="bg-green-500 text-white">Approved</Badge>;
       case MATCH_STATUSES.REJECTED_BY_CLIENT:
         return <Badge variant="destructive">Rejected</Badge>;
       case MATCH_STATUSES.PENDING:
-        return <Badge variant="outline">Pending</Badge>;
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">Pending</Badge>;
       default:
-        return <Badge variant="outline">{applicationStatus}</Badge>;
+        return <Badge variant="outline">{application.status}</Badge>;
     }
   };
   
@@ -64,7 +63,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
                 )}
               </div>
             </div>
-            <div className="ml-auto">{getStatusBadge()}</div>
+            <div className="ml-auto">{renderStatus()}</div>
           </div>
           
           {developerExperience && (
