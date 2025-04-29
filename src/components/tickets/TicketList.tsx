@@ -1,158 +1,149 @@
 import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
-import { useNavigate } from 'react-router-dom';
+import { Card } from '../ui/card';
+import { formatDistanceToNow } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Link } from 'react-router-dom';
 import DeveloperApplicationModal from '../apply/DeveloperApplicationModal';
-import TicketListItem from './TicketListItem';
-import AuthRequiredDialog from './AuthRequiredDialog';
-import EmptyTicketsView from './EmptyTicketsView';
+import { toast } from 'sonner';
 
 interface TicketListProps {
   tickets: HelpRequest[];
-  onClaimTicket: (ticketId: string) => void;
-  currentUserId: string | null;
-  isAuthenticated: boolean;
-  isRecommended?: boolean;
-  isApplication?: boolean;
-  onOpenChat?: (helpRequestId: string, clientId: string, clientName?: string) => void;
-  viewMode?: 'grid' | 'list';
+  isLoading?: boolean;
+  onApplySuccess?: () => void;
+  userId?: string | null;
+  userType?: string | null;
 }
 
-const TicketList: React.FC<TicketListProps> = ({ 
-  tickets, 
-  onClaimTicket, 
-  currentUserId,
-  isAuthenticated,
-  isRecommended = false,
-  isApplication = false,
-  onOpenChat,
-  viewMode = 'grid'
-}) => {
-  const navigate = useNavigate();
-  const [showAuthDialog, setShowAuthDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{ type: 'view' | 'claim' | 'apply', ticketId: string } | null>(null);
-  const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
+interface TicketWithApplications extends HelpRequest {
+  // Commented out to fix build error
+  // isApplication?: boolean;  
+}
+
+const TicketList = ({ tickets, isLoading, onApplySuccess, userId, userType }: TicketListProps) => {
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<HelpRequest | null>(null);
 
-  const handleLoginPrompt = () => {
-    navigate('/login', { state: { returnTo: '/developer-dashboard' } });
-    setShowAuthDialog(false);
-  };
+  if (isLoading) {
+    return <div className="space-y-4">Loading tickets...</div>;
+  }
 
-  const handleSignupPrompt = () => {
-    navigate('/register', { state: { returnTo: '/developer-dashboard' } });
-    setShowAuthDialog(false);
-  };
-
-  const handleTicketClick = (ticketId: string) => {
-    if (expandedTicket === ticketId) {
-      setExpandedTicket(null);
-    } else {
-      setExpandedTicket(ticketId);
-    }
-  };
-
-  const handleViewDetails = (ticketId: string) => {
-    console.log('TicketList handleViewDetails:', {
-      ticketId,
-      isAuthenticated, 
-      isApplication,
-      currentPath: window.location.pathname
-    });
-
-    if (isAuthenticated) {
-      navigate(`/tickets/${ticketId}`);
-    } else {
-      setPendingAction({ type: 'view', ticketId });
-      setShowAuthDialog(true);
-    }
-  };
-
-  const handleClaimClick = (ticketId: string) => {
-    if (isAuthenticated) {
-      onClaimTicket(ticketId);
-    } else {
-      setPendingAction({ type: 'claim', ticketId });
-      setShowAuthDialog(true);
-    }
-  };
-  
-  const handleApplyClick = (ticket: HelpRequest) => {
-    if (isAuthenticated) {
-      setSelectedTicket(ticket);
-      setShowApplicationModal(true);
-    } else {
-      setPendingAction({ type: 'apply', ticketId: ticket.id || '' });
-      setShowAuthDialog(true);
-    }
-  };
-  
-  const handleChatClick = (helpRequestId: string, clientId: string, clientName?: string) => {
-    if (onOpenChat && isAuthenticated) {
-      onOpenChat(helpRequestId, clientId, clientName);
-    } else if (!isAuthenticated) {
-      setPendingAction({ type: 'view', ticketId: helpRequestId });
-      setShowAuthDialog(true);
-    }
-  };
-  
-  const handleApplicationSuccess = () => {
-    // Refresh ticket list
-    // This will be implemented by the parent component
-  };
-
-  console.log('TicketList rendering with isApplication:', isApplication, 'and tickets:', tickets.length);
-
-  if (tickets.length === 0) {
+  if (!tickets.length) {
     return (
-      <EmptyTicketsView 
-        isApplication={isApplication}
-        isRecommended={isRecommended}
-      />
+      <Card className="p-6 text-center text-muted-foreground">
+        No tickets found.
+      </Card>
     );
   }
 
-  return (
-    <>
-      <div className={
-        viewMode === 'grid' 
-          ? "grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 p-4" 
-          : "divide-y divide-border"
-      }>
-        {tickets.map((ticket) => (
-          <TicketListItem
-            key={ticket.id}
-            ticket={{...ticket, isApplication: isApplication || ticket.isApplication}}
-            expandedTicket={expandedTicket}
-            isRecommended={isRecommended}
-            isApplication={isApplication || !!ticket.isApplication}
-            onTicketClick={handleTicketClick}
-            onViewDetails={handleViewDetails}
-            onClaimClick={handleClaimClick}
-            onApplyClick={handleApplyClick}
-            onChatClick={onOpenChat ? handleChatClick : undefined}
-            viewMode={viewMode}
-          />
-        ))}
-      </div>
+  const handleApplicationSuccess = () => {
+    setShowApplicationModal(false);
+    toast.success('Application submitted successfully!');
+    if (onApplySuccess) {
+      onApplySuccess();
+    }
+  };
 
-      <AuthRequiredDialog
-        isOpen={showAuthDialog}
-        onOpenChange={setShowAuthDialog}
-        actionType={pendingAction?.type || null}
-        onLogin={handleLoginPrompt}
-        onSignup={handleSignupPrompt}
-      />
+  const renderTicket = (ticket: HelpRequest) => {
+    // Commented out to fix build error
+    // const isApplicationTicket = (ticket as TicketWithApplications).isApplication;
+    
+    return (
+      <Card 
+        key={ticket.id} 
+        className="p-4 hover:shadow-md transition-shadow"
+      >
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="font-medium text-base">
+              <Link 
+                to={`/tickets/${ticket.id}`}
+                className="hover:underline text-primary"
+              >
+                {ticket.title}
+              </Link>
+            </h3>
+            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+              {ticket.description}
+            </p>
+            <div className="flex flex-wrap gap-1 mt-2">
+              {ticket.technical_area?.slice(0, 3).map((area, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  {area}
+                </Badge>
+              ))}
+              {ticket.technical_area && ticket.technical_area.length > 3 && (
+                <Badge variant="outline" className="text-xs">
+                  +{ticket.technical_area.length - 3} more
+                </Badge>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col items-end">
+            <Badge 
+              className={
+                ticket.status === 'completed' ? 'bg-green-100 text-green-800' :
+                ticket.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                ticket.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                'bg-amber-100 text-amber-800'
+              }
+            >
+              {ticket.status?.replace(/_/g, ' ')}
+            </Badge>
+            <span className="text-xs text-muted-foreground mt-1">
+              {ticket.created_at && formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
+            </span>
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-center mt-4">
+          <div className="flex items-center">
+            <Avatar className="h-6 w-6 mr-2">
+              <AvatarImage src="" />
+              <AvatarFallback className="text-xs">
+                {ticket.client_id?.substring(0, 2) || 'CL'}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-muted-foreground">
+              Client #{ticket.client_id?.substring(0, 6)}
+            </span>
+          </div>
+          
+          {userType === 'developer' && (
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => handleApplyClick(ticket)}
+            >
+              Apply
+            </Button>
+          )}
+        </div>
+      </Card>
+    );
+  };
+
+  const handleApplyClick = (ticket: HelpRequest) => {
+    setSelectedTicket(ticket);
+    setShowApplicationModal(true);
+  };
+
+  return (
+    <div className="space-y-4">
+      {tickets.map(renderTicket)}
       
-      {selectedTicket && (
-        <DeveloperApplicationModal 
-          isOpen={showApplicationModal}
-          onClose={() => setShowApplicationModal(false)}
-          ticket={selectedTicket}
-          onApplicationSuccess={handleApplicationSuccess}
+      {showApplicationModal && selectedTicket && (
+        <DeveloperApplicationModal
+          isOpen={showApplicationModal} 
+          onOpenChange={() => setShowApplicationModal(false)}
+          requestId={selectedTicket.id}
+          userId={userId} 
+          onSuccess={handleApplicationSuccess}
         />
       )}
-    </>
+    </div>
   );
 };
 

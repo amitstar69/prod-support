@@ -71,42 +71,45 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
       
       console.log('[DeveloperApplicationsPanel] Fetched applications:', data);
       
-      // Ensure the data conforms to our expected type
+      // Process the data to handle potential missing or malformed data
       const typedApplications: HelpRequestMatch[] = (data || []).map(app => {
         // Handle potentially malformed profiles data
-        let safeProfiles = app.profiles;
-        
-        if (!safeProfiles || typeof safeProfiles !== 'object') {
-          safeProfiles = { 
-            id: app.developer_id, 
-            name: 'Unknown Developer',
-            image: null,
-            description: '',
-            location: ''
-          };
-        } else if (!safeProfiles.description) {
-          safeProfiles.description = '';
-        } else if (!safeProfiles.location) {
-          safeProfiles.location = '';
-        }
+        const safeProfiles = app.profiles && typeof app.profiles === 'object' 
+          ? {
+              id: app.profiles.id || app.developer_id,
+              name: app.profiles.name || 'Unknown Developer',
+              image: app.profiles.image || null,
+              description: app.profiles.description || '',
+              location: app.profiles.location || ''
+            }
+          : {
+              id: app.developer_id,
+              name: 'Unknown Developer',
+              image: null,
+              description: '',
+              location: ''
+            };
 
         // Handle potentially malformed developer_profiles data
-        let safeDeveloperProfiles = app.developer_profiles;
-        
-        if (!safeDeveloperProfiles || typeof safeDeveloperProfiles !== 'object') {
-          safeDeveloperProfiles = {
-            id: app.developer_id,
-            skills: [],
-            experience: '',
-            hourly_rate: 0
-          };
-        }
+        const safeDeveloperProfiles = app.developer_profiles && typeof app.developer_profiles === 'object'
+          ? {
+              id: app.developer_profiles.id || app.developer_id,
+              skills: Array.isArray(app.developer_profiles.skills) ? app.developer_profiles.skills : [],
+              experience: app.developer_profiles.experience || '',
+              hourly_rate: app.developer_profiles.hourly_rate || 0
+            }
+          : {
+              id: app.developer_id,
+              skills: [],
+              experience: '',
+              hourly_rate: 0
+            };
 
         return {
           ...app,
           profiles: safeProfiles,
           developer_profiles: safeDeveloperProfiles
-        } as HelpRequestMatch;
+        } as unknown as HelpRequestMatch;
       });
       
       setApplications(typedApplications);
@@ -170,7 +173,7 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
   };
 
   const handleChatWithDeveloper = (developerId: string, developerName: string) => {
-    // Navigate to chat or open chat dialog
+    // Placeholder for chat functionality
     console.log('Open chat with developer:', developerId, developerName);
     // Implementation will depend on your chat component
   };
@@ -283,7 +286,7 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
                         size="sm" 
                         variant="outline"
                         onClick={() => handleChatWithDeveloper(
-                          application.developer_id, 
+                          application.developer_id!, 
                           application.profiles?.name || 'Developer'
                         )}
                       >
@@ -338,7 +341,7 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
                       size="sm" 
                       variant="outline"
                       onClick={() => handleChatWithDeveloper(
-                        application.developer_id, 
+                        application.developer_id!, 
                         application.profiles?.name || 'Developer'
                       )}
                     >

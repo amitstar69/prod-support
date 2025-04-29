@@ -164,6 +164,8 @@ export const getAllowedStatusTransitions = (
   });
 };
 
+export type UserType = 'client' | 'developer';
+
 export const updateTicketStatus = async (
   ticketId: string,
   newStatus: TicketStatus,

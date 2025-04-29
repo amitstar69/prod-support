@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../../integrations/supabase/client';
 import { HelpRequest } from '../../types/helpRequest';
@@ -84,7 +85,33 @@ export const useTicketFetching = (initialCategory: string): UseTicketFetchingRes
         throw new Error(error.message);
       }
 
-      setTickets(data || []);
+      // Add proper type conversion for the attachments field
+      const processedTickets = data?.map(ticket => {
+        // Ensure attachments is always an array even if it comes as string or null
+        let safeAttachments: any[] = [];
+        
+        if (ticket.attachments) {
+          if (Array.isArray(ticket.attachments)) {
+            safeAttachments = ticket.attachments;
+          } else if (typeof ticket.attachments === 'string') {
+            try {
+              safeAttachments = JSON.parse(ticket.attachments);
+              if (!Array.isArray(safeAttachments)) {
+                safeAttachments = [];
+              }
+            } catch (e) {
+              safeAttachments = [];
+            }
+          }
+        }
+        
+        return {
+          ...ticket,
+          attachments: safeAttachments
+        } as HelpRequest;
+      }) || [];
+      
+      setTickets(processedTickets);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tickets');
     } finally {

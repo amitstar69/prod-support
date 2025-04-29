@@ -1,24 +1,12 @@
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { toast } from 'sonner';
 import { HelpRequest } from '../../types/helpRequest';
-import { Alert, AlertDescription } from '../ui/alert';
-import { Loader2 } from 'lucide-react';
-import { 
-  getAllowedTransitions,
-  getNextRecommendedStatus,
-  StatusTransition 
-} from '../../utils/statusTransitions';
-import { updateHelpRequest } from '../../integrations/supabase/helpRequestsCore/updateHelpRequest';
 import { UserType } from '../../utils/helpRequestStatusUtils';
-import { normalizeStatus } from '../../utils/constants/statusConstants';
 
 interface StatusActionCardProps {
   ticket: HelpRequest;
   userType: UserType;
-  onStatusUpdated?: () => void;
+  onStatusUpdated: () => Promise<void>;
 }
 
 /**
@@ -75,7 +63,7 @@ const StatusActionCard: React.FC<StatusActionCardProps> = ({
 
       toast.success(`Status updated successfully`);
       if (onStatusUpdated) {
-        onStatusUpdated();
+        await onStatusUpdated();
       }
     } catch (error: any) {
       setError(error.message || `Failed to update status to ${newStatus}`);

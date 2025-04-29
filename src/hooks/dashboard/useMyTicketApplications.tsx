@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '../../integrations/supabase/client';
 import { HelpRequest } from '../../types/helpRequest';
@@ -10,6 +9,31 @@ export const useMyTicketApplications = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [dataSource, setDataSource] = useState<string>('cache');
+
+  const processHelpRequest = (request: any): HelpRequest => {
+    // Ensure attachments is always an array even if it comes as string or null
+    let safeAttachments: any[] = [];
+    
+    if (request.attachments) {
+      if (Array.isArray(request.attachments)) {
+        safeAttachments = request.attachments;
+      } else if (typeof request.attachments === 'string') {
+        try {
+          safeAttachments = JSON.parse(request.attachments);
+          if (!Array.isArray(safeAttachments)) {
+            safeAttachments = [];
+          }
+        } catch (e) {
+          safeAttachments = [];
+        }
+      }
+    }
+
+    return {
+      ...request,
+      attachments: safeAttachments
+    } as HelpRequest;
+  };
 
   const fetchMyApplications = async (isAuthenticated: boolean, userId: string | null) => {
     if (!isAuthenticated || !userId) {
@@ -66,7 +90,7 @@ export const useMyTicketApplications = () => {
       });
 
       console.log('[MyApplications] Mapped requests:', mappedRequests);
-      setMyApplications(mappedRequests);
+      setMyApplications((data || []).map(processHelpRequest));
       setDataSource('api');
     } catch (error) {
       console.error('[MyApplications] Error in fetchMyApplications:', error);

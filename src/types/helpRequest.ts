@@ -15,7 +15,7 @@ export interface HelpRequest {
   created_at?: string;
   updated_at?: string;
   ticket_number?: number;
-  attachments?: any[];
+  attachments?: any[] | string | null;
   
   // Add the missing properties
   nda_required?: boolean;
