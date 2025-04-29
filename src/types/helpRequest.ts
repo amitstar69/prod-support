@@ -16,6 +16,41 @@ export interface HelpRequest {
   updated_at?: string;
   ticket_number?: number;
   attachments?: any[];
+  
+  // Add the missing properties
+  nda_required?: boolean;
+  preferred_developer_location?: string;
+  preferred_developer_experience?: string;
+  developer_qa_notes?: string;
+  client_feedback?: string;
+  cancellation_reason?: string;
+}
+
+export interface HelpSession {
+  id?: string;
+  request_id?: string;
+  developer_id?: string;
+  client_id?: string;
+  scheduled_start?: string;
+  scheduled_end?: string;
+  actual_start?: string;
+  actual_end?: string;
+  status?: string;
+  shared_code?: string;
+  final_cost?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface HelpRequestHistoryItem {
+  id?: string;
+  help_request_id?: string;
+  changed_by?: string;
+  changed_at?: string;
+  change_type?: string;
+  previous_status?: string;
+  new_status?: string;
+  change_details?: any;
 }
 
 export interface DeveloperProfile {
@@ -47,3 +82,64 @@ export interface HelpRequestMatch {
   profiles?: Profile;
   developer_profiles?: DeveloperProfile;
 }
+
+// Constants for form options
+export const technicalAreaOptions = [
+  'React',
+  'Angular',
+  'Vue',
+  'Next.js',
+  'Node.js',
+  'Express',
+  'MongoDB',
+  'PostgreSQL',
+  'TypeScript',
+  'JavaScript',
+  'CSS',
+  'HTML',
+  'Redux',
+  'GraphQL',
+  'REST API',
+  'Authentication',
+  'AWS',
+  'Docker',
+  'Firebase',
+  'UI/UX',
+  'Testing',
+  'DevOps',
+  'Mobile',
+  'Other'
+];
+
+export const communicationOptions = [
+  'Chat',
+  'Voice Call',
+  'Video Call',
+  'Screen Share',
+  'Code Collaboration'
+];
+
+export const budgetRangeOptions = [
+  '$0 - $50',
+  '$50 - $100',
+  '$100 - $200',
+  '$200 - $500',
+  '$500+'
+];
+
+export const urgencyOptions = [
+  { value: 'low', label: 'Low - Within a week' },
+  { value: 'medium', label: 'Medium - Within a few days' },
+  { value: 'high', label: 'High - Within 24 hours' },
+  { value: 'critical', label: 'Critical - ASAP' }
+];
+
+export const locationOptions = [
+  { value: 'Global', label: 'Global (Any Location)' },
+  { value: 'North America', label: 'North America' },
+  { value: 'Europe', label: 'Europe' },
+  { value: 'Asia', label: 'Asia' },
+  { value: 'Australia', label: 'Australia/Oceania' },
+  { value: 'South America', label: 'South America' },
+  { value: 'Africa', label: 'Africa' }
+];
