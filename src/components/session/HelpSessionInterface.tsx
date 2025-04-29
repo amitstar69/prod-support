@@ -1,450 +1,409 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { HelpRequest, HelpSession } from '../../types/helpRequest';
 import { supabase } from '../../integrations/supabase/client';
-import { useAuth } from '../../contexts/auth';
-import { HelpSession, HelpRequest } from '../../types/helpRequest';
-import { toast } from 'sonner';
-import {
-  Clock,
-  MessageSquare,
-  Video,
-  Code,
-  Share2,
-  Play,
-  Pause,
-  StopCircle,
-  Download,
-  Loader2
-} from 'lucide-react';
 import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Separator } from '../ui/separator';
-import CodeEditor from './CodeEditor';
-import ChatInterface from './ChatInterface';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Textarea } from '../ui/textarea';
+import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
+import { Clock, Calendar, User, Code, MessageSquare } from 'lucide-react';
+import CodeEditor from '../code/CodeEditor';
+import ChatInterface from '../chat/ChatInterface';
 
-const HelpSessionInterface: React.FC = () => {
-  const { sessionId } = useParams<{ sessionId: string }>();
-  const { userId, userType } = useAuth();
-  const navigate = useNavigate();
-  
+interface HelpSessionInterfaceProps {
+  sessionId: string;
+  userId: string;
+  userRole: 'client' | 'developer';
+}
+
+const HelpSessionInterface: React.FC<HelpSessionInterfaceProps> = ({
+  sessionId,
+  userId,
+  userRole
+}) => {
   const [session, setSession] = useState<HelpSession | null>(null);
   const [helpRequest, setHelpRequest] = useState<HelpRequest | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('code');
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [isSessionRunning, setIsSessionRunning] = useState(false);
-  const [isSavingSession, setIsSavingSession] = useState(false);
+  const [sharedCode, setSharedCode] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('code');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
-  useEffect(() => {
-    fetchSessionData();
-  }, [sessionId]);
-
-  // Timer effect for tracking session duration
-  useEffect(() => {
-    let intervalId: number;
-    
-    if (isSessionRunning) {
-      intervalId = window.setInterval(() => {
-        setElapsedTime(prev => prev + 1);
-      }, 1000);
+  const processHelpRequest = (request: any): HelpRequest => {
+    // Normalize attachments to always be an array
+    let attachmentsArray: any[] = [];
+    if (request.attachments) {
+      if (Array.isArray(request.attachments)) {
+        attachmentsArray = request.attachments;
+      } else if (typeof request.attachments === 'string') {
+        try {
+          const parsed = JSON.parse(request.attachments);
+          attachmentsArray = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          attachmentsArray = [];
+        }
+      }
     }
-    
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [isSessionRunning]);
 
-  const fetchSessionData = async () => {
-    if (!sessionId) return;
-    
-    try {
+    return {
+      ...request,
+      attachments: attachmentsArray
+    } as HelpRequest;
+  };
+
+  useEffect(() => {
+    const fetchSessionData = async () => {
       setIsLoading(true);
+      setError(null);
       
-      // Fetch the session data
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('help_sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .single();
+      try {
+        // Fetch session data
+        const { data: sessionData, error: sessionError } = await supabase
+          .from('help_sessions')
+          .select('*')
+          .eq('id', sessionId)
+          .single();
+          
+        if (sessionError) {
+          throw new Error(`Failed to load session: ${sessionError.message}`);
+        }
         
-      if (sessionError) {
-        console.error('Error fetching session:', sessionError);
-        toast.error('Failed to load session data');
-        navigate('/developer-dashboard');
-        return;
-      }
-      
-      setSession(sessionData);
-      
-      // Fetch the associated help request
-      const { data: requestData, error: requestError } = await supabase
-        .from('help_requests')
-        .select('*')
-        .eq('id', sessionData.request_id)
-        .single();
+        if (!sessionData) {
+          throw new Error('Session not found');
+        }
         
-      if (requestError) {
-        console.error('Error fetching help request:', requestError);
-        toast.error('Failed to load request details');
-      } else {
-        setHelpRequest(requestData);
+        setSession(sessionData);
+        setSharedCode(sessionData.shared_code || '');
+        
+        // Fetch the associated help request
+        if (sessionData.request_id) {
+          const { data: requestData, error: requestError } = await supabase
+            .from('help_requests')
+            .select('*')
+            .eq('id', sessionData.request_id)
+            .single();
+            
+          if (requestError) {
+            throw new Error(`Failed to load help request: ${requestError.message}`);
+          }
+          
+          if (requestData) {
+            setHelpRequest(processHelpRequest(requestData));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching session data:', err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setIsLoading(false);
       }
-      
-      // Calculate elapsed time if session is already in progress
-      if (sessionData.actual_start && !sessionData.actual_end) {
-        const startTime = new Date(sessionData.actual_start).getTime();
-        const currentTime = new Date().getTime();
-        const elapsed = Math.floor((currentTime - startTime) / 1000);
-        setElapsedTime(elapsed);
-        setIsSessionRunning(true);
-      }
-      
-    } catch (error) {
-      console.error('Exception fetching session data:', error);
-      toast.error('An unexpected error occurred while loading the session');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleStartSession = async () => {
-    if (!session || !userId) return;
+    };
     
+    fetchSessionData();
+    
+    // Set up real-time subscription for code updates
+    const channel = supabase
+      .channel(`session-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'help_sessions',
+          filter: `id=eq.${sessionId}`
+        },
+        (payload) => {
+          console.log('Session updated:', payload);
+          const updatedSession = payload.new as HelpSession;
+          
+          // Only update if the shared_code has changed and it's not from our own update
+          if (updatedSession.shared_code !== sharedCode && !isSaving) {
+            setSharedCode(updatedSession.shared_code || '');
+            setSession(prevSession => ({
+              ...prevSession,
+              ...updatedSession
+            }));
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId]);
+  
+  const handleCodeChange = (newCode: string) => {
+    setSharedCode(newCode);
+  };
+  
+  const saveCode = async () => {
+    if (!session) return;
+    
+    setIsSaving(true);
     try {
-      setIsSavingSession(true);
-      
-      const now = new Date().toISOString();
-      
       const { error } = await supabase
         .from('help_sessions')
-        .update({
-          actual_start: now,
-          status: 'in-progress'
+        .update({ shared_code: sharedCode })
+        .eq('id', session.id);
+        
+      if (error) {
+        throw new Error(`Failed to save code: ${error.message}`);
+      }
+      
+      toast.success('Code saved successfully');
+    } catch (err) {
+      console.error('Error saving code:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to save code');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  const startSession = async () => {
+    if (!session) return;
+    
+    try {
+      const { error } = await supabase
+        .from('help_sessions')
+        .update({ 
+          actual_start: new Date().toISOString(),
+          status: 'in_progress'
         })
         .eq('id', session.id);
         
       if (error) {
-        console.error('Error starting session:', error);
-        toast.error('Failed to start the session');
-        return;
+        throw new Error(`Failed to start session: ${error.message}`);
       }
       
-      // Also update the help request status
-      await supabase
-        .from('help_requests')
-        .update({
-          status: 'in-progress'
-        })
-        .eq('id', session.request_id);
+      setSession(prev => ({
+        ...prev!,
+        actual_start: new Date().toISOString(),
+        status: 'in_progress'
+      }));
       
-      setSession({
-        ...session,
-        actual_start: now,
-        status: 'in-progress'
-      });
-      
-      setIsSessionRunning(true);
-      toast.success('Session started successfully!');
-      
-    } catch (error) {
-      console.error('Exception starting session:', error);
-      toast.error('An unexpected error occurred');
-    } finally {
-      setIsSavingSession(false);
+      toast.success('Session started');
+    } catch (err) {
+      console.error('Error starting session:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to start session');
     }
   };
-
-  const handlePauseResumeSession = async () => {
-    setIsSessionRunning(prev => !prev);
-    toast.info(isSessionRunning ? 'Session paused' : 'Session resumed');
-  };
-
-  const handleEndSession = async () => {
-    if (!session || !userId) return;
+  
+  const endSession = async () => {
+    if (!session) return;
     
     try {
-      setIsSavingSession(true);
-      
-      const now = new Date().toISOString();
-      
-      // Calculate final cost based on elapsed time and rate
-      // This is a simple calculation, in reality you might want to use the
-      // developer's rate from their profile
-      const minutesElapsed = Math.ceil(elapsedTime / 60);
-      const hourlyRate = 75; // Default rate in USD
-      const finalCost = (hourlyRate / 60) * minutesElapsed;
-      
       const { error } = await supabase
         .from('help_sessions')
-        .update({
-          actual_end: now,
-          status: 'completed',
-          final_cost: finalCost
-        })
-        .eq('id', session.id);
-        
-      if (error) {
-        console.error('Error ending session:', error);
-        toast.error('Failed to end the session');
-        return;
-      }
-      
-      // Also update the help request status
-      await supabase
-        .from('help_requests')
-        .update({
+        .update({ 
+          actual_end: new Date().toISOString(),
           status: 'completed'
         })
-        .eq('id', session.request_id);
+        .eq('id', session.id);
+        
+      if (error) {
+        throw new Error(`Failed to end session: ${error.message}`);
+      }
       
-      setSession({
-        ...session,
-        actual_end: now,
-        status: 'completed',
-        final_cost: finalCost
-      });
+      setSession(prev => ({
+        ...prev!,
+        actual_end: new Date().toISOString(),
+        status: 'completed'
+      }));
       
-      setIsSessionRunning(false);
-      toast.success('Session completed successfully!');
-      
-      // Navigate to a summary page or back to dashboard
-      setTimeout(() => {
-        navigate('/session-summary/' + session.id);
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Exception ending session:', error);
-      toast.error('An unexpected error occurred');
-    } finally {
-      setIsSavingSession(false);
+      toast.success('Session completed');
+    } catch (err) {
+      console.error('Error ending session:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to end session');
     }
   };
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
+  
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-lg">Loading session...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading session...</p>
         </div>
       </div>
     );
   }
-
-  if (!session || !helpRequest) {
+  
+  if (error) {
     return (
-      <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold mb-4">Session Not Found</h2>
-        <p className="text-muted-foreground mb-6">The session you're looking for doesn't exist or you don't have permission to view it.</p>
-        <Button onClick={() => navigate('/developer-dashboard')}>
-          Return to Dashboard
-        </Button>
-      </div>
+      <Card className="border-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Error</CardTitle>
+          <CardDescription>Failed to load session</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>{error}</p>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </CardFooter>
+      </Card>
     );
   }
-
+  
+  if (!session) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Session Not Found</CardTitle>
+          <CardDescription>The requested session could not be found</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>Please check the session ID and try again.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  const isSessionActive = session.status === 'in_progress';
+  const isSessionCompleted = session.status === 'completed';
+  const canStartSession = session.status === 'scheduled' && userRole === 'developer';
+  const canEndSession = isSessionActive && userRole === 'developer';
+  const otherId = userRole === 'client' ? session.developer_id : session.client_id;
+  
   return (
-    <div className="container mx-auto p-4 max-w-7xl">
-      <div className="mb-6">
-        <div className="flex flex-col md:flex-row justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">{helpRequest.title}</h1>
-            <p className="text-muted-foreground">{helpRequest.description}</p>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Help Session</span>
+            <div className="text-sm font-normal bg-muted px-3 py-1 rounded-full">
+              {session.status}
+            </div>
+          </CardTitle>
+          <CardDescription>
+            {helpRequest?.title || 'Untitled Help Request'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Scheduled:</span>
+              <span>
+                {session.scheduled_start ? new Date(session.scheduled_start).toLocaleString() : 'Not scheduled'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Duration:</span>
+              <span>
+                {session.scheduled_end && session.scheduled_start ? 
+                  `${Math.round((new Date(session.scheduled_end).getTime() - new Date(session.scheduled_start).getTime()) / 60000)} minutes` : 
+                  'Not specified'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">
+                {userRole === 'client' ? 'Developer:' : 'Client:'}
+              </span>
+              <span>
+                {userRole === 'client' ? 
+                  `Developer #${session.developer_id?.substring(0, 6)}` : 
+                  `Client #${session.client_id?.substring(0, 6)}`}
+              </span>
+            </div>
+            {session.actual_start && (
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4 text-green-500" />
+                <span className="text-muted-foreground">Started:</span>
+                <span>
+                  {formatDistanceToNow(new Date(session.actual_start), { addSuffix: true })}
+                </span>
+              </div>
+            )}
           </div>
           
-          <div className="flex flex-col items-end">
-            <div className="text-2xl font-mono bg-secondary p-2 rounded-md">
-              {formatTime(elapsedTime)}
+          {helpRequest && (
+            <div className="mt-4 p-3 bg-muted/30 rounded-md">
+              <h4 className="text-sm font-medium mb-1">Help Request Description</h4>
+              <p className="text-sm text-muted-foreground">{helpRequest.description}</p>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Session {session.status}
-            </p>
-          </div>
-        </div>
-      </div>
+          )}
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          {canStartSession && (
+            <Button onClick={startSession}>Start Session</Button>
+          )}
+          {canEndSession && (
+            <Button onClick={endSession} variant="outline">End Session</Button>
+          )}
+          {isSessionCompleted && (
+            <div className="text-sm text-muted-foreground">
+              Session completed {session.actual_end && formatDistanceToNow(new Date(session.actual_end), { addSuffix: true })}
+            </div>
+          )}
+        </CardFooter>
+      </Card>
       
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Main workspace - takes 3/4 of the space on large screens */}
-        <div className="lg:col-span-3">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="code">
-                <Code className="h-4 w-4 mr-2" />
-                Code Editor
-              </TabsTrigger>
-              <TabsTrigger value="chat">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Chat
-              </TabsTrigger>
-              <TabsTrigger value="video">
-                <Video className="h-4 w-4 mr-2" />
-                Video Call
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="code" className="border rounded-md mt-2">
-              <CodeEditor 
-                initialCode={helpRequest.code_snippet || '// Write your code here'}
-                language="javascript"
-              />
-            </TabsContent>
-            
-            <TabsContent value="chat" className="border rounded-md mt-2 h-[600px]">
-              <ChatInterface sessionId={session.id} />
-            </TabsContent>
-            
-            <TabsContent value="video" className="border rounded-md mt-2 h-[600px] flex items-center justify-center">
-              <div className="text-center p-8">
-                <Video className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-xl font-medium mb-2">Video Call</h3>
-                <p className="text-muted-foreground mb-4">Connect via video to discuss the issue in real-time.</p>
-                <Button>
-                  Start Video Call
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-        
-        {/* Sidebar - takes 1/4 of the space on large screens */}
-        <div className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid grid-cols-2">
+          <TabsTrigger value="code" className="flex items-center gap-2">
+            <Code className="h-4 w-4" />
+            <span>Shared Code</span>
+          </TabsTrigger>
+          <TabsTrigger value="chat" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            <span>Chat</span>
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="code" className="mt-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Session Controls</CardTitle>
+            <CardHeader>
+              <CardTitle className="text-lg">Shared Code Editor</CardTitle>
               <CardDescription>
-                Manage your current help session
+                Code changes are shared in real-time between you and the {userRole === 'client' ? 'developer' : 'client'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {session.status === 'scheduled' && (
-                  <Button 
-                    className="w-full" 
-                    onClick={handleStartSession}
-                    disabled={isSavingSession}
-                  >
-                    {isSavingSession ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Play className="h-4 w-4 mr-2" />
-                    )}
-                    Start Session
-                  </Button>
-                )}
-                
-                {session.status === 'in-progress' && (
-                  <>
-                    <Button 
-                      className="w-full" 
-                      variant={isSessionRunning ? "default" : "outline"}
-                      onClick={handlePauseResumeSession}
-                      disabled={isSavingSession}
-                    >
-                      {isSessionRunning ? (
-                        <>
-                          <Pause className="h-4 w-4 mr-2" />
-                          Pause Session
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-4 w-4 mr-2" />
-                          Resume Session
-                        </>
-                      )}
-                    </Button>
-                    
-                    <Button 
-                      className="w-full" 
-                      variant="destructive"
-                      onClick={handleEndSession}
-                      disabled={isSavingSession}
-                    >
-                      {isSavingSession ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <StopCircle className="h-4 w-4 mr-2" />
-                      )}
-                      End Session
-                    </Button>
-                  </>
-                )}
-                
-                {session.status === 'completed' && (
-                  <div className="text-center py-2">
-                    <p className="text-green-600 font-medium">Session Completed</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Final cost: ${session.final_cost?.toFixed(2)}
-                    </p>
-                  </div>
-                )}
+              <div className="min-h-[400px] border rounded-md">
+                <CodeEditor
+                  value={sharedCode}
+                  onChange={handleCodeChange}
+                  language="javascript"
+                  readOnly={isSessionCompleted}
+                />
               </div>
             </CardContent>
+            <CardFooter>
+              <Button 
+                onClick={saveCode} 
+                disabled={isSaving || isSessionCompleted}
+              >
+                {isSaving ? 'Saving...' : 'Save Code'}
+              </Button>
+            </CardFooter>
           </Card>
-          
+        </TabsContent>
+        <TabsContent value="chat" className="mt-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Session Details</CardTitle>
+            <CardHeader>
+              <CardTitle className="text-lg">Session Chat</CardTitle>
+              <CardDescription>
+                Communicate with the {userRole === 'client' ? 'developer' : 'client'} during your session
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Status:</span>
-                  <span className="font-medium capitalize">{session.status}</span>
-                </div>
-                
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Technical Area:</span>
-                  <span className="font-medium">{helpRequest.technical_area.join(', ')}</span>
-                </div>
-                
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Est. Duration:</span>
-                  <span className="font-medium">{helpRequest.estimated_duration} mins</span>
-                </div>
-                
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Budget:</span>
-                  <span className="font-medium">{helpRequest.budget_range}</span>
-                </div>
-                
-                <Separator />
-                
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Time Elapsed:</span>
-                  <span className="font-medium">{formatTime(elapsedTime)}</span>
-                </div>
-                
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Current Cost:</span>
-                  <span className="font-medium">
-                    ${((75 / 60) * Math.ceil(elapsedTime / 60)).toFixed(2)}
-                  </span>
-                </div>
-              </div>
+              {otherId && (
+                <ChatInterface
+                  helpRequestId={session.request_id || ''}
+                  otherId={otherId}
+                  otherName={userRole === 'client' ? 'Developer' : 'Client'}
+                  currentUserId={userId}
+                  readOnly={isSessionCompleted}
+                />
+              )}
             </CardContent>
           </Card>
-          
-          <Button variant="outline" className="w-full">
-            <Share2 className="h-4 w-4 mr-2" />
-            Share Screen
-          </Button>
-          
-          <Button variant="outline" className="w-full">
-            <Download className="h-4 w-4 mr-2" />
-            Save Session Notes
-          </Button>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

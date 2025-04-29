@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
@@ -70,6 +69,31 @@ const statusLabels = {
   'in-progress': 'In Progress',
   'developer-qa': 'Developer QA',
   'client-approved': 'Client Approved'
+};
+
+// Add a helper function at the top to process Help Requests
+const processHelpRequests = (requests: any[]): HelpRequest[] => {
+  return requests.map(request => {
+    // Normalize attachments to always be an array
+    let attachmentsArray: any[] = [];
+    if (request.attachments) {
+      if (Array.isArray(request.attachments)) {
+        attachmentsArray = request.attachments;
+      } else if (typeof request.attachments === 'string') {
+        try {
+          const parsed = JSON.parse(request.attachments);
+          attachmentsArray = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          attachmentsArray = [];
+        }
+      }
+    }
+
+    return {
+      ...request,
+      attachments: attachmentsArray
+    } as HelpRequest;
+  });
 };
 
 const HelpRequestsTracking: React.FC = () => {

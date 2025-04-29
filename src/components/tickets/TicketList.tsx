@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Card } from '../ui/card';
@@ -15,6 +16,13 @@ interface TicketListProps {
   onApplySuccess?: () => void;
   userId?: string | null;
   userType?: string | null;
+  onClaimTicket?: (ticketId: string) => void;
+  currentUserId?: string | null;
+  isAuthenticated?: boolean;
+  viewMode?: 'grid' | 'list';
+  isApplication?: boolean;
+  isRecommended?: boolean;
+  onOpenChat?: (helpRequestId: string, clientId: string, clientName?: string) => void;
 }
 
 interface TicketWithApplications extends HelpRequest {
@@ -22,7 +30,7 @@ interface TicketWithApplications extends HelpRequest {
   // isApplication?: boolean;  
 }
 
-const TicketList = ({ tickets, isLoading, onApplySuccess, userId, userType }: TicketListProps) => {
+const TicketList = ({ tickets, isLoading, onApplySuccess, userId, userType, onClaimTicket, currentUserId, isAuthenticated, viewMode, isApplication, isRecommended, onOpenChat }: TicketListProps) => {
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<HelpRequest | null>(null);
 
@@ -111,13 +119,23 @@ const TicketList = ({ tickets, isLoading, onApplySuccess, userId, userType }: Ti
             </span>
           </div>
           
-          {userType === 'developer' && (
+          {userType === 'developer' && onClaimTicket && (
             <Button 
               size="sm" 
               variant="outline"
               onClick={() => handleApplyClick(ticket)}
             >
               Apply
+            </Button>
+          )}
+          
+          {isApplication && onOpenChat && ticket.client_id && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onOpenChat(ticket.id!, ticket.client_id, 'Client')}
+            >
+              Chat
             </Button>
           )}
         </div>

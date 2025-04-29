@@ -10,6 +10,8 @@ interface UseTicketFetchingResult {
   error: string | null;
   fetchTickets: () => Promise<void>;
   category: string;
+  hasError?: boolean;
+  dataSource?: string;
 }
 
 const determineTicketCategory = (status: string) => {
@@ -54,15 +56,40 @@ const determineTicketCategory = (status: string) => {
   return 'other';
 };
 
+// Helper function to normalize attachments to always be an array
+const normalizeAttachments = (attachments: any): any[] => {
+  if (!attachments) {
+    return [];
+  }
+  
+  if (Array.isArray(attachments)) {
+    return attachments;
+  }
+  
+  if (typeof attachments === 'string') {
+    try {
+      const parsed = JSON.parse(attachments);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  
+  return [];
+};
+
 export const useTicketFetching = (initialCategory: string): UseTicketFetchingResult => {
   const [tickets, setTickets] = useState<HelpRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState(initialCategory);
+  const [dataSource, setDataSource] = useState<string>('cache');
+  const [hasError, setHasError] = useState<boolean>(false);
 
   const fetchTickets = async () => {
     setIsLoading(true);
     setError(null);
+    setHasError(false);
 
     try {
       let query = supabase
@@ -87,33 +114,17 @@ export const useTicketFetching = (initialCategory: string): UseTicketFetchingRes
 
       // Add proper type conversion for the attachments field
       const processedTickets = data?.map(ticket => {
-        // Ensure attachments is always an array even if it comes as string or null
-        let safeAttachments: any[] = [];
-        
-        if (ticket.attachments) {
-          if (Array.isArray(ticket.attachments)) {
-            safeAttachments = ticket.attachments;
-          } else if (typeof ticket.attachments === 'string') {
-            try {
-              safeAttachments = JSON.parse(ticket.attachments);
-              if (!Array.isArray(safeAttachments)) {
-                safeAttachments = [];
-              }
-            } catch (e) {
-              safeAttachments = [];
-            }
-          }
-        }
-        
         return {
           ...ticket,
-          attachments: safeAttachments
+          attachments: normalizeAttachments(ticket.attachments)
         } as HelpRequest;
       }) || [];
       
       setTickets(processedTickets);
+      setDataSource('api');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tickets');
+      setHasError(true);
     } finally {
       setIsLoading(false);
     }
@@ -123,5 +134,5 @@ export const useTicketFetching = (initialCategory: string): UseTicketFetchingRes
     fetchTickets();
   }, [category]);
 
-  return { tickets, isLoading, error, fetchTickets, category };
+  return { tickets, isLoading, error, fetchTickets, category, hasError, dataSource };
 };

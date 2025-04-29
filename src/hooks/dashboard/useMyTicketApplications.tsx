@@ -1,8 +1,31 @@
+
 import { useState } from 'react';
 import { supabase } from '../../integrations/supabase/client';
 import { HelpRequest } from '../../types/helpRequest';
 import { toast } from 'sonner';
 import { MATCH_STATUSES } from '../../utils/constants/statusConstants';
+
+// Helper function to normalize attachments to array
+const normalizeAttachments = (attachments: any): any[] => {
+  if (!attachments) {
+    return [];
+  }
+  
+  if (Array.isArray(attachments)) {
+    return attachments;
+  }
+  
+  if (typeof attachments === 'string') {
+    try {
+      const parsed = JSON.parse(attachments);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  
+  return [];
+};
 
 export const useMyTicketApplications = () => {
   const [myApplications, setMyApplications] = useState<HelpRequest[]>([]);
@@ -11,27 +34,9 @@ export const useMyTicketApplications = () => {
   const [dataSource, setDataSource] = useState<string>('cache');
 
   const processHelpRequest = (request: any): HelpRequest => {
-    // Ensure attachments is always an array even if it comes as string or null
-    let safeAttachments: any[] = [];
-    
-    if (request.attachments) {
-      if (Array.isArray(request.attachments)) {
-        safeAttachments = request.attachments;
-      } else if (typeof request.attachments === 'string') {
-        try {
-          safeAttachments = JSON.parse(request.attachments);
-          if (!Array.isArray(safeAttachments)) {
-            safeAttachments = [];
-          }
-        } catch (e) {
-          safeAttachments = [];
-        }
-      }
-    }
-
     return {
       ...request,
-      attachments: safeAttachments
+      attachments: normalizeAttachments(request.attachments)
     } as HelpRequest;
   };
 
@@ -78,19 +83,19 @@ export const useMyTicketApplications = () => {
       }
 
       // Map the help requests to include the application status
-      const mappedRequests = requests.map((request: HelpRequest) => {
+      const mappedRequests = requests.map((request: any) => {
         const application = applications.find(app => app.request_id === request.id);
-        return {
+        return processHelpRequest({
           ...request,
           isApplication: true,
           application_id: application?.id,
           application_status: application?.status,
           developer_id: userId,
-        } as HelpRequest;
+        });
       });
 
       console.log('[MyApplications] Mapped requests:', mappedRequests);
-      setMyApplications((data || []).map(processHelpRequest));
+      setMyApplications(mappedRequests);
       setDataSource('api');
     } catch (error) {
       console.error('[MyApplications] Error in fetchMyApplications:', error);

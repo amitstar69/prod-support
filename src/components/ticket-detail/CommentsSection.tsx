@@ -1,7 +1,15 @@
-
 import React from 'react';
 import ChatCommentsPanel from "../tickets/ChatCommentsPanel";
 import TicketComments from "../tickets/TicketComments";
+
+interface CommentsSectionProps {
+  visible: boolean;
+  ticket: HelpRequest;
+  ticketId?: string;
+  userId: string;
+  role?: string;
+  userRole?: string;
+}
 
 const CommentsSection = ({
   visible,
@@ -9,7 +17,8 @@ const CommentsSection = ({
   ticketId,
   userId,
   role,
-}: any) => {
+  userRole,
+}: CommentsSectionProps) => {
   if (!visible) return null;
   if (role === "developer") {
     return <ChatCommentsPanel ticketId={ticketId} userId={userId} />;
@@ -17,7 +26,7 @@ const CommentsSection = ({
   return (
     <TicketComments
       ticketId={ticketId}
-      userRole={role}
+      userRole={role || userRole}
       userId={userId}
     />
   );

@@ -15,7 +15,7 @@ interface TicketListContainerProps {
   isAuthenticated: boolean;
   onRefresh?: () => void;
   isApplication?: boolean;
-  isRecommended?: boolean;  // Add this line
+  isRecommended?: boolean;
   onOpenChat?: (helpRequestId: string, clientId: string, clientName?: string) => void;
 }
 
@@ -27,7 +27,7 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
   isAuthenticated,
   onRefresh,
   isApplication = false,
-  isRecommended = false  // Add default value
+  isRecommended = false
 }) => {
   const [chatDialogOpen, setChatDialogOpen] = React.useState(false);
   const [currentChat, setCurrentChat] = React.useState<{
@@ -117,7 +117,8 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
         <TicketList 
           tickets={filteredTickets} 
           onClaimTicket={onClaimTicket} 
-          currentUserId={userId} 
+          userId={userId} 
+          userType={userId ? 'developer' : null}
           isAuthenticated={isAuthenticated}
           onOpenChat={handleOpenChat}
           viewMode={viewMode}
