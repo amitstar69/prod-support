@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
@@ -13,7 +14,7 @@ import { Badge } from '../components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
-import { HelpRequestMatch } from '../types/helpRequest';
+import { HelpRequestMatch, HelpRequest } from '../types/helpRequest';
 import { isClientCategories, ClientTicketCategories } from '../types/ticketCategories';
 import PendingApplicationsBadge from '../components/dashboard/PendingApplicationsBadge';
 
@@ -49,7 +50,12 @@ const ClientDashboard = () => {
         completedTickets: [] 
       } as ClientTicketCategories;
 
-  const activeTickets = clientTickets.activeTickets;
+  // Enhance active tickets with pending applications count
+  const activeTickets = clientTickets.activeTickets?.map(ticket => ({
+    ...ticket,
+    pendingApplicationsCount: pendingApplicationsCounts[ticket.id || ''] || 0
+  }));
+  
   const inProgressTickets = clientTickets.inProgressTickets;
   const completedTickets = clientTickets.completedTickets;
   const pendingApprovalTickets = clientTickets.pendingApprovalTickets;
@@ -150,7 +156,7 @@ const ClientDashboard = () => {
     };
 
     fetchApplicationsCounts();
-  }, [activeTickets]);
+  }, [clientTickets.activeTickets]);
 
   useEffect(() => {
     if (!isAuthenticated || !userId) return;
@@ -179,6 +185,17 @@ const ClientDashboard = () => {
   const handleOpenChat = (helpRequestId: string, developerId: string, developerName?: string) => {
     console.log('Opening chat for request:', helpRequestId, 'with developer:', developerId);
     navigate(`/chat/${helpRequestId}?with=${developerId}&name=${developerName || 'Developer'}`);
+  };
+
+  const handleViewDetails = (ticketId: string) => {
+    const pendingCount = pendingApplicationsCounts[ticketId] ?? 0;
+    console.log(`[ClientDashboard] Viewing ticket ${ticketId} with ${pendingCount} pending applications`);
+    
+    if (pendingCount > 0) {
+      navigate(`/client/help-request/${ticketId}/applications`);
+    } else {
+      navigate(`/tickets/${ticketId}`);
+    }
   };
 
   const createTicketPreview = (ticketList: any[], type: string) => {
@@ -257,7 +274,7 @@ const ClientDashboard = () => {
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-medium">{ticket.title}</h3>
                             {ticket.id && (
-                              <PendingApplicationsBadge count={pendingApplicationsCounts[ticket.id] || 0} />
+                              <PendingApplicationsBadge count={ticket.pendingApplicationsCount ?? 0} />
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-1">{ticket.description}</p>
@@ -265,9 +282,9 @@ const ClientDashboard = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => navigate(`/client/tickets/${ticket.id}`)}
+                          onClick={() => handleViewDetails(ticket.id!)}
                         >
-                          View Details
+                          {(ticket.pendingApplicationsCount ?? 0) > 0 ? 'Review Applications' : 'View Details'}
                         </Button>
                       </div>
                       
