@@ -65,7 +65,12 @@ export const useTicketFetching = (
       // Add more detailed logging to diagnose the issue
       console.log('[Ticket Fetching] Authenticated user, fetching from database');
 
-      const response = await getAllPublicHelpRequests(isAuthenticated);
+      // Simplified version - only fetch essential fields for better performance
+      const response = await getAllPublicHelpRequests(
+        isAuthenticated, 
+        'id,title,description,status,client_id,created_at,technical_area,urgency,budget_range'
+      );
+      
       console.log('[Ticket Fetching] Response received:', response);
       
       if (isApiSuccess(response)) {

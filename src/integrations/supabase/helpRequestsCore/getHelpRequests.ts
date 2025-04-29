@@ -63,9 +63,10 @@ export const getHelpRequestsForClient = async (clientId: string) => {
 };
 
 // Function to get all public help requests for listing
-export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
+export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFields = '*') => {
   try {
     console.log('[getAllPublicHelpRequests] Fetching tickets with auth status:', isAuthenticated);
+    console.log('[getAllPublicHelpRequests] Selecting fields:', selectFields);
     
     // For authenticated users, fetch real data from the database
     if (isAuthenticated) {
@@ -83,12 +84,13 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false) => {
         };
       }
       
-      // Fetch all help requests with more detailed logging
+      // Fetch help requests with optimized query
       console.log('[getAllPublicHelpRequests] Fetching tickets from database...');
       const { data, error } = await supabase
         .from('help_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select(selectFields)
+        .order('created_at', { ascending: false })
+        .limit(50); // Add a reasonable limit to avoid fetching too much data
       
       // Debug: Log what statuses are in the database
       if (data && data.length > 0) {

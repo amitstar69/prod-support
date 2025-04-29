@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
@@ -30,6 +29,7 @@ const ClientDashboard = () => {
   const [developerApplications, setDeveloperApplications] = useState<Record<string, HelpRequestMatch[]>>({});
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);
   const [pendingApplicationsCounts, setPendingApplicationsCounts] = useState<Record<string, number>>({});
+  const [isLoadingCounts, setIsLoadingCounts] = useState(false);
 
   const {
     categorizedTickets,
@@ -50,12 +50,7 @@ const ClientDashboard = () => {
         completedTickets: [] 
       } as ClientTicketCategories;
 
-  // Enhance active tickets with pending applications count
-  const activeTickets = clientTickets.activeTickets?.map(ticket => ({
-    ...ticket,
-    pendingApplicationsCount: pendingApplicationsCounts[ticket.id || ''] || 0
-  }));
-  
+  const activeTickets = clientTickets.activeTickets;
   const inProgressTickets = clientTickets.inProgressTickets;
   const completedTickets = clientTickets.completedTickets;
   const pendingApprovalTickets = clientTickets.pendingApprovalTickets;
@@ -134,29 +129,57 @@ const ClientDashboard = () => {
 
   useEffect(() => {
     const fetchApplicationsCounts = async () => {
-      if (!activeTickets?.length) return;
+      if (!activeTickets?.length || !isAuthenticated) return;
       
-      const newCounts: Record<string, number> = {};
-      
-      for (const ticket of activeTickets) {
-        if (!ticket.id) continue;
+      try {
+        setIsLoadingCounts(true);
+        console.log('[ClientDashboard] Fetching application counts for', activeTickets.length, 'tickets');
         
-        const { count, error } = await supabase
-          .from('help_request_matches')
-          .select('*', { count: 'exact', head: true })
-          .eq('request_id', ticket.id)
-          .eq('status', 'pending');
-          
-        if (!error && count !== null) {
-          newCounts[ticket.id] = count;
+        const newCounts: Record<string, number> = {};
+        
+        const ticketIds = activeTickets.filter(t => t.id).map(t => t.id);
+        
+        if (ticketIds.length === 0) {
+          console.log('[ClientDashboard] No valid ticket IDs to fetch counts for');
+          return;
         }
+        
+        const { data, error } = await supabase
+          .from('help_request_matches')
+          .select('request_id, count(*)', { count: 'exact' })
+          .eq('status', 'pending')
+          .in('request_id', ticketIds)
+          .group('request_id');
+          
+        if (error) {
+          console.error('[ClientDashboard] Error fetching application counts:', error);
+          return;
+        }
+          
+        data.forEach((item: any) => {
+          if (item.request_id && item.count) {
+            newCounts[item.request_id] = parseInt(item.count);
+          }
+        });
+        
+        console.log('[ClientDashboard] Fetched counts:', newCounts);
+        
+        setPendingApplicationsCounts(newCounts);
+      } catch (err) {
+        console.error('[ClientDashboard] Exception fetching application counts:', err);
+      } finally {
+        setIsLoadingCounts(false);
       }
-      
-      setPendingApplicationsCounts(newCounts);
     };
 
-    fetchApplicationsCounts();
-  }, [clientTickets.activeTickets]);
+    if (activeTickets && activeTickets.length > 0) {
+      const timer = setTimeout(() => {
+        fetchApplicationsCounts();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [activeTickets, isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated || !userId) return;
@@ -274,7 +297,7 @@ const ClientDashboard = () => {
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-medium">{ticket.title}</h3>
                             {ticket.id && (
-                              <PendingApplicationsBadge count={ticket.pendingApplicationsCount ?? 0} />
+                              <PendingApplicationsBadge count={pendingApplicationsCounts[ticket.id] ?? 0} />
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-1">{ticket.description}</p>
@@ -284,7 +307,7 @@ const ClientDashboard = () => {
                           size="sm"
                           onClick={() => handleViewDetails(ticket.id!)}
                         >
-                          {(ticket.pendingApplicationsCount ?? 0) > 0 ? 'Review Applications' : 'View Details'}
+                          {(pendingApplicationsCounts[ticket.id!] ?? 0) > 0 ? 'Review Applications' : 'View Details'}
                         </Button>
                       </div>
                       
