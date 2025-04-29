@@ -21,6 +21,10 @@ export const getHelpRequestsForClient = async (clientId: string) => {
         
       if (error) {
         console.error('[getHelpRequestsForClient] Error fetching from Supabase:', error);
+        if (!data) {
+  console.error('[getHelpRequestsForClient] No data returned from Supabase');
+  return [];
+}
         // Return error but don't fall back to localStorage
         return { 
           success: false, 
