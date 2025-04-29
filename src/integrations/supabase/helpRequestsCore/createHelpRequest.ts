@@ -37,6 +37,25 @@ export const createHelpRequest = async (
       return { success: false, error: 'Invalid client ID format' };
     }
     
+    // Normalize the attachments field to ensure it's always an array
+    const normalizedAttachments = !helpRequest.attachments ? [] : 
+                               typeof helpRequest.attachments === 'string' ? 
+                               JSON.parse(helpRequest.attachments) : helpRequest.attachments;
+
+    // Normalize required fields to ensure they meet the database constraints
+    const normalizedHelpRequest = {
+      ...helpRequest,
+      attachments: normalizedAttachments,
+      budget_range: helpRequest.budget_range || '$0 - $50', // Provide a default value
+      technical_area: Array.isArray(helpRequest.technical_area) ? 
+                      helpRequest.technical_area : 
+                      [], // Ensure it's an array
+      urgency: helpRequest.urgency || 'low', // Provide a default value
+      communication_preference: Array.isArray(helpRequest.communication_preference) ? 
+                              helpRequest.communication_preference : 
+                              ['Chat'] // Ensure it's an array
+    };
+    
     // For local storage
     if (useLocalStorage) {
       const localHelpRequests = getLocalHelpRequests();
@@ -49,7 +68,7 @@ export const createHelpRequest = async (
       const newTicketNumber = maxNumber >= 1000 ? maxNumber + 1 : 1000;
       
       const newRequest = {
-        ...helpRequest,
+        ...normalizedHelpRequest,
         id: `help-${Date.now()}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -68,7 +87,7 @@ export const createHelpRequest = async (
     const { data, error } = await supabase
       .from('help_requests')
       .insert({
-        ...helpRequest,
+        ...normalizedHelpRequest,
         status: 'open' // Set default status to 'open'
       })
       .select();

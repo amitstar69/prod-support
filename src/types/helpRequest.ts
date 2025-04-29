@@ -1,3 +1,4 @@
+
 export interface HelpRequest {
   id?: string;
   client_id?: string;
@@ -23,6 +24,7 @@ export interface HelpRequest {
   developer_qa_notes?: string;
   client_feedback?: string;
   cancellation_reason?: string;
+  selected_developer_id?: string;
   
   // Missing properties causing build errors
   qa_start_time?: string;

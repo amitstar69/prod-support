@@ -9,12 +9,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
-interface ChatInterfaceProps {
+export interface ChatInterfaceProps {
   helpRequestId: string;
   otherId: string;
   otherName?: string;
   otherAvatar?: string;
   onClose?: () => void;
+  // Add properties used in HelpSessionInterface
+  sessionId?: any;
+  currentUserId?: any;
+  readOnly?: boolean;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
@@ -22,7 +26,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   otherId,
   otherName = 'User',
   otherAvatar = '/placeholder.svg',
-  onClose
+  onClose,
+  sessionId, // Allow sessionId to be passed instead of helpRequestId
+  currentUserId, // Allow currentUserId to be passed
+  readOnly = false
 }) => {
   const { userId } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -31,14 +38,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Use sessionId if helpRequestId is not provided
+  const effectiveRequestId = helpRequestId || sessionId;
+  // Use currentUserId if provided, otherwise use userId from auth
+  const effectiveUserId = currentUserId || userId;
+
   useEffect(() => {
-    if (userId && helpRequestId && otherId) {
+    if (effectiveUserId && effectiveRequestId && otherId) {
       loadChatMessages();
       
       // Setup realtime subscription
       const cleanup = setupChatMessagesSubscription(
-        helpRequestId, 
-        userId, 
+        effectiveRequestId, 
+        effectiveUserId, 
         (newMessage) => {
           setMessages(prev => [...prev, newMessage]);
           scrollToBottom();
@@ -47,31 +59,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       return cleanup;
     }
-  }, [userId, helpRequestId, otherId]);
+  }, [effectiveUserId, effectiveRequestId, otherId]);
 
   useEffect(() => {
     // Scroll to bottom whenever messages change
     scrollToBottom();
     
     // Mark messages as read when viewed
-    if (userId && helpRequestId && messages.length > 0) {
-      markMessagesAsRead(helpRequestId, userId);
+    if (effectiveUserId && effectiveRequestId && messages.length > 0) {
+      markMessagesAsRead(effectiveRequestId, effectiveUserId);
     }
-  }, [messages, userId, helpRequestId]);
+  }, [messages, effectiveUserId, effectiveRequestId]);
 
   const loadChatMessages = async () => {
-    if (!userId || !helpRequestId) return;
+    if (!effectiveUserId || !effectiveRequestId) return;
     
     setIsLoading(true);
     
     try {
-      const result = await fetchChatMessages(helpRequestId, userId);
+      const result = await fetchChatMessages(effectiveRequestId, effectiveUserId);
       
       if (result.success) {
         setMessages(result.data);
         
         // Mark messages as read
-        await markMessagesAsRead(helpRequestId, userId);
+        await markMessagesAsRead(effectiveRequestId, effectiveUserId);
       } else {
         console.error('Error loading chat messages:', result.error);
         toast.error('Failed to load messages');
@@ -148,26 +160,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         {messages.map((message) => (
           <div 
             key={message.id} 
-            className={`flex ${message.sender_id === userId ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${message.sender_id === effectiveUserId ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`flex ${message.sender_id === userId ? 'flex-row-reverse' : 'flex-row'} gap-2 max-w-[80%]`}>
+            <div className={`flex ${message.sender_id === effectiveUserId ? 'flex-row-reverse' : 'flex-row'} gap-2 max-w-[80%]`}>
               <Avatar className="h-8 w-8">
-                <AvatarImage src={message.sender_id === userId ? undefined : otherAvatar} />
+                <AvatarImage src={message.sender_id === effectiveUserId ? undefined : otherAvatar} />
                 <AvatarFallback>
-                  {message.sender_id === userId ? 'Me' : otherName.charAt(0)}
+                  {message.sender_id === effectiveUserId ? 'Me' : otherName.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <div 
-                  className={`${message.sender_id === userId ? 
+                  className={`${message.sender_id === effectiveUserId ? 
                     'bg-primary text-primary-foreground' : 
                     'bg-muted text-foreground'} 
                     p-3 rounded-lg`}
                 >
                   <p className="text-sm">{message.message}</p>
                 </div>
-                <div className={`text-xs text-muted-foreground mt-1 ${message.sender_id === userId ? 'text-right' : 'text-left'}`}>
-                  {message.sender_id === userId ? 'You' : otherName} • {formatTime(message.created_at)}
+                <div className={`text-xs text-muted-foreground mt-1 ${message.sender_id === effectiveUserId ? 'text-right' : 'text-left'}`}>
+                  {message.sender_id === effectiveUserId ? 'You' : otherName} • {formatTime(message.created_at)}
                 </div>
               </div>
             </div>
@@ -176,33 +188,35 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div ref={messagesEndRef} />
       </div>
       
-      <div className="border-t p-4">
-        <div className="flex gap-2">
-          <Textarea
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
-            className="resize-none"
-            rows={2}
-          />
-          <div className="flex flex-col gap-2">
-            <Button 
-              size="icon" 
-              onClick={handleSendMessage}
-              disabled={isSending || !newMessage.trim()}
-              className="rounded-full"
-            >
-              {isSending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              <span className="sr-only">Send message</span>
-            </Button>
+      {!readOnly && (
+        <div className="border-t p-4">
+          <div className="flex gap-2">
+            <Textarea
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message..."
+              className="resize-none"
+              rows={2}
+            />
+            <div className="flex flex-col gap-2">
+              <Button 
+                size="icon" 
+                onClick={handleSendMessage}
+                disabled={isSending || !newMessage.trim()}
+                className="rounded-full"
+              >
+                {isSending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                <span className="sr-only">Send message</span>
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

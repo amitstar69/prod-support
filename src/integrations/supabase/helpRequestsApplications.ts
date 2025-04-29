@@ -106,19 +106,24 @@ export const getDeveloperApplicationsForRequest = async (requestId: string) => {
       }
       
       // Handle potentially malformed developer_profiles data
-      const safeDeveloperProfiles: DeveloperProfile = app.developer_profiles && typeof app.developer_profiles === 'object'
-        ? {
-            id: app.developer_id,
-            skills: Array.isArray(app.developer_profiles.skills) ? app.developer_profiles.skills : [],
-            experience: typeof app.developer_profiles.experience === 'string' ? app.developer_profiles.experience : '',
-            hourly_rate: typeof app.developer_profiles.hourly_rate === 'number' ? app.developer_profiles.hourly_rate : 0
-          }
-        : {
-            id: app.developer_id,
-            skills: [],
-            experience: '',
-            hourly_rate: 0
-          };
+      let safeDeveloperProfiles: DeveloperProfile;
+      
+      if (app.developer_profiles && typeof app.developer_profiles === 'object') {
+        const dp = app.developer_profiles;
+        safeDeveloperProfiles = {
+          id: app.developer_id,
+          skills: Array.isArray(dp?.skills) ? dp?.skills : [],
+          experience: typeof dp?.experience === 'string' ? dp?.experience : '',
+          hourly_rate: typeof dp?.hourly_rate === 'number' ? dp?.hourly_rate : 0
+        };
+      } else {
+        safeDeveloperProfiles = {
+          id: app.developer_id,
+          skills: [],
+          experience: '',
+          hourly_rate: 0
+        };
+      }
       
       return {
         ...app,

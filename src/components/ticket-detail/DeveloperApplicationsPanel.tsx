@@ -145,7 +145,7 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
   const renderApplication = (app: HelpRequestMatch) => {
     const developerName = app.profiles?.name || "Anonymous Developer";
     const developerImage = app.profiles?.image || "";
-    // Safely access developer_profiles properties with optional chaining
+    // Safely access developer_profiles properties with optional chaining and nullish coalescing
     const developerSkills = app.developer_profiles?.skills || [];
     const developerExperience = app.developer_profiles?.experience || "No experience provided";
     const developerRate = app.proposed_rate || (app.developer_profiles?.hourly_rate || 0);

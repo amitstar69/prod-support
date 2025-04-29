@@ -8,7 +8,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "../ui/resizable";
-import ChatInterface from "./ChatInterface";
+import ChatInterface from "../chat/ChatInterface";
 import { 
   ArrowRight, 
   MessageSquare, 
@@ -112,8 +112,6 @@ const HelpSessionInterface = ({
     );
   };
   
-  // Find every instance where <CodeEditor /> is used and replace it with renderTemporaryCodeEditor()
-  
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b">
@@ -149,7 +147,7 @@ const HelpSessionInterface = ({
           >
             <ResizablePanel defaultSize={50} className="h-full">
               <ChatInterface 
-                sessionId={sessionId} 
+                helpRequestId={sessionId} 
                 otherId={otherUserId}
                 otherName={otherUserName}
                 currentUserId={currentUserId}
@@ -173,7 +171,7 @@ const HelpSessionInterface = ({
             </TabsList>
             <TabsContent value="chat" className="h-[calc(100%-46px)]">
               <ChatInterface 
-                sessionId={sessionId} 
+                helpRequestId={sessionId} 
                 otherId={otherUserId}
                 otherName={otherUserName}
                 currentUserId={currentUserId}
