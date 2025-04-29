@@ -39,14 +39,6 @@ if (!data) {
   };
 }
         // Return error but don't fall back to localStorage
-        return { 
-          success: false, 
-          error: error.message,
-          data: [],
-          storageMethod: 'database_error' 
-        };
-      }
-      
       console.log('[getHelpRequestsForClient] Successfully fetched', data?.length, 'tickets from Supabase');
       
       return { 
