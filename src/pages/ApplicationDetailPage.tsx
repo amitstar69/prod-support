@@ -8,6 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { Button } from '../components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { MATCH_STATUSES } from '../utils/constants/statusConstants';
+import { updateApplicationStatus } from '../integrations/supabase/helpRequestsApplications';
 
 const ApplicationDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();

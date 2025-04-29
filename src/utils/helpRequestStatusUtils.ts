@@ -1,181 +1,180 @@
-import { HELP_REQUEST_STATUSES, normalizeStatus } from './constants/statusConstants';
+import { HELP_REQUEST_STATUSES } from './constants/statusConstants';
 
-export type UserType = 'client' | 'developer' | 'system';
+export enum TicketStatus {
+  OPEN = 'open',
+  ACCEPTED = 'accepted',
+  IN_PROGRESS = 'in_progress',
+  NEEDS_INFO = 'needs_info',
+  COMPLETED = 'completed',
+  CLOSED = 'closed',
+  PENDING_REVIEW = 'pending_review',
+  PENDING_MATCH = 'pending_match',
+  DEV_REQUESTED = 'dev_requested',
+  AWAITING_CLIENT_APPROVAL = 'awaiting_client_approval',
+  QA_FAIL = 'qa_fail',
+  QA_PASS = 'qa_pass',
+  RESOLVED = 'resolved',
+  READY_FOR_FINAL_ACTION = 'ready_for_final_action',
+  CANCELLED = 'cancelled'
+}
 
-// Define valid status transitions (legacy - consider using the new statusTransitions.ts instead)
-export const STATUS_TRANSITIONS = {
-  system: {
-    [HELP_REQUEST_STATUSES.SUBMITTED]: [HELP_REQUEST_STATUSES.PENDING_MATCH],
-    [HELP_REQUEST_STATUSES.DEV_REQUESTED]: [HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL],
-    [HELP_REQUEST_STATUSES.QA_PASS]: [HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION],
-    'any': [HELP_REQUEST_STATUSES.CANCELLED] // Special case handled in validation
-  },
-  developer: {
-    [HELP_REQUEST_STATUSES.PENDING_MATCH]: [HELP_REQUEST_STATUSES.DEV_REQUESTED],
-    [HELP_REQUEST_STATUSES.APPROVED]: [HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, HELP_REQUEST_STATUSES.NEED_MORE_INFO],
-    [HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW]: [HELP_REQUEST_STATUSES.IN_PROGRESS, HELP_REQUEST_STATUSES.NEED_MORE_INFO],
-    [HELP_REQUEST_STATUSES.NEED_MORE_INFO]: [HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, HELP_REQUEST_STATUSES.IN_PROGRESS],
-    [HELP_REQUEST_STATUSES.IN_PROGRESS]: [HELP_REQUEST_STATUSES.READY_FOR_QA, HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, HELP_REQUEST_STATUSES.NEED_MORE_INFO],
-    'in-progress': [HELP_REQUEST_STATUSES.READY_FOR_QA, HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW, HELP_REQUEST_STATUSES.NEED_MORE_INFO], // Added for hyphenated version too
-    [HELP_REQUEST_STATUSES.QA_FAIL]: [HELP_REQUEST_STATUSES.IN_PROGRESS, HELP_REQUEST_STATUSES.READY_FOR_QA],
-    [HELP_REQUEST_STATUSES.QA_PASS]: [HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION],
-    [HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION]: [HELP_REQUEST_STATUSES.RESOLVED]
-  },
-  client: {
-    [HELP_REQUEST_STATUSES.SUBMITTED]: [HELP_REQUEST_STATUSES.CANCELLED],
-    [HELP_REQUEST_STATUSES.PENDING_MATCH]: [HELP_REQUEST_STATUSES.CANCELLED],
-    [HELP_REQUEST_STATUSES.DEV_REQUESTED]: [HELP_REQUEST_STATUSES.CANCELLED],
-    [HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL]: [HELP_REQUEST_STATUSES.APPROVED, HELP_REQUEST_STATUSES.PENDING_MATCH, HELP_REQUEST_STATUSES.CANCELLED],
-    [HELP_REQUEST_STATUSES.APPROVED]: [HELP_REQUEST_STATUSES.CANCELLED],
-    [HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW]: [HELP_REQUEST_STATUSES.CANCELLED],
-    [HELP_REQUEST_STATUSES.NEED_MORE_INFO]: [HELP_REQUEST_STATUSES.CANCELLED, HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW],
-    [HELP_REQUEST_STATUSES.IN_PROGRESS]: [HELP_REQUEST_STATUSES.CANCELLED],
-    [HELP_REQUEST_STATUSES.READY_FOR_QA]: [HELP_REQUEST_STATUSES.QA_FAIL, HELP_REQUEST_STATUSES.QA_PASS, HELP_REQUEST_STATUSES.CANCELLED],
-    [HELP_REQUEST_STATUSES.QA_FAIL]: [HELP_REQUEST_STATUSES.CANCELLED],
-    [HELP_REQUEST_STATUSES.QA_PASS]: [HELP_REQUEST_STATUSES.CANCELLED],
-    [HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION]: [HELP_REQUEST_STATUSES.RESOLVED, HELP_REQUEST_STATUSES.CANCELLED],
-    [HELP_REQUEST_STATUSES.OPEN]: [HELP_REQUEST_STATUSES.CANCELLED], // Added for open tickets
-    'any': [HELP_REQUEST_STATUSES.CANCELLED] // Client can cancel anytime
-  }
+// Map old status values to new ones for compatibility
+const statusMappings = {
+  'submitted': HELP_REQUEST_STATUSES.OPEN,
+  'dev_requested': HELP_REQUEST_STATUSES.PENDING_MATCH,
+  'pending_developer_approval': HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL
 };
 
-// Helper function to check if a status transition is valid
-export const isValidStatusTransition = (
-  currentStatus: string,
-  newStatus: string,
-  userType: UserType
-): boolean => {
-  const transitions = STATUS_TRANSITIONS[userType];
+export const getTicketStatusStyles = (status: string) => {
+  // If status is one of the old values, map it to its new value
+  const normalizedStatus = statusMappings[status.toLowerCase()] || status;
   
-  // Special case for cancellation by client
-  if (newStatus === HELP_REQUEST_STATUSES.CANCELLED && userType === 'client') {
-    return true;
-  }
+  const baseClasses = 'px-2 py-1 rounded-full text-xs font-medium';
   
-  // Handle normalized status formats (for compatibility)
-  const normalizedCurrentStatus = normalizeStatus(currentStatus);
-  
-  // Regular transition check - try direct match first
-  let allowedTransitions = transitions[currentStatus];
-  
-  // If no direct match, try normalized status
-  if (!allowedTransitions) {
-    allowedTransitions = transitions[normalizedCurrentStatus];
-  }
-  
-  // If still no match, check any special cases
-  if (!allowedTransitions && transitions['any']) {
-    return transitions['any'].includes(newStatus);
-  }
-  
-  return Array.isArray(allowedTransitions) && allowedTransitions.includes(newStatus);
+  const statusStyles: Record<string, string> = {
+    'open': `${baseClasses} bg-blue-100 text-blue-800`,
+    'accepted': `${baseClasses} bg-green-100 text-green-800`,
+    'in_progress': `${baseClasses} bg-yellow-100 text-yellow-800`,
+    'needs_info': `${baseClasses} bg-orange-100 text-orange-800`,
+    'completed': `${baseClasses} bg-green-500 text-white`,
+    'closed': `${baseClasses} bg-gray-200 text-gray-800`,
+    'pending_review': `${baseClasses} bg-purple-100 text-purple-800`,
+    'pending_match': `${baseClasses} bg-indigo-100 text-indigo-800`,
+    'dev_requested': `${baseClasses} bg-teal-100 text-teal-800`,
+    'awaiting_client_approval': `${baseClasses} bg-pink-100 text-pink-800`,
+    'need_more_info': `${baseClasses} bg-orange-100 text-orange-800`,
+    'qa_fail': `${baseClasses} bg-red-100 text-red-800`,
+    'qa_pass': `${baseClasses} bg-green-300 text-green-800`,
+    'resolved': `${baseClasses} bg-green-500 text-white`,
+    'ready_for_final_action': `${baseClasses} bg-blue-300 text-blue-800`,
+    'cancelled': `${baseClasses} bg-red-200 text-red-800`
+  };
+
+  return statusStyles[normalizedStatus] || `${baseClasses} bg-gray-100 text-gray-800`;
 };
 
-// Get next logical status in the workflow
-export const getNextStatus = (currentStatus: string, userType: UserType): string | null => {
-  const transitions = STATUS_TRANSITIONS[userType];
-  // Handle normalized status formats (for compatibility)
-  const normalizedCurrentStatus = normalizeStatus(currentStatus);
-  
-  // Try direct match first
-  let nextStatuses = transitions[currentStatus];
-  
-  // If no direct match, try normalized status
-  if (!nextStatuses) {
-    nextStatuses = transitions[normalizedCurrentStatus];
-  }
-  
-  return Array.isArray(nextStatuses) && nextStatuses.length > 0 ? nextStatuses[0] : null;
+export const formatTicketStatus = (status: string) => {
+  return status
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 };
 
-// Get human-readable status label
 export const getStatusLabel = (status: string): string => {
-  // Normalize status for consistent lookup
-  const normalizedStatus = normalizeStatus(status);
-  
-  const statusLabels: Record<string, string> = {
-    [normalizeStatus(HELP_REQUEST_STATUSES.SUBMITTED)]: 'Submitted',
-    [normalizeStatus(HELP_REQUEST_STATUSES.PENDING_MATCH)]: 'Pending Match',
-    [normalizeStatus(HELP_REQUEST_STATUSES.DEV_REQUESTED)]: 'Developer Requested',
-    [normalizeStatus(HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL)]: 'Awaiting Client Approval',
-    [normalizeStatus(HELP_REQUEST_STATUSES.APPROVED)]: 'Approved',
-    [normalizeStatus(HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW)]: 'Requirements Review',
-    [normalizeStatus(HELP_REQUEST_STATUSES.NEED_MORE_INFO)]: 'Need More Info',
-    [normalizeStatus(HELP_REQUEST_STATUSES.IN_PROGRESS)]: 'In Progress',
-    [normalizeStatus(HELP_REQUEST_STATUSES.READY_FOR_QA)]: 'Ready for Client QA',
-    [normalizeStatus(HELP_REQUEST_STATUSES.QA_FAIL)]: 'QA Failed',
-    [normalizeStatus(HELP_REQUEST_STATUSES.QA_PASS)]: 'QA Passed',
-    [normalizeStatus(HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION)]: 'Ready for Final Action',
-    [normalizeStatus(HELP_REQUEST_STATUSES.RESOLVED)]: 'Resolved',
-    [normalizeStatus(HELP_REQUEST_STATUSES.CANCELLED)]: 'Cancelled',
-    [normalizeStatus(HELP_REQUEST_STATUSES.OPEN)]: 'Open'
-  };
-
-  return statusLabels[normalizedStatus] || status.replace(/_/g, ' ');
+  return formatTicketStatus(status);
 };
 
-// Get status descriptions
 export const getStatusDescription = (status: string): string => {
-  // Normalize status for consistent lookups
-  const normalizedStatus = normalizeStatus(status);
-  
-  const statusDescriptions: Record<string, string> = {
-    [normalizeStatus(HELP_REQUEST_STATUSES.SUBMITTED)]: 'Request has been submitted but not yet processed',
-    [normalizeStatus(HELP_REQUEST_STATUSES.PENDING_MATCH)]: 'Request is awaiting a developer match',
-    [normalizeStatus(HELP_REQUEST_STATUSES.DEV_REQUESTED)]: 'A developer has requested to be assigned',
-    [normalizeStatus(HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL)]: 'Awaiting client approval for developer assignment',
-    [normalizeStatus(HELP_REQUEST_STATUSES.APPROVED)]: 'Developer has been approved and can start work',
-    [normalizeStatus(HELP_REQUEST_STATUSES.REQUIREMENTS_REVIEW)]: 'Developer is reviewing requirements before starting work',
-    [normalizeStatus(HELP_REQUEST_STATUSES.NEED_MORE_INFO)]: 'Developer needs more information to proceed',
-    [normalizeStatus(HELP_REQUEST_STATUSES.IN_PROGRESS)]: 'Developer is actively working on this request',
-    [normalizeStatus(HELP_REQUEST_STATUSES.READY_FOR_QA)]: 'Developer has completed work and it is ready for client review',
-    [normalizeStatus(HELP_REQUEST_STATUSES.QA_FAIL)]: 'Client has reviewed the work and found issues that need fixing',
-    [normalizeStatus(HELP_REQUEST_STATUSES.QA_PASS)]: 'Client has confirmed the work meets requirements',
-    [normalizeStatus(HELP_REQUEST_STATUSES.READY_FOR_FINAL_ACTION)]: 'Ready for developer to take final actions',
-    [normalizeStatus(HELP_REQUEST_STATUSES.RESOLVED)]: 'Request has been completed and resolved successfully',
-    [normalizeStatus(HELP_REQUEST_STATUSES.CANCELLED)]: 'Request was cancelled by the client',
-    [normalizeStatus(HELP_REQUEST_STATUSES.OPEN)]: 'Request is open and waiting for developer applications'
+  const descriptions: Record<string, string> = {
+    'open': 'This ticket is open and waiting for a developer to accept it.',
+    'accepted': 'A developer has accepted this ticket and will begin working on it soon.',
+    'in_progress': 'Work on this ticket is currently in progress.',
+    'needs_info': 'Additional information is needed to proceed with this ticket.',
+    'need_more_info': 'Additional information is needed to proceed with this ticket.',
+    'completed': 'Work on this ticket has been completed.',
+    'closed': 'This ticket has been closed.',
+    'pending_review': 'This ticket is waiting for review.',
+    'pending_match': 'This ticket is waiting to be matched with a developer.',
+    'dev_requested': 'A developer has requested to work on this ticket.',
+    'awaiting_client_approval': 'Waiting for client approval to proceed.',
+    'qa_fail': 'The work did not pass quality assurance checks.',
+    'qa_pass': 'The work has passed quality assurance checks.',
+    'resolved': 'The issue has been resolved successfully.',
+    'ready_for_final_action': 'Ready for the final action to complete this ticket.',
+    'cancelled_by_client': 'This ticket has been cancelled by the client.'
   };
 
-  return statusDescriptions[normalizedStatus] || 'Status information unavailable';
+  return descriptions[status] || 'No description available.';
 };
 
-// Global status constants - now using the centralized ones from constants file
-export const STATUSES = HELP_REQUEST_STATUSES;
+interface StatusTransition {
+  from: TicketStatus;
+  to: TicketStatus[];
+  roles: ('developer' | 'client')[];
+}
 
-// Helper function to check if the current user can update to a given status
-export const canUpdateToStatus = (
-  currentStatus: string,
-  newStatus: string,
-  userType: UserType
+const statusTransitions: StatusTransition[] = [
+  {
+    from: TicketStatus.OPEN,
+    to: [TicketStatus.ACCEPTED, TicketStatus.CLOSED],
+    roles: ['developer']
+  },
+  {
+    from: TicketStatus.ACCEPTED,
+    to: [TicketStatus.IN_PROGRESS],
+    roles: ['developer']
+  },
+  {
+    from: TicketStatus.IN_PROGRESS,
+    to: [TicketStatus.NEEDS_INFO, TicketStatus.COMPLETED],
+    roles: ['developer']
+  },
+  {
+    from: TicketStatus.NEEDS_INFO,
+    to: [TicketStatus.IN_PROGRESS],
+    roles: ['developer', 'client']
+  },
+  {
+    from: TicketStatus.COMPLETED,
+    to: [TicketStatus.NEEDS_INFO, TicketStatus.CLOSED],
+    roles: ['client']
+  },
+  {
+    from: TicketStatus.PENDING_MATCH,
+    to: [TicketStatus.AWAITING_CLIENT_APPROVAL, TicketStatus.CANCELLED],
+    roles: ['developer', 'client']
+  },
+  {
+    from: TicketStatus.AWAITING_CLIENT_APPROVAL,
+    to: [TicketStatus.IN_PROGRESS, TicketStatus.CANCELLED],
+    roles: ['client']
+  }
+];
+
+export const isValidStatusTransition = (
+  from: TicketStatus,
+  to: TicketStatus,
+  role: 'developer' | 'client'
 ): boolean => {
-  return isValidStatusTransition(currentStatus, newStatus, userType);
+  const transition = statusTransitions.find(t => t.from === from);
+  if (!transition) return false;
+  
+  return transition.to.includes(to) && transition.roles.includes(role);
 };
 
-// Get allowed status transitions based on current status and user type
 export const getAllowedStatusTransitions = (
-  currentStatus: string,
-  userType: UserType
-): string[] => {
-  if (!currentStatus) return [];
+  status: string,
+  role: 'developer' | 'client'
+): TicketStatus[] => {
+  const currentStatus = Object.values(TicketStatus).find(s => s === status);
   
-  const transitions = STATUS_TRANSITIONS[userType];
-  
-  // Handle normalized status formats (for compatibility)
-  const normalizedCurrentStatus = normalizeStatus(currentStatus);
-  
-  // Try direct match first
-  let allowedTransitions = transitions[currentStatus] || [];
-  
-  // If no direct match, try normalized status
-  if (allowedTransitions.length === 0) {
-    allowedTransitions = transitions[normalizedCurrentStatus] || [];
+  if (!currentStatus) {
+    return [];
   }
   
-  // Add special 'any' transitions if applicable
-  if (transitions['any']) {
-    allowedTransitions = [...allowedTransitions, ...transitions['any']];
+  const transition = statusTransitions.find(t => t.from === currentStatus);
+  
+  if (!transition) {
+    return [];
   }
   
-  return allowedTransitions;
+  return transition.to.filter(to => {
+    const validRole = transition.roles.includes(role);
+    return validRole;
+  });
+};
+
+export const updateTicketStatus = async (
+  ticketId: string,
+  newStatus: TicketStatus,
+  userType: string,
+  notes?: string
+): Promise<any> => {
+  console.log(`Updating ticket ${ticketId} to ${newStatus} by ${userType}${notes ? ` with notes: ${notes}` : ''}`);
+  
+  return {
+    id: ticketId,
+    status: newStatus,
+    updated_at: new Date().toISOString()
+  };
 };

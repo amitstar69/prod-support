@@ -1,4 +1,3 @@
-
 import { HelpRequestMatch } from '../../types/helpRequest';
 import { Card } from '../ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -47,9 +46,9 @@ const ApplicationsList = ({ applications, isLoading }: ApplicationsListProps) =>
                     })
                   }
                 </p>
-                {application.profiles?.experience && (
-                  <p className="text-sm mt-1">
-                    Experience: {application.profiles.experience}
+                {application.developer_profiles?.experience && (
+                  <p className="text-xs text-muted-foreground line-clamp-1">
+                    {application.developer_profiles.experience}
                   </p>
                 )}
               </div>

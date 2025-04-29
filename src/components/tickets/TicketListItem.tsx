@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { HelpRequest } from '../../types/helpRequest';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
-import { Clock, CheckCircle2, AlertCircle, BarChart3, Calendar, Bell, Star, FileEdit, User, ExternalLink } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle, BarChart3, Calendar, User } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { HELP_REQUEST_STATUSES } from '../../utils/constants/statusConstants';
 import { useNavigate } from 'react-router-dom';
@@ -29,9 +30,8 @@ interface TicketListItemProps {
 
 const isTicketClaimable = (status: string): boolean => {
   const claimableStatuses = [
-    HELP_REQUEST_STATUSES.SUBMITTED,
+    HELP_REQUEST_STATUSES.OPEN,
     HELP_REQUEST_STATUSES.PENDING_MATCH,
-    HELP_REQUEST_STATUSES.DEV_REQUESTED,
     HELP_REQUEST_STATUSES.AWAITING_CLIENT_APPROVAL
   ];
   

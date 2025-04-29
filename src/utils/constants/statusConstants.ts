@@ -42,7 +42,12 @@ export const HELP_REQUEST_STATUSES = {
   READY_FOR_FINAL_ACTION: 'ready_for_final_action',
   RESOLVED: 'resolved',
   CANCELLED: 'cancelled',
-  COMPLETED: 'completed'
+  COMPLETED: 'completed',
+  
+  // Aliases for backward compatibility
+  SUBMITTED: 'open',
+  DEV_REQUESTED: 'pending_match',
+  PENDING_DEVELOPER_APPROVAL: 'awaiting_client_approval'
 };
 
 // Utility function to normalize status strings for comparison

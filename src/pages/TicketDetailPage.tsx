@@ -323,12 +323,15 @@ const TicketDetailPage = () => {
         requestTitle={ticket?.title || ''}
         onQASubmitted={handleQASubmitted}
       />
-      <DeveloperApplicationModal
-        isOpen={showApplicationModal}
-        onClose={() => setShowApplicationModal(false)}
-        ticket={ticket}
-        onApplicationSuccess={handleApplicationSuccess}
-      />
+      {showApplicationModal && (
+        <DeveloperApplicationModal
+          isOpen={showApplicationModal}
+          onOpenChange={setShowApplicationModal}
+          requestId={ticketId}
+          userId={userId}
+          onSuccess={handleApplicationSuccess}
+        />
+      )}
     </Layout>
   );
 };

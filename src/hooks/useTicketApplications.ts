@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
@@ -37,8 +36,6 @@ export const useTicketApplications = (ticketId: string) => {
       if (fetchError) {
         throw new Error(fetchError.message);
       }
-
-      console.log('[useTicketApplications] Fetched applications:', data);
       
       // Ensure we have valid profiles data for each application
       const typedData = (data || []).map(app => {
@@ -75,8 +72,8 @@ export const useTicketApplications = (ticketId: string) => {
           ...app,
           profiles: safeProfiles,
           developer_profiles: safeDeveloperProfiles
-        };
-      }) as HelpRequestMatch[];
+        } as HelpRequestMatch;
+      });
       
       setApplications(typedData);
       
