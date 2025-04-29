@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -56,7 +57,8 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
         .from('help_request_matches')
         .select(`
           *,
-          profiles:developer_id (id, name, image, description, location)
+          profiles:developer_id (id, name, image, description, location),
+          developer_profiles:developer_id (id, skills, experience, hourly_rate)
         `)
         .eq('request_id', ticketId)
         .order('created_at', { ascending: false });
@@ -78,13 +80,28 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
           safeProfiles = { 
             id: app.developer_id, 
             name: 'Unknown Developer',
-            image: null
+            image: null,
+            description: '',
+            location: ''
+          };
+        }
+
+        // Handle potentially malformed developer_profiles data
+        let safeDeveloperProfiles = app.developer_profiles;
+        
+        if (!safeDeveloperProfiles || typeof safeDeveloperProfiles !== 'object') {
+          safeDeveloperProfiles = {
+            id: app.developer_id,
+            skills: [],
+            experience: '',
+            hourly_rate: 0
           };
         }
 
         return {
           ...app,
-          profiles: safeProfiles
+          profiles: safeProfiles,
+          developer_profiles: safeDeveloperProfiles
         } as HelpRequestMatch;
       });
       

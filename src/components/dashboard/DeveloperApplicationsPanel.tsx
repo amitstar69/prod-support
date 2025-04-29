@@ -167,6 +167,11 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
                         <p className="text-xs text-muted-foreground">
                           Applied {application.created_at ? formatDistanceToNow(new Date(application.created_at), { addSuffix: true }) : 'recently'}
                         </p>
+                        {application.developer_profiles?.experience && (
+                          <p className="text-xs text-muted-foreground">
+                            {application.developer_profiles.experience}
+                          </p>
+                        )}
                       </div>
                     </div>
                     

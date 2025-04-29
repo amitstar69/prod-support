@@ -17,7 +17,8 @@ export const useTicketApplications = (ticketId: string, userId: string | null, i
           .from('help_request_matches')
           .select(`
             *,
-            profiles:developer_id (id, name, image)
+            profiles:developer_id (id, name, image, description, location),
+            developer_profiles:developer_id (id, skills, experience, hourly_rate)
           `)
           .eq('request_id', ticketId);
           
@@ -27,19 +28,35 @@ export const useTicketApplications = (ticketId: string, userId: string | null, i
         }
         
         const typedApplications: HelpRequestMatch[] = (data || []).map(app => {
+          // Handle potentially malformed profiles data
           let safeProfiles = app.profiles;
           
           if (!safeProfiles || typeof safeProfiles !== 'object') {
             safeProfiles = { 
               id: app.developer_id, 
               name: 'Unknown Developer',
-              image: null
+              image: null,
+              description: '',
+              location: ''
+            };
+          }
+          
+          // Handle potentially malformed developer_profiles data
+          let safeDeveloperProfiles = app.developer_profiles;
+          
+          if (!safeDeveloperProfiles || typeof safeDeveloperProfiles !== 'object') {
+            safeDeveloperProfiles = {
+              id: app.developer_id,
+              skills: [],
+              experience: '',
+              hourly_rate: 0
             };
           }
           
           return {
             ...app,
-            profiles: safeProfiles
+            profiles: safeProfiles,
+            developer_profiles: safeDeveloperProfiles
           } as HelpRequestMatch;
         });
         
