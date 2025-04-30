@@ -46,12 +46,7 @@ export const useTicketApplications = (ticketId: string, userId: string | null, i
           }
           
           // Handle potentially malformed developer_profiles data
-          let safeDeveloperProfiles: DeveloperProfile = {
-            id: app.developer_id,
-            skills: [],
-            experience: '',
-            hourly_rate: 0
-          };
+          let safeDeveloperProfiles: DeveloperProfile;
           
           if (app.developer_profiles && typeof app.developer_profiles === 'object') {
             const dp = app.developer_profiles;
@@ -60,6 +55,13 @@ export const useTicketApplications = (ticketId: string, userId: string | null, i
               skills: Array.isArray(dp?.skills) ? dp?.skills : [],
               experience: typeof dp?.experience === 'string' ? dp?.experience : '',
               hourly_rate: typeof dp?.hourly_rate === 'number' ? dp?.hourly_rate : 0
+            };
+          } else {
+            safeDeveloperProfiles = {
+              id: app.developer_id,
+              skills: [],
+              experience: '',
+              hourly_rate: 0
             };
           }
           

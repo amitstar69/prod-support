@@ -1,4 +1,3 @@
-
 // Refactored: Root hook delegates to focused hooks for logic
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
@@ -9,6 +8,7 @@ import { useTicketApplicationsSubscriptions } from './useTicketApplicationsSubsc
 import { useTicketFetching } from './useTicketFetching';
 import { useTicketFilters } from './useTicketFilters';
 import { toast } from 'sonner';
+import { useAuth } from '../../contexts/auth';
 
 // Keep types matching the old interface for compatibility
 export interface UseTicketApplicationsResult {
@@ -90,6 +90,7 @@ export const useTicketApplications = (
 
 // This is the main hook that DeveloperDashboard uses
 export const useDeveloperDashboard = () => {
+  const { isAuthenticated, userId, userType } = useAuth();
   const {
     tickets,
     isLoading,
@@ -98,26 +99,31 @@ export const useDeveloperDashboard = () => {
     fetchTickets
   } = useTicketFetching();
 
-  const { filters, handleFilterChange } = useTicketFilters();
+  const ticketFilters = useTicketFilters();
   const [showFilters, setShowFilters] = useState(false);
 
   // Filter tickets based on current filter options
   const filteredTickets = tickets.filter((ticket) => {
-    if (filters.status && filters.status !== 'all' && ticket.status !== filters.status) {
+    if (ticketFilters.filterOptions.status && 
+        ticketFilters.filterOptions.status !== 'all' && 
+        ticket.status !== ticketFilters.filterOptions.status) {
       return false;
     }
     
-    if (filters.urgency && filters.urgency !== 'all' && ticket.urgency !== filters.urgency) {
+    if (ticketFilters.filterOptions.urgency && 
+        ticketFilters.filterOptions.urgency !== 'all' && 
+        ticket.urgency !== ticketFilters.filterOptions.urgency) {
       return false;
     }
     
-    if (filters.technical_area && filters.technical_area.length > 0) {
+    if (ticketFilters.filterOptions.technical_area && 
+        ticketFilters.filterOptions.technical_area.length > 0) {
       if (!ticket.technical_area || !Array.isArray(ticket.technical_area)) {
         return false;
       }
       
       const hasMatchingArea = ticket.technical_area.some(area => 
-        filters.technical_area?.includes(area));
+        ticketFilters.filterOptions.technical_area?.includes(area));
       
       if (!hasMatchingArea) {
         return false;
@@ -147,20 +153,29 @@ export const useDeveloperDashboard = () => {
     toast.message("Refreshing tickets...");
     fetchTickets();
   }, [fetchTickets]);
+  
+  // Create categorized tickets for backwards compatibility
+  const categorizedTickets = {
+    active: tickets.filter(t => ['in_progress', 'accepted'].includes(t.status || '')),
+    pending: tickets.filter(t => ['open', 'dev_requested', 'pending_match'].includes(t.status || '')),
+    completed: tickets.filter(t => ['completed', 'closed'].includes(t.status || ''))
+  };
 
   return {
     tickets,
     filteredTickets,
     recommendedTickets,
     myApplications,
+    categorizedTickets,
     isLoading,
     isLoadingApplications,
     hasError,
-    filters,
     showFilters,
     setShowFilters,
     dataSource,
-    handleFilterChange,
+    updateFilterOptions: ticketFilters.updateFilterOptions,
+    resetFilters: ticketFilters.resetFilters,
+    getFilterLabelForStatus: ticketFilters.getFilterLabelForStatus,
     handleClaimTicket,
     handleForceRefresh,
     fetchTickets,

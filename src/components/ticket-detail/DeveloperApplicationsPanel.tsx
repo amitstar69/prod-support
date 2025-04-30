@@ -51,19 +51,13 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
                 };
             
             // Safely handle developer_profiles data
-            const safeDeveloperProfiles: DeveloperProfile = app.developer_profiles && typeof app.developer_profiles === 'object'
-              ? {
-                  id: app.developer_id,
-                  skills: Array.isArray(app.developer_profiles.skills) ? app.developer_profiles.skills : [],
-                  experience: typeof app.developer_profiles.experience === 'string' ? app.developer_profiles.experience : '',
-                  hourly_rate: typeof app.developer_profiles.hourly_rate === 'number' ? app.developer_profiles.hourly_rate : 0
-                }
-              : {
-                  id: app.developer_id,
-                  skills: [],
-                  experience: '',
-                  hourly_rate: 0
-                };
+            const dp = app.developer_profiles;
+            const safeDeveloperProfiles: DeveloperProfile = {
+              id: app.developer_id,
+              skills: Array.isArray(dp?.skills) ? dp?.skills : [],
+              experience: typeof dp?.experience === 'string' ? dp?.experience : '',
+              hourly_rate: typeof dp?.hourly_rate === 'number' ? dp?.hourly_rate : 0
+            };
             
             return {
               ...app,
@@ -145,10 +139,12 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
   const renderApplication = (app: HelpRequestMatch) => {
     const developerName = app.profiles?.name || "Anonymous Developer";
     const developerImage = app.profiles?.image || "";
-    // Safely access developer_profiles properties with optional chaining and nullish coalescing
-    const developerSkills = app.developer_profiles?.skills || [];
-    const developerExperience = app.developer_profiles?.experience || "No experience provided";
-    const developerRate = app.proposed_rate || (app.developer_profiles?.hourly_rate || 0);
+    
+    // Safely access developer_profiles properties
+    const dp = app.developer_profiles;
+    const developerSkills = dp?.skills || [];
+    const developerExperience = dp?.experience || "No experience provided";
+    const developerRate = app.proposed_rate || (dp?.hourly_rate || 0);
     const proposedDuration = app.proposed_duration || 0;
 
     return (

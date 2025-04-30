@@ -26,7 +26,7 @@ export interface HelpRequest {
   cancellation_reason?: string;
   selected_developer_id?: string;
   
-  // Missing properties causing build errors
+  // Previously missing properties causing build errors
   qa_start_time?: string;
   qa_complete_time?: string;
   client_review_start_time?: string;
@@ -90,7 +90,7 @@ export interface HelpRequestMatch {
   developer_profiles?: DeveloperProfile;
 }
 
-// Restore missing types
+// Restored missing types
 export interface TicketComment {
   id?: string;
   ticket_id?: string;

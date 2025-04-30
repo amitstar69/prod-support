@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
@@ -68,9 +69,9 @@ export const useTicketApplications = (ticketId: string) => {
           const dp = app.developer_profiles;
           safeDeveloperProfiles = {
             id: app.developer_id,
-            skills: Array.isArray(dp?.skills) ? dp.skills : [],
-            experience: typeof dp?.experience === 'string' ? dp.experience : '',
-            hourly_rate: typeof dp?.hourly_rate === 'number' ? dp.hourly_rate : 0
+            skills: Array.isArray(dp?.skills) ? dp?.skills : [],
+            experience: typeof dp?.experience === 'string' ? dp?.experience : '',
+            hourly_rate: typeof dp?.hourly_rate === 'number' ? dp?.hourly_rate : 0
           };
         }
 

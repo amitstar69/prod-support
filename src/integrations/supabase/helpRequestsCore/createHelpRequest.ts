@@ -84,12 +84,15 @@ export const createHelpRequest = async (
     }
     
     // For Supabase
+    const requestData = { 
+      ...normalizedHelpRequest,
+      status: 'open' // Set default status to 'open'
+    };
+    
+    // Ensure we don't include status in the initial object creation
     const { data, error } = await supabase
       .from('help_requests')
-      .insert({
-        ...normalizedHelpRequest,
-        status: 'open' // Set default status to 'open'
-      })
+      .insert(requestData)
       .select();
       
     if (error) {

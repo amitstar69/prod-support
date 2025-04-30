@@ -10,7 +10,7 @@ interface CommentsSectionProps {
   ticketId?: string;
   userId: string;
   role?: string;
-  userRole?: string; // Added to accept both role and userRole
+  userRole?: string; // Support both role and userRole for flexibility
   userType?: string; // Added for flexibility
 }
 
@@ -35,8 +35,8 @@ const CommentsSection = ({
   return (
     <TicketComments
       ticketId={ticketId}
-      userRole={effectiveRole}
       userId={userId}
+      role={effectiveRole}
     />
   );
 };
