@@ -1,165 +1,149 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
+import { useAuth } from '../contexts/auth';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Badge } from '../components/ui/badge';
-import { ChevronLeft, Check, X } from 'lucide-react';
+import { updateApplicationStatus } from '../integrations/supabase/helpRequestsApplications';
+import { HelpRequestMatch, HelpRequest } from '../types/helpRequest';
 import { toast } from 'sonner';
-import { HelpRequestMatch, DeveloperProfile } from '../types/helpRequest';
+import { MATCH_STATUSES } from '../utils/constants/statusConstants';
 
 const ApplicationDetailPage = () => {
   const { applicationId } = useParams<{ applicationId: string }>();
   const navigate = useNavigate();
+  const { userId } = useAuth();
   const [application, setApplication] = useState<HelpRequestMatch | null>(null);
+  const [ticket, setTicket] = useState<HelpRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [processingAction, setProcessingAction] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchApplication = async () => {
-      if (!applicationId) return;
-      
+    if (!applicationId || !userId) return;
+
+    const fetchApplicationDetails = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
+        // Fetch application with developer profile
+        const { data: applicationData, error: applicationError } = await supabase
           .from('help_request_matches')
           .select(`
             *,
-            profiles(*),
-            developer_profiles(*),
-            help_requests(*)
+            profiles:developer_id (*),
+            developer_profiles:developer_id (*)
           `)
           .eq('id', applicationId)
           .single();
 
-        if (error) {
-          console.error('Error fetching application:', error);
-          setError(error.message);
+        if (applicationError) {
+          console.error('Error fetching application:', applicationError);
+          toast.error('Failed to load application details');
           return;
         }
 
-        // Safely handle potentially missing developer_profiles data
-        const dp = data.developer_profiles;
-        const safeDeveloperProfiles: DeveloperProfile = {
-          id: data.developer_id,
-          skills: Array.isArray(dp?.skills) ? dp.skills : [],
-          experience: typeof dp?.experience === 'string' ? dp.experience : '',
-          hourly_rate: typeof dp?.hourly_rate === 'number' ? dp.hourly_rate : 0
+        // Process application data with safe access to developer_profiles
+        const dp = applicationData.developer_profiles;
+        const processedApplication: HelpRequestMatch = {
+          ...applicationData,
+          developer_profiles: {
+            id: applicationData.developer_id,
+            skills: dp && Array.isArray(dp.skills) ? dp.skills : [],
+            experience: dp && typeof dp.experience === 'string' ? dp.experience : '',
+            hourly_rate: dp && typeof dp.hourly_rate === 'number' ? dp.hourly_rate : 0
+          }
         };
+        
+        setApplication(processedApplication);
 
-        // Cast to the expected type with safe values
-        const safeApplication = {
-          ...data,
-          developer_profiles: safeDeveloperProfiles,
-        } as unknown as HelpRequestMatch;
+        // Fetch the ticket details
+        const { data: ticketData, error: ticketError } = await supabase
+          .from('help_requests')
+          .select('*')
+          .eq('id', applicationData.request_id)
+          .single();
 
-        setApplication(safeApplication);
-      } catch (err) {
-        console.error('Failed to fetch application:', err);
-        setError('Failed to load application details');
+        if (ticketError) {
+          console.error('Error fetching ticket:', ticketError);
+          toast.error('Failed to load ticket details');
+        } else {
+          setTicket(ticketData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch application details:', error);
+        toast.error('An error occurred while loading application details');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchApplication();
-  }, [applicationId]);
+    fetchApplicationDetails();
+  }, [applicationId, userId]);
 
-  const handleApprove = async () => {
-    if (!application) return;
+  const handleAccept = async () => {
+    if (!application || !userId) return;
+
+    setProcessingAction('accepting');
     
-    setIsProcessing(true);
-    try {
-      // Update application status
-      const { error: applicationError } = await supabase
-        .from('help_request_matches')
-        .update({ status: 'approved' })
-        .eq('id', applicationId);
+    const result = await updateApplicationStatus(
+      application.id!,
+      'approved',
+      userId
+    );
 
-      if (applicationError) {
-        toast.error('Failed to approve application');
-        console.error('Error approving application:', applicationError);
-        return;
+    setProcessingAction(null);
+
+    if (result.success) {
+      toast.success('Application accepted successfully!');
+      
+      // Navigate to ticket detail
+      if (application.request_id) {
+        navigate(`/client/tickets/${application.request_id}`);
+      } else {
+        navigate('/client/tickets');
       }
-
-      // Update help request status
-      const { error: requestError } = await supabase
-        .from('help_requests')
-        .update({ 
-          status: 'in_progress',
-          selected_developer_id: application.developer_id
-        })
-        .eq('id', application.request_id);
-
-      if (requestError) {
-        toast.error('Failed to update help request status');
-        console.error('Error updating help request:', requestError);
-        return;
-      }
-
-      toast.success('Application approved successfully!');
-      navigate(`/client/tickets/${application.request_id}`);
-    } catch (err) {
-      console.error('Error in approval process:', err);
-      toast.error('An error occurred during approval');
-    } finally {
-      setIsProcessing(false);
+    } else {
+      toast.error(`Failed to accept application: ${result.error}`);
     }
   };
 
   const handleReject = async () => {
-    if (!application) return;
+    if (!application || !userId) return;
+
+    setProcessingAction('rejecting');
     
-    setIsProcessing(true);
-    try {
-      const { error } = await supabase
-        .from('help_request_matches')
-        .update({ status: 'rejected' })
-        .eq('id', applicationId);
+    const result = await updateApplicationStatus(
+      application.id!,
+      'rejected',
+      userId
+    );
 
-      if (error) {
-        toast.error('Failed to reject application');
-        console.error('Error rejecting application:', error);
-        return;
-      }
+    setProcessingAction(null);
 
+    if (result.success) {
       toast.success('Application rejected successfully');
-      navigate(`/client/tickets/${application.request_id}`);
-    } catch (err) {
-      console.error('Error rejecting application:', err);
-      toast.error('An error occurred while rejecting the application');
-    } finally {
-      setIsProcessing(false);
+      
+      if (application.request_id) {
+        navigate(`/client/tickets/${application.request_id}`);
+      } else {
+        navigate('/client/tickets');
+      }
+    } else {
+      toast.error(`Failed to reject application: ${result.error}`);
     }
   };
 
   if (isLoading) {
     return (
       <Layout>
-        <div className="container max-w-4xl mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold mb-6">Loading application details...</h1>
-          <div className="animate-pulse">
-            <div className="h-64 bg-gray-200 rounded mb-4"></div>
-            <div className="h-20 bg-gray-200 rounded"></div>
+        <div className="container max-w-3xl mx-auto px-4 py-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-10 bg-muted rounded w-3/4"></div>
+            <div className="h-64 bg-muted rounded"></div>
           </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (error) {
-    return (
-      <Layout>
-        <div className="container max-w-4xl mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold mb-4">Error Loading Application</h1>
-          <p className="text-red-500 mb-4">{error}</p>
-          <Button onClick={() => navigate(-1)}>
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Go Back
-          </Button>
         </div>
       </Layout>
     );
@@ -168,111 +152,161 @@ const ApplicationDetailPage = () => {
   if (!application) {
     return (
       <Layout>
-        <div className="container max-w-4xl mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold mb-4">Application Not Found</h1>
-          <Button onClick={() => navigate(-1)}>
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Go Back
+        <div className="container max-w-3xl mx-auto px-4 py-8">
+          <h1 className="text-2xl font-semibold mb-4">Application Not Found</h1>
+          <p>Sorry, the application you are looking for does not exist or you do not have permission to view it.</p>
+          <Button onClick={() => navigate('/client/tickets')} className="mt-4">
+            Back to Tickets
           </Button>
         </div>
       </Layout>
     );
   }
 
-  const developerName = application.profiles?.name || "Anonymous Developer";
-  const developerImage = application.profiles?.image || "";
-  const developerSkills = application.developer_profiles?.skills || [];
-  const developerExperience = application.developer_profiles?.experience || "No experience provided";
-  const developerRate = application.proposed_rate || application.developer_profiles?.hourly_rate || 0;
-  const proposedDuration = application.proposed_duration || 0;
+  const getStatusBadge = (status: string | undefined) => {
+    if (!status) return <Badge>Unknown</Badge>;
+
+    if (status === MATCH_STATUSES.PENDING) {
+      return <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">Pending</Badge>;
+    } else if (status === MATCH_STATUSES.APPROVED_BY_CLIENT) {
+      return <Badge variant="outline" className="bg-green-50 text-green-800 border-green-200">Approved</Badge>;
+    } else if (status === MATCH_STATUSES.REJECTED_BY_CLIENT) {
+      return <Badge variant="outline" className="bg-red-50 text-red-800 border-red-200">Rejected</Badge>;
+    }
+    
+    return <Badge>{status}</Badge>;
+  };
+
+  const isApplicationPending = application.status === MATCH_STATUSES.PENDING;
 
   return (
     <Layout>
-      <div className="container max-w-4xl mx-auto py-8 px-4">
-        <Button onClick={() => navigate(-1)} variant="ghost" className="mb-4">
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Go Back
-        </Button>
-        <Card>
-          <CardHeader>
-            <div className="flex items-center space-x-4">
-              <Avatar>
-                <AvatarImage src={developerImage} alt={developerName} />
-                <AvatarFallback>{developerName.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <CardTitle>{developerName}</CardTitle>
+      <div className="container max-w-3xl mx-auto px-4 py-8">
+        <div className="mb-6">
+          <Button variant="outline" className="mb-4" onClick={() => navigate(-1)}>
+            Back
+          </Button>
+          
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h1 className="text-2xl font-semibold">Developer Application</h1>
+            {getStatusBadge(application.status)}
+          </div>
+          
+          {ticket && (
+            <div className="mt-2 text-sm text-muted-foreground">
+              For help request: {ticket.title}
             </div>
+          )}
+        </div>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Developer Details</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="flex items-center space-x-4 mb-4">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={application.profiles?.image || ''} alt={application.profiles?.name || 'Developer'} />
+                <AvatarFallback>{(application.profiles?.name?.[0] || 'D').toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div>
+                <h3 className="text-lg font-semibold">{application.profiles?.name || 'Anonymous Developer'}</h3>
+                <p className="text-sm text-muted-foreground">{application.developer_profiles?.experience}</p>
+              </div>
+            </div>
+            
             <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Badge variant="secondary">Status: {application.status}</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {developerExperience}
-              </p>
-              <p className="text-sm">
-                Skills: {developerSkills.join(', ')}
-              </p>
-              <p className="text-sm">
-                Proposed Rate: ${developerRate}/hr
-              </p>
-              {proposedDuration > 0 && (
-                <p className="text-sm">
-                  Proposed Duration: {proposedDuration} hours
-                </p>
+              {application.developer_profiles?.skills && application.developer_profiles.skills.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-1">Skills</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {application.developer_profiles.skills.map((skill, index) => (
+                      <Badge variant="outline" key={index}>{skill}</Badge>
+                    ))}
+                  </div>
+                </div>
               )}
+              
+              <div>
+                <h4 className="text-sm font-semibold mb-1">Hourly Rate</h4>
+                <p>${application.proposed_rate || application.developer_profiles?.hourly_rate || 0}/hr</p>
+              </div>
+              
+              {application.proposed_duration && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-1">Estimated Duration</h4>
+                  <p>{application.proposed_duration} hours</p>
+                </div>
+              )}
+              
               {application.proposed_message && (
-                <div className="mt-2">
-                  <p className="text-sm font-medium">Message:</p>
-                  <p className="text-sm">{application.proposed_message}</p>
+                <div>
+                  <h4 className="text-sm font-semibold mb-1">Message from Developer</h4>
+                  <div className="bg-muted/30 p-3 rounded-md">
+                    {application.proposed_message}
+                  </div>
                 </div>
               )}
-              {application.help_requests && (
-                <div className="mt-4">
-                  <h3 className="text-lg font-semibold mb-2">Help Request Details</h3>
-                  <p className="text-sm">Title: {application.help_requests.title}</p>
-                  <p className="text-sm">Description: {application.help_requests.description}</p>
-                </div>
-              )}
-              <div className="flex justify-end space-x-2 mt-4">
-                <Button
-                  variant="outline"
-                  className="bg-red-500 text-white hover:bg-red-700"
-                  onClick={handleReject}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      Rejecting...
-                    </>
-                  ) : (
-                    <>
-                      <X className="mr-2 h-4 w-4" />
-                      Reject
-                    </>
-                  )}
-                </Button>
-                <Button
-                  className="bg-green-500 text-white hover:bg-green-700"
-                  onClick={handleApprove}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      Approving...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="mr-2 h-4 w-4" />
-                      Approve
-                    </>
-                  )}
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>
+        
+        {ticket && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Help Request Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <h3 className="text-lg font-semibold">{ticket.title}</h3>
+              <p className="mt-2">{ticket.description}</p>
+              
+              <div className="mt-4 space-y-2">
+                {ticket.technical_area && ticket.technical_area.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold">Technical Areas</h4>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {ticket.technical_area.map((area, index) => (
+                        <Badge key={index} variant="outline">{area}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm font-semibold">Urgency</h4>
+                    <p>{ticket.urgency}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold">Budget Range</h4>
+                    <p>{ticket.budget_range}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {isApplicationPending && (
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button 
+              variant="destructive" 
+              className="flex-1"
+              onClick={handleReject}
+              disabled={processingAction !== null}
+            >
+              {processingAction === 'rejecting' ? 'Rejecting...' : 'Reject Application'}
+            </Button>
+            <Button 
+              variant="default" 
+              className="flex-1"
+              onClick={handleAccept}
+              disabled={processingAction !== null}
+            >
+              {processingAction === 'accepting' ? 'Accepting...' : 'Accept Application'}
+            </Button>
+          </div>
+        )}
       </div>
     </Layout>
   );

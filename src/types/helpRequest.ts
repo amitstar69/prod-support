@@ -88,6 +88,7 @@ export interface HelpRequestMatch {
   updated_at?: string;
   profiles?: Profile;
   developer_profiles?: DeveloperProfile;
+  help_requests?: HelpRequest; // Added for ApplicationDetailPage
 }
 
 // Restored missing types

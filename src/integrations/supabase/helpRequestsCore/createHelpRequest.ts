@@ -57,7 +57,9 @@ export const createHelpRequest = async (
                               ['Chat'], // Ensure it's an array
       // Ensure required fields always have values
       title: helpRequest.title || "Untitled Request",
-      description: helpRequest.description || "No description provided"
+      description: helpRequest.description || "No description provided",
+      // Add default value for estimated_duration which is required
+      estimated_duration: helpRequest.estimated_duration || 1
     };
     
     // For local storage

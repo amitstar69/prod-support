@@ -12,6 +12,18 @@ import TicketList from '../components/tickets/TicketList';
 import EmptyTicketsView from '../components/tickets/EmptyTicketsView';
 import { useTicketFilters } from '../hooks/dashboard/useTicketFilters';
 
+interface TicketFiltersProps {
+  filterOptions: any;
+  updateFilterOptions: (newOptions: any) => void;
+  resetFilters: () => void;
+  getFilterLabelForStatus: (status: string) => string;
+}
+
+interface TicketListProps {
+  tickets: HelpRequest[];
+  userRole: string;
+}
+
 const ClientTicketsPage: React.FC = () => {
   const navigate = useNavigate();
   const { userId, isAuthenticated } = useAuth();

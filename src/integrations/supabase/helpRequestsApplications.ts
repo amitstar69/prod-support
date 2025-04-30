@@ -112,9 +112,9 @@ export const getDeveloperApplicationsForRequest = async (requestId: string) => {
         const dp = app.developer_profiles;
         safeDeveloperProfiles = {
           id: app.developer_id,
-          skills: Array.isArray(dp?.skills) ? dp?.skills : [],
-          experience: typeof dp?.experience === 'string' ? dp?.experience : '',
-          hourly_rate: typeof dp?.hourly_rate === 'number' ? dp?.hourly_rate : 0
+          skills: dp && Array.isArray(dp.skills) ? dp.skills : [],
+          experience: dp && typeof dp.experience === 'string' ? dp.experience : '',
+          hourly_rate: dp && typeof dp.hourly_rate === 'number' ? dp.hourly_rate : 0
         };
       } else {
         safeDeveloperProfiles = {
@@ -172,7 +172,6 @@ export const submitDeveloperApplication = async (
       };
     }
 
-    // If the developer has already applied, return an error
     if (existingApplication) {
       return {
         success: false,
@@ -180,31 +179,44 @@ export const submitDeveloperApplication = async (
       };
     }
 
-    // Insert the new application
-    const { data, error } = await supabase
+    // Create the application
+    const { data: newApplication, error: createError } = await supabase
       .from('help_request_matches')
       .insert({
         request_id: requestId,
         developer_id: developerId,
-        status: MATCH_STATUSES.PENDING,
         proposed_message: proposedMessage,
         proposed_rate: proposedRate,
-        proposed_duration: proposedDuration
+        proposed_duration: proposedDuration,
+        status: MATCH_STATUSES.PENDING
       })
-      .select('*')
-      .single();
+      .select();
 
-    if (error) {
-      console.error('[helpRequestsApplications] Error submitting application:', error);
+    if (createError) {
+      console.error('[helpRequestsApplications] Error creating application:', createError);
       return {
         success: false,
-        error: error.message
+        error: createError.message
       };
+    }
+
+    // Update the help request status to awaiting_client_approval
+    const { error: updateError } = await supabase
+      .from('help_requests')
+      .update({
+        status: 'awaiting_client_approval',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+
+    if (updateError) {
+      console.error('[helpRequestsApplications] Error updating help request status:', updateError);
+      // Continue even if this fails, as the application was created
     }
 
     return {
       success: true,
-      data
+      data: newApplication?.[0]
     };
   } catch (err) {
     console.error('[helpRequestsApplications] Error in submitDeveloperApplication:', err);

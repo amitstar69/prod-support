@@ -174,6 +174,7 @@ export const useDeveloperDashboard = () => {
     showFilters,
     setShowFilters,
     dataSource,
+    filterOptions: ticketFilters.filterOptions,
     updateFilterOptions: ticketFilters.updateFilterOptions,
     resetFilters: ticketFilters.resetFilters,
     getFilterLabelForStatus: ticketFilters.getFilterLabelForStatus,

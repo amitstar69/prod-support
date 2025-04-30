@@ -1,125 +1,116 @@
 
 import React from 'react';
-import { 
-  Clock, 
-  Code, 
-  AlertCircle 
-} from 'lucide-react';
+import { Button } from '../ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Badge } from '../ui/badge';
-import { 
-  ToggleGroup, 
-  ToggleGroupItem 
-} from '../ui/toggle-group';
+import { X } from 'lucide-react';
 
-interface TicketFiltersProps {
-  filters: {
-    status: string;
-    technicalArea: string;
-    urgency: string;
-  };
-  onFilterChange: (filterType: string, value: string) => void;
+export interface FilterOptions {
+  status: string;
+  urgency: string;
+  technicalAreas: string[];
 }
 
-const TicketFilters: React.FC<TicketFiltersProps> = ({ filters, onFilterChange }) => {
-  // Common tech areas for filter options
-  const techAreas = [
-    'React', 'JavaScript', 'TypeScript', 'Node.js', 
-    'Python', 'Java', 'C#', 'PHP', 'Ruby', 'Go',
-    'AWS', 'Azure', 'DevOps', 'Database', 'Mobile'
-  ];
+export interface TicketFiltersProps {
+  filterOptions: FilterOptions;
+  updateFilterOptions: (newOptions: Partial<FilterOptions>) => void;
+  resetFilters: () => void;
+  getFilterLabelForStatus: (status: string) => string;
+}
 
-  // Urgency options with colors
-  const urgencyOptions = [
-    { value: 'all', label: 'All', color: 'bg-gray-200 text-gray-700' },
-    { value: 'low', label: 'Low', color: 'bg-blue-100 text-blue-700' },
-    { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700' },
-    { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-700' },
-    { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-700' },
-  ];
+const TicketFilters: React.FC<TicketFiltersProps> = ({ 
+  filterOptions, 
+  updateFilterOptions, 
+  resetFilters,
+  getFilterLabelForStatus 
+}) => {
+  const handleStatusChange = (value: string) => {
+    updateFilterOptions({ status: value });
+  };
+
+  const handleUrgencyChange = (value: string) => {
+    updateFilterOptions({ urgency: value });
+  };
+
+  const hasActiveFilters = 
+    filterOptions.status !== 'all' || 
+    filterOptions.urgency !== 'all' || 
+    (filterOptions.technicalAreas && filterOptions.technicalAreas.length > 0);
 
   return (
-    <div className="flex flex-col space-y-4">
-      {/* Status Filter */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <Badge variant="outline" className="text-xs py-0 px-1.5">
-            Status
-          </Badge>
-        </div>
-        <ToggleGroup 
-          type="single" 
-          value={filters.status}
-          onValueChange={(value) => value && onFilterChange('status', value)}
-          className="justify-start flex-wrap"
-        >
-          <ToggleGroupItem value="all" aria-label="All Statuses" className="text-xs h-7 px-2">
-            All
-          </ToggleGroupItem>
-          <ToggleGroupItem value="pending" aria-label="Pending" className="text-xs h-7 px-2">
-            Pending
-          </ToggleGroupItem>
-          <ToggleGroupItem value="matching" aria-label="Matching" className="text-xs h-7 px-2">
-            Matching
-          </ToggleGroupItem>
-          <ToggleGroupItem value="scheduled" aria-label="Scheduled" className="text-xs h-7 px-2">
-            Scheduled
-          </ToggleGroupItem>
-          <ToggleGroupItem value="in-progress" aria-label="In Progress" className="text-xs h-7 px-2">
-            In Progress
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
-
-      {/* Urgency Filter */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <Clock className="h-4 w-4" />
-          <Badge variant="outline" className="text-xs py-0 px-1.5">
-            Urgency
-          </Badge>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {urgencyOptions.map((option) => (
-            <Badge 
-              key={option.value}
-              variant="outline" 
-              className={`cursor-pointer ${filters.urgency === option.value ? option.color : 'bg-transparent'}`}
-              onClick={() => onFilterChange('urgency', option.value)}
-            >
-              {option.label}
-            </Badge>
-          ))}
-        </div>
-      </div>
-
-      {/* Technical Area Filter */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <Code className="h-4 w-4" />
-          <Badge variant="outline" className="text-xs py-0 px-1.5">
-            Tech Stack
-          </Badge>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge 
-            variant="outline" 
-            className={`cursor-pointer ${filters.technicalArea === 'all' ? 'bg-gray-200 text-gray-700' : 'bg-transparent'}`}
-            onClick={() => onFilterChange('technicalArea', 'all')}
+    <div className="space-y-4 mb-6">
+      <div className="flex flex-wrap gap-4">
+        <div className="w-full sm:w-auto">
+          <Select
+            value={filterOptions.status}
+            onValueChange={handleStatusChange}
           >
-            All
-          </Badge>
-          {techAreas.map((area) => (
-            <Badge 
-              key={area}
-              variant="outline" 
-              className={`cursor-pointer ${filters.technicalArea === area ? 'bg-primary/10 text-primary' : 'bg-transparent'}`}
-              onClick={() => onFilterChange('technicalArea', area)}
-            >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Tickets</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="awaiting_client_approval">Awaiting Approval</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="w-full sm:w-auto">
+          <Select
+            value={filterOptions.urgency}
+            onValueChange={handleUrgencyChange}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by urgency" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Urgency Levels</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="critical">Critical</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {hasActiveFilters && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={resetFilters}
+            className="h-10"
+          >
+            <X className="mr-2 h-4 w-4" />
+            Clear Filters
+          </Button>
+        )}
+      </div>
+
+      {hasActiveFilters && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-sm text-muted-foreground">Active filters:</span>
+          {filterOptions.status !== 'all' && (
+            <Badge variant="outline" className="bg-muted">
+              Status: {getFilterLabelForStatus(filterOptions.status)}
+            </Badge>
+          )}
+          {filterOptions.urgency !== 'all' && (
+            <Badge variant="outline" className="bg-muted">
+              Urgency: {filterOptions.urgency.charAt(0).toUpperCase() + filterOptions.urgency.slice(1)}
+            </Badge>
+          )}
+          {filterOptions.technicalAreas && filterOptions.technicalAreas.map(area => (
+            <Badge key={area} variant="outline" className="bg-muted">
               {area}
             </Badge>
           ))}
         </div>
-      </div>
+      )}
     </div>
   );
 };

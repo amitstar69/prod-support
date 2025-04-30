@@ -1,31 +1,33 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../integrations/supabase/client';
-import { HelpRequest } from '../../types/helpRequest';
+import { HelpRequest, TicketComment } from '../../types/helpRequest';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
-// Comment out this to fix build errors
-// import { TicketComment } from '../../types/helpRequest';
-
-interface CommentsSectionProps {
-  ticket: HelpRequest | null;
-  ticketId: string;
+interface TicketCommentsProps {
+  ticketId?: string;
   userId: string;
-  role: string;
-  visible?: boolean;
+  role?: string;
+  ticket?: HelpRequest;
 }
 
-const CommentsSection: React.FC<CommentsSectionProps> = ({ ticket, ticketId, userId, role, visible = true }) => {
-  const [comments, setComments] = useState<any[]>([]);
+const TicketComments: React.FC<TicketCommentsProps> = ({ 
+  ticketId, 
+  userId, 
+  role,
+  ticket 
+}) => {
+  const [comments, setComments] = useState<TicketComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (visible && ticketId) {
+    if (ticketId) {
       fetchComments();
 
       const channel = supabase
@@ -49,7 +51,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ ticket, ticketId, use
         supabase.removeChannel(channel);
       };
     }
-  }, [visible, ticketId]);
+  }, [ticketId]);
 
   const fetchComments = async () => {
     setIsLoading(true);
@@ -107,10 +109,6 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ ticket, ticketId, use
     }
   };
 
-  if (!visible) {
-    return null;
-  }
-
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Comments</h2>
@@ -123,13 +121,13 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ ticket, ticketId, use
           {comments.map((comment) => (
             <div key={comment.id} className="flex items-start space-x-3">
               <Avatar>
-                <AvatarImage src={comment.user?.image || ''} alt={comment.user?.name || 'User'} />
-                <AvatarFallback>{comment.user?.name?.[0] || 'U'}</AvatarFallback>
+                <AvatarImage src={(comment.user as any)?.image || ''} alt={(comment.user as any)?.name || 'User'} />
+                <AvatarFallback>{((comment.user as any)?.name || 'U')[0]}</AvatarFallback>
               </Avatar>
               <div>
-                <div className="text-sm font-medium">{comment.user?.name || 'Anonymous'}</div>
+                <div className="text-sm font-medium">{(comment.user as any)?.name || 'Anonymous'}</div>
                 <div className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                  {comment.created_at ? formatDistanceToNow(new Date(comment.created_at), { addSuffix: true }) : ''}
                 </div>
                 <p className="text-sm">{comment.content}</p>
               </div>
@@ -152,4 +150,4 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ ticket, ticketId, use
   );
 };
 
-export default CommentsSection;
+export default TicketComments;

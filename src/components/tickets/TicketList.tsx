@@ -1,166 +1,113 @@
 
-import React, { useState } from 'react';
-import { HelpRequest } from '../../types/helpRequest';
-import { Card } from '../ui/card';
-import { formatDistanceToNow } from 'date-fns';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import React from 'react';
 import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
-import { Link } from 'react-router-dom';
-import DeveloperApplicationModal from '../apply/DeveloperApplicationModal';
-import { toast } from 'sonner';
+import { Card } from '../ui/card';
+import { HelpRequest } from '../../types/helpRequest';
+import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
 
-interface TicketListProps {
+export interface TicketListProps {
   tickets: HelpRequest[];
-  isLoading?: boolean;
-  onApplySuccess?: () => void;
-  userId?: string | null;
-  userType?: string | null;
-  onClaimTicket?: (ticketId: string) => void;
-  currentUserId?: string | null;
-  isAuthenticated?: boolean;
-  viewMode?: 'grid' | 'list';
-  isApplication?: boolean;
-  isRecommended?: boolean;
-  onOpenChat?: (helpRequestId: string, clientId: string, clientName?: string) => void;
+  userRole: string;
 }
 
-interface TicketWithApplications extends HelpRequest {
-  // Commented out to fix build error
-  // isApplication?: boolean;  
-}
+const TicketList: React.FC<TicketListProps> = ({ tickets, userRole }) => {
+  const navigate = useNavigate();
 
-const TicketList = ({ tickets, isLoading, onApplySuccess, userId, userType, onClaimTicket, currentUserId, isAuthenticated, viewMode, isApplication, isRecommended, onOpenChat }: TicketListProps) => {
-  const [showApplicationModal, setShowApplicationModal] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState<HelpRequest | null>(null);
-
-  if (isLoading) {
-    return <div className="space-y-4">Loading tickets...</div>;
-  }
-
-  if (!tickets.length) {
-    return (
-      <Card className="p-6 text-center text-muted-foreground">
-        No tickets found.
-      </Card>
-    );
-  }
-
-  const handleApplicationSuccess = () => {
-    setShowApplicationModal(false);
-    toast.success('Application submitted successfully!');
-    if (onApplySuccess) {
-      onApplySuccess();
+  const getStatusBadge = (status: string = 'open') => {
+    switch (status.toLowerCase()) {
+      case 'open':
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">Open</Badge>;
+      case 'in_progress':
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">In Progress</Badge>;
+      case 'awaiting_client_approval':
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">Awaiting Approval</Badge>;
+      case 'completed':
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Completed</Badge>;
+      case 'closed':
+        return <Badge variant="outline">Closed</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Cancelled</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const renderTicket = (ticket: HelpRequest) => {
-    // Commented out to fix build error
-    // const isApplicationTicket = (ticket as TicketWithApplications).isApplication;
-    
-    return (
-      <Card 
-        key={ticket.id} 
-        className="p-4 hover:shadow-md transition-shadow"
-      >
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-medium text-base">
-              <Link 
-                to={`/tickets/${ticket.id}`}
-                className="hover:underline text-primary"
-              >
-                {ticket.title}
-              </Link>
-            </h3>
-            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-              {ticket.description}
-            </p>
-            <div className="flex flex-wrap gap-1 mt-2">
-              {ticket.technical_area?.slice(0, 3).map((area, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
-                  {area}
-                </Badge>
-              ))}
-              {ticket.technical_area && ticket.technical_area.length > 3 && (
-                <Badge variant="outline" className="text-xs">
-                  +{ticket.technical_area.length - 3} more
-                </Badge>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col items-end">
-            <Badge 
-              className={
-                ticket.status === 'completed' ? 'bg-green-100 text-green-800' :
-                ticket.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                ticket.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                'bg-amber-100 text-amber-800'
-              }
-            >
-              {ticket.status?.replace(/_/g, ' ')}
-            </Badge>
-            <span className="text-xs text-muted-foreground mt-1">
-              {ticket.created_at && formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex justify-between items-center mt-4">
-          <div className="flex items-center">
-            <Avatar className="h-6 w-6 mr-2">
-              <AvatarImage src="" />
-              <AvatarFallback className="text-xs">
-                {ticket.client_id?.substring(0, 2) || 'CL'}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-xs text-muted-foreground">
-              Client #{ticket.client_id?.substring(0, 6)}
-            </span>
-          </div>
-          
-          {userType === 'developer' && onClaimTicket && (
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => handleApplyClick(ticket)}
-            >
-              Apply
-            </Button>
-          )}
-          
-          {isApplication && onOpenChat && ticket.client_id && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onOpenChat(ticket.id!, ticket.client_id, 'Client')}
-            >
-              Chat
-            </Button>
-          )}
-        </div>
-      </Card>
-    );
+  const getUrgencyBadge = (urgency: string = 'low') => {
+    switch (urgency.toLowerCase()) {
+      case 'critical':
+        return <Badge className="bg-red-100 text-red-800">Critical</Badge>;
+      case 'high':
+        return <Badge className="bg-orange-100 text-orange-800">High</Badge>;
+      case 'medium':
+        return <Badge className="bg-yellow-100 text-yellow-800">Medium</Badge>;
+      case 'low':
+      default:
+        return <Badge className="bg-green-100 text-green-800">Low</Badge>;
+    }
   };
 
-  const handleApplyClick = (ticket: HelpRequest) => {
-    setSelectedTicket(ticket);
-    setShowApplicationModal(true);
+  const handleTicketClick = (ticketId: string | undefined) => {
+    if (!ticketId) return;
+    
+    if (userRole === 'client') {
+      navigate(`/client/tickets/${ticketId}`);
+    } else if (userRole === 'developer') {
+      navigate(`/tickets/${ticketId}`);
+    }
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Unknown date';
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    } catch (error) {
+      return 'Invalid date';
+    }
   };
 
   return (
     <div className="space-y-4">
-      {tickets.map(renderTicket)}
-      
-      {showApplicationModal && selectedTicket && (
-        <DeveloperApplicationModal
-          isOpen={showApplicationModal} 
-          onOpenChange={() => setShowApplicationModal(false)}
-          requestId={selectedTicket.id}
-          userId={userId} 
-          onSuccess={handleApplicationSuccess}
-        />
-      )}
+      {tickets.map((ticket) => (
+        <Card 
+          key={ticket.id} 
+          className="p-4 hover:shadow-md cursor-pointer transition-shadow"
+          onClick={() => handleTicketClick(ticket.id)}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg">{ticket.title || 'Untitled Ticket'}</h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">{ticket.description}</p>
+              
+              <div className="mt-2 flex flex-wrap gap-2">
+                {ticket.technical_area?.slice(0, 3).map((area, i) => (
+                  <Badge key={i} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
+                    {area}
+                  </Badge>
+                ))}
+                {ticket.technical_area && ticket.technical_area.length > 3 && (
+                  <Badge variant="outline">+{ticket.technical_area.length - 3} more</Badge>
+                )}
+              </div>
+            </div>
+            
+            <div className="sm:text-right space-y-2">
+              <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
+                {getStatusBadge(ticket.status)}
+                {getUrgencyBadge(ticket.urgency)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Created {formatDate(ticket.created_at)}
+              </div>
+              {ticket.ticket_number && (
+                <div className="text-xs text-muted-foreground">
+                  #{ticket.ticket_number}
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 };

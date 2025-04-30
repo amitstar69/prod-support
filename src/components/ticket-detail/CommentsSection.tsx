@@ -6,7 +6,7 @@ import { HelpRequest } from "../../types/helpRequest";
 
 interface CommentsSectionProps {
   visible: boolean;
-  ticket?: HelpRequest; // Make ticket optional since it's not always passed
+  ticket?: HelpRequest; // Optional since it's not always passed
   ticketId?: string;
   userId: string;
   role?: string;
@@ -37,6 +37,7 @@ const CommentsSection = ({
       ticketId={ticketId}
       userId={userId}
       role={effectiveRole}
+      ticket={ticket} // Pass the ticket if available
     />
   );
 };

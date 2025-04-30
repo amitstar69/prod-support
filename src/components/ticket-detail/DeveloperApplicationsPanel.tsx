@@ -54,9 +54,9 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
             const dp = app.developer_profiles;
             const safeDeveloperProfiles: DeveloperProfile = {
               id: app.developer_id,
-              skills: Array.isArray(dp?.skills) ? dp?.skills : [],
-              experience: typeof dp?.experience === 'string' ? dp?.experience : '',
-              hourly_rate: typeof dp?.hourly_rate === 'number' ? dp?.hourly_rate : 0
+              skills: dp && Array.isArray(dp.skills) ? dp.skills : [],
+              experience: dp && typeof dp.experience === 'string' ? dp.experience : '',
+              hourly_rate: dp && typeof dp.hourly_rate === 'number' ? dp.hourly_rate : 0
             };
             
             return {
