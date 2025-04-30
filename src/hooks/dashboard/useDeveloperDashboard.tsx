@@ -1,3 +1,4 @@
+
 // Refactored: Root hook delegates to focused hooks for logic
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
@@ -116,14 +117,14 @@ export const useDeveloperDashboard = () => {
       return false;
     }
     
-    if (ticketFilters.filterOptions.technical_area && 
-        ticketFilters.filterOptions.technical_area.length > 0) {
+    if (ticketFilters.filterOptions.technicalAreas && 
+        ticketFilters.filterOptions.technicalAreas.length > 0) {
       if (!ticket.technical_area || !Array.isArray(ticket.technical_area)) {
         return false;
       }
       
       const hasMatchingArea = ticket.technical_area.some(area => 
-        ticketFilters.filterOptions.technical_area?.includes(area));
+        ticketFilters.filterOptions.technicalAreas?.includes(area));
       
       if (!hasMatchingArea) {
         return false;

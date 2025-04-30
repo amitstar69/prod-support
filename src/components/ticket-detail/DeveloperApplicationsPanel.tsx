@@ -140,7 +140,7 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
     const developerName = app.profiles?.name || "Anonymous Developer";
     const developerImage = app.profiles?.image || "";
     
-    // Safely access developer_profiles properties
+    // Safely access developer_profiles properties with null checks
     const dp = app.developer_profiles;
     const developerSkills = dp?.skills || [];
     const developerExperience = dp?.experience || "No experience provided";

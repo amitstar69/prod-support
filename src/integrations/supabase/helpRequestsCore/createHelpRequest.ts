@@ -45,6 +45,7 @@ export const createHelpRequest = async (
     // Normalize required fields to ensure they meet the database constraints
     const normalizedHelpRequest = {
       ...helpRequest,
+      client_id: client_id, // Ensure client_id is explicitly set
       attachments: normalizedAttachments,
       budget_range: helpRequest.budget_range || '$0 - $50', // Provide a default value
       technical_area: Array.isArray(helpRequest.technical_area) ? 
@@ -89,7 +90,10 @@ export const createHelpRequest = async (
       status: 'open' // Set default status to 'open'
     };
     
-    // Ensure we don't include status in the initial object creation
+    // Ensure we don't include undefined or null values for required fields
+    if (!requestData.title) requestData.title = "Untitled Request";
+    if (!requestData.description) requestData.description = "No description provided";
+    
     const { data, error } = await supabase
       .from('help_requests')
       .insert(requestData)

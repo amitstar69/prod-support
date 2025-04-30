@@ -111,6 +111,9 @@ export interface TicketHistoryEntry {
   created_at?: string;
 }
 
+// Updated UserType to include 'system'
+export type UserType = 'client' | 'developer' | 'system';
+
 // Constants for form options
 export const technicalAreaOptions = [
   'React',

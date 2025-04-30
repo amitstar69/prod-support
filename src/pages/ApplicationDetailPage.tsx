@@ -1,267 +1,280 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
-import { HelpRequestMatch } from '../types/helpRequest';
-import { toast } from 'sonner';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
+import Layout from '../components/Layout';
 import { Button } from '../components/ui/button';
-import { Loader2 } from 'lucide-react';
-import { MATCH_STATUSES } from '../utils/constants/statusConstants';
-import { updateApplicationStatus } from '../integrations/supabase/helpRequestsApplications';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
+import { Badge } from '../components/ui/badge';
+import { ChevronLeft, Check, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { HelpRequestMatch, DeveloperProfile } from '../types/helpRequest';
 
-const ApplicationDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+const ApplicationDetailPage = () => {
+  const { applicationId } = useParams<{ applicationId: string }>();
   const navigate = useNavigate();
   const [application, setApplication] = useState<HelpRequestMatch | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [actionInProgress, setActionInProgress] = useState('');
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const fetchApplication = async () => {
-      setIsLoading(true);
-      setError(null);
+      if (!applicationId) return;
       
+      setIsLoading(true);
       try {
         const { data, error } = await supabase
           .from('help_request_matches')
           .select(`
             *,
-            profiles:developer_id (id, name, image, description, location),
-            developer_profiles:developer_id (id, skills, experience, hourly_rate)
+            profiles(*),
+            developer_profiles(*),
+            help_requests(*)
           `)
-          .eq('id', id)
+          .eq('id', applicationId)
           .single();
-        
+
         if (error) {
           console.error('Error fetching application:', error);
-          setError('Failed to load application details.');
+          setError(error.message);
           return;
         }
-        
-        if (!data) {
-          setError('Application not found.');
-          return;
-        }
-        
-        // Ensure we have valid profiles data
-        let safeProfiles = data.profiles;
-        
-        if (!safeProfiles || typeof safeProfiles !== 'object') {
-          safeProfiles = { 
-            id: data.developer_id, 
-            name: 'Unknown Developer',
-            image: null,
-            description: '',
-            location: ''
-          };
-        } else if (!safeProfiles.description) {
-          safeProfiles.description = '';
-        } else if (!safeProfiles.location) {
-          safeProfiles.location = '';
-        }
-        
-        // Ensure we have valid developer_profiles data
-        let safeDeveloperProfiles = data.developer_profiles;
-        
-        if (!safeDeveloperProfiles || typeof safeDeveloperProfiles !== 'object') {
-          safeDeveloperProfiles = {
-            id: data.developer_id,
-            skills: [],
-            experience: '',
-            hourly_rate: 0
-          };
-        }
-        
-        const typedApplication: HelpRequestMatch = {
+
+        // Safely handle potentially missing developer_profiles data
+        const dp = data.developer_profiles;
+        const safeDeveloperProfiles: DeveloperProfile = {
+          id: data.developer_id,
+          skills: Array.isArray(dp?.skills) ? dp.skills : [],
+          experience: typeof dp?.experience === 'string' ? dp.experience : '',
+          hourly_rate: typeof dp?.hourly_rate === 'number' ? dp.hourly_rate : 0
+        };
+
+        // Cast to the expected type with safe values
+        const safeApplication = {
           ...data,
-          profiles: safeProfiles,
-          developer_profiles: safeDeveloperProfiles
-        } as HelpRequestMatch;
-        
-        setApplication(typedApplication);
+          developer_profiles: safeDeveloperProfiles,
+        } as unknown as HelpRequestMatch;
+
+        setApplication(safeApplication);
       } catch (err) {
-        console.error('Error in fetchApplication:', err);
-        setError('An unexpected error occurred.');
+        console.error('Failed to fetch application:', err);
+        setError('Failed to load application details');
       } finally {
         setIsLoading(false);
       }
     };
-    
-    fetchApplication();
-  }, [id]);
-  
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    
-    fetchUser();
-  }, []);
 
-  const handleApproveApplication = async () => {
-    if (!application?.id) return;
+    fetchApplication();
+  }, [applicationId]);
+
+  const handleApprove = async () => {
+    if (!application) return;
     
-    setActionInProgress('approve');
-    
+    setIsProcessing(true);
     try {
-      const result = await updateApplicationStatus(
-        application.id,
-        'approved',
-        user?.id || ''
-      );
-      
-      if (!result.success) {
-        toast.error(`Failed to approve application: ${result.error}`);
+      // Update application status
+      const { error: applicationError } = await supabase
+        .from('help_request_matches')
+        .update({ status: 'approved' })
+        .eq('id', applicationId);
+
+      if (applicationError) {
+        toast.error('Failed to approve application');
+        console.error('Error approving application:', applicationError);
         return;
       }
-      
+
+      // Update help request status
+      const { error: requestError } = await supabase
+        .from('help_requests')
+        .update({ 
+          status: 'in_progress',
+          selected_developer_id: application.developer_id
+        })
+        .eq('id', application.request_id);
+
+      if (requestError) {
+        toast.error('Failed to update help request status');
+        console.error('Error updating help request:', requestError);
+        return;
+      }
+
       toast.success('Application approved successfully!');
-      
-      // Update local state
-      setApplication({
-        ...application,
-        status: MATCH_STATUSES.APPROVED_BY_CLIENT
-      });
-      
-      // Navigate back to ticket detail
       navigate(`/client/tickets/${application.request_id}`);
-      
     } catch (err) {
-      console.error('Error approving application:', err);
-      toast.error('An unexpected error occurred');
+      console.error('Error in approval process:', err);
+      toast.error('An error occurred during approval');
     } finally {
-      setActionInProgress('');
+      setIsProcessing(false);
     }
   };
-  
-  const handleRejectApplication = async () => {
-    if (!application?.id) return;
+
+  const handleReject = async () => {
+    if (!application) return;
     
-    setActionInProgress('reject');
-    
+    setIsProcessing(true);
     try {
-      const result = await updateApplicationStatus(
-        application.id,
-        'rejected',
-        user?.id || ''
-      );
-      
-      if (!result.success) {
-        toast.error(`Failed to reject application: ${result.error}`);
+      const { error } = await supabase
+        .from('help_request_matches')
+        .update({ status: 'rejected' })
+        .eq('id', applicationId);
+
+      if (error) {
+        toast.error('Failed to reject application');
+        console.error('Error rejecting application:', error);
         return;
       }
-      
+
       toast.success('Application rejected successfully');
-      
-      // Update local state
-      setApplication({
-        ...application,
-        status: MATCH_STATUSES.REJECTED_BY_CLIENT
-      });
-      
-      // Navigate back to ticket listing
-      navigate('/client/tickets');
-      
+      navigate(`/client/tickets/${application.request_id}`);
     } catch (err) {
       console.error('Error rejecting application:', err);
-      toast.error('An unexpected error occurred');
+      toast.error('An error occurred while rejecting the application');
     } finally {
-      setActionInProgress('');
+      setIsProcessing(false);
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
+      <Layout>
+        <div className="container max-w-4xl mx-auto py-8 px-4">
+          <h1 className="text-2xl font-bold mb-6">Loading application details...</h1>
+          <div className="animate-pulse">
+            <div className="h-64 bg-gray-200 rounded mb-4"></div>
+            <div className="h-20 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </Layout>
     );
   }
 
   if (error) {
     return (
-      <div className="text-red-500">Error: {error}</div>
+      <Layout>
+        <div className="container max-w-4xl mx-auto py-8 px-4">
+          <h1 className="text-2xl font-bold mb-4">Error Loading Application</h1>
+          <p className="text-red-500 mb-4">{error}</p>
+          <Button onClick={() => navigate(-1)}>
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Go Back
+          </Button>
+        </div>
+      </Layout>
     );
   }
 
   if (!application) {
     return (
-      <div className="text-gray-500">Application not found.</div>
+      <Layout>
+        <div className="container max-w-4xl mx-auto py-8 px-4">
+          <h1 className="text-2xl font-bold mb-4">Application Not Found</h1>
+          <Button onClick={() => navigate(-1)}>
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Go Back
+          </Button>
+        </div>
+      </Layout>
     );
   }
 
+  const developerName = application.profiles?.name || "Anonymous Developer";
+  const developerImage = application.profiles?.image || "";
+  const developerSkills = application.developer_profiles?.skills || [];
+  const developerExperience = application.developer_profiles?.experience || "No experience provided";
+  const developerRate = application.proposed_rate || application.developer_profiles?.hourly_rate || 0;
+  const proposedDuration = application.proposed_duration || 0;
+
   return (
-    <div className="container mx-auto p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Developer Application Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-4 mb-4">
-            <Avatar>
-              <AvatarImage src={application.profiles?.image || ''} alt={application.profiles?.name || 'Developer'} />
-              <AvatarFallback>{application.profiles ? (application.profiles.name || 'Dev').substring(0, 2) : 'Dev'}</AvatarFallback>
-            </Avatar>
-            <div>
-              <h2 className="text-lg font-semibold">{application.profiles?.name || 'Anonymous Developer'}</h2>
-              <p className="text-sm text-muted-foreground">{application.profiles?.location || 'Location Unavailable'}</p>
+    <Layout>
+      <div className="container max-w-4xl mx-auto py-8 px-4">
+        <Button onClick={() => navigate(-1)} variant="ghost" className="mb-4">
+          <ChevronLeft className="mr-2 h-4 w-4" />
+          Go Back
+        </Button>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center space-x-4">
+              <Avatar>
+                <AvatarImage src={developerImage} alt={developerName} />
+                <AvatarFallback>{developerName.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <CardTitle>{developerName}</CardTitle>
             </div>
-          </div>
-
-          <div className="mb-4">
-            <h3 className="text-md font-semibold">Proposed Message</h3>
-            <p>{application.proposed_message || 'No message provided.'}</p>
-          </div>
-
-          <div className="mb-4">
-            <h3 className="text-md font-semibold">Skills</h3>
-            <p>{application.developer_profiles?.skills?.join(', ') || 'No skills listed.'}</p>
-          </div>
-
-          <div className="mb-4">
-            <h3 className="text-md font-semibold">Experience</h3>
-            <p>{application.developer_profiles?.experience || 'No experience listed.'}</p>
-          </div>
-
-          <div className="mb-4">
-            <h3 className="text-md font-semibold">Hourly Rate</h3>
-            <p>${application.developer_profiles?.hourly_rate || 'Not specified'}</p>
-          </div>
-
-          <div className="flex justify-end space-x-2">
-            <Button
-              variant="destructive"
-              onClick={handleRejectApplication}
-              disabled={actionInProgress === 'reject'}
-            >
-              {actionInProgress === 'reject' ? (
-                <>
-                  Rejecting <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                </>
-              ) : (
-                'Reject Application'
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Badge variant="secondary">Status: {application.status}</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {developerExperience}
+              </p>
+              <p className="text-sm">
+                Skills: {developerSkills.join(', ')}
+              </p>
+              <p className="text-sm">
+                Proposed Rate: ${developerRate}/hr
+              </p>
+              {proposedDuration > 0 && (
+                <p className="text-sm">
+                  Proposed Duration: {proposedDuration} hours
+                </p>
               )}
-            </Button>
-            <Button
-              onClick={handleApproveApplication}
-              disabled={actionInProgress === 'approve'}
-            >
-              {actionInProgress === 'approve' ? (
-                <>
-                  Approving <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                </>
-              ) : (
-                'Approve Application'
+              {application.proposed_message && (
+                <div className="mt-2">
+                  <p className="text-sm font-medium">Message:</p>
+                  <p className="text-sm">{application.proposed_message}</p>
+                </div>
               )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+              {application.help_requests && (
+                <div className="mt-4">
+                  <h3 className="text-lg font-semibold mb-2">Help Request Details</h3>
+                  <p className="text-sm">Title: {application.help_requests.title}</p>
+                  <p className="text-sm">Description: {application.help_requests.description}</p>
+                </div>
+              )}
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button
+                  variant="outline"
+                  className="bg-red-500 text-white hover:bg-red-700"
+                  onClick={handleReject}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <>
+                      Rejecting...
+                    </>
+                  ) : (
+                    <>
+                      <X className="mr-2 h-4 w-4" />
+                      Reject
+                    </>
+                  )}
+                </Button>
+                <Button
+                  className="bg-green-500 text-white hover:bg-green-700"
+                  onClick={handleApprove}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <>
+                      Approving...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      Approve
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </Layout>
   );
 };
 

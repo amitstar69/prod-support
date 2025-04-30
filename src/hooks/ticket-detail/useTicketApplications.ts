@@ -1,87 +1,110 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../integrations/supabase/client';
+import { toast } from 'sonner';
 import { HelpRequestMatch, DeveloperProfile } from '../../types/helpRequest';
+import { MATCH_STATUSES } from '../../utils/constants/statusConstants';
 
-export const useTicketApplications = (ticketId: string, userId: string | null, isClient: boolean) => {
+export const useTicketApplications = (ticketId: string) => {
   const [applications, setApplications] = useState<HelpRequestMatch[]>([]);
-  const [isLoadingApplications, setIsLoadingApplications] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'created_at' | 'match_score'>('created_at');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [pendingCount, setPendingCount] = useState(0);
+
+  const fetchApplications = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      let query = supabase
+        .from('help_request_matches')
+        .select(`
+          *,
+          profiles:developer_id (id, name, image, description, location),
+          developer_profiles:developer_id (id, skills, experience, hourly_rate)
+        `)
+        .eq('request_id', ticketId)
+        .order(sortBy, { ascending: false });
+
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      const { data, error: fetchError } = await query;
+
+      if (fetchError) {
+        throw new Error(fetchError.message);
+      }
+      
+      // Ensure we have valid profiles data for each application
+      const typedData = (data || []).map(app => {
+        // Handle potentially malformed profiles data
+        let safeProfiles = app.profiles;
+        
+        if (!safeProfiles || typeof safeProfiles !== 'object') {
+          safeProfiles = { 
+            id: app.developer_id, 
+            name: 'Unknown Developer',
+            image: null,
+            description: '',
+            location: ''
+          };
+        } else if (!safeProfiles.description) {
+          safeProfiles.description = '';
+        } else if (!safeProfiles.location) {
+          safeProfiles.location = '';
+        }
+
+        // Handle potentially malformed developer_profiles data
+        let safeDeveloperProfiles: DeveloperProfile = {
+          id: app.developer_id,
+          skills: [],
+          experience: '',
+          hourly_rate: 0
+        };
+        
+        if (app.developer_profiles && typeof app.developer_profiles === 'object') {
+          const dp = app.developer_profiles;
+          safeDeveloperProfiles = {
+            id: app.developer_id,
+            skills: Array.isArray(dp?.skills) ? dp?.skills : [],
+            experience: typeof dp?.experience === 'string' ? dp?.experience : '',
+            hourly_rate: typeof dp?.hourly_rate === 'number' ? dp?.hourly_rate : 0
+          };
+        }
+
+        return {
+          ...app,
+          profiles: safeProfiles,
+          developer_profiles: safeDeveloperProfiles
+        } as HelpRequestMatch;
+      });
+      
+      setApplications(typedData);
+      
+      // Calculate pending count
+      const pendingApplications = typedData?.filter(app => app.status === MATCH_STATUSES.PENDING) || [];
+      setPendingCount(pendingApplications.length);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load applications';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [ticketId, sortBy, statusFilter]);
 
   useEffect(() => {
-    if (!isClient || !ticketId || !userId) return;
-    
-    const fetchApplications = async () => {
-      setIsLoadingApplications(true);
-      try {
-        const { data, error } = await supabase
-          .from('help_request_matches')
-          .select(`
-            *,
-            profiles:developer_id (id, name, image, description, location),
-            developer_profiles:developer_id (id, skills, experience, hourly_rate)
-          `)
-          .eq('request_id', ticketId);
-          
-        if (error) {
-          console.error('Error fetching applications:', error);
-          return;
-        }
-        
-        const typedApplications: HelpRequestMatch[] = (data || []).map(app => {
-          // Handle potentially malformed profiles data
-          let safeProfiles = app.profiles;
-          
-          if (!safeProfiles || typeof safeProfiles !== 'object') {
-            safeProfiles = { 
-              id: app.developer_id, 
-              name: 'Unknown Developer',
-              image: null,
-              description: '',
-              location: ''
-            };
-          } else if (!safeProfiles.description) {
-            safeProfiles.description = '';
-          } else if (!safeProfiles.location) {
-            safeProfiles.location = '';
-          }
-          
-          // Handle potentially malformed developer_profiles data
-          let safeDeveloperProfiles: DeveloperProfile;
-          
-          if (app.developer_profiles && typeof app.developer_profiles === 'object') {
-            const dp = app.developer_profiles;
-            safeDeveloperProfiles = {
-              id: app.developer_id,
-              skills: Array.isArray(dp?.skills) ? dp?.skills : [],
-              experience: typeof dp?.experience === 'string' ? dp?.experience : '',
-              hourly_rate: typeof dp?.hourly_rate === 'number' ? dp?.hourly_rate : 0
-            };
-          } else {
-            safeDeveloperProfiles = {
-              id: app.developer_id,
-              skills: [],
-              experience: '',
-              hourly_rate: 0
-            };
-          }
-          
-          return {
-            ...app,
-            profiles: safeProfiles,
-            developer_profiles: safeDeveloperProfiles
-          } as HelpRequestMatch;
-        });
-        
-        setApplications(typedApplications);
-      } catch (err) {
-        console.error('Error fetching applications:', err);
-      } finally {
-        setIsLoadingApplications(false);
-      }
-    };
-    
-    fetchApplications();
-    
+    if (ticketId) {
+      fetchApplications();
+    }
+  }, [ticketId, fetchApplications]);
+
+  useEffect(() => {
+    if (!ticketId) return;
+
     const channel = supabase
       .channel(`applications-${ticketId}`)
       .on(
@@ -90,19 +113,29 @@ export const useTicketApplications = (ticketId: string, userId: string | null, i
           event: '*',
           schema: 'public',
           table: 'help_request_matches',
-          filter: `request_id=eq.${ticketId}`
+          filter: `request_id=eq.${ticketId}`,
         },
         () => {
-          console.log('[TicketDetail] Applications updated, refreshing');
+          console.log('[Applications] Update received, refreshing data');
           fetchApplications();
         }
       )
       .subscribe();
-      
+
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [ticketId, userId, isClient]);
+  }, [ticketId, fetchApplications]);
 
-  return { applications, isLoadingApplications };
+  return {
+    applications,
+    isLoading,
+    error,
+    sortBy,
+    setSortBy,
+    statusFilter,
+    setStatusFilter,
+    pendingCount,
+    refetch: fetchApplications,
+  };
 };

@@ -1,6 +1,5 @@
-
 import { supabase } from '../client';
-import { HelpRequest } from '../../../types/helpRequest';
+import { HelpRequest, UserType } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
 import { isValidTransition } from '../../../utils/statusTransitions';
 
@@ -253,5 +252,123 @@ export const updateHelpRequest = async (
     
   } catch (error) {
     return handleError(error, 'Exception updating help request:');
+  }
+};
+
+export const updateHelpRequestStatus = async (
+  requestId: string,
+  newStatus: string,
+  userId: string,
+  userType: UserType | null = null
+) => {
+  try {
+    console.log(`[updateHelpRequestStatus] Starting with requestId: ${requestId}, newStatus: ${newStatus}, userId: ${userId}, userType: ${userType}`);
+    
+    if (!requestId) {
+      return { success: false, error: 'Request ID is required' };
+    }
+    
+    if (!newStatus) {
+      return { success: false, error: 'New status is required' };
+    }
+    
+    if (!userId) {
+      return { success: false, error: 'User ID is required' };
+    }
+    
+    // Determine if we should use local storage or Supabase
+    const useLocalStorage = isLocalId(requestId) || isLocalId(userId);
+    const useSupabase = isValidUUID(requestId) && isValidUUID(userId);
+    
+    if (!useLocalStorage && !useSupabase) {
+      return { success: false, error: 'Invalid ID format' };
+    }
+    
+    // For local storage (development/demo mode)
+    if (useLocalStorage) {
+      const localHelpRequests = getLocalHelpRequests();
+      
+      const index = localHelpRequests.findIndex(req => req.id === requestId);
+      
+      if (index === -1) {
+        return { success: false, error: 'Help request not found' };
+      }
+      
+      // Validate status change permission
+      if (userType === 'client' && userId !== localHelpRequests[index].client_id) {
+        return { success: false, error: 'You do not have permission to update this help request' };
+      }
+      
+      // Update status and save
+      localHelpRequests[index] = {
+        ...localHelpRequests[index],
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      };
+      
+      saveLocalHelpRequests(localHelpRequests);
+      
+      console.log(`[updateHelpRequestStatus] Local help request status updated to ${newStatus}`);
+      
+      return { 
+        success: true, 
+        data: localHelpRequests[index],
+        storageMethod: 'localStorage'
+      };
+    }
+    
+    // For Supabase
+    try {
+      // First, fetch current status
+      const { data: currentRequest, error: fetchError } = await supabase
+        .from('help_requests')
+        .select('status, client_id, selected_developer_id')
+        .eq('id', requestId)
+        .single();
+      
+      if (fetchError) {
+        return { success: false, error: fetchError.message };
+      }
+      
+      // Validate permission to update
+      if (userType === 'client' && userId !== currentRequest.client_id) {
+        return { success: false, error: 'You do not have permission to update this help request' };
+      }
+      
+      if (userType === 'developer' && userId !== currentRequest.selected_developer_id) {
+        // Check if this is an assigned developer
+        const { data: matchData, error: matchError } = await supabase
+          .from('help_request_matches')
+          .select('status')
+          .eq('request_id', requestId)
+          .eq('developer_id', userId)
+          .eq('status', 'approved')
+          .maybeSingle();
+        
+        if (matchError || !matchData) {
+          return { success: false, error: 'You are not assigned to this help request' };
+        }
+      }
+      
+      // Update the status
+      const { data, error } = await supabase
+        .from('help_requests')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', requestId)
+        .select();
+      
+      if (error) {
+        console.error('Error updating help request status in Supabase:', error);
+        return { success: false, error: error.message };
+      }
+      
+      console.log(`[updateHelpRequestStatus] Supabase help request status updated to ${newStatus}:`, data);
+      
+      return { success: true, data: data[0], storageMethod: 'Supabase' };
+    } catch (error) {
+      return handleError(error, 'Exception updating help request status in Supabase:');
+    }
+  } catch (error) {
+    return handleError(error, 'Exception in updateHelpRequestStatus:');
   }
 };
