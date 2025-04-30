@@ -6,7 +6,7 @@ import { HelpRequest } from "../../types/helpRequest";
 
 interface CommentsSectionProps {
   visible: boolean;
-  ticket?: HelpRequest; // Make ticket optional to fix build error
+  ticket?: HelpRequest; // Make ticket optional since it's not always passed
   ticketId?: string;
   userId: string;
   role?: string;

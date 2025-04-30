@@ -54,7 +54,10 @@ export const createHelpRequest = async (
       urgency: helpRequest.urgency || 'low', // Provide a default value
       communication_preference: Array.isArray(helpRequest.communication_preference) ? 
                               helpRequest.communication_preference : 
-                              ['Chat'] // Ensure it's an array
+                              ['Chat'], // Ensure it's an array
+      // Ensure required fields always have values
+      title: helpRequest.title || "Untitled Request",
+      description: helpRequest.description || "No description provided"
     };
     
     // For local storage
