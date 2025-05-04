@@ -12,24 +12,12 @@ import TicketList from '../components/tickets/TicketList';
 import EmptyTicketsView from '../components/tickets/EmptyTicketsView';
 import { useTicketFilters } from '../hooks/dashboard/useTicketFilters';
 
-interface TicketFiltersProps {
-  filterOptions: any;
-  updateFilterOptions: (newOptions: any) => void;
-  resetFilters: () => void;
-  getFilterLabelForStatus: (status: string) => string;
-}
-
-interface TicketListProps {
-  tickets: HelpRequest[];
-  userRole: string;
-}
-
 const ClientTicketsPage: React.FC = () => {
   const navigate = useNavigate();
   const { userId, isAuthenticated } = useAuth();
   const [tickets, setTickets] = useState<HelpRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { filterOptions, updateFilterOptions, resetFilters, getFilterLabelForStatus } = useTicketFilters();
+  const { filterOptions, updateFilterOptions, resetFilters, getFilterLabelForStatus } = useTicketFilters(tickets);
   
   // Filter tickets based on the filter options
   const filteredTickets = tickets.filter(ticket => {
@@ -123,7 +111,7 @@ const ClientTicketsPage: React.FC = () => {
             userRole="client" 
           />
         ) : (
-          <EmptyTicketsView onCreateNew={handleNewRequest} />
+          <EmptyTicketsView customMessage="You don't have any tickets yet. Create a new help request to get started!" />
         )}
       </div>
     </Layout>

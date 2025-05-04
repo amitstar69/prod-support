@@ -1,3 +1,4 @@
+
 import { HELP_REQUEST_STATUSES } from './constants/statusConstants';
 
 export enum TicketStatus {
@@ -180,3 +181,20 @@ export const updateTicketStatus = async (
     updated_at: new Date().toISOString()
   };
 };
+
+// Add these functions to fix the test failures
+export const STATUSES: TicketStatus[] = [
+  TicketStatus.OPEN,
+  TicketStatus.ACCEPTED,
+  TicketStatus.IN_PROGRESS,
+  TicketStatus.NEEDS_INFO,
+  TicketStatus.COMPLETED
+];
+
+export function getNextStatus(currentStatus: TicketStatus): TicketStatus {
+  const currentIndex = STATUSES.indexOf(currentStatus);
+  if (currentIndex === -1 || currentIndex === STATUSES.length - 1) {
+    return currentStatus;
+  }
+  return STATUSES[currentIndex + 1];
+}

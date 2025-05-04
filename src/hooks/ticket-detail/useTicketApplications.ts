@@ -65,7 +65,7 @@ export const useTicketApplications = (ticketId: string) => {
           hourly_rate: 0
         };
         
-        if (app.developer_profiles && typeof app.developer_profiles === 'object') {
+        if (app.developer_profiles && typeof app.developer_profiles === 'object' && !('code' in app.developer_profiles)) {
           const dp = app.developer_profiles;
           safeDeveloperProfiles = {
             id: app.developer_id,

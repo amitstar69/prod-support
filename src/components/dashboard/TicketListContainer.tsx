@@ -118,6 +118,7 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
           tickets={filteredTickets} 
           onClaimTicket={onClaimTicket} 
           userId={userId} 
+          userRole={userId ? 'developer' : 'client'}
           userType={userId ? 'developer' : null}
           isAuthenticated={isAuthenticated}
           onOpenChat={handleOpenChat}

@@ -3,6 +3,7 @@ import { supabase } from './client';
 import { MATCH_STATUSES } from '../../utils/constants/statusConstants';
 import { toast } from 'sonner';
 import { DeveloperProfile } from '../../types/helpRequest';
+import { isDeveloperProfile } from '../../utils/typeGuards';
 
 // Export valid match statuses for use in other components
 export const VALID_MATCH_STATUSES = MATCH_STATUSES;
@@ -108,13 +109,12 @@ export const getDeveloperApplicationsForRequest = async (requestId: string) => {
       // Handle potentially malformed developer_profiles data
       let safeDeveloperProfiles: DeveloperProfile;
       
-      if (app.developer_profiles && typeof app.developer_profiles === 'object') {
-        const dp = app.developer_profiles;
+      if (isDeveloperProfile(app.developer_profiles)) {
         safeDeveloperProfiles = {
           id: app.developer_id,
-          skills: dp && Array.isArray(dp.skills) ? dp.skills : [],
-          experience: dp && typeof dp.experience === 'string' ? dp.experience : '',
-          hourly_rate: dp && typeof dp.hourly_rate === 'number' ? dp.hourly_rate : 0
+          skills: Array.isArray(app.developer_profiles.skills) ? app.developer_profiles.skills : [],
+          experience: typeof app.developer_profiles.experience === 'string' ? app.developer_profiles.experience : '',
+          hourly_rate: typeof app.developer_profiles.hourly_rate === 'number' ? app.developer_profiles.hourly_rate : 0
         };
       } else {
         safeDeveloperProfiles = {

@@ -88,7 +88,7 @@ const ClientActionsPanel: React.FC<ClientActionsPanelProps> = ({
     try {
       const updateRes = await updateHelpRequest(
         ticket.id!,
-        { status: newStatus },
+        { status: newStatus as TicketStatus },
         "client"
       );
       if (!updateRes.success) {
