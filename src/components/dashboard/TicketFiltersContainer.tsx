@@ -3,20 +3,21 @@ import React from 'react';
 import TicketFilters from '../tickets/TicketFilters';
 import { X } from 'lucide-react';
 import { Button } from '../ui/button';
+import { FilterOptions } from '../tickets/TicketFilters';
 
 interface TicketFiltersContainerProps {
-  filters: {
-    status: string;
-    technicalArea: string;
-    urgency: string;
-  };
-  onFilterChange: (filterType: string, value: string) => void;
+  filters: FilterOptions;
+  updateFilterOptions: (opts: Partial<FilterOptions>) => void;
+  resetFilters: () => void;
+  getFilterLabelForStatus: (status: string) => string;
   onClose: () => void;
 }
 
 const TicketFiltersContainer: React.FC<TicketFiltersContainerProps> = ({ 
-  filters, 
-  onFilterChange,
+  filters,
+  updateFilterOptions,
+  resetFilters,
+  getFilterLabelForStatus,
   onClose
 }) => {
   return (
@@ -29,8 +30,10 @@ const TicketFiltersContainer: React.FC<TicketFiltersContainerProps> = ({
         </Button>
       </div>
       <TicketFilters 
-        filters={filters} 
-        onFilterChange={onFilterChange} 
+        filterOptions={filters} 
+        updateFilterOptions={updateFilterOptions} 
+        resetFilters={resetFilters}
+        getFilterLabelForStatus={getFilterLabelForStatus}
       />
     </div>
   );

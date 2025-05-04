@@ -8,6 +8,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { isDeveloperProfile } from '../../utils/typeGuards';
 
 interface DeveloperApplicationsPanelProps {
   ticketId: string;
@@ -51,13 +52,22 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
                 };
             
             // Safely handle developer_profiles data
-            const dp = app.developer_profiles;
-            const safeDeveloperProfiles: DeveloperProfile = {
-              id: app.developer_id,
-              skills: dp && Array.isArray(dp.skills) ? dp.skills : [],
-              experience: dp && typeof dp.experience === 'string' ? dp.experience : '',
-              hourly_rate: dp && typeof dp.hourly_rate === 'number' ? dp.hourly_rate : 0
+            let safeDeveloperProfiles: DeveloperProfile = {
+              id: app.developer_id || '',
+              skills: [],
+              experience: 'No experience information available',
+              hourly_rate: 0
             };
+            
+            // Check if developer_profiles is a valid object and not an error
+            if (isDeveloperProfile(app.developer_profiles)) {
+              safeDeveloperProfiles = {
+                id: app.developer_id || '',
+                skills: Array.isArray(app.developer_profiles.skills) ? app.developer_profiles.skills : [],
+                experience: typeof app.developer_profiles.experience === 'string' ? app.developer_profiles.experience : 'No experience information',
+                hourly_rate: typeof app.developer_profiles.hourly_rate === 'number' ? app.developer_profiles.hourly_rate : 0
+              };
+            }
             
             return {
               ...app,
@@ -141,10 +151,15 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
     const developerImage = app.profiles?.image || "";
     
     // Safely access developer_profiles properties with null checks
-    const dp = app.developer_profiles;
-    const developerSkills = dp?.skills || [];
-    const developerExperience = dp?.experience || "No experience provided";
-    const developerRate = app.proposed_rate || (dp?.hourly_rate || 0);
+    const developerSkills = app.developer_profiles && 'skills' in app.developer_profiles && Array.isArray(app.developer_profiles.skills) 
+      ? app.developer_profiles.skills 
+      : [];
+      
+    const developerExperience = app.developer_profiles && 'experience' in app.developer_profiles && typeof app.developer_profiles.experience === 'string'
+      ? app.developer_profiles.experience 
+      : "No experience provided";
+      
+    const developerRate = app.proposed_rate || (app.developer_profiles && 'hourly_rate' in app.developer_profiles ? app.developer_profiles.hourly_rate : 0);
     const proposedDuration = app.proposed_duration || 0;
 
     return (

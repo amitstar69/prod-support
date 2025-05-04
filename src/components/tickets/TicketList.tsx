@@ -9,9 +9,28 @@ import { formatDistanceToNow } from 'date-fns';
 export interface TicketListProps {
   tickets: HelpRequest[];
   userRole: string;
+  onClaimTicket?: (ticketId: string) => void;
+  userId?: string | null;
+  userType?: string | null;
+  isAuthenticated?: boolean;
+  onOpenChat?: (helpRequestId: string, clientId: string, clientName?: string) => void;
+  viewMode?: 'list' | 'grid';
+  isApplication?: boolean;
+  isRecommended?: boolean;
 }
 
-const TicketList: React.FC<TicketListProps> = ({ tickets, userRole }) => {
+const TicketList: React.FC<TicketListProps> = ({ 
+  tickets, 
+  userRole,
+  onClaimTicket,
+  userId,
+  userType,
+  isAuthenticated,
+  onOpenChat,
+  viewMode = 'grid',
+  isApplication = false,
+  isRecommended = false
+}) => {
   const navigate = useNavigate();
 
   const getStatusBadge = (status: string = 'open') => {

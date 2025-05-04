@@ -23,12 +23,18 @@ export interface UseTicketApplicationsResult {
   dataSource: string;
 }
 
+// Define interface for dashboard options
+export interface DashboardOptions {
+  initialFilterStatus?: string;
+  showCompletedTickets?: boolean;
+}
+
 export const useTicketApplications = (
-  tickets: HelpRequest[],
-  isAuthenticated: boolean,
-  userId: string | null,
-  userType: string | null,
-  refreshTickets: () => void
+  tickets: HelpRequest[] = [],
+  isAuthenticated: boolean = false,
+  userId: string | null = null,
+  userType: string | null = null,
+  refreshTickets: () => void = () => {}
 ): UseTicketApplicationsResult => {
   const recommendedTicketsResult = useRecommendedTickets(tickets, isAuthenticated, userId);
   const { 
@@ -90,7 +96,7 @@ export const useTicketApplications = (
 };
 
 // This is the main hook that DeveloperDashboard uses
-export const useDeveloperDashboard = () => {
+export const useDeveloperDashboard = (options: DashboardOptions = {}) => {
   const { isAuthenticated, userId, userType } = useAuth();
   const {
     tickets,
@@ -100,7 +106,7 @@ export const useDeveloperDashboard = () => {
     fetchTickets
   } = useTicketFetching();
 
-  const ticketFilters = useTicketFilters();
+  const ticketFilters = useTicketFilters(tickets);
   const [showFilters, setShowFilters] = useState(false);
 
   // Filter tickets based on current filter options

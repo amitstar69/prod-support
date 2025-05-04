@@ -87,11 +87,11 @@ export interface HelpRequestMatch {
   created_at?: string;
   updated_at?: string;
   profiles?: Profile;
-  developer_profiles?: DeveloperProfile;
+  developer_profiles?: DeveloperProfile | null | any; // Updated to handle error cases
   help_requests?: HelpRequest; // Added for ApplicationDetailPage
 }
 
-// Restored missing types
+// Define TicketComment to include user field
 export interface TicketComment {
   id?: string;
   ticket_id?: string;
@@ -100,6 +100,11 @@ export interface TicketComment {
   created_at?: string;
   updated_at?: string;
   is_internal?: boolean;
+  user?: {
+    id: string;
+    name: string;
+    image?: string;
+  };
 }
 
 export interface TicketHistoryEntry {

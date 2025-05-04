@@ -118,21 +118,28 @@ const TicketComments: React.FC<TicketCommentsProps> = ({
         <p className="text-red-500">Error: {error}</p>
       ) : (
         <div className="space-y-4">
-          {comments.map((comment) => (
-            <div key={comment.id} className="flex items-start space-x-3">
-              <Avatar>
-                <AvatarImage src={(comment.user as any)?.image || ''} alt={(comment.user as any)?.name || 'User'} />
-                <AvatarFallback>{((comment.user as any)?.name || 'U')[0]}</AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="text-sm font-medium">{(comment.user as any)?.name || 'Anonymous'}</div>
-                <div className="text-xs text-muted-foreground">
-                  {comment.created_at ? formatDistanceToNow(new Date(comment.created_at), { addSuffix: true }) : ''}
+          {comments.map((comment) => {
+            // Safely access user object with fallbacks
+            const userName = comment.user?.name || 'Anonymous';
+            const userImage = comment.user?.image || '';
+            const userInitial = (userName || 'U')[0];
+            
+            return (
+              <div key={comment.id} className="flex items-start space-x-3">
+                <Avatar>
+                  <AvatarImage src={userImage} alt={userName} />
+                  <AvatarFallback>{userInitial}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="text-sm font-medium">{userName}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {comment.created_at ? formatDistanceToNow(new Date(comment.created_at), { addSuffix: true }) : ''}
+                  </div>
+                  <p className="text-sm">{comment.content}</p>
                 </div>
-                <p className="text-sm">{comment.content}</p>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
       <div>

@@ -9,6 +9,7 @@ import { supabase } from "../../integrations/supabase/client";
 import { Check, X, ArrowRight } from "lucide-react";
 import StatusDropdown from "../developer-actions/StatusDropdown";
 import { getAllowedStatusTransitions } from "../../utils/helpRequestStatusUtils";
+import { TicketStatus } from "../../types/enums";
 
 // This component is not directly used in the ticket detail view anymore
 // It's kept for backwards compatibility with other parts of the application
@@ -177,7 +178,7 @@ const ClientActionsPanel: React.FC<ClientActionsPanelProps> = ({
                       variant="outline"
                       disabled={!!loading}
                       className="w-full flex items-center justify-center"
-                      onClick={() => handleAction(action.newStatus)}
+                      onClick={() => handleAction(action.newStatus as TicketStatus)}
                     >
                       {action.icon}
                       {loading === action.newStatus ? "Processing..." : action.label}

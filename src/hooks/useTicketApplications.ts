@@ -4,6 +4,7 @@ import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
 import { HelpRequestMatch, DeveloperProfile } from '../types/helpRequest';
 import { MATCH_STATUSES } from '../utils/constants/statusConstants';
+import { isDeveloperProfile } from '../utils/typeGuards';
 
 export const useTicketApplications = (ticketId: string) => {
   const [applications, setApplications] = useState<HelpRequestMatch[]>([]);
@@ -65,13 +66,12 @@ export const useTicketApplications = (ticketId: string) => {
           hourly_rate: 0
         };
         
-        if (app.developer_profiles && typeof app.developer_profiles === 'object') {
-          const dp = app.developer_profiles;
+        if (isDeveloperProfile(app.developer_profiles)) {
           safeDeveloperProfiles = {
             id: app.developer_id,
-            skills: dp && Array.isArray(dp.skills) ? dp.skills : [],
-            experience: dp && typeof dp.experience === 'string' ? dp.experience : '',
-            hourly_rate: dp && typeof dp.hourly_rate === 'number' ? dp.hourly_rate : 0
+            skills: Array.isArray(app.developer_profiles.skills) ? app.developer_profiles.skills : [],
+            experience: typeof app.developer_profiles.experience === 'string' ? app.developer_profiles.experience : '',
+            hourly_rate: typeof app.developer_profiles.hourly_rate === 'number' ? app.developer_profiles.hourly_rate : 0
           };
         }
 
