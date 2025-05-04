@@ -115,16 +115,16 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
     
       <div className={viewMode === 'list' ? 'divide-y divide-border/10' : ''}>
         <TicketList 
-          tickets={filteredTickets} 
-          onClaimTicket={onClaimTicket} 
-          userId={userId} 
-          userRole={userId ? 'developer' : 'client'}
-          userType={userId ? 'developer' : null}
-          isAuthenticated={isAuthenticated}
-          onOpenChat={handleOpenChat}
-          viewMode={viewMode}
-          isApplication={isApplication}
-          isRecommended={isRecommended}
+          tickets={tickets}
+  userRole={userType}            
+ onClaimTicket={onClaimTicket}
+     userId={userId}
+     userType={userType}
+     isAuthenticated={isAuthenticated}
+     onOpenChat={onOpenChat}
+     viewMode={viewMode}
+     isApplication={isApplication}
+     isRecommended={isRecommended}
         />
       </div>
 
