@@ -11,6 +11,7 @@ import TicketFilters from '../components/tickets/TicketFilters';
 import TicketList from '../components/tickets/TicketList';
 import EmptyTicketsView from '../components/tickets/EmptyTicketsView';
 import { useTicketFilters } from '../hooks/dashboard/useTicketFilters';
+import TicketListContainer from '../components/dashboard/TicketListContainer';
 
 const ClientTicketsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -45,35 +46,36 @@ const ClientTicketsPage: React.FC = () => {
     return true;
   });
 
-  useEffect(() => {
+  // Fetch tickets function
+  const fetchTickets = async () => {
     if (!isAuthenticated || !userId) {
       setIsLoading(false);
       return;
     }
 
-    const fetchTickets = async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('help_requests')
-          .select('*')
-          .eq('client_id', userId)
-          .order('created_at', { ascending: false });
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*')
+        .eq('client_id', userId)
+        .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching tickets:', error);
-          return;
-        }
-
-        // Ensure type safety by explicitly casting to HelpRequest[]
-        setTickets(data as HelpRequest[]);
-      } catch (error) {
-        console.error('Failed to fetch tickets:', error);
-      } finally {
-        setIsLoading(false);
+      if (error) {
+        console.error('Error fetching tickets:', error);
+        return;
       }
-    };
 
+      // Ensure type safety by explicitly casting to HelpRequest[]
+      setTickets(data as HelpRequest[]);
+    } catch (error) {
+      console.error('Failed to fetch tickets:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchTickets();
   }, [userId, isAuthenticated]);
 
@@ -106,12 +108,20 @@ const ClientTicketsPage: React.FC = () => {
             <div className="h-14 bg-muted rounded"></div>
           </div>
         ) : filteredTickets.length > 0 ? (
-          <TicketList 
-            tickets={filteredTickets} 
-            userRole="client" 
+          <TicketListContainer 
+            filteredTickets={filteredTickets}
+            totalTickets={tickets.length} 
+            onClaimTicket={() => {}} 
+            userId={userId}
+            userType="client"
+            isAuthenticated={isAuthenticated}
+            onRefresh={fetchTickets}
           />
         ) : (
-          <EmptyTicketsView customMessage="You don't have any tickets yet. Create a new help request to get started!" />
+          <EmptyTicketsView 
+            customMessage="You don't have any tickets yet. Create a new help request to get started!" 
+            onCreateNew={handleNewRequest}
+          />
         )}
       </div>
     </Layout>

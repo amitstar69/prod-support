@@ -12,6 +12,7 @@ interface TicketListContainerProps {
   totalTickets: number;
   onClaimTicket: (ticketId: string) => void;
   userId: string | null;
+  userType?: string | null;
   isAuthenticated: boolean;
   onRefresh?: () => void;
   isApplication?: boolean;
@@ -24,10 +25,12 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
   totalTickets,
   onClaimTicket, 
   userId, 
+  userType,
   isAuthenticated,
   onRefresh,
   isApplication = false,
-  isRecommended = false
+  isRecommended = false,
+  onOpenChat
 }) => {
   const [chatDialogOpen, setChatDialogOpen] = React.useState(false);
   const [currentChat, setCurrentChat] = React.useState<{
@@ -115,16 +118,16 @@ const TicketListContainer: React.FC<TicketListContainerProps> = ({
     
       <div className={viewMode === 'list' ? 'divide-y divide-border/10' : ''}>
         <TicketList 
-          tickets={tickets}
-  userRole={userType}            
- onClaimTicket={onClaimTicket}
-     userId={userId}
-     userType={userType}
-     isAuthenticated={isAuthenticated}
-     onOpenChat={onOpenChat}
-     viewMode={viewMode}
-     isApplication={isApplication}
-     isRecommended={isRecommended}
+          tickets={filteredTickets}
+          userRole={userType || 'developer'}
+          onClaimTicket={onClaimTicket}
+          userId={userId}
+          userType={userType}
+          isAuthenticated={isAuthenticated}
+          onOpenChat={onOpenChat || handleOpenChat}
+          viewMode={viewMode}
+          isApplication={isApplication}
+          isRecommended={isRecommended}
         />
       </div>
 
