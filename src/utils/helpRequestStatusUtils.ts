@@ -1,23 +1,6 @@
 
 import { HELP_REQUEST_STATUSES } from './constants/statusConstants';
-
-export enum TicketStatus {
-  OPEN = 'open',
-  ACCEPTED = 'accepted',
-  IN_PROGRESS = 'in_progress',
-  NEEDS_INFO = 'needs_info',
-  COMPLETED = 'completed',
-  CLOSED = 'closed',
-  PENDING_REVIEW = 'pending_review',
-  PENDING_MATCH = 'pending_match',
-  DEV_REQUESTED = 'dev_requested',
-  AWAITING_CLIENT_APPROVAL = 'awaiting_client_approval',
-  QA_FAIL = 'qa_fail',
-  QA_PASS = 'qa_pass',
-  RESOLVED = 'resolved',
-  READY_FOR_FINAL_ACTION = 'ready_for_final_action',
-  CANCELLED = 'cancelled'
-}
+import { TicketStatus } from '../types/enums';
 
 // Map old status values to new ones for compatibility
 const statusMappings = {
@@ -89,52 +72,52 @@ export const getStatusDescription = (status: string): string => {
 };
 
 interface StatusTransition {
-  from: TicketStatus;
-  to: TicketStatus[];
+  from: string; // Changed from TicketStatus to string for compatibility
+  to: string[]; // Changed from TicketStatus[] to string[]
   roles: ('developer' | 'client')[];
 }
 
 const statusTransitions: StatusTransition[] = [
   {
-    from: TicketStatus.OPEN,
-    to: [TicketStatus.ACCEPTED, TicketStatus.CLOSED],
+    from: TicketStatus.Open,
+    to: [TicketStatus.Accepted, TicketStatus.Closed],
     roles: ['developer']
   },
   {
-    from: TicketStatus.ACCEPTED,
-    to: [TicketStatus.IN_PROGRESS],
+    from: TicketStatus.Accepted,
+    to: [TicketStatus.InProgress],
     roles: ['developer']
   },
   {
-    from: TicketStatus.IN_PROGRESS,
-    to: [TicketStatus.NEEDS_INFO, TicketStatus.COMPLETED],
+    from: TicketStatus.InProgress,
+    to: [TicketStatus.NeedsInfo, TicketStatus.Completed],
     roles: ['developer']
   },
   {
-    from: TicketStatus.NEEDS_INFO,
-    to: [TicketStatus.IN_PROGRESS],
+    from: TicketStatus.NeedsInfo,
+    to: [TicketStatus.InProgress],
     roles: ['developer', 'client']
   },
   {
-    from: TicketStatus.COMPLETED,
-    to: [TicketStatus.NEEDS_INFO, TicketStatus.CLOSED],
+    from: TicketStatus.Completed,
+    to: [TicketStatus.NeedsInfo, TicketStatus.Closed],
     roles: ['client']
   },
   {
-    from: TicketStatus.PENDING_MATCH,
-    to: [TicketStatus.AWAITING_CLIENT_APPROVAL, TicketStatus.CANCELLED],
+    from: TicketStatus.PendingMatch,
+    to: [TicketStatus.AwaitingClientApproval, TicketStatus.Cancelled],
     roles: ['developer', 'client']
   },
   {
-    from: TicketStatus.AWAITING_CLIENT_APPROVAL,
-    to: [TicketStatus.IN_PROGRESS, TicketStatus.CANCELLED],
+    from: TicketStatus.AwaitingClientApproval,
+    to: [TicketStatus.InProgress, TicketStatus.Cancelled],
     roles: ['client']
   }
 ];
 
 export const isValidStatusTransition = (
-  from: TicketStatus,
-  to: TicketStatus,
+  from: string,
+  to: string,
   role: 'developer' | 'client'
 ): boolean => {
   const transition = statusTransitions.find(t => t.from === from);
@@ -146,14 +129,8 @@ export const isValidStatusTransition = (
 export const getAllowedStatusTransitions = (
   status: string,
   role: 'developer' | 'client'
-): TicketStatus[] => {
-  const currentStatus = Object.values(TicketStatus).find(s => s === status);
-  
-  if (!currentStatus) {
-    return [];
-  }
-  
-  const transition = statusTransitions.find(t => t.from === currentStatus);
+): string[] => {
+  const transition = statusTransitions.find(t => t.from === status);
   
   if (!transition) {
     return [];
@@ -165,12 +142,12 @@ export const getAllowedStatusTransitions = (
   });
 };
 
-export type UserType = 'client' | 'developer';
+export { UserType } from '../types/enums';
 
 export const updateTicketStatus = async (
   ticketId: string,
-  newStatus: TicketStatus,
-  userType: string,
+  newStatus: string,
+  userType: UserType,
   notes?: string
 ): Promise<any> => {
   console.log(`Updating ticket ${ticketId} to ${newStatus} by ${userType}${notes ? ` with notes: ${notes}` : ''}`);
@@ -183,15 +160,15 @@ export const updateTicketStatus = async (
 };
 
 // Add these functions to fix the test failures
-export const STATUSES: TicketStatus[] = [
-  TicketStatus.OPEN,
-  TicketStatus.ACCEPTED,
-  TicketStatus.IN_PROGRESS,
-  TicketStatus.NEEDS_INFO,
-  TicketStatus.COMPLETED
+export const STATUSES: string[] = [
+  TicketStatus.Open,
+  TicketStatus.Accepted, 
+  TicketStatus.InProgress,
+  TicketStatus.NeedsInfo,
+  TicketStatus.Completed
 ];
 
-export function getNextStatus(currentStatus: TicketStatus): TicketStatus {
+export function getNextStatus(currentStatus: string): string {
   const currentIndex = STATUSES.indexOf(currentStatus);
   if (currentIndex === -1 || currentIndex === STATUSES.length - 1) {
     return currentStatus;

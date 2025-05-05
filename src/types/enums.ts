@@ -4,21 +4,24 @@
  */
 export enum TicketStatus {
   Open = 'open',
+  Accepted = 'accepted',
   InProgress = 'in_progress',
-  AwaitingClientApproval = 'awaiting_client_approval',
-  Approved = 'approved',
+  NeedsInfo = 'needs_info',
   Completed = 'completed',
-  Cancelled = 'cancelled',
   Closed = 'closed',
+  PendingReview = 'pending_review',
   PendingMatch = 'pending_match',
   DevRequested = 'dev_requested',
+  AwaitingClientApproval = 'awaiting_client_approval',
   RequirementsReview = 'requirements_review',
   NeedMoreInfo = 'need_more_info',
+  ReadyForQA = 'ready_for_qa',
   ReadyForClientQA = 'ready_for_client_qa',
   QAFail = 'qa_fail',
   QAPass = 'qa_pass',
   ReadyForFinalAction = 'ready_for_final_action',
-  Resolved = 'resolved'
+  Resolved = 'resolved',
+  Cancelled = 'cancelled'
 }
 
 /**
@@ -33,3 +36,8 @@ export enum MatchStatus {
   Completed = 'completed',
   Cancelled = 'cancelled'
 }
+
+/**
+ * User type enum
+ */
+export type UserType = 'client' | 'developer' | 'system';

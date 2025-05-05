@@ -165,11 +165,16 @@ export const getHelpRequest = async (requestId: string) => {
       if (error || !data) {
         console.error('[getHelpRequest] Error fetching from Supabase:', error?.message || 'No data returned');
         // Don't fall back to localStorage, return error
-        return { 
+        
+        // Fix for TS2339 error - Adding proper type guard before accessing status property
+        let errorData = { 
           success: false, 
           error: error?.message || 'Help request not found in database',
           data: null 
         };
+        
+        // Don't try to access status property on error object
+        return errorData;
       }
       
       console.log('[getHelpRequest] Successfully fetched ticket from Supabase');
