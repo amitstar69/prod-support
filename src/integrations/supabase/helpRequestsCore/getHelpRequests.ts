@@ -123,11 +123,11 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
         // Use our proper type guard function to filter valid help requests
         const cleanData = data.filter(isValidHelpRequest);
         
-        // Now safely access properties without risk of null
+        // Now safely access properties only from properly filtered data
         let statuses: string[] = [];
         
+        // Loop only through cleaned data where we're guaranteed to have status property
         for (const ticket of cleanData) {
-          // Since we've properly guarded, we can now access status safely
           statuses.push(ticket.status);
         }
         
