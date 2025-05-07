@@ -46,9 +46,10 @@ const ApplicationDetailPage = () => {
         }
 
         // Process application data with safe access to developer_profiles
-        const skills = applicationData.developer_profiles?.skills || [];
-        const experience = applicationData.developer_profiles?.experience || '';
-        const hourly_rate = applicationData.developer_profiles?.hourly_rate || 0;
+        const developerProfiles = applicationData.developer_profiles || {};
+        const skills = developerProfiles.skills || [];
+        const experience = developerProfiles.experience || '';
+        const hourly_rate = developerProfiles.hourly_rate || 0;
         
         const processedApplication: HelpRequestMatch = {
           ...applicationData,
@@ -74,18 +75,7 @@ const ApplicationDetailPage = () => {
           toast.error('Failed to load ticket details');
         } else {
           // Fix for the setTicket payload issue
-          setTicket(prev => {
-            // Safely handle attachments
-            const safeTicketData = {...ticketData};
-            if (ticketData.attachments) {
-              safeTicketData.attachments = Array.isArray(ticketData.attachments) 
-                ? ticketData.attachments
-                : typeof ticketData.attachments === 'string'
-                  ? ticketData.attachments
-                  : JSON.stringify(ticketData.attachments);
-            }
-            return safeTicketData;
-          });
+          setTicket(ticketData as HelpRequest);
         }
       } catch (error) {
         console.error('Failed to fetch application details:', error);

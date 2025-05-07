@@ -33,7 +33,7 @@ export function isPostgrestError(value: unknown): value is PostgrestError {
 /**
  * Safely access nested properties with fallbacks
  */
-export function safelyGetProperty<T, K extends keyof T>(obj: T | null | undefined, key: K, fallback: T[K]): T[K] {
+export function safelyGetProperty<T extends object, K extends keyof T>(obj: T | null | undefined, key: K, fallback: T[K]): T[K] {
   if (obj && key in obj) {
     return obj[key];
   }

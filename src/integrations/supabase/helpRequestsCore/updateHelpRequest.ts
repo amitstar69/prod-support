@@ -93,7 +93,7 @@ export const updateHelpRequest = async (
         newClientId = currentRequest.client_id;
         newDevId = currentRequest.selected_developer_id;
       } else {
-        console.warn('updateHelpRequest join error', currentRequest);
+        console.warn('[updateHelpRequest] join error', currentRequest);
       }
       
       if (userType === 'client') {
@@ -150,15 +150,19 @@ export const updateHelpRequest = async (
         return { success: false, error: permissionError };
       }
 
-      // Safe access to currentRequest
-      if (!currentRequest || !('status' in currentRequest)) {
+      // Safe access to currentRequest with proper null checks
+      if (!currentRequest || typeof currentRequest !== 'object' || !('status' in currentRequest)) {
         console.error('[updateHelpRequest] currentRequest missing status property', currentRequest);
         return { success: false, error: 'Invalid request data format' };
       }
       
-      const normalizedCurrentStatus = typeof currentRequest.status === 'string' 
-        ? currentRequest.status.replace(/[-_]/g, '_')
-        : String(currentRequest.status);
+      const currentStatus = currentRequest.status;
+      if (!currentStatus || typeof currentStatus !== 'string') {
+        console.error('[updateHelpRequest] Invalid status value in currentRequest:', currentStatus);
+        return { success: false, error: 'Invalid status format in request data' };
+      }
+      
+      const normalizedCurrentStatus = currentStatus.replace(/[-_]/g, '_');
       
       if (updates.status) {
         const normalizedNewStatus = updates.status.replace(/[-_]/g, '_');
@@ -245,7 +249,8 @@ export const updateHelpRequest = async (
       
       console.log('[updateHelpRequest] Update successful, data:', checkData);
       
-      if (updates.status && currentRequest && 'status' in currentRequest && updates.status !== currentRequest.status) {
+      if (updates.status && currentRequest && typeof currentRequest === 'object' && 
+          'status' in currentRequest && currentRequest.status && updates.status !== currentRequest.status) {
         try {
           const historyEntry = {
             help_request_id: requestId,
@@ -350,7 +355,7 @@ export const updateHelpRequestStatus = async (
       // First, fetch current status
       const { data: currentRequest, error: fetchError } = await supabase
         .from('help_requests')
-        .select('status, client_id, selected_developer_id')
+        .select('status, client_id')
         .eq('id', requestId)
         .single();
       
@@ -363,7 +368,7 @@ export const updateHelpRequestStatus = async (
         return { success: false, error: 'You do not have permission to update this help request' };
       }
       
-      if (userType === 'developer' && userId !== currentRequest.selected_developer_id) {
+      if (userType === 'developer') {
         // Check if this is an assigned developer
         const { data: matchData, error: matchError } = await supabase
           .from('help_request_matches')
