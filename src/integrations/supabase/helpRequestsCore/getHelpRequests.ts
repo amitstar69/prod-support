@@ -114,6 +114,10 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
         // Add guard for status access
         let statuses: string[] = [];
         for (const ticket of data) {
+          if (!ticket) {
+            console.warn('[getAllPublicHelpRequests] Null ticket in results');
+            continue;
+          }
           let status: string | null = null;
           if (ticket && typeof ticket === 'object' && 'status' in ticket) {
             status = ticket.status;

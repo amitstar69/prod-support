@@ -5,9 +5,9 @@ import { PostgrestError } from '@supabase/supabase-js';
 /**
  * Type guard to check if an object is a valid DeveloperProfile
  */
-export function isDeveloperProfile(value: any): value is DeveloperProfile {
+export function isDeveloperProfile(value: unknown): value is DeveloperProfile {
   return (
-    value && 
+    value !== null && 
     typeof value === 'object' && 
     'id' in value &&
     !('code' in value) && 
@@ -20,9 +20,9 @@ export function isDeveloperProfile(value: any): value is DeveloperProfile {
 /**
  * Type guard to check if an object is a PostgrestError
  */
-export function isPostgrestError(value: any): value is PostgrestError {
+export function isPostgrestError(value: unknown): value is PostgrestError {
   return (
-    value && 
+    value !== null && 
     typeof value === 'object' && 
     'code' in value && 
     'message' in value &&

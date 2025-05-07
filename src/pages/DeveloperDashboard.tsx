@@ -27,7 +27,9 @@ const DeveloperDashboard = () => {
     recommendedTickets,
     isLoading,
     filterOptions,
+    filters,
     updateFilterOptions,
+    handleFilterChange,
     resetFilters,
     getFilterLabelForStatus,
     showFilters,
@@ -65,8 +67,8 @@ const DeveloperDashboard = () => {
         {showFilters && (
           <div className="mb-6">
             <TicketFiltersContainer 
-              filterOptions={filterOptions}
-              updateFilterOptions={updateFilterOptions}
+              filterOptions={filters}
+              updateFilterOptions={handleFilterChange}
               resetFilters={resetFilters}
               getFilterLabelForStatus={getFilterLabelForStatus}
               onClose={() => setShowFilters(false)}

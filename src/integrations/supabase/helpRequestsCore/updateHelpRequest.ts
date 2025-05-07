@@ -1,3 +1,4 @@
+
 import { supabase } from '../client';
 import { HelpRequest, UserType } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
@@ -125,20 +126,22 @@ export const updateHelpRequest = async (
           };
         }
         
-        if (matchData.status === 'pending' && updates.status &&
+        const matchStatus = matchData && typeof matchData === 'object' && !('code' in matchData) ? matchData.status : null;
+        
+        if (matchStatus === 'pending' && updates.status &&
             updates.status !== 'dev_requested' && updates.status !== 'abandoned_by_dev') {
-          console.error('[updateHelpRequest] Developer match not approved:', matchData.status);
+          console.error('[updateHelpRequest] Developer match not approved:', matchStatus);
           permissionError = 'Your application to this help request is pending. You must be approved by the client before updating its status.';
         }
         
-        if (matchData.status === 'rejected') {
-          console.error('[updateHelpRequest] Developer match not approved:', matchData.status);
+        if (matchStatus === 'rejected') {
+          console.error('[updateHelpRequest] Developer match not approved:', matchStatus);
           permissionError = 'Your application to this help request was rejected. You cannot update this request.';
         }
         
-        if (matchData.status !== 'approved' && (
+        if (matchStatus !== 'approved' && (
               updates.status !== 'dev_requested' && updates.status !== 'abandoned_by_dev')) {
-          console.error('[updateHelpRequest] Developer match not approved:', matchData.status);
+          console.error('[updateHelpRequest] Developer match not approved:', matchStatus);
           permissionError = 'You are not approved for this request. Only assignment or abandonment is allowed.';
         }
       }
@@ -147,6 +150,12 @@ export const updateHelpRequest = async (
         return { success: false, error: permissionError };
       }
 
+      // Safe access to currentRequest
+      if (!currentRequest || !('status' in currentRequest)) {
+        console.error('[updateHelpRequest] currentRequest missing status property', currentRequest);
+        return { success: false, error: 'Invalid request data format' };
+      }
+      
       const normalizedCurrentStatus = currentRequest.status.replace(/[-_]/g, '_');
       
       if (updates.status) {
@@ -158,7 +167,10 @@ export const updateHelpRequest = async (
           console.log('[updateHelpRequest] Status unchanged after normalization, skipping update');
           return { 
             success: true, 
-            data: { ...currentRequest, ...updates }, 
+            data: { 
+              ...((typeof currentRequest === 'object' && !('code' in currentRequest)) ? currentRequest : {}),
+              ...updates
+            }, 
             message: 'Status is already set to this value'
           };
         }
@@ -190,7 +202,10 @@ export const updateHelpRequest = async (
         }
       }
 
-      const dbUsesHyphens = currentRequest.status.includes('-');
+      // Safe access to check if status contains hyphen
+      const dbUsesHyphens = currentRequest && typeof currentRequest === 'object' && 
+        'status' in currentRequest && typeof currentRequest.status === 'string' && 
+        currentRequest.status.includes('-');
       
       if (dbUsesHyphens) {
         updates.status = updates.status.replace(/_/g, '-');
@@ -228,7 +243,7 @@ export const updateHelpRequest = async (
       
       console.log('[updateHelpRequest] Update successful, data:', checkData);
       
-      if (updates.status && updates.status !== currentRequest.status) {
+      if (updates.status && currentRequest && 'status' in currentRequest && updates.status !== currentRequest.status) {
         try {
           const historyEntry = {
             help_request_id: requestId,
@@ -337,8 +352,8 @@ export const updateHelpRequestStatus = async (
         .eq('id', requestId)
         .single();
       
-      if (fetchError) {
-        return { success: false, error: fetchError.message };
+      if (fetchError || !currentRequest) {
+        return { success: false, error: fetchError?.message || 'Request not found' };
       }
       
       // Validate permission to update
@@ -356,7 +371,9 @@ export const updateHelpRequestStatus = async (
           .eq('status', 'approved')
           .maybeSingle();
         
-        if (matchError || !matchData) {
+        const isApprovedDeveloper = matchData && typeof matchData === 'object' && !('code' in matchData);
+        
+        if (matchError || !isApprovedDeveloper) {
           return { success: false, error: 'You are not assigned to this help request' };
         }
       }

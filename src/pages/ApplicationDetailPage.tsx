@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -45,7 +46,6 @@ const ApplicationDetailPage = () => {
         }
 
         // Process application data with safe access to developer_profiles
-        const dp = applicationData.developer_profiles;
         const skills = applicationData.developer_profiles?.skills || [];
         const experience = applicationData.developer_profiles?.experience || '';
         const hourly_rate = applicationData.developer_profiles?.hourly_rate || 0;
@@ -73,7 +73,7 @@ const ApplicationDetailPage = () => {
           console.error('Error fetching ticket:', ticketError);
           toast.error('Failed to load ticket details');
         } else {
-          // Fix for the setApplication payload issue
+          // Fix for the setTicket payload issue
           setTicket(prev => {
             // Safely handle attachments
             const safeTicketData = {...ticketData};
@@ -226,7 +226,7 @@ const ApplicationDetailPage = () => {
               </Avatar>
               <div>
                 <h3 className="text-lg font-semibold">{application.profiles?.name || 'Anonymous Developer'}</h3>
-                <p className="text-sm text-muted-foreground">{application.developer_profiles?.experience}</p>
+                <p className="text-sm text-muted-foreground">{application.developer_profiles?.experience || ''}</p>
               </div>
             </div>
             
