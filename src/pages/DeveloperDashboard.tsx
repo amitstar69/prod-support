@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 const isDevelopment = process.env.NODE_ENV === 'development' || import.meta.env.DEV === true;
 
 const DeveloperDashboard = () => {
-  const { userId: authUserId, isAuthenticated: authIsAuthenticated } = useAuth();
+  const { userId: authUserId, isAuthenticated: authIsAuthenticated, userType } = useAuth();
   const [localActiveTab, setLocalActiveTab] = useState('all');
   
   const {
@@ -26,11 +26,13 @@ const DeveloperDashboard = () => {
     filteredTickets,
     recommendedTickets,
     isLoading,
-    filters,
+    filterOptions,
+    updateFilterOptions,
+    resetFilters,
+    getFilterLabelForStatus,
     showFilters,
     setShowFilters,
     dataSource,
-    handleFilterChange,
     handleClaimTicket,
     handleForceRefresh,
     fetchTickets
@@ -63,8 +65,10 @@ const DeveloperDashboard = () => {
         {showFilters && (
           <div className="mb-6">
             <TicketFiltersContainer 
-              filters={filters} 
-              onFilterChange={handleFilterChange}
+              filterOptions={filterOptions}
+              updateFilterOptions={updateFilterOptions}
+              resetFilters={resetFilters}
+              getFilterLabelForStatus={getFilterLabelForStatus}
               onClose={() => setShowFilters(false)}
             />
           </div>
@@ -102,7 +106,8 @@ const DeveloperDashboard = () => {
                   <TicketList 
                     tickets={recommendedTickets || []} 
                     onClaimTicket={handleClaimTicket}
-                    currentUserId={authUserId}
+                    userId={authUserId}
+                    userRole={userType || 'developer'}
                     isAuthenticated={authIsAuthenticated}
                     isRecommended={true}
                   />
@@ -130,7 +135,8 @@ const DeveloperDashboard = () => {
                 <TicketList 
                   tickets={filteredTickets || []} 
                   onClaimTicket={handleClaimTicket}
-                  currentUserId={authUserId}
+                  userId={authUserId}
+                  userRole={userType || 'developer'}
                   isAuthenticated={authIsAuthenticated}
                 />
               ) : (

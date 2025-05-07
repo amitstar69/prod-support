@@ -1,4 +1,3 @@
-
 import { HELP_REQUEST_STATUSES } from './constants/statusConstants';
 import { TicketStatus } from '../types/enums';
 
@@ -142,12 +141,13 @@ export const getAllowedStatusTransitions = (
   });
 };
 
-export { UserType } from '../types/enums';
+// Fix for isolatedModules - use "export type"
+export type { UserType } from '../types/enums';
 
 export const updateTicketStatus = async (
   ticketId: string,
   newStatus: string,
-  userType: UserType,
+  userType: 'client' | 'developer' | 'system',
   notes?: string
 ): Promise<any> => {
   console.log(`Updating ticket ${ticketId} to ${newStatus} by ${userType}${notes ? ` with notes: ${notes}` : ''}`);
@@ -168,7 +168,8 @@ export const STATUSES: string[] = [
   TicketStatus.Completed
 ];
 
-export function getNextStatus(currentStatus: string): string {
+// Update to accept two parameters to match test expectations
+export function getNextStatus(currentStatus: string, _role?: string): string {
   const currentIndex = STATUSES.indexOf(currentStatus);
   if (currentIndex === -1 || currentIndex === STATUSES.length - 1) {
     return currentStatus;

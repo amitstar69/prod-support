@@ -111,7 +111,17 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
       
       // Debug: Log what statuses are in the database
       if (data.length > 0) {
-        const statuses = data.map(ticket => ticket.status);
+        // Add guard for status access
+        let statuses: string[] = [];
+        for (const ticket of data) {
+          let status: string | null = null;
+          if (ticket && typeof ticket === 'object' && 'status' in ticket) {
+            status = ticket.status;
+          } else {
+            console.warn('[getAllPublicHelpRequests] Ticket without status:', ticket);
+          }
+          if (status) statuses.push(status);
+        }
         const uniqueStatuses = [...new Set(statuses)];
         console.log('[getAllPublicHelpRequests] Found ticket statuses:', uniqueStatuses);
       }

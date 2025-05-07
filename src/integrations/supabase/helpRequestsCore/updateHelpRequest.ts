@@ -49,7 +49,7 @@ export const updateHelpRequest = async (
       
       const { data: currentRequest, error: fetchError } = await supabase
         .from('help_requests')
-        .select('status, client_id')
+        .select('status, client_id, selected_developer_id')
         .eq('id', requestId)
         .maybeSingle();
 
@@ -84,8 +84,19 @@ export const updateHelpRequest = async (
 
       let permissionError: string | null = null;
       
+      // Add guard for client_id and selected_developer_id
+      let newClientId = null;
+      let newDevId = null;
+      
+      if (currentRequest && typeof currentRequest === 'object' && !('code' in currentRequest)) {
+        newClientId = currentRequest.client_id;
+        newDevId = currentRequest.selected_developer_id;
+      } else {
+        console.warn('updateHelpRequest join error', currentRequest);
+      }
+      
       if (userType === 'client') {
-        if (currentRequest.client_id !== currentUserId) {
+        if (newClientId !== currentUserId) {
           permissionError = 'You can only update help requests that you created';
           console.error(`[updateHelpRequest] Client ${currentUserId} does not own request ${requestId}`);
         }

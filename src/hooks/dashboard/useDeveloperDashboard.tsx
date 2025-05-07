@@ -30,11 +30,11 @@ export interface DashboardOptions {
 }
 
 export const useTicketApplications = (
-  tickets: HelpRequest[] = [],
-  isAuthenticated: boolean = false,
-  userId: string | null = null,
-  userType: string | null = null,
-  refreshTickets: () => void = () => {}
+  tickets: HelpRequest[],
+  isAuthenticated: boolean,
+  userId: string | null,
+  userType: string | null,
+  refreshTickets: () => void
 ): UseTicketApplicationsResult => {
   const recommendedTicketsResult = useRecommendedTickets(tickets, isAuthenticated, userId);
   const { 
@@ -188,6 +188,10 @@ export const useDeveloperDashboard = (options: DashboardOptions = {}) => {
     handleForceRefresh,
     fetchTickets,
     fetchMyApplications,
-    checkApplicationStatus
+    checkApplicationStatus,
+    // Add these aliases for compatibility
+    filters: ticketFilters.filterOptions,
+    handleFilterChange: ticketFilters.updateFilterOptions,
+    hasApplicationError: hasError
   };
 };

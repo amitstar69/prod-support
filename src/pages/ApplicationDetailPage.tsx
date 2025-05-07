@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -47,13 +46,17 @@ const ApplicationDetailPage = () => {
 
         // Process application data with safe access to developer_profiles
         const dp = applicationData.developer_profiles;
+        const skills = applicationData.developer_profiles?.skills || [];
+        const experience = applicationData.developer_profiles?.experience || '';
+        const hourly_rate = applicationData.developer_profiles?.hourly_rate || 0;
+        
         const processedApplication: HelpRequestMatch = {
           ...applicationData,
           developer_profiles: {
             id: applicationData.developer_id,
-            skills: dp && Array.isArray(dp.skills) ? dp.skills : [],
-            experience: dp && typeof dp.experience === 'string' ? dp.experience : '',
-            hourly_rate: dp && typeof dp.hourly_rate === 'number' ? dp.hourly_rate : 0
+            skills: skills,
+            experience: experience,
+            hourly_rate: hourly_rate
           }
         };
         
@@ -70,7 +73,19 @@ const ApplicationDetailPage = () => {
           console.error('Error fetching ticket:', ticketError);
           toast.error('Failed to load ticket details');
         } else {
-          setTicket(ticketData);
+          // Fix for the setApplication payload issue
+          setTicket(prev => {
+            // Safely handle attachments
+            const safeTicketData = {...ticketData};
+            if (ticketData.attachments) {
+              safeTicketData.attachments = Array.isArray(ticketData.attachments) 
+                ? ticketData.attachments
+                : typeof ticketData.attachments === 'string'
+                  ? ticketData.attachments
+                  : JSON.stringify(ticketData.attachments);
+            }
+            return safeTicketData;
+          });
         }
       } catch (error) {
         console.error('Failed to fetch application details:', error);

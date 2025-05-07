@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import { FilterOptions } from '../tickets/TicketFilters';
 
 interface TicketFiltersContainerProps {
-  filters: FilterOptions;
+  filterOptions: FilterOptions;
   updateFilterOptions: (opts: Partial<FilterOptions>) => void;
   resetFilters: () => void;
   getFilterLabelForStatus: (status: string) => string;
@@ -14,7 +14,7 @@ interface TicketFiltersContainerProps {
 }
 
 const TicketFiltersContainer: React.FC<TicketFiltersContainerProps> = ({ 
-  filters,
+  filterOptions,
   updateFilterOptions,
   resetFilters,
   getFilterLabelForStatus,
@@ -30,7 +30,7 @@ const TicketFiltersContainer: React.FC<TicketFiltersContainerProps> = ({
         </Button>
       </div>
       <TicketFilters 
-        filterOptions={filters} 
+        filterOptions={filterOptions} 
         updateFilterOptions={updateFilterOptions} 
         resetFilters={resetFilters}
         getFilterLabelForStatus={getFilterLabelForStatus}

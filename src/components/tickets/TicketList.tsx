@@ -8,7 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 export interface TicketListProps {
   tickets: HelpRequest[];
-  userRole: string;
+  userRole?: string;
   onClaimTicket?: (ticketId: string) => void;
   userId?: string | null;
   userType?: string | null;
@@ -21,7 +21,7 @@ export interface TicketListProps {
 
 const TicketList: React.FC<TicketListProps> = ({ 
   tickets, 
-  userRole,
+  userRole = 'developer',
   onClaimTicket,
   userId,
   userType,

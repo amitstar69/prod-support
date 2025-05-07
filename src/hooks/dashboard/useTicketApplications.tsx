@@ -14,6 +14,7 @@ export interface UseTicketApplicationsResult {
   myApplications: HelpRequest[];
   isLoadingApplications: boolean;
   hasError: boolean;
+  hasApplicationError: boolean; // Added this line to support both naming conventions
   handleClaimTicket: (ticketId: string) => void;
   fetchMyApplications: (isAuthenticated: boolean, userId: string | null) => Promise<void>;
   checkApplicationStatus: (ticketId: string, userId: string) => Promise<string | null>;
@@ -78,6 +79,7 @@ export const useTicketApplications = (
     myApplications: myApplications || [],
     isLoadingApplications,
     hasError,
+    hasApplicationError: hasError, // Add alias for compatibility
     handleClaimTicket,
     fetchMyApplications,
     checkApplicationStatus,
