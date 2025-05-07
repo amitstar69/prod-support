@@ -111,7 +111,7 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
       // Debug: Log what statuses are in the database
       if (data.length > 0) {
         // Filter out null tickets first
-        const cleanData = data.filter((ticket): ticket is HelpRequest => ticket !== null);
+        const cleanData = data.filter((ticket): ticket is HelpRequest => ticket !== null && typeof ticket === 'object');
         
         // Now safely access properties without risk of null
         let statuses: string[] = [];

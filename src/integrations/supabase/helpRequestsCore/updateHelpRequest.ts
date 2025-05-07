@@ -51,9 +51,9 @@ export const updateHelpRequestStatus = async (requestId: string, newStatus: stri
       }
       
       // Validate the user is either the client or the assigned developer
-      const isClient = currentReqData.client_id === userId;
+      const isClient = 'client_id' in currentReqData && currentReqData.client_id === userId;
       // developer_id may not exist in some tables, so use optional chaining
-      const isDeveloper = currentReqData.developer_id ? currentReqData.developer_id === userId : false;
+      const isDeveloper = 'developer_id' in currentReqData ? currentReqData.developer_id === userId : false;
       
       if (!isClient && !isDeveloper) {
         console.error('[updateHelpRequestStatus] User is not authorized to update this request');
@@ -178,13 +178,13 @@ export const updateHelpRequest = async (
       }
       
       // Check if data[0] is an error object
-      if ('code' in data[0]) {
-        console.warn('updateHelpRequest: invalid currentRequest', data[0]);
+      const currentRequest = data[0];
+      if (!currentRequest || 'code' in currentRequest) {
+        console.warn('updateHelpRequest: invalid currentRequest', currentRequest);
         return { success: false, error: 'Invalid help request data' };
       }
       
-      const currentRequest = data[0] as HelpRequest;
-      
+      // Now it's safe to access properties
       // Validate the user is the client who created the request
       if (currentRequest.client_id !== userId) {
         return { 
@@ -222,7 +222,7 @@ export const updateHelpRequest = async (
 
       // Get previous status if result is valid
       let prevStatus: string | null = null;
-      if (!('code' in result) && 'status' in result) {
+      if (result && !('code' in result) && 'status' in result) {
         prevStatus = result.status;
       } else {
         console.warn('updateHelpRequest: result error', result);

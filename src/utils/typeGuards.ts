@@ -1,41 +1,28 @@
 
 import { DeveloperProfile } from '../types/helpRequest';
-import { PostgrestError } from '@supabase/supabase-js';
 
 /**
- * Type guard to check if an object is a valid DeveloperProfile
+ * Type guard to check if an object has the shape of a DeveloperProfile
  */
-export function isDeveloperProfile(value: unknown): value is DeveloperProfile {
+export function isDeveloperProfile(obj: any): obj is DeveloperProfile {
   return (
-    value !== null && 
-    typeof value === 'object' && 
-    'id' in value &&
-    !('code' in value) && 
-    !('message' in value) &&
-    !('details' in value) && 
-    !('hint' in value)
+    obj &&
+    typeof obj === 'object' &&
+    'id' in obj &&
+    'skills' in obj &&
+    'experience' in obj &&
+    'hourly_rate' in obj
   );
 }
 
 /**
- * Type guard to check if an object is a PostgrestError
+ * Safely get a property value from an object with fallback
  */
-export function isPostgrestError(value: unknown): value is PostgrestError {
-  return (
-    value !== null && 
-    typeof value === 'object' && 
-    'code' in value && 
-    'message' in value &&
-    'details' in value
-  );
-}
-
-/**
- * Safely access nested properties with fallbacks
- */
-export function safelyGetProperty<T extends object, K extends keyof T>(obj: T | null | undefined, key: K, fallback: T[K]): T[K] {
-  if (obj && key in obj) {
-    return obj[key];
+export function safelyGetProperty<T>(obj: any, prop: string, fallback: T): T {
+  if (!obj || typeof obj !== 'object' || !(prop in obj)) {
+    return fallback;
   }
-  return fallback;
+  
+  const value = obj[prop];
+  return value === null || value === undefined ? fallback : value as T;
 }
