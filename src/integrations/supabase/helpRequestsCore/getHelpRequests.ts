@@ -5,6 +5,14 @@ import { isLocalId, isValidUUID, getLocalHelpRequests, handleError } from './uti
 import { toast } from 'sonner';
 import { isHelpRequest } from '../../../utils/typeGuards';
 
+// Define a proper type guard function
+function isValidHelpRequest(ticket: any): ticket is HelpRequest {
+  return ticket !== null 
+      && typeof ticket === 'object' 
+      && !('error' in ticket)
+      && 'status' in ticket;
+}
+
 // Function to fetch help requests for a client
 export const getHelpRequestsForClient = async (clientId: string) => {
   try {
@@ -112,19 +120,15 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
       
       // Debug: Log what statuses are in the database
       if (data.length > 0) {
-        // Use a proper type guard to filter valid help requests
-        const cleanData = data.filter((ticket): ticket is HelpRequest => 
-          ticket != null && 
-          typeof ticket === 'object' && 
-          !('error' in ticket) && 
-          'status' in ticket
-        );
+        // Use our proper type guard function to filter valid help requests
+        const cleanData = data.filter(isValidHelpRequest);
         
         // Now safely access properties without risk of null
         let statuses: string[] = [];
         
         for (const ticket of cleanData) {
-          statuses.push(ticket.status!);
+          // Since we've properly guarded, we can now access status safely
+          statuses.push(ticket.status);
         }
         
         const uniqueStatuses = [...new Set(statuses)];

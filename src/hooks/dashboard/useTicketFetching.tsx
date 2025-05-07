@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../../integrations/supabase/client';
 import { HelpRequest } from '../../types/helpRequest';
@@ -79,7 +78,8 @@ const normalizeAttachments = (attachments: any): any[] => {
   return [];
 };
 
-export const useTicketFetching = (initialCategory: string): UseTicketFetchingResult => {
+// Updated to make the parameter optional with a default value
+export const useTicketFetching = (initialCategory: string = 'all'): UseTicketFetchingResult => {
   const [tickets, setTickets] = useState<HelpRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
@@ -21,6 +20,7 @@ const DeveloperDashboard = () => {
   const { userId: authUserId, isAuthenticated: authIsAuthenticated, userType } = useAuth();
   const [localActiveTab, setLocalActiveTab] = useState('all');
   
+  // Make sure to pass empty object to useDeveloperDashboard
   const {
     tickets,
     filteredTickets,
