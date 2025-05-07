@@ -18,7 +18,7 @@ const DeveloperTicketsPage: React.FC = () => {
     hasError, 
     dataSource,
     handleForceRefresh 
-  } = useTicketFetching(isAuthenticated, userType);
+  } = useTicketFetching();
   
   const { recommendedTickets, availableTickets } = useTicketRecommendations(
     tickets,

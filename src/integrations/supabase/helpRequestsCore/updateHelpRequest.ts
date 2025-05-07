@@ -156,7 +156,9 @@ export const updateHelpRequest = async (
         return { success: false, error: 'Invalid request data format' };
       }
       
-      const normalizedCurrentStatus = currentRequest.status.replace(/[-_]/g, '_');
+      const normalizedCurrentStatus = typeof currentRequest.status === 'string' 
+        ? currentRequest.status.replace(/[-_]/g, '_')
+        : String(currentRequest.status);
       
       if (updates.status) {
         const normalizedNewStatus = updates.status.replace(/[-_]/g, '_');
@@ -248,7 +250,7 @@ export const updateHelpRequest = async (
           const historyEntry = {
             help_request_id: requestId,
             change_type: 'STATUS_CHANGE',
-            previous_status: currentRequest.status,
+            previous_status: String(currentRequest.status || ''),
             new_status: updates.status,
             changed_by: currentUserId,
             change_details: {
