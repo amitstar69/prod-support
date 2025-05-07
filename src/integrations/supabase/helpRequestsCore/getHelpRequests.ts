@@ -118,11 +118,7 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
         // Now safely access properties without risk of null
         let statuses: string[] = [];
         for (const ticket of cleanData) {
-          if (ticket.status) {
-            statuses.push(ticket.status);
-          } else {
-            console.warn('[getAllPublicHelpRequests] Ticket without status:', ticket);
-          }
+          statuses.push(ticket.status!);
         }
         
         const uniqueStatuses = [...new Set(statuses)];
