@@ -45,24 +45,16 @@ const ApplicationDetailPage = () => {
           return;
         }
 
-        // Process application data with safe access to developer_profiles
-        const developerProfiles = applicationData.developer_profiles || {};
-        
-        // Safely access properties with fallbacks using our utility functions
-        const dp = applicationData.developer_profiles as DeveloperProfile | null;
-        const skills = Array.isArray(dp?.skills) ? dp.skills : [];
-        const experience = typeof dp?.experience === 'string' ? dp.experience : '';
-        const hourly_rate = typeof dp?.hourly_rate === 'number' ? dp.hourly_rate : 0;
+        // Process application data with safe access using isDeveloperProfile guard
+        const rawDp = applicationData.developer_profiles;
+        const dp: DeveloperProfile = isDeveloperProfile(rawDp)
+          ? rawDp
+          : { id: applicationData.developer_id, skills: [], experience: '', hourly_rate: 0 };
         
         // Create a properly typed application object
         const processedApplication: HelpRequestMatch = {
           ...applicationData,
-          developer_profiles: {
-            id: applicationData.developer_id,
-            skills,
-            experience,
-            hourly_rate
-          }
+          developer_profiles: dp
         };
         
         setApplication(processedApplication);

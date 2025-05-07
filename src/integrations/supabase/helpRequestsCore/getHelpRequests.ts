@@ -2,6 +2,7 @@ import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, handleError } from './utils';
 import { toast } from 'sonner';
+import { isHelpRequest } from '../../../utils/typeGuards';
 
 // Function to fetch help requests for a client
 export const getHelpRequestsForClient = async (clientId: string) => {
@@ -110,12 +111,8 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
       
       // Debug: Log what statuses are in the database
       if (data.length > 0) {
-        // Narrow out null or error rows with a proper type guard
-        const cleanData = data.filter((ticket): ticket is HelpRequest => 
-          ticket !== null && 
-          typeof ticket === 'object' && 
-          !('error' in ticket)
-        );
+        // Use the type guard to filter valid help requests
+        const cleanData = data.filter(isHelpRequest);
         
         // Now safely access properties without risk of null
         let statuses: string[] = [];

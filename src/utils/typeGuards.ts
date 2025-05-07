@@ -1,5 +1,6 @@
 
-import { DeveloperProfile } from '../types/helpRequest';
+
+import { DeveloperProfile, HelpRequest } from '../types/helpRequest';
 
 /**
  * Type guard to check if an object has the shape of a DeveloperProfile
@@ -12,6 +13,18 @@ export function isDeveloperProfile(obj: any): obj is DeveloperProfile {
     'skills' in obj &&
     'experience' in obj &&
     'hourly_rate' in obj
+  );
+}
+
+/**
+ * Type guard to check if an object has the shape of a HelpRequest
+ */
+export function isHelpRequest(obj: unknown): obj is HelpRequest {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'id' in obj &&
+    'status' in obj
   );
 }
 

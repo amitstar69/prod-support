@@ -96,13 +96,8 @@ export const useTicketApplications = (
   };
 };
 
-// This is the main hook that DeveloperDashboard uses
-export const useDeveloperDashboard = (options: DashboardOptions = {}): ReturnType<typeof useDeveloperDashboardImplementation> => {
-  return useDeveloperDashboardImplementation(options);
-};
-
-// The actual implementation function with the return type
-const useDeveloperDashboardImplementation = (options: DashboardOptions = {}) => {
+// This is the main hook that DeveloperDashboard uses - now exported directly
+export const useDeveloperDashboard = (options: DashboardOptions = {}) => {
   const { isAuthenticated, userId, userType } = useAuth();
   const {
     tickets,
