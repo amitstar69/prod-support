@@ -151,7 +151,12 @@ export const updateHelpRequest = async (
       }
 
       // Safe access to currentRequest with proper null checks
-      if (!currentRequest || typeof currentRequest !== 'object' || !('status' in currentRequest)) {
+      if (!currentRequest || typeof currentRequest !== 'object') {
+        console.error('[updateHelpRequest] currentRequest is null or not an object', currentRequest);
+        return { success: false, error: 'Invalid request data format' };
+      }
+      
+      if (!('status' in currentRequest)) {
         console.error('[updateHelpRequest] currentRequest missing status property', currentRequest);
         return { success: false, error: 'Invalid request data format' };
       }
@@ -250,7 +255,8 @@ export const updateHelpRequest = async (
       console.log('[updateHelpRequest] Update successful, data:', checkData);
       
       if (updates.status && currentRequest && typeof currentRequest === 'object' && 
-          'status' in currentRequest && currentRequest.status && updates.status !== currentRequest.status) {
+          'status' in currentRequest && currentRequest.status && 
+          updates.status !== currentRequest.status) {
         try {
           const historyEntry = {
             help_request_id: requestId,

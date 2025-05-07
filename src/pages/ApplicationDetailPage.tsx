@@ -47,10 +47,11 @@ const ApplicationDetailPage = () => {
 
         // Process application data with safe access to developer_profiles
         const developerProfiles = applicationData.developer_profiles || {};
-        const skills = developerProfiles.skills || [];
-        const experience = developerProfiles.experience || '';
-        const hourly_rate = developerProfiles.hourly_rate || 0;
+        const skills = developerProfiles?.skills || [];
+        const experience = developerProfiles?.experience || '';
+        const hourly_rate = developerProfiles?.hourly_rate || 0;
         
+        // Create a properly typed application object
         const processedApplication: HelpRequestMatch = {
           ...applicationData,
           developer_profiles: {
