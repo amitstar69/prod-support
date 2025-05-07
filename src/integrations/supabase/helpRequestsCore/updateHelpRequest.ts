@@ -73,7 +73,10 @@ export const updateHelpRequestStatus = async (requestId: string, newStatus: stri
       
       // Add optional fields if provided
       if (options.notes) {
-        updatePayload.notes = options.notes;
+        // Instead of updating a non-existent 'notes' field, use description or another existing field
+        // updatePayload.notes = options.notes;
+        // Let's use developer_qa_notes since it's a similar concept:
+        updatePayload.developer_qa_notes = options.notes;
       }
       
       if (options.cancellationReason) {
@@ -133,7 +136,10 @@ export const updateHelpRequestStatus = async (requestId: string, newStatus: stri
       
       // Add optional fields if provided
       if (options.notes) {
-        updatedRequest.notes = options.notes;
+        // Instead of updating a non-existent 'notes' field 
+        // updatedRequest.notes = options.notes;
+        // Use developer_qa_notes instead
+        updatedRequest.developer_qa_notes = options.notes;
       }
       
       if (options.cancellationReason) {
