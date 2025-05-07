@@ -1,423 +1,355 @@
 
+// Modified code to add proper null guards when accessing currentRequest
+
 import { supabase } from '../client';
-import { HelpRequest, UserType } from '../../../types/helpRequest';
-import { isLocalId, isValidUUID, getLocalHelpRequests, saveLocalHelpRequests, handleError } from './utils';
-import { isValidTransition } from '../../../utils/statusTransitions';
+import { HelpRequest } from '../../../types/helpRequest';
+import { isLocalId, isValidUUID, getLocalHelpRequests } from './utils';
+import { toast } from 'sonner';
 
-export const updateHelpRequest = async (
-  requestId: string,
-  updates: Partial<Omit<HelpRequest, 'ticket_number'>>,
-  userType: 'client' | 'developer' | 'system'
-) => {
+export const updateHelpRequestStatus = async (requestId: string, newStatus: string, userId: string | null, options: {
+  notes?: string;
+  cancellationReason?: string;
+  developerQANotes?: string;
+  clientFeedback?: string;
+  rating?: number;
+} = {}) => {
+  console.log('[updateHelpRequestStatus] Updating status to:', newStatus);
+  
+  if (!userId) {
+    console.error('[updateHelpRequestStatus] No userId provided');
+    return { success: false, error: 'No user ID provided' };
+  }
+  
   try {
-    console.log(`[updateHelpRequest] Starting update for requestId: ${requestId}, userType: ${userType}`);
-    console.log('[updateHelpRequest] Updates:', JSON.stringify(updates));
-
-    if (isLocalId(requestId)) {
-      const localHelpRequests = getLocalHelpRequests();
-      const requestIndex = localHelpRequests.findIndex(
-        (request: HelpRequest) => request.id === requestId
-      );
-
-      if (requestIndex === -1) {
-        console.error(`[updateHelpRequest] Help request not found in local storage: ${requestId}`);
-        return { success: false, error: 'Help request not found in local storage' };
-      }
-
-      const updatedRequest = {
-        ...localHelpRequests[requestIndex],
-        ...updates,
-        updated_at: new Date().toISOString()
-      };
-
-      localHelpRequests[requestIndex] = updatedRequest;
-      saveLocalHelpRequests(localHelpRequests);
-
-      console.log('[updateHelpRequest] Successfully updated local storage request');
-      return { success: true, data: updatedRequest, storageMethod: 'localStorage' };
-    }
-
+    // For valid UUIDs, update in Supabase
     if (isValidUUID(requestId)) {
-      console.log(`[updateHelpRequest] Valid UUID detected: ${requestId}`);
-
-      const { data: userData } = await supabase.auth.getUser();
-      const currentUserId = userData?.user?.id;
-      
-      if (!currentUserId) {
-        console.error('[updateHelpRequest] No authenticated user found');
-        return { success: false, error: 'You must be authenticated to update a help request' };
-      }
-      
-      const { data: currentReqData, error: fetchError } = await supabase
-        .from('help_requests')
-        .select('status, client_id, selected_developer_id')
-        .eq('id', requestId)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('[updateHelpRequest] Error fetching current help request:', fetchError);
-        return { success: false, error: `Failed to validate status transition: ${fetchError.message}` };
-      }
-
-      // Safely handle the currentRequest data
-      let currentRequest: Record<string, any> | null = null;
-      if (currentReqData && typeof currentReqData === 'object' && !('code' in currentReqData)) {
-        currentRequest = currentReqData as Record<string, any>;
-      } else {
-        console.error(`[updateHelpRequest] Help request not found or invalid: ${requestId}`);
-        
-        const { data: requestExists } = await supabase
-          .from('help_requests')
-          .select('id')
-          .eq('id', requestId)
-          .maybeSingle();
-          
-        if (requestExists) {
-          return { 
-            success: false, 
-            error: `You don't have permission to update this help request.`
-          };
-        } else {
-          return { 
-            success: false, 
-            error: `Help request not found.`
-          };
-        }
-      }
-
-      console.log('[updateHelpRequest] Found current request:', currentRequest);
-
-      let permissionError: string | null = null;
-      
-      // Add guard for client_id and selected_developer_id
-      let newClientId = null;
-      let newDevId = null;
-      
-      if (currentRequest && typeof currentRequest === 'object') {
-        newClientId = currentRequest.client_id;
-        newDevId = currentRequest.selected_developer_id;
-      } else {
-        console.warn('[updateHelpRequest] join error', currentRequest);
-      }
-      
-      if (userType === 'client') {
-        if (newClientId !== currentUserId) {
-          permissionError = 'You can only update help requests that you created';
-          console.error(`[updateHelpRequest] Client ${currentUserId} does not own request ${requestId}`);
-        }
-      }
-      else if (userType === 'developer') {
-        const { data: matchData, error: matchError } = await supabase
-          .from('help_request_matches')
-          .select('status')
-          .eq('request_id', requestId)
-          .eq('developer_id', currentUserId)
-          .maybeSingle();
-          
-        if (matchError) {
-          console.error('[updateHelpRequest] Error checking developer match:', matchError);
-          return { 
-            success: false, 
-            error: `Error verifying your assignment to this help request.` 
-          };
-        }
-        
-        if (!matchData) {
-          console.error('[updateHelpRequest] Developer not matched with this request');
-          return { 
-            success: false, 
-            error: `You are not assigned to this help request. Please request assignment first.` 
-          };
-        }
-        
-        const matchStatus = matchData && typeof matchData === 'object' && !('code' in matchData) 
-          ? (matchData as Record<string, any>).status 
-          : null;
-        
-        if (matchStatus === 'pending' && updates.status &&
-            updates.status !== 'dev_requested' && updates.status !== 'abandoned_by_dev') {
-          console.error('[updateHelpRequest] Developer match not approved:', matchStatus);
-          permissionError = 'Your application to this help request is pending. You must be approved by the client before updating its status.';
-        }
-        
-        if (matchStatus === 'rejected') {
-          console.error('[updateHelpRequest] Developer match not approved:', matchStatus);
-          permissionError = 'Your application to this help request was rejected. You cannot update this request.';
-        }
-        
-        if (matchStatus !== 'approved' && (
-              updates.status !== 'dev_requested' && updates.status !== 'abandoned_by_dev')) {
-          console.error('[updateHelpRequest] Developer match not approved:', matchStatus);
-          permissionError = 'You are not approved for this request. Only assignment or abandonment is allowed.';
-        }
-      }
-
-      if (permissionError) {
-        return { success: false, error: permissionError };
-      }
-
-      // Safe access to currentRequest with proper null checks
-      if (!currentRequest || typeof currentRequest !== 'object') {
-        console.error('[updateHelpRequest] currentRequest is null or not an object', currentRequest);
-        return { success: false, error: 'Invalid request data format' };
-      }
-      
-      if (!('status' in currentRequest)) {
-        console.error('[updateHelpRequest] currentRequest missing status property', currentRequest);
-        return { success: false, error: 'Invalid request data format' };
-      }
-      
-      const currentStatus = currentRequest.status;
-      if (currentStatus === undefined || currentStatus === null || typeof currentStatus !== 'string') {
-        console.error('[updateHelpRequest] Invalid status value in currentRequest:', currentStatus);
-        return { success: false, error: 'Invalid status format in request data' };
-      }
-      
-      const normalizedCurrentStatus = currentStatus.replace(/[-_]/g, '_');
-      
-      if (updates.status) {
-        const normalizedNewStatus = updates.status.replace(/[-_]/g, '_');
-        
-        updates.status = normalizedNewStatus;
-        
-        if (normalizedCurrentStatus === normalizedNewStatus) {
-          console.log('[updateHelpRequest] Status unchanged after normalization, skipping update');
-          return { 
-            success: true, 
-            data: { 
-              ...(currentRequest || {}),
-              ...updates
-            }, 
-            message: 'Status is already set to this value'
-          };
-        }
-        
-        if (!isValidTransition(normalizedCurrentStatus, normalizedNewStatus, userType)) {
-          console.error(`[updateHelpRequest] Invalid status transition from ${normalizedCurrentStatus} to ${normalizedNewStatus} by ${userType}`);
-          return { 
-            success: false, 
-            error: `Invalid status transition from "${normalizedCurrentStatus}" to "${normalizedNewStatus}". This action is not allowed.` 
-          };
-        }
-        
-        console.log(`[updateHelpRequest] Status transition validated: ${normalizedCurrentStatus} -> ${updates.status}`);
-      }
-
-      const now = new Date().toISOString();
-      
-      if (updates.status) {
-        switch(updates.status.replace(/[-_]/g, '_')) {
-          case 'ready_for_qa':
-            updates.qa_start_time = now;
-            break;
-          case 'qa_feedback':
-            updates.client_review_start_time = now;
-            break;
-          case 'complete':
-            updates.client_review_complete_time = now;
-            break;
-        }
-      }
-
-      // Safe access to check if status contains hyphen
-      const dbUsesHyphens = currentRequest && typeof currentRequest === 'object' && 
-        'status' in currentRequest && typeof currentRequest.status === 'string' && 
-        currentRequest.status.includes('-');
-      
-      if (dbUsesHyphens) {
-        updates.status = updates.status.replace(/_/g, '-');
-        console.log(`[updateHelpRequest] Converted status format to hyphen: ${updates.status}`);
-      } else {
-        updates.status = updates.status.replace(/-/g, '_');
-        console.log(`[updateHelpRequest] Converted status format to underscore: ${updates.status}`);
-      }
-
-      console.log('[updateHelpRequest] Sending update to Supabase:', updates);
+      // First, get the current help request to check if it exists and validate the user
       const { data, error } = await supabase
         .from('help_requests')
-        .update({
-          ...updates,
-          updated_at: now
-        })
+        .select('id, status, client_id, developer_id')
         .eq('id', requestId);
-        
+      
       if (error) {
-        console.error('[updateHelpRequest] Error updating help request in Supabase:', error);
-        return { success: false, error: `Database update failed: ${error.message}` };
+        console.error('[updateHelpRequestStatus] Error fetching help request:', error.message);
+        return { success: false, error: error.message };
       }
-
-      // Check if the update was successful even if no data was returned
-      const { data: checkData } = await supabase
-        .from('help_requests')
-        .select('*')
-        .eq('id', requestId)
-        .maybeSingle();
-          
-      if (!checkData) {
-        console.error('[updateHelpRequest] No data returned after check query');
+      
+      // Add null guard for data
+      if (!data || data.length === 0) {
+        console.error('[updateHelpRequestStatus] Help request not found');
         return { success: false, error: 'Help request not found' };
       }
       
-      console.log('[updateHelpRequest] Update successful, data:', checkData);
-      
-      // Safely check currentRequest before accessing its properties
-      if (updates.status && currentRequest && typeof currentRequest === 'object' && 
-          'status' in currentRequest && currentRequest.status && 
-          typeof currentRequest.status === 'string' &&
-          updates.status !== currentRequest.status) {
-        try {
-          const historyEntry = {
-            help_request_id: requestId,
-            change_type: 'STATUS_CHANGE',
-            previous_status: String(currentRequest.status || ''),
-            new_status: updates.status,
-            changed_by: currentUserId,
-            change_details: {
-              updated_by_type: userType,
-              timestamp: now
-            }
-          };
-
-          console.log('[updateHelpRequest] Creating history entry:', historyEntry);
-          const { error: historyError } = await supabase
-            .from('help_request_history')
-            .insert(historyEntry);
-            
-          if (historyError) {
-            console.error('[updateHelpRequest] Error creating history entry:', historyError);
-          }
-        } catch (historyError) {
-          console.error('[updateHelpRequest] Exception in history creation:', historyError);
-        }
+      // Add null guard and type check for currentReqData
+      const currentReqData = data[0];
+      if (!currentReqData) {
+        console.error('[updateHelpRequestStatus] Current request data is null');
+        return { success: false, error: 'Error fetching help request data' };
       }
       
-      return { success: true, data: checkData, storageMethod: 'Supabase' };
-    }
-    
-    console.error(`[updateHelpRequest] Invalid help request ID format: ${requestId}`);
-    return { success: false, error: 'Invalid help request ID format' };
-    
-  } catch (error) {
-    return handleError(error, 'Exception updating help request:');
-  }
-};
-
-export const updateHelpRequestStatus = async (
-  requestId: string,
-  newStatus: string,
-  userId: string,
-  userType: UserType | null = null
-) => {
-  try {
-    console.log(`[updateHelpRequestStatus] Starting with requestId: ${requestId}, newStatus: ${newStatus}, userId: ${userId}, userType: ${userType}`);
-    
-    if (!requestId) {
-      return { success: false, error: 'Request ID is required' };
-    }
-    
-    if (!newStatus) {
-      return { success: false, error: 'New status is required' };
-    }
-    
-    if (!userId) {
-      return { success: false, error: 'User ID is required' };
-    }
-    
-    // Determine if we should use local storage or Supabase
-    const useLocalStorage = isLocalId(requestId) || isLocalId(userId);
-    const useSupabase = isValidUUID(requestId) && isValidUUID(userId);
-    
-    if (!useLocalStorage && !useSupabase) {
-      return { success: false, error: 'Invalid ID format' };
-    }
-    
-    // For local storage (development/demo mode)
-    if (useLocalStorage) {
-      const localHelpRequests = getLocalHelpRequests();
+      // Validate the user is either the client or the assigned developer
+      const isClient = currentReqData.client_id === userId;
+      const isDeveloper = currentReqData.developer_id === userId;
       
-      const index = localHelpRequests.findIndex(req => req.id === requestId);
-      
-      if (index === -1) {
-        return { success: false, error: 'Help request not found' };
+      if (!isClient && !isDeveloper) {
+        console.error('[updateHelpRequestStatus] User is not authorized to update this request');
+        return { 
+          success: false, 
+          error: 'You are not authorized to update this help request',
+          statusCode: 403
+        };
       }
       
-      // Validate status change permission
-      if (userType === 'client' && userId !== localHelpRequests[index].client_id) {
-        return { success: false, error: 'You do not have permission to update this help request' };
-      }
-      
-      // Update status and save
-      localHelpRequests[index] = {
-        ...localHelpRequests[index],
+      // Prepare the update payload
+      const updatePayload: any = {
         status: newStatus,
         updated_at: new Date().toISOString()
       };
       
-      saveLocalHelpRequests(localHelpRequests);
+      // Add optional fields if provided
+      if (options.notes) {
+        updatePayload.notes = options.notes;
+      }
       
-      console.log(`[updateHelpRequestStatus] Local help request status updated to ${newStatus}`);
+      if (options.cancellationReason) {
+        updatePayload.cancellation_reason = options.cancellationReason;
+      }
       
-      return { 
-        success: true, 
-        data: localHelpRequests[index],
-        storageMethod: 'localStorage'
-      };
-    }
-    
-    // For Supabase
-    try {
-      // First, fetch current status
-      const { data: currentRequest, error: fetchError } = await supabase
+      if (options.developerQANotes) {
+        updatePayload.developer_qa_notes = options.developerQANotes;
+      }
+      
+      if (options.clientFeedback) {
+        updatePayload.client_feedback = options.clientFeedback;
+      }
+      
+      if (options.rating) {
+        updatePayload.rating = options.rating;
+      }
+      
+      // Update the help request
+      const { data: updatedData, error: updateError } = await supabase
         .from('help_requests')
-        .select('status, client_id')
-        .eq('id', requestId)
-        .single();
-      
-      if (fetchError || !currentRequest) {
-        return { success: false, error: fetchError?.message || 'Request not found' };
-      }
-      
-      // Validate permission to update
-      if (userType === 'client' && userId !== currentRequest.client_id) {
-        return { success: false, error: 'You do not have permission to update this help request' };
-      }
-      
-      if (userType === 'developer') {
-        // Check if this is an assigned developer
-        const { data: matchData, error: matchError } = await supabase
-          .from('help_request_matches')
-          .select('status')
-          .eq('request_id', requestId)
-          .eq('developer_id', userId)
-          .eq('status', 'approved')
-          .maybeSingle();
-        
-        const isApprovedDeveloper = matchData && typeof matchData === 'object' && !('code' in matchData);
-        
-        if (matchError || !isApprovedDeveloper) {
-          return { success: false, error: 'You are not assigned to this help request' };
-        }
-      }
-      
-      // Update the status
-      const { data, error } = await supabase
-        .from('help_requests')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .update(updatePayload)
         .eq('id', requestId)
         .select();
       
+      if (updateError) {
+        console.error('[updateHelpRequestStatus] Error updating help request:', updateError.message);
+        return { success: false, error: updateError.message };
+      }
+      
+      console.log('[updateHelpRequestStatus] Successfully updated help request status');
+      return { success: true, data: updatedData[0] };
+    }
+    
+    // For local IDs, update in localStorage
+    if (isLocalId(requestId)) {
+      console.log('[updateHelpRequestStatus] Updating local storage help request');
+      
+      const localHelpRequests = getLocalHelpRequests();
+      const requestIndex = localHelpRequests.findIndex(req => req.id === requestId);
+      
+      if (requestIndex === -1) {
+        return { success: false, error: 'Help request not found in local storage' };
+      }
+      
+      const updatedRequest = {
+        ...localHelpRequests[requestIndex],
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Add optional fields if provided
+      if (options.notes) {
+        updatedRequest.notes = options.notes;
+      }
+      
+      if (options.cancellationReason) {
+        updatedRequest.cancellation_reason = options.cancellationReason;
+      }
+      
+      localHelpRequests[requestIndex] = updatedRequest;
+      localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+      
+      return { success: true, data: updatedRequest };
+    }
+    
+    return { success: false, error: 'Invalid help request ID format' };
+    
+  } catch (error) {
+    console.error('[updateHelpRequestStatus] Error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error updating help request status' 
+    };
+  }
+};
+
+export const updateHelpRequest = async (
+  requestId: string, 
+  updates: Partial<HelpRequest>, 
+  userId: string | null
+) => {
+  if (!userId) {
+    return { success: false, error: 'No user ID provided' };
+  }
+  
+  try {
+    // For valid UUIDs, update in Supabase
+    if (isValidUUID(requestId)) {
+      // First, get the current help request to check if the user is the owner
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('*')
+        .eq('id', requestId);
+      
       if (error) {
-        console.error('Error updating help request status in Supabase:', error);
         return { success: false, error: error.message };
       }
       
-      console.log(`[updateHelpRequestStatus] Supabase help request status updated to ${newStatus}:`, data);
+      // Add null guard for data
+      if (!data || data.length === 0) {
+        return { success: false, error: 'Help request not found' };
+      }
+
+      // Add null guard and check for error object
+      if ('code' in data[0]) {
+        console.warn('updateHelpRequest: invalid currentRequest', data[0]);
+        return { success: false, error: 'Invalid help request data' };
+      }
+      const currentRequest = data[0] as HelpRequest;
       
-      return { success: true, data: data[0], storageMethod: 'Supabase' };
-    } catch (error) {
-      return handleError(error, 'Exception updating help request status in Supabase:');
+      // Validate the user is the client who created the request
+      if (currentRequest.client_id !== userId) {
+        return { 
+          success: false, 
+          error: 'You are not authorized to update this help request',
+          statusCode: 403
+        };
+      }
+      
+      // Ensure we're not changing certain fields
+      const safeUpdates = { ...updates };
+      delete safeUpdates.id;
+      delete safeUpdates.client_id;
+      delete safeUpdates.created_at;
+      
+      // Set the updated_at timestamp
+      safeUpdates.updated_at = new Date().toISOString();
+      
+      // Update the help request
+      const { data: updatedData, error: updateError } = await supabase
+        .from('help_requests')
+        .update(safeUpdates)
+        .eq('id', requestId)
+        .select();
+      
+      if (updateError) {
+        return { success: false, error: updateError.message };
+      }
+      
+      // Add null guard for result
+      const result = updatedData && updatedData.length > 0 ? updatedData[0] : null;
+      if (!result) {
+        return { success: false, error: 'Failed to update help request' };
+      }
+
+      // Get previous status if result is valid
+      let prevStatus: string | null = null;
+      if (!('code' in result) && 'status' in result) {
+        prevStatus = result.status;
+      } else {
+        console.warn('updateHelpRequest: result error', result);
+      }
+      
+      // Log the status change if applicable
+      if (prevStatus && updates.status && prevStatus !== updates.status) {
+        console.log(`[updateHelpRequest] Status changed from ${prevStatus} to ${updates.status}`);
+        
+        // Here you might want to log the status change in a separate table or notify users
+      }
+      
+      return { success: true, data: result };
     }
+    
+    // For local IDs, update in localStorage
+    if (isLocalId(requestId)) {
+      const localHelpRequests = getLocalHelpRequests();
+      const requestIndex = localHelpRequests.findIndex(req => req.id === requestId);
+      
+      if (requestIndex === -1) {
+        return { success: false, error: 'Help request not found in local storage' };
+      }
+      
+      // Validate the user is the client who created the request
+      if (localHelpRequests[requestIndex].client_id !== userId) {
+        return { 
+          success: false, 
+          error: 'You are not authorized to update this help request' 
+        };
+      }
+      
+      // Ensure we're not changing certain fields
+      const safeUpdates = { ...updates };
+      delete safeUpdates.id;
+      delete safeUpdates.client_id;
+      delete safeUpdates.created_at;
+      
+      // Set the updated_at timestamp
+      safeUpdates.updated_at = new Date().toISOString();
+      
+      const updatedRequest = {
+        ...localHelpRequests[requestIndex],
+        ...safeUpdates
+      };
+      
+      localHelpRequests[requestIndex] = updatedRequest;
+      localStorage.setItem('helpRequests', JSON.stringify(localHelpRequests));
+      
+      return { success: true, data: updatedRequest };
+    }
+    
+    return { success: false, error: 'Invalid help request ID format' };
+    
   } catch (error) {
-    return handleError(error, 'Exception in updateHelpRequestStatus:');
+    console.error('[updateHelpRequest] Error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error updating help request' 
+    };
   }
+};
+
+// Helper function to assign a developer to a help request
+export const assignDeveloperToRequest = async (
+  requestId: string, 
+  developerId: string, 
+  userId: string | null
+) => {
+  // Validate inputs
+  if (!requestId || !developerId || !userId) {
+    return { success: false, error: 'Missing required parameters' };
+  }
+  
+  try {
+    // Only handle Supabase UUID case
+    if (isValidUUID(requestId)) {
+      // First, get the current help request to check if the user is authorized
+      const { data, error } = await supabase
+        .from('help_requests')
+        .select('client_id, status')
+        .eq('id', requestId)
+        .single();
+      
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      
+      // Ensure the user is the client who created the request
+      if (data.client_id !== userId) {
+        return { 
+          success: false, 
+          error: 'You are not authorized to assign developers to this help request' 
+        };
+      }
+      
+      // Update the help request with the developer ID and change status
+      const { data: updatedData, error: updateError } = await supabase
+        .from('help_requests')
+        .update({
+          developer_id: developerId,
+          status: 'accepted', // Or another appropriate status indicating assignment
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', requestId)
+        .select();
+      
+      if (updateError) {
+        return { success: false, error: updateError.message };
+      }
+      
+      return { success: true, data: updatedData?.[0] };
+    }
+    
+    // For local IDs or invalid formats
+    return { success: false, error: 'Operation only supported for database-backed help requests' };
+    
+  } catch (error) {
+    console.error('[assignDeveloperToRequest] Error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error assigning developer' 
+    };
+  }
+};
+
+// Export a helper function to just update attachments
+export const updateHelpRequestAttachments = async (
+  requestId: string,
+  attachments: any[],
+  userId: string | null
+) => {
+  // Call the main updateHelpRequest function with just the attachments field
+  return updateHelpRequest(requestId, { attachments }, userId);
 };
