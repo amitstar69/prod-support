@@ -48,7 +48,7 @@ export const updateHelpRequest = async (
         return { success: false, error: 'You must be authenticated to update a help request' };
       }
       
-      const { data: currentRequest, error: fetchError } = await supabase
+      const { data: currentReqData, error: fetchError } = await supabase
         .from('help_requests')
         .select('status, client_id, selected_developer_id')
         .eq('id', requestId)
@@ -59,8 +59,12 @@ export const updateHelpRequest = async (
         return { success: false, error: `Failed to validate status transition: ${fetchError.message}` };
       }
 
-      if (!currentRequest) {
-        console.error(`[updateHelpRequest] Help request not found: ${requestId}`);
+      // Safely handle the currentRequest data
+      let currentRequest: Record<string, any> | null = null;
+      if (currentReqData && typeof currentReqData === 'object' && !('code' in currentReqData)) {
+        currentRequest = currentReqData as Record<string, any>;
+      } else {
+        console.error(`[updateHelpRequest] Help request not found or invalid: ${requestId}`);
         
         const { data: requestExists } = await supabase
           .from('help_requests')
@@ -89,7 +93,7 @@ export const updateHelpRequest = async (
       let newClientId = null;
       let newDevId = null;
       
-      if (currentRequest && typeof currentRequest === 'object' && !('code' in currentRequest)) {
+      if (currentRequest && typeof currentRequest === 'object') {
         newClientId = currentRequest.client_id;
         newDevId = currentRequest.selected_developer_id;
       } else {
@@ -126,7 +130,9 @@ export const updateHelpRequest = async (
           };
         }
         
-        const matchStatus = matchData && typeof matchData === 'object' && !('code' in matchData) ? matchData.status : null;
+        const matchStatus = matchData && typeof matchData === 'object' && !('code' in matchData) 
+          ? (matchData as Record<string, any>).status 
+          : null;
         
         if (matchStatus === 'pending' && updates.status &&
             updates.status !== 'dev_requested' && updates.status !== 'abandoned_by_dev') {
@@ -162,7 +168,7 @@ export const updateHelpRequest = async (
       }
       
       const currentStatus = currentRequest.status;
-      if (!currentStatus || typeof currentStatus !== 'string') {
+      if (currentStatus === undefined || currentStatus === null || typeof currentStatus !== 'string') {
         console.error('[updateHelpRequest] Invalid status value in currentRequest:', currentStatus);
         return { success: false, error: 'Invalid status format in request data' };
       }
@@ -179,7 +185,7 @@ export const updateHelpRequest = async (
           return { 
             success: true, 
             data: { 
-              ...((typeof currentRequest === 'object' && !('code' in currentRequest)) ? currentRequest : {}),
+              ...(currentRequest || {}),
               ...updates
             }, 
             message: 'Status is already set to this value'
@@ -254,8 +260,10 @@ export const updateHelpRequest = async (
       
       console.log('[updateHelpRequest] Update successful, data:', checkData);
       
+      // Safely check currentRequest before accessing its properties
       if (updates.status && currentRequest && typeof currentRequest === 'object' && 
           'status' in currentRequest && currentRequest.status && 
+          typeof currentRequest.status === 'string' &&
           updates.status !== currentRequest.status) {
         try {
           const historyEntry = {

@@ -1,3 +1,4 @@
+
 // Refactored: Root hook delegates to focused hooks for logic
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HelpRequest } from '../../types/helpRequest';
@@ -95,7 +96,7 @@ export const useTicketApplications = (
 };
 
 // This is the main hook that DeveloperDashboard uses
-export const useDeveloperDashboard = (options: DashboardOptions = {}) => {
+export const useDeveloperDashboard = (options: DashboardOptions = {}): ReturnType<typeof useDeveloperDashboard> => {
   const { isAuthenticated, userId, userType } = useAuth();
   const {
     tickets,
@@ -193,4 +194,35 @@ export const useDeveloperDashboard = (options: DashboardOptions = {}) => {
     handleFilterChange: ticketFilters.updateFilterOptions,
     hasApplicationError: hasError
   };
+};
+
+// Define a type for the hook return value to avoid circular reference
+type UseDeveloperDashboardReturn = {
+  tickets: HelpRequest[];
+  filteredTickets: HelpRequest[];
+  recommendedTickets: HelpRequest[];
+  myApplications: HelpRequest[];
+  categorizedTickets: {
+    active: HelpRequest[];
+    pending: HelpRequest[];
+    completed: HelpRequest[];
+  };
+  isLoading: boolean;
+  isLoadingApplications: boolean;
+  hasError: boolean;
+  showFilters: boolean;
+  setShowFilters: React.Dispatch<React.SetStateAction<boolean>>;
+  dataSource: string;
+  filterOptions: any;
+  updateFilterOptions: (options: any) => void;
+  resetFilters: () => void;
+  getFilterLabelForStatus: (status: string) => string;
+  handleClaimTicket: (ticketId: string) => void;
+  handleForceRefresh: () => void;
+  fetchTickets: () => void;
+  fetchMyApplications: (isAuthenticated: boolean, userId: string | null) => Promise<void>;
+  checkApplicationStatus: (ticketId: string, userId: string) => Promise<string | null>;
+  filters: any;
+  handleFilterChange: (options: any) => void;
+  hasApplicationError: boolean;
 };

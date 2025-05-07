@@ -118,9 +118,10 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
             console.warn('[getAllPublicHelpRequests] Null ticket in results');
             continue;
           }
+          
           let status: string | null = null;
           if (ticket && typeof ticket === 'object' && 'status' in ticket) {
-            status = ticket.status;
+            status = ticket.status as string;
           } else {
             console.warn('[getAllPublicHelpRequests] Ticket without status:', ticket);
           }
