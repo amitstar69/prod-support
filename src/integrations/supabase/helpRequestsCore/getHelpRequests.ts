@@ -112,11 +112,17 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
       
       // Debug: Log what statuses are in the database
       if (data.length > 0) {
-        // Use the imported isHelpRequest type guard to filter valid help requests
-        const cleanData = data.filter(isHelpRequest);
+        // Use a proper type guard to filter valid help requests
+        const cleanData = data.filter((ticket): ticket is HelpRequest => 
+          ticket != null && 
+          typeof ticket === 'object' && 
+          !('error' in ticket) && 
+          'status' in ticket
+        );
         
         // Now safely access properties without risk of null
         let statuses: string[] = [];
+        
         for (const ticket of cleanData) {
           statuses.push(ticket.status!);
         }
