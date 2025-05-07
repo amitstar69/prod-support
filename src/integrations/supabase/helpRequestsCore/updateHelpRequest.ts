@@ -103,8 +103,14 @@ export const updateHelpRequestStatus = async (requestId: string, newStatus: stri
         return { success: false, error: updateError.message };
       }
       
+      // Check if updatedData is valid
+      if (!updatedData || updatedData.length === 0) {
+        console.error('[updateHelpRequestStatus] No data returned after update');
+        return { success: false, error: 'Failed to update help request' };
+      }
+      
       console.log('[updateHelpRequestStatus] Successfully updated help request status');
-      return { success: true, data: updatedData?.[0] };
+      return { success: true, data: updatedData[0] };
     }
     
     // For local IDs, update in localStorage

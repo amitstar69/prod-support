@@ -110,19 +110,21 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
       
       // Debug: Log what statuses are in the database
       if (data.length > 0) {
-        // Filter out null tickets first
-        const cleanData = data.filter((ticket): ticket is HelpRequest => ticket !== null && typeof ticket === 'object');
+        // Narrow out null or error rows with a proper type guard
+        const cleanData = data.filter((ticket): ticket is HelpRequest => 
+          ticket !== null && 
+          typeof ticket === 'object' && 
+          !('error' in ticket)
+        );
         
         // Now safely access properties without risk of null
         let statuses: string[] = [];
         for (const ticket of cleanData) {
-          let status: string | null = null;
-          if (ticket && typeof ticket === 'object' && 'status' in ticket) {
-            status = ticket.status as string;
+          if (ticket.status) {
+            statuses.push(ticket.status);
           } else {
             console.warn('[getAllPublicHelpRequests] Ticket without status:', ticket);
           }
-          if (status) statuses.push(status);
         }
         
         const uniqueStatuses = [...new Set(statuses)];
