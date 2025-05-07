@@ -1,4 +1,3 @@
-
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, handleError } from './utils';
@@ -111,14 +110,12 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
       
       // Debug: Log what statuses are in the database
       if (data.length > 0) {
-        // Add guard for status access
+        // Filter out null tickets first
+        const cleanData = data.filter((ticket): ticket is HelpRequest => ticket !== null);
+        
+        // Now safely access properties without risk of null
         let statuses: string[] = [];
-        for (const ticket of data) {
-          if (!ticket) {
-            console.warn('[getAllPublicHelpRequests] Null ticket in results');
-            continue;
-          }
-          
+        for (const ticket of cleanData) {
           let status: string | null = null;
           if (ticket && typeof ticket === 'object' && 'status' in ticket) {
             status = ticket.status as string;
@@ -127,6 +124,7 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
           }
           if (status) statuses.push(status);
         }
+        
         const uniqueStatuses = [...new Set(statuses)];
         console.log('[getAllPublicHelpRequests] Found ticket statuses:', uniqueStatuses);
       }

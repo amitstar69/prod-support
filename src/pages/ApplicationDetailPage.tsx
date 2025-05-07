@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -12,6 +11,7 @@ import { updateApplicationStatus } from '../integrations/supabase/helpRequestsAp
 import { HelpRequestMatch, HelpRequest, DeveloperProfile } from '../types/helpRequest';
 import { toast } from 'sonner';
 import { MATCH_STATUSES } from '../utils/constants/statusConstants';
+import { isDeveloperProfile, safelyGetProperty } from '../utils/typeGuards';
 
 const ApplicationDetailPage = () => {
   const { applicationId } = useParams<{ applicationId: string }>();
@@ -48,11 +48,11 @@ const ApplicationDetailPage = () => {
         // Process application data with safe access to developer_profiles
         const developerProfiles = applicationData.developer_profiles || {};
         
-        // Safely access properties with fallbacks
+        // Safely access properties with fallbacks using our utility functions
         const dp = applicationData.developer_profiles as DeveloperProfile | null;
-        const skills = dp?.skills || [];
-        const experience = dp?.experience || '';
-        const hourly_rate = dp?.hourly_rate || 0;
+        const skills = Array.isArray(dp?.skills) ? dp.skills : [];
+        const experience = typeof dp?.experience === 'string' ? dp.experience : '';
+        const hourly_rate = typeof dp?.hourly_rate === 'number' ? dp.hourly_rate : 0;
         
         // Create a properly typed application object
         const processedApplication: HelpRequestMatch = {
