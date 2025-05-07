@@ -96,7 +96,12 @@ export const useTicketApplications = (
 };
 
 // This is the main hook that DeveloperDashboard uses
-export const useDeveloperDashboard = (options: DashboardOptions = {}): ReturnType<typeof useDeveloperDashboard> => {
+export const useDeveloperDashboard = (options: DashboardOptions = {}): ReturnType<typeof useDeveloperDashboardImplementation> => {
+  return useDeveloperDashboardImplementation(options);
+};
+
+// The actual implementation function with the return type
+const useDeveloperDashboardImplementation = (options: DashboardOptions = {}) => {
   const { isAuthenticated, userId, userType } = useAuth();
   const {
     tickets,
@@ -111,6 +116,10 @@ export const useDeveloperDashboard = (options: DashboardOptions = {}): ReturnTyp
 
   // Filter tickets based on current filter options
   const filteredTickets = tickets.filter((ticket) => {
+    if (!ticket) {
+      return false; // Skip null tickets
+    }
+    
     if (ticketFilters.filterOptions.status && 
         ticketFilters.filterOptions.status !== 'all' && 
         ticket.status !== ticketFilters.filterOptions.status) {
@@ -163,9 +172,9 @@ export const useDeveloperDashboard = (options: DashboardOptions = {}): ReturnTyp
   
   // Create categorized tickets for backwards compatibility
   const categorizedTickets = {
-    active: tickets.filter(t => ['in_progress', 'accepted'].includes(t.status || '')),
-    pending: tickets.filter(t => ['open', 'dev_requested', 'pending_match'].includes(t.status || '')),
-    completed: tickets.filter(t => ['completed', 'closed'].includes(t.status || ''))
+    active: tickets.filter(t => t && ['in_progress', 'accepted'].includes(t.status || '')),
+    pending: tickets.filter(t => t && ['open', 'dev_requested', 'pending_match'].includes(t.status || '')),
+    completed: tickets.filter(t => t && ['completed', 'closed'].includes(t.status || ''))
   };
 
   return {

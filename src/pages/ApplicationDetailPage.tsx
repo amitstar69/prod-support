@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Badge } from '../components/ui/badge';
 import { updateApplicationStatus } from '../integrations/supabase/helpRequestsApplications';
-import { HelpRequestMatch, HelpRequest } from '../types/helpRequest';
+import { HelpRequestMatch, HelpRequest, DeveloperProfile } from '../types/helpRequest';
 import { toast } from 'sonner';
 import { MATCH_STATUSES } from '../utils/constants/statusConstants';
 
@@ -47,18 +47,21 @@ const ApplicationDetailPage = () => {
 
         // Process application data with safe access to developer_profiles
         const developerProfiles = applicationData.developer_profiles || {};
-        const skills = developerProfiles?.skills || [];
-        const experience = developerProfiles?.experience || '';
-        const hourly_rate = developerProfiles?.hourly_rate || 0;
+        
+        // Safely access properties with fallbacks
+        const dp = applicationData.developer_profiles as DeveloperProfile | null;
+        const skills = dp?.skills || [];
+        const experience = dp?.experience || '';
+        const hourly_rate = dp?.hourly_rate || 0;
         
         // Create a properly typed application object
         const processedApplication: HelpRequestMatch = {
           ...applicationData,
           developer_profiles: {
             id: applicationData.developer_id,
-            skills: skills,
-            experience: experience,
-            hourly_rate: hourly_rate
+            skills,
+            experience,
+            hourly_rate
           }
         };
         

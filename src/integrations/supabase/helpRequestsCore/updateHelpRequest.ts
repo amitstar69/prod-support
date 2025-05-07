@@ -1,6 +1,4 @@
 
-// Modified code to add proper null guards when accessing currentRequest
-
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests } from './utils';
@@ -47,9 +45,16 @@ export const updateHelpRequestStatus = async (requestId: string, newStatus: stri
         return { success: false, error: 'Error fetching help request data' };
       }
       
+      // Check if currentReqData is an error object
+      if ('code' in currentReqData) {
+        console.error('[updateHelpRequestStatus] Error object in currentReqData:', currentReqData);
+        return { success: false, error: 'Error parsing help request data' };
+      }
+      
       // Validate the user is either the client or the assigned developer
       const isClient = currentReqData.client_id === userId;
-      const isDeveloper = currentReqData.developer_id === userId;
+      // developer_id may not exist in some tables, so use optional chaining
+      const isDeveloper = currentReqData.developer_id ? currentReqData.developer_id === userId : false;
       
       if (!isClient && !isDeveloper) {
         console.error('[updateHelpRequestStatus] User is not authorized to update this request');
@@ -61,7 +66,7 @@ export const updateHelpRequestStatus = async (requestId: string, newStatus: stri
       }
       
       // Prepare the update payload
-      const updatePayload: any = {
+      const updatePayload: Record<string, any> = {
         status: newStatus,
         updated_at: new Date().toISOString()
       };
@@ -100,7 +105,7 @@ export const updateHelpRequestStatus = async (requestId: string, newStatus: stri
       }
       
       console.log('[updateHelpRequestStatus] Successfully updated help request status');
-      return { success: true, data: updatedData[0] };
+      return { success: true, data: updatedData?.[0] };
     }
     
     // For local IDs, update in localStorage
@@ -172,12 +177,13 @@ export const updateHelpRequest = async (
       if (!data || data.length === 0) {
         return { success: false, error: 'Help request not found' };
       }
-
-      // Add null guard and check for error object
+      
+      // Check if data[0] is an error object
       if ('code' in data[0]) {
         console.warn('updateHelpRequest: invalid currentRequest', data[0]);
         return { success: false, error: 'Invalid help request data' };
       }
+      
       const currentRequest = data[0] as HelpRequest;
       
       // Validate the user is the client who created the request
@@ -190,7 +196,7 @@ export const updateHelpRequest = async (
       }
       
       // Ensure we're not changing certain fields
-      const safeUpdates = { ...updates };
+      const safeUpdates: Record<string, any> = { ...updates };
       delete safeUpdates.id;
       delete safeUpdates.client_id;
       delete safeUpdates.created_at;
@@ -251,7 +257,7 @@ export const updateHelpRequest = async (
       }
       
       // Ensure we're not changing certain fields
-      const safeUpdates = { ...updates };
+      const safeUpdates: Record<string, any> = { ...updates };
       delete safeUpdates.id;
       delete safeUpdates.client_id;
       delete safeUpdates.created_at;
