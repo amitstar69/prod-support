@@ -29,7 +29,7 @@ const MyApplicationsPage = () => {
     dataSource,
     handleClaimTicket,
     fetchMyApplications
-  } = useDeveloperDashboard();
+  } = useDeveloperDashboard({});
   
   const fetchApplications = useCallback(() => {
     if (userId && isAuthenticated && fetchMyApplications) {

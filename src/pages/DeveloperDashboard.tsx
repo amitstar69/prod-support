@@ -38,7 +38,7 @@ const DeveloperDashboard = () => {
     handleClaimTicket,
     handleForceRefresh,
     fetchTickets
-  } = useDeveloperDashboard();
+  } = useDeveloperDashboard({});
 
   return (
     <Layout>
