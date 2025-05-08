@@ -20,7 +20,7 @@ const DeveloperDashboard = () => {
   const { userId: authUserId, isAuthenticated: authIsAuthenticated, userType } = useAuth();
   const [localActiveTab, setLocalActiveTab] = useState('all');
   
-  // Make sure to pass empty object to useDeveloperDashboard
+  // Explicitly pass empty object to useDeveloperDashboard to match the expected signature
   const {
     tickets,
     filteredTickets,

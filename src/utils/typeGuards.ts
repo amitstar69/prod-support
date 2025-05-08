@@ -1,40 +1,16 @@
 
-import { DeveloperProfile, HelpRequest } from '../types/helpRequest';
+import { HelpRequest } from '../types/helpRequest';
 
 /**
- * Type guard to check if an object has the shape of a DeveloperProfile
+ * Type guard to verify if an object is a valid HelpRequest
+ * @param value The value to check
+ * @returns Boolean indicating if the object is a valid HelpRequest
  */
-export function isDeveloperProfile(obj: any): obj is DeveloperProfile {
+export function isHelpRequest(value: unknown): value is HelpRequest {
   return (
-    obj &&
-    typeof obj === 'object' &&
-    'id' in obj &&
-    'skills' in obj &&
-    'experience' in obj &&
-    'hourly_rate' in obj
+    value !== null &&
+    typeof value === 'object' &&
+    'id' in value && typeof (value as any).id === 'string' &&
+    'status' in value && typeof (value as any).status === 'string'
   );
-}
-
-/**
- * Type guard to check if an object has the shape of a HelpRequest
- */
-export function isHelpRequest(obj: unknown): obj is HelpRequest {
-  return (
-    obj !== null &&
-    typeof obj === 'object' &&
-    'id' in obj &&
-    'status' in obj
-  );
-}
-
-/**
- * Safely get a property value from an object with fallback
- */
-export function safelyGetProperty<T>(obj: any, prop: string, fallback: T): T {
-  if (!obj || typeof obj !== 'object' || !(prop in obj)) {
-    return fallback;
-  }
-  
-  const value = obj[prop];
-  return value === null || value === undefined ? fallback : value as T;
 }
