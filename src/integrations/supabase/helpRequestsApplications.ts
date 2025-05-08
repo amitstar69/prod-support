@@ -1,9 +1,8 @@
-
 import { supabase } from './client';
 import { MATCH_STATUSES } from '../../utils/constants/statusConstants';
 import { toast } from 'sonner';
 import { DeveloperProfile } from '../../types/helpRequest';
-import { isDeveloperProfile } from '../../utils/typeGuards';
+import { isDeveloperProfile, safelyGetProperty } from '../../utils/typeGuards';
 
 // Export valid match statuses for use in other components
 export const VALID_MATCH_STATUSES = MATCH_STATUSES;

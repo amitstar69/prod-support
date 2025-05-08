@@ -1,4 +1,3 @@
-
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests, handleError } from './utils';
@@ -121,7 +120,7 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
       // Debug: Log what statuses are in the database
       if (data.length > 0) {
         // Use our proper type guard function to filter valid help requests
-        const cleanData: HelpRequest[] = data.filter(isValidHelpRequest);
+        const cleanData = data.filter(isHelpRequest);
         
         // Now safely access properties only from properly filtered data
         let statuses: string[] = [];
