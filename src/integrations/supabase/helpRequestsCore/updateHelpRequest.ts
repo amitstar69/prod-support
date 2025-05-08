@@ -1,4 +1,3 @@
-
 import { supabase } from '../client';
 import { HelpRequest } from '../../../types/helpRequest';
 import { isLocalId, isValidUUID, getLocalHelpRequests } from './utils';
@@ -233,12 +232,18 @@ export const updateHelpRequest = async (
         return { success: false, error: 'Failed to update help request' };
       }
 
+      // Check if result is an error object
+      if ('code' in result) {
+        console.warn('updateHelpRequest: result error', result);
+        return { success: false, error: 'Error processing update response' };
+      }
+      
       // Get previous status if result is valid
       let prevStatus: string | null = null;
-      if (result && !('code' in result) && 'status' in result) {
+      if ('status' in result) {
         prevStatus = result.status;
       } else {
-        console.warn('updateHelpRequest: result error', result);
+        console.warn('updateHelpRequest: result missing status', result);
       }
       
       // Log the status change if applicable
@@ -322,6 +327,12 @@ export const assignDeveloperToRequest = async (
       
       if (error) {
         return { success: false, error: error.message };
+      }
+      
+      // Check if data is an error object
+      if (!data || 'code' in data) {
+        console.error('assignDeveloperToRequest: invalid response data', data);
+        return { success: false, error: 'Invalid help request data' };
       }
       
       // Ensure the user is the client who created the request
