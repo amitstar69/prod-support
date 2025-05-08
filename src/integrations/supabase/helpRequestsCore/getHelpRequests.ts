@@ -6,13 +6,11 @@ import { toast } from 'sonner';
 import { isHelpRequest } from '../../../utils/typeGuards';
 
 // Define a proper type guard function
-function isValidHelpRequest(ticket: unknown): ticket is HelpRequest {
-  return (
-    ticket !== null &&
-    typeof ticket === 'object' &&
-    'id' in ticket && typeof (ticket as any).id === 'string' &&
-    'status' in ticket && typeof (ticket as any).status === 'string'
-  );
+function isValidHelpRequest(ticket: any): ticket is HelpRequest {
+  return ticket !== null 
+      && typeof ticket === 'object' 
+      && !('error' in ticket)
+      && 'status' in ticket;
 }
 
 // Function to fetch help requests for a client
@@ -24,8 +22,8 @@ export const getHelpRequestsForClient = async (clientId: string) => {
     if (isValidUUID(clientId)) {
       console.log('[getHelpRequestsForClient] Using Supabase to fetch tickets');
       
-     const { data, error } = await supabase
-    .from('help_requests')
+      const { data, error } = await supabase
+        .from('help_requests')
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
@@ -123,7 +121,7 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
       // Debug: Log what statuses are in the database
       if (data.length > 0) {
         // Use our proper type guard function to filter valid help requests
-        const cleanData = data.filter(isValidHelpRequest);
+        const cleanData: HelpRequest[] = data.filter(isValidHelpRequest);
         
         // Now safely access properties only from properly filtered data
         let statuses: string[] = [];

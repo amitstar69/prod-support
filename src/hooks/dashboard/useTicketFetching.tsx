@@ -15,10 +15,6 @@ interface UseTicketFetchingResult {
   handleForceRefresh?: () => Promise<void>;
 }
 
-interface UseTicketFetchingOptions {
-  initialCategory?: string;
-}
-
 const determineTicketCategory = (status: string) => {
   // Map old statuses to new ones for compatibility
   const statusMapping = {
@@ -83,9 +79,8 @@ const normalizeAttachments = (attachments: any): any[] => {
   return [];
 };
 
-// Updated with options parameter to make it consistent with useDeveloperDashboard
-export const useTicketFetching = (options: UseTicketFetchingOptions = {}): UseTicketFetchingResult => {
-  const initialCategory = options.initialCategory || 'all';
+// Updated to make the parameter optional with a default value
+export const useTicketFetching = (initialCategory: string = 'all'): UseTicketFetchingResult => {
   const [tickets, setTickets] = useState<HelpRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
