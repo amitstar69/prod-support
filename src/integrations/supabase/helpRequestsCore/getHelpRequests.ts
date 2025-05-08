@@ -22,8 +22,8 @@ export const getHelpRequestsForClient = async (clientId: string) => {
     if (isValidUUID(clientId)) {
       console.log('[getHelpRequestsForClient] Using Supabase to fetch tickets');
       
-      const { data, error } = await supabase
-        .from('help_requests')
+     const { data, error } = await supabase
+    .from<HelpRequest>('help_requests')
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
