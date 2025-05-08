@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
@@ -35,23 +34,16 @@ const ClientDashboard = () => {
   const [isLoadingCounts, setIsLoadingCounts] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
 
-  const {
-    categorizedTickets,
-    isLoading,
-    showFilters,
-    setShowFilters,
-    handleClaimTicket,
-    handleForceRefresh,
-    fetchTickets,
-    hasError
-  } = useDeveloperDashboard();
-
+  // Fix the call to useDeveloperDashboard by not passing any arguments
+  // This will use the default empty object from the implementation
+  const dashboardData = useDeveloperDashboard();
+  
   useEffect(() => {
     // Only show error message if we're still in error state after a delay
     // This prevents quick flashes of error messages during normal loading
     let errorTimeout: NodeJS.Timeout | null = null;
     
-    if (hasError) {
+    if (dashboardData.hasError) {
       errorTimeout = setTimeout(() => {
         setShowErrorMessage(true);
       }, 3000); // Show error message after 3 seconds if still in error state
@@ -62,7 +54,7 @@ const ClientDashboard = () => {
     return () => {
       if (errorTimeout) clearTimeout(errorTimeout);
     };
-  }, [hasError]);
+  }, [dashboardData.hasError]);
   
   // Get all tickets and categorize them based on status
   const categorizeTickets = (tickets: HelpRequest[]): ClientTicketCategories => {
@@ -107,9 +99,9 @@ const ClientDashboard = () => {
   };
 
   // Use the categorizedTickets from useDeveloperDashboard or categorize them manually
-  const clientTickets = isClientCategories(categorizedTickets) 
-    ? categorizedTickets 
-    : categorizeTickets(Array.isArray(categorizedTickets) ? categorizedTickets : []);
+  const clientTickets = isClientCategories(dashboardData.categorizedTickets) 
+    ? dashboardData.categorizedTickets 
+    : categorizeTickets(Array.isArray(dashboardData.categorizedTickets) ? dashboardData.categorizedTickets : []);
 
   const activeTickets = clientTickets.activeTickets;
   const inProgressTickets = clientTickets.inProgressTickets;
@@ -328,19 +320,19 @@ const ClientDashboard = () => {
       
       <div className="container mx-auto py-8 px-4">
         <DashboardHeader 
-          showFilters={showFilters} 
-          setShowFilters={setShowFilters}
+          showFilters={dashboardData.showFilters} 
+          setShowFilters={dashboardData.setShowFilters}
           onRefresh={fetchTickets}
           title="My Help Requests"
           description="Track and manage your help requests"
         />
 
-        {isLoading ? (
+        {dashboardData.isLoading ? (
           renderLoadingState()
-        ) : showErrorMessage && hasError ? (
+        ) : showErrorMessage && dashboardData.hasError ? (
           <div className="p-8 text-center">
             <p className="text-red-500 mb-4">Failed to fetch your help requests.</p>
-            <Button onClick={handleForceRefresh}>Try Again</Button>
+            <Button onClick={dashboardData.handleForceRefresh}>Try Again</Button>
           </div>
         ) : (
           <div className="space-y-6">
