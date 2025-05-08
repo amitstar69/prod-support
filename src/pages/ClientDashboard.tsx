@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { Tab, Tabs, TabList, TabPanel } from '../components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import { Separator } from '../components/ui/separator';
 import { useDeveloperDashboard } from '../hooks/dashboard/useDeveloperDashboard';
 import EmptyTicketState from '../components/dashboard/EmptyTicketState';
@@ -41,19 +42,17 @@ const ClientDashboard: React.FC = () => {
   const { isAuthenticated, userType, userId } = useAuth();
   const [isLoadingCounts, setIsLoadingCounts] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Fix the call to useDeveloperDashboard by not passing any arguments
-  // This will use the default empty object from the implementation
+  // Fix the call to useDeveloperDashboard by passing an empty object
   const {
     categorizedTickets,
     isLoading,
-    showFilters,
-    setShowFilters,
     handleClaimTicket,
     handleForceRefresh,
     fetchTickets,
     hasError
-  } = useDeveloperDashboard();
+  } = useDeveloperDashboard({});
   
   useEffect(() => {
     // Only show error message if we're still in error state after a delay
@@ -94,18 +93,21 @@ const ClientDashboard: React.FC = () => {
 
   return (
     <Layout>
-      <DashboardHeader />
-      <DashboardBanner
+      <DashboardHeader 
+        showFilters={showFilters} 
+        setShowFilters={setShowFilters} 
+        onRefresh={handleForceRefresh}
         title="Client Dashboard"
         description="View and manage your help requests."
       />
+      <DashboardBanner />
       <Separator className="my-4" />
       
       {/* Main content area */}
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6">
         {/* Authentication check */}
         {!isAuthenticated ? (
-          <LoginPrompt userType={userType} />
+          <LoginPrompt />
         ) : (
           <>
             {/* Loading state */}
@@ -121,61 +123,61 @@ const ClientDashboard: React.FC = () => {
                 )}
                 
                 {/* Ticket categories tabs */}
-                <Tabs defaultIndex={0} className="w-full">
-                  <TabList className="flex space-x-4 p-2 bg-secondary rounded-md">
-                    <Tab className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md px-4 py-2 font-medium">
+                <Tabs defaultValue="active" className="w-full">
+                  <TabsList className="flex space-x-4 p-2 bg-secondary rounded-md">
+                    <TabsTrigger value="active" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md px-4 py-2 font-medium">
                       Active ({clientTickets.activeTickets.length})
-                    </Tab>
-                    <Tab className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md px-4 py-2 font-medium">
+                    </TabsTrigger>
+                    <TabsTrigger value="inProgress" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md px-4 py-2 font-medium">
                       In Progress ({clientTickets.inProgressTickets.length})
-                    </Tab>
-                    <Tab className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md px-4 py-2 font-medium">
+                    </TabsTrigger>
+                    <TabsTrigger value="completed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md px-4 py-2 font-medium">
                       Completed ({clientTickets.completedTickets.length})
-                    </Tab>
-                    <Tab className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md px-4 py-2 font-medium">
+                    </TabsTrigger>
+                    <TabsTrigger value="cancelled" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md px-4 py-2 font-medium">
                       Cancelled ({clientTickets.cancelledTickets.length})
-                    </Tab>
-                  </TabList>
+                    </TabsTrigger>
+                  </TabsList>
                   
                   {/* Active tickets tab panel */}
-                  <TabPanel>
+                  <TabsContent value="active">
                     <TicketSection
                       title="Active Tickets"
                       tickets={clientTickets.activeTickets}
-                      emptyStateMessage="No active tickets."
+                      emptyMessage="No active tickets."
                       onForceRefresh={handleForceRefresh}
                     />
-                  </TabPanel>
+                  </TabsContent>
                   
                   {/* In Progress tickets tab panel */}
-                  <TabPanel>
+                  <TabsContent value="inProgress">
                     <TicketSection
                       title="In Progress Tickets"
                       tickets={clientTickets.inProgressTickets}
-                      emptyStateMessage="No tickets in progress."
+                      emptyMessage="No tickets in progress."
                       onForceRefresh={handleForceRefresh}
                     />
-                  </TabPanel>
+                  </TabsContent>
                   
                   {/* Completed tickets tab panel */}
-                  <TabPanel>
+                  <TabsContent value="completed">
                     <TicketSection
                       title="Completed Tickets"
                       tickets={clientTickets.completedTickets}
-                      emptyStateMessage="No completed tickets."
+                      emptyMessage="No completed tickets."
                       onForceRefresh={handleForceRefresh}
                     />
-                  </TabPanel>
+                  </TabsContent>
                   
                   {/* Cancelled tickets tab panel */}
-                  <TabPanel>
+                  <TabsContent value="cancelled">
                     <TicketSection
                       title="Cancelled Tickets"
                       tickets={clientTickets.cancelledTickets}
-                      emptyStateMessage="No cancelled tickets."
+                      emptyMessage="No cancelled tickets."
                       onForceRefresh={handleForceRefresh}
                     />
-                  </TabPanel>
+                  </TabsContent>
                 </Tabs>
               </>
             )}

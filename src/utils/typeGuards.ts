@@ -23,7 +23,8 @@ export function isHelpRequest(obj: unknown): obj is HelpRequest {
     obj !== null &&
     typeof obj === 'object' &&
     'id' in obj &&
-    'status' in obj
+    'status' in obj &&
+    typeof (obj as any).status === 'string'
   );
 }
 
