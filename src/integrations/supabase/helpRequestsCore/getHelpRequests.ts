@@ -119,19 +119,15 @@ export const getAllPublicHelpRequests = async (isAuthenticated = false, selectFi
       
       // Debug: Log what statuses are in the database
       if (data.length > 0) {
-        // Use our proper type guard function to filter valid help requests
+        // Use the proper type guard to filter valid help requests
         const cleanData = data.filter(isHelpRequest);
         
-        // Now safely access properties only from properly filtered data
-        let statuses: string[] = [];
-        
-        // Loop only through cleaned data where we're guaranteed to have status property
-        for (const ticket of cleanData) {
-          statuses.push(ticket.status);
+        // Log status information from properly typed help requests
+        if (cleanData.length > 0) {
+          const statuses = cleanData.map(ticket => ticket.status);
+          const uniqueStatuses = [...new Set(statuses)];
+          console.log('[getAllPublicHelpRequests] Found ticket statuses:', uniqueStatuses);
         }
-        
-        const uniqueStatuses = [...new Set(statuses)];
-        console.log('[getAllPublicHelpRequests] Found ticket statuses:', uniqueStatuses);
       }
       
       // Log fetched tickets for debugging

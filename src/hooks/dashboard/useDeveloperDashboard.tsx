@@ -97,7 +97,9 @@ export const useTicketApplications = (
 };
 
 // This is the main hook that DeveloperDashboard uses - now exported directly
-export const useDeveloperDashboard = (options: DashboardOptions = {}) => {
+export function useDeveloperDashboard(): UseDeveloperDashboardReturn;
+export function useDeveloperDashboard(options: DashboardOptions): UseDeveloperDashboardReturn;
+export function useDeveloperDashboard(options: DashboardOptions = {}): UseDeveloperDashboardReturn {
   const { isAuthenticated, userId, userType } = useAuth();
   const {
     tickets,
