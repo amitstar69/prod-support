@@ -18,16 +18,15 @@ export function isDeveloperProfile(obj: any): obj is DeveloperProfile {
 /**
  * Type guard to check if an object has the shape of a HelpRequest
  */
-export function isHelpRequest(obj: unknown): obj is HelpRequest {
-  return (
-    obj !== null &&
-    typeof obj === 'object' &&
-    'id' in obj &&
-    'status' in obj &&
-    typeof (obj as any).status === 'string'
-  );
-}
-
+export function isHelpRequest(obj: unknown): obj is HelpRequest {                                                                                 
+    return (                                                                                                                                        
+      obj !== null &&                                                                                                                               
+      typeof obj === 'object' &&                                                                                                                    
+      'id' in obj &&                                                                                                                                
+      'status' in obj &&                                                                                                                            
+      typeof obj.status === 'string'  // ✅ Removed (obj as any)                                                                                    
+    );                                                                                                                                              
+  }   
 /**
  * Safely get a property value from an object with fallback
  */
