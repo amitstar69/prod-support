@@ -80,7 +80,9 @@ const normalizeAttachments = (attachments: any): any[] => {
 };
 
 // Updated to make the parameter optional with a default value
-export const useTicketFetching = (initialCategory: string = 'all'): UseTicketFetchingResult => {
+export const useTicketFetching = (initialCategory?: string): UseTicketFetchingResult => {                                                         
+    const category = initialCategory ?? 'all';                                                                                                      
+    const [tickets, setTickets] = useState<HelpRequest[]>([]); 
   const [tickets, setTickets] = useState<HelpRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
