@@ -4,8 +4,9 @@ import type { Database } from './types';
 import { toast } from 'sonner';
 
 // Use consistent variables across the application
-export const SUPABASE_URL = "https://xptoyeinviaeevdtyjax.supabase.co";
-export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwdG95ZWludmlhZWV2ZHR5amF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5NjE4MDEsImV4cCI6MjA1NjUzNzgwMX0.nHEt2UkbPHwYQmvKZhdqgN2ZamxoD4vwHqhHl1AER1I";
+export const SUPABASE_URL = "https://jiglepoacqynvphmgvkc.supabase.co";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppZ2xlcG9hY3F5bnZwaG1ndmtjIiwicm9sZSI6ImFub24iLCJp
+  YXQiOjE3Njg3NjkwNDcsImV4cCI6MjA4NDM0NTA0N30._4PJadhAVpLJ31M00I0iCorr-LRJ_YZsuWXv6r9HyXA";
 
 // Performance optimizations - connect once
 let supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
