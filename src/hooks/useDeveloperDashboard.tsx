@@ -1,5 +1,3 @@
-
-// This file has been refactored. Please import from src/hooks/dashboard/useDeveloperDashboard.tsx instead.
-import { useDeveloperDashboard } from './dashboard/useDeveloperDashboard';
-export default useDeveloperDashboard;
-export * from './dashboard/useDeveloperDashboard';
+export function useDeveloperDashboard(options?: DashboardOptions): UseDeveloperDashboardReturn {                                                  
+    const resolvedOptions = options ?? {};                                                                                                          
+              
