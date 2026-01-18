@@ -83,10 +83,8 @@ const normalizeAttachments = (attachments: any): any[] => {
 export const useTicketFetching = (initialCategory?: string): UseTicketFetchingResult => {                                                         
     const category = initialCategory ?? 'all';                                                                                                      
     const [tickets, setTickets] = useState<HelpRequest[]>([]); 
-  const [tickets, setTickets] = useState<HelpRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [category, setCategory] = useState(initialCategory);
   const [dataSource, setDataSource] = useState<string>('cache');
   const [hasError, setHasError] = useState<boolean>(false);
 
