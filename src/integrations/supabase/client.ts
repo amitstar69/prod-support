@@ -5,9 +5,7 @@ import { toast } from 'sonner';
 
 // Use consistent variables across the application
 export const SUPABASE_URL = "https://jiglepoacqynvphmgvkc.supabase.co";
-export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppZ2xlcG9hY3F5bnZwaG1ndmtjIiwicm9sZSI6ImFub24iLCJp
-  YXQiOjE3Njg3NjkwNDcsImV4cCI6MjA4NDM0NTA0N30._4PJadhAVpLJ31M00I0iCorr-LRJ_YZsuWXv6r9HyXA";
-
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppZ2xlcG9hY3F5bnZwaG1ndmtjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NjkwNDcsImV4cCI6MjA4NDM0NTA0N30._4PJadhAVpLJ31M00I0iCorr-LRJ_YZsuWXv6r9HyXA";
 // Performance optimizations - connect once
 let supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
 
