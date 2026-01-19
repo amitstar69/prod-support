@@ -8,7 +8,7 @@ interface ApplicationCardProps {
   isClient: boolean;
 }
 
-export const ApplicationCard: React.FC<ApplicationCardProps> = ({
+  const ApplicationCard: React.FC<ApplicationCardProps> = ({                                                                                                                         
   application,
   onApprove,
   onReject,
@@ -218,3 +218,5 @@ export const ApplicationCard: React.FC<ApplicationCardProps> = ({
     </>
   );
 };
+
+export default ApplicationCard; 
