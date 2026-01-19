@@ -1,4 +1,4 @@
-
+import { useCallback } from 'react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../integrations/supabase/client';
 import { HelpRequest } from '../../types/helpRequest';
@@ -88,7 +88,7 @@ export const useTicketFetching = (initialCategory?: string): UseTicketFetchingRe
   const [dataSource, setDataSource] = useState<string>('cache');
   const [hasError, setHasError] = useState<boolean>(false);
 
-  const fetchTickets = async (showLoading: boolean = true) => {
+  const fetchTickets = useCallback(async (showLoading: boolean = true) => {
     if (showLoading) {
       setIsLoading(true);
     }
@@ -135,13 +135,14 @@ export const useTicketFetching = (initialCategory?: string): UseTicketFetchingRe
   };
 
   // Add a force refresh method that doesn't show loading state
-  const handleForceRefresh = async () => {
+  const handleForceRefresh = async () => { }, [category]);
     await fetchTickets(false);
   };
 
-  useEffect(() => {
-    fetchTickets();
-  }, [category]);
+  useEffect(() => {                                                                                                                                                                  
+    console.log('[useTicketFetching] Auto-fetching tickets', { category });                                                                                                          
+    fetchTickets();                                                                                                                                                                  
+  }, [category, fetchTickets]);
 
   return { tickets, isLoading, error, fetchTickets, category, hasError, dataSource, handleForceRefresh };
 };
