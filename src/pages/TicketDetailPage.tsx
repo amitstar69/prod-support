@@ -24,7 +24,7 @@ const TicketDetailPage = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, userId, userType } = useAuth();
-  const { applications, isLoading: isLoadingApplications, refreshApplications } = useTicketApplications(ticketId);
+  const { applications = [], isLoading: isLoadingApplications = false, refreshApplications = () => {} } = useTicketApplications(ticketId) || {};
   const [ticket, setTicket] = useState<HelpRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -281,7 +281,7 @@ const TicketDetailPage = () => {
           </div>
           
           <div className="space-y-6">
-           {role === "client" && ticketId && applications.length > 0 && (                                                                                                                     
+           {role === "client" && ticketId && applications?.length > 0 && (                                                                                                                     
     <DeveloperApplicationsPanel                                                                                                                                                      
       applications={applications}                                                                                                                                                    
       ticketId={ticketId}                                                                                                                                                            
