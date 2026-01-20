@@ -1,3 +1,4 @@
+import { useTicketApplications } from '../hooks/dashboard/useTicketApplications';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -23,6 +24,7 @@ const TicketDetailPage = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, userId, userType } = useAuth();
+  const { applications, isLoading: isLoadingApplications, refreshApplications } = useTicketApplications(ticketId);
   const [ticket, setTicket] = useState<HelpRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -279,13 +281,17 @@ const TicketDetailPage = () => {
           </div>
           
           <div className="space-y-6">
-           {role === "client" && ticketId && ( 
-              <DeveloperApplicationsPanel 
-                ticketId={ticketId}
-                onApplicationAccepted={handleApplicationAccepted}
-              />
-            )}
-
+           {role === "client" && ticketId && applications.length > 0 && (                                                                                                                     
+    <DeveloperApplicationsPanel                                                                                                                                                      
+      applications={applications}                                                                                                                                                    
+      ticketId={ticketId}                                                                                                                                                            
+      clientId={userId || ""}                                                                                                                                                        
+      isLoading={isLoadingApplications}                                                                                                                                              
+      onApplicationUpdate={refreshApplications}                                                                                                                                      
+      onOpenChat={(developerId, developerName) =>                                                                                                                                    
+        navigate(`/chat/${ticketId}?with=${developerId}&name=${developerName || 'Developer'}`)}                                                                                      
+    />                                                                                                                                                                               
+  )}  
             <ClientEditSection
               visible={role === "client"}
               status={ticket.status}
