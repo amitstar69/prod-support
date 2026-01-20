@@ -23,6 +23,7 @@ const TicketDetailPage = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, userId, userType } = useAuth();
+  const role = userType as "client" | "developer";
   const [applications, setApplications] = useState<HelpRequestMatch[]>([]);                                                                                                          
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);                                                                                                         
                                                                                                                                                                                      
@@ -53,7 +54,7 @@ const TicketDetailPage = () => {
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showQADialog, setShowQADialog] = useState(false);
 
-  const role = userType as "client" | "developer";
+ 
 
   console.log('[TicketDetailPage] Initializing with:', { 
     userType, 
