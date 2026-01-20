@@ -29,33 +29,60 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
 }) => {
   const [processingApplicationIds, setProcessingApplicationIds] = React.useState<string[]>([]);
 
-  const handleApprove = async (applicationId: string) => {
-    try {
-      setProcessingApplicationIds(prev => [...prev, applicationId]);
-      toast.loading('Approving application...');
-      
-      const result = await updateApplicationStatus(
-        applicationId,
-        'approved',
-        clientId
-      );
-      
-      toast.dismiss();
-      
-      if (result.success) {
-        toast.success('Developer application approved!');
-        onApplicationUpdate();
-      } else {
-        toast.error(`Failed to approve application: ${result.error}`);
-      }
-    } catch (error) {
-      toast.dismiss();
-      toast.error('An error occurred while approving the application');
-      console.error('Error approving application:', error);
-    } finally {
-      setProcessingApplicationIds(prev => prev.filter(id => id !== applicationId));
-    }
-  };
+  const handleApprove = async (applicationId: string) => {                                                                                                                           
+    try {                                                                                                                                                                            
+      setProcessingApplicationIds(prev => [...prev, applicationId]);                                                                                                                 
+      toast.loading('Approving application...');                                                                                                                                     
+                                                                                                                                                                                     
+      // Get the application details                                                                                                                                                 
+      const application = applications.find(app => app.id === applicationId);                                                                                                        
+      if (!application) {                                                                                                                                                            
+        toast.dismiss();                                                                                                                                                             
+        toast.error('Application not found');                                                                                                                                        
+        return;                                                                                                                                                                      
+      }                                                                                                                                                                              
+                                                                                                                                                                                     
+      // 1. Approve the selected application                                                                                                                                         
+      const { error: approveError } = await supabase                                                                                                                                 
+        .from('help_request_matches')                                                                                                                                                
+        .update({ status: 'approved' })                                                                                                                                              
+        .eq('id', applicationId);                                                                                                                                                    
+                                                                                                                                                                                     
+      if (approveError) throw approveError;                                                                                                                                          
+                                                                                                                                                                                     
+      // 2. Reject all other applications for this ticket                                                                                                                            
+      const { error: rejectError } = await supabase                                                                                                                                  
+        .from('help_request_matches')                                                                                                                                                
+        .update({ status: 'rejected' })                                                                                                                                              
+        .eq('request_id', ticketId)                                                                                                                                                  
+        .neq('id', applicationId)                                                                                                                                                    
+        .in('status', ['pending']);                                                                                                                                                  
+                                                                                                                                                                                     
+      if (rejectError) throw rejectError;                                                                                                                                            
+                                                                                                                                                                                     
+      // 3. Update ticket: set status to in_progress and assign developer                                                                                                            
+      const { error: ticketError } = await supabase                                                                                                                                  
+        .from('help_requests')                                                                                                                                                       
+        .update({                                                                                                                                                                    
+          status: 'in_progress',                                                                                                                                                     
+          developer_id: application.developer_id                                                                                                                                     
+        })                                                                                                                                                                           
+        .eq('id', ticketId);                                                                                                                                                         
+                                                                                                                                                                                     
+      if (ticketError) throw ticketError;                                                                                                                                            
+                                                                                                                                                                                     
+      toast.dismiss();                                                                                                                                                               
+      toast.success('Developer application approved! Ticket is now in progress.');                                                                                                   
+      onApplicationUpdate();                                                                                                                                                         
+                                                                                                                                                                                     
+    } catch (error) {                                                                                                                                                                
+      toast.dismiss();                                                                                                                                                               
+      toast.error('Failed to approve application');                                                                                                                                  
+      console.error('Error approving application:', error);                                                                                                                          
+    } finally {                                                                                                                                                                      
+      setProcessingApplicationIds(prev => prev.filter(id => id !== applicationId));                                                                                                  
+    }                                                                                                                                                                                
+  };               
   
   const handleReject = async (applicationId: string) => {
     try {
