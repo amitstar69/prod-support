@@ -279,7 +279,7 @@ const TicketDetailPage = () => {
           </div>
           
           <div className="space-y-6">
-            {role === "client" && isAwaitingDeveloperApproval && ticketId && (
+           {role === "client" && ticketId && ( 
               <DeveloperApplicationsPanel 
                 ticketId={ticketId}
                 onApplicationAccepted={handleApplicationAccepted}
