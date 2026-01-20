@@ -30,7 +30,16 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
       try {
         const { data, error } = await supabase
           .from('help_request_matches')
-          .select('*, profiles(*), developer_profiles(*)')
+          .select(`                                                                                                                                                                          
+    *,                                                                                                                                                                               
+    profiles!developer_id (                                                                                                                                                          
+      id,                                                                                                                                                                            
+      name,                                                                                                                                                                          
+      email,                                                                                                                                                                         
+      image,                                                                                                                                                                         
+      location                                                                                                                                                                       
+    )                                                                                                                                                                                
+  `)   
           .eq('request_id', ticketId)
           .order('created_at', { ascending: false });
 
