@@ -1,4 +1,3 @@
-import { useTicketApplications } from '../hooks/dashboard/useTicketApplications';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -24,7 +23,26 @@ const TicketDetailPage = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, userId, userType } = useAuth();
-  const { applications = [], isLoading: isLoadingApplications = false, refreshApplications = () => {} } = useTicketApplications(ticketId) || {};
+  const [applications, setApplications] = useState<HelpRequestMatch[]>([]);                                                                                                          
+  const [isLoadingApplications, setIsLoadingApplications] = useState(false);                                                                                                         
+                                                                                                                                                                                     
+  const fetchApplications = useCallback(async () => {                                                                                                                                
+    if (!ticketId || role !== 'client') return;                                                                                                                                      
+                                                                                                                                                                                     
+    setIsLoadingApplications(true);                                                                                                                                                  
+    const { data } = await supabase                                                                                                                                                  
+      .from('help_request_matches')                                                                                                                                                  
+      .select(`*, profiles!developer_id(id, name, email, image, location)`)                                                                                                          
+      .eq('request_id', ticketId)                                                                                                                                                    
+      .order('created_at', { ascending: false });                                                                                                                                    
+                                                                                                                                                                                     
+    setApplications(data || []);                                                                                                                                                     
+    setIsLoadingApplications(false);                                                                                                                                                 
+  }, [ticketId, role]);                                                                                                                                                              
+                                                                                                                                                                                     
+  useEffect(() => {                                                                                                                                                                  
+    fetchApplications();                                                                                                                                                             
+  }, [fetchApplications]);
   const [ticket, setTicket] = useState<HelpRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -287,7 +305,10 @@ const TicketDetailPage = () => {
       ticketId={ticketId}                                                                                                                                                            
       clientId={userId || ""}                                                                                                                                                        
       isLoading={isLoadingApplications}                                                                                                                                              
-      onApplicationUpdate={refreshApplications}                                                                                                                                      
+      onApplicationUpdate={() => {                                                                                                                                                       
+    fetchApplications();                                                                                                                                                             
+    fetchLatestTicketData();                                                                                                                                                         
+  }}                                                                                                                                       
       onOpenChat={(developerId, developerName) =>                                                                                                                                    
         navigate(`/chat/${ticketId}?with=${developerId}&name=${developerName || 'Developer'}`)}                                                                                      
     />                                                                                                                                                                               
