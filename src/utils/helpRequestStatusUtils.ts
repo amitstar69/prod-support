@@ -89,3 +89,17 @@ import { TicketStatus, TicketStatusLabels, TicketStatusColors } from './constant
   };                                                                                                                                                                                 
                                                                                                                                                                                      
   export type { UserType } from '../types/enums';
+  export const updateTicketStatus = async (                                                                                                                                          
+    ticketId: string,                                                                                                                                                                
+    newStatus: string,                                                                                                                                                               
+    userType: 'client' | 'developer' | 'system',                                                                                                                                     
+    notes?: string                                                                                                                                                                   
+  ): Promise<any> => {                                                                                                                                                               
+    console.log(`Updating ticket ${ticketId} to ${newStatus} by ${userType}${notes ? ` with notes: ${notes}` : ''}`);                                                                
+                                                                                                                                                                                     
+    return {                                                                                                                                                                         
+      id: ticketId,                                                                                                                                                                  
+      status: newStatus,                                                                                                                                                             
+      updated_at: new Date().toISOString()                                                                                                                                           
+    };                                                                                                                                                                               
+  };                          
