@@ -17,7 +17,7 @@ import CommentsSection from '../components/ticket-detail/CommentsSection';
 import ClientEditSection from '../components/ticket-detail/ClientEditSection';
 import HistorySection from '../components/ticket-detail/HistorySection';
 import TicketDetails from '../components/tickets/TicketDetails';
-import DeveloperApplicationsPanel from '../components/ticket-detail/DeveloperApplicationsPanel';
+import DeveloperApplicationsPanel from '../components/dashboard/DeveloperApplicationsPanel';
 
 const TicketDetailPage = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
