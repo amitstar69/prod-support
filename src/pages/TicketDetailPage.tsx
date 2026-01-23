@@ -325,15 +325,18 @@ const TicketDetailPage = () => {
               formatDate={formatDate}
             />
 
-            {/* Show status transitions if ticket is in progress */}                                                                                                                           
-  {ticket.status === 'in_progress' || ticket.status === 'ready_for_client_qa' || ticket.status === 'reopened' ? (                                                                    
+            {/* Show status transitions for both client and developer */}                                                                                                                      
+  {(ticket.status === 'in_progress' ||                                                                                                                                               
+    ticket.status === 'ready_for_client_qa' ||                                                                                                                                       
+    ticket.status === 'reopened') &&                                                                                                                                                 
+    (role === 'developer' || role === 'client') ? (                                                                                                                                  
     <StatusTransitionDropdown                                                                                                                                                        
       ticketId={ticketId!}                                                                                                                                                           
       currentStatus={ticket.status}                                                                                                                                                  
       userRole={role}                                                                                                                                                                
-      onStatusChange={() => {                                                                                                                                                        
-        fetchTicket();                                                                                                                                                               
-        fetchApplications();                                                                                                                                                         
+      onStatusChange={async () => {                                                                                                                                                  
+        await fetchTicket();                                                                                                                                                         
+        await fetchApplications();                                                                                                                                                   
       }}                                                                                                                                                                             
     />                                                                                                                                                                               
   ) : (                                                                                                                                                                              
@@ -347,7 +350,7 @@ const TicketDetailPage = () => {
       onApply={handleApplyClick}                                                                                                                                                     
       fetchLatestTicketData={fetchLatestTicketData}                                                                                                                                  
     />                                                                                                                                                                               
-  )}       
+  )}               
           </div>
         </div>
       </div>
