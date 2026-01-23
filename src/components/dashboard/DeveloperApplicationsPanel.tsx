@@ -209,14 +209,17 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
                     )}
                     
                     <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
-                      {onOpenChat && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleChatWithDeveloper(
-                            application.developer_id, 
-                            application.profiles?.name
-                          )}
+                      {/* Temporarily disabled - chat feature coming soon                                                                                                                                
+  {onOpenChat && (                                                                                                                                                                   
+    <Button                                                                                                                                                                          
+      size="sm"                                                                                                                                                                      
+      variant="outline"                                                                                                                                                              
+      onClick={() => handleChatWithDeveloper(...)}                                                                                                                                   
+    >                                                                                                                                                                                
+      Chat                                                                                                                                                                           
+    </Button>                                                                                                                                                                        
+  )}                                                                                                                                                                                 
+  */}
                         >
                           Chat
                         </Button>
