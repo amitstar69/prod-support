@@ -1,7 +1,7 @@
 /**                                                                                                                                                                                
    * SINGLE SOURCE OF TRUTH: All status enums imported from constants                                                                                                                
    */                                                                                                                                                                                
-  export { TicketStatus, MatchStatus, TicketStatusType, MatchStatusType } from '../constants/ticketStatuses';                                                                        
+  export { TicketStatus, MatchStatus, TicketStatusType, MatchStatusType } from '../utils/constants/ticketStatuses';                                                                        
                                                                                                                                                                                      
   /**                                                                                                                                                                                
    * User type enum                                                                                                                                                                  
