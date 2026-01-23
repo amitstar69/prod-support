@@ -208,38 +208,23 @@ const DeveloperApplicationsPanel: React.FC<DeveloperApplicationsPanelProps> = ({
                       </div>
                     )}
                     
-                    <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
-                      {/* Temporarily disabled - chat feature coming soon                                                                                                                                
-  {onOpenChat && (                                                                                                                                                                   
-    <Button                                                                                                                                                                          
-      size="sm"                                                                                                                                                                      
-      variant="outline"                                                                                                                                                              
-      onClick={() => handleChatWithDeveloper(...)}                                                                                                                                   
-    >                                                                                                                                                                                
-      Chat                                                                                                                                                                           
-    </Button>                                                                                                                                                                        
-  )}                                                                                                                                                                                 
-  */}
-                        >
-                          Chat
-                        </Button>
-                      )}
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        onClick={() => handleReject(application.id!)}
-                        disabled={isProcessing(application.id!)}
-                      >
-                        Reject
-                      </Button>
-                      <Button 
-                        size="sm"
-                        onClick={() => handleApprove(application.id!)}
-                        disabled={isProcessing(application.id!)}
-                      >
-                        Accept
-                      </Button>
-                    </div>
+                    div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">                                                                                      
+                        <Button                                                                                                                                                      
+                          size="sm"                                                                                                                                                  
+                          variant="destructive"                                                                                                                                      
+                          onClick={() => handleReject(application.id!)}                                                                                                              
+                          disabled={isProcessing(application.id!)}                                                                                                                   
+                        >                                                                                                                                                            
+                          Reject                                                                                                                                                     
+                        </Button>                                                                                                                                                    
+                        <Button                                                                                                                                                      
+                          size="sm"                                                                                                                                                  
+                          onClick={() => handleApprove(application.id!)}                                                                                                             
+                          disabled={isProcessing(application.id!)}                                                                                                                   
+                        >                                                                                                                                                            
+                          Accept                                                                                                                                                     
+                        </Button>                                                                                                                                                    
+                      </div>   
                   </div>
                 ))}
               </div>
