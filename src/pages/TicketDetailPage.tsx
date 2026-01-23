@@ -1,3 +1,4 @@
+import { StatusTransitionDropdown } from '../components/ticket-detail/StatusTransitionDropdown';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -324,16 +325,29 @@ const TicketDetailPage = () => {
               formatDate={formatDate}
             />
 
-            <TicketActionsPanel
-              role={role}
-              ticket={ticket}
-              ticketId={ticketId}
-              userId={userId || ""}
-              applicationStatus={applicationStatus}
-              hasApplied={hasApplied}
-              onApply={handleApplyClick}
-              fetchLatestTicketData={fetchLatestTicketData}
-            />
+            {/* Show status transitions if ticket is in progress */}                                                                                                                           
+  {ticket.status === 'in_progress' || ticket.status === 'ready_for_client_qa' || ticket.status === 'reopened' ? (                                                                    
+    <StatusTransitionDropdown                                                                                                                                                        
+      ticketId={ticketId!}                                                                                                                                                           
+      currentStatus={ticket.status}                                                                                                                                                  
+      userRole={role}                                                                                                                                                                
+      onStatusChange={() => {                                                                                                                                                        
+        fetchTicket();                                                                                                                                                               
+        fetchApplications();                                                                                                                                                         
+      }}                                                                                                                                                                             
+    />                                                                                                                                                                               
+  ) : (                                                                                                                                                                              
+    <TicketActionsPanel                                                                                                                                                              
+      role={role}                                                                                                                                                                    
+      ticket={ticket}                                                                                                                                                                
+      ticketId={ticketId}                                                                                                                                                            
+      userId={userId || ""}                                                                                                                                                          
+      applicationStatus={applicationStatus}                                                                                                                                          
+      hasApplied={hasApplied}                                                                                                                                                        
+      onApply={handleApplyClick}                                                                                                                                                     
+      fetchLatestTicketData={fetchLatestTicketData}                                                                                                                                  
+    />                                                                                                                                                                               
+  )}       
           </div>
         </div>
       </div>
